@@ -3,8 +3,8 @@
 # see misc/tools/kconfig-language.txt.
 #
 
-if ARCH_BOARD_EFM32LG_DK3650
+if ARCH_BOARD_EFM32TG_STK3300
 
-comment "EFM32 DK3650 Hardware Configuration"
+comment "EFM32 STK3300 Hardware Configuration"
 
 endif
