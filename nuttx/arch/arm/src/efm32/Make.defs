@@ -33,40 +33,24 @@
 #
 ############################################################################
 
-ifeq ($(CONFIG_ARCH_CHIP_EFM32LG232F128),y)
-CFLAGS += -DEFM32LG232F128
-else ifeq ($(CONFIG_ARCH_CHIP_EFM32LG990F256),y)
-CFLAGS += -DEFM32LG990F256
-else ifeq ($(CONFIG_ARCH_CHIP_EFM32GG990F1024),y)
-CFLAGS += -DEFM32GG990F1024
-endif
+#ifeq ($(CONFIG_ARCH_CHIP_EFM32LG232F128),y)
+#CFLAGS += -DEFM32LG232F128
+#else ifeq ($(CONFIG_ARCH_CHIP_EFM32LG990F256),y)
+#CFLAGS += -DEFM32LG990F256
+#else ifeq ($(CONFIG_ARCH_CHIP_EFM32GG990F1024),y)
+#CFLAGS += -DEFM32GG990F1024
+#endif
 
 ifeq (-DEFM32LG, $(findstring -DEFM32LG,$(CFLAGS)))
-EM_INCDIR := EFM32LG
 SYSTEM_EFM32_C := system_efm32lg.c
+HEAD_ASRC  =
 else ifeq (-DEFM32GG, $(findstring -DEFM32GG,$(CFLAGS)))
-EM_INCDIR := EFM32GG
 SYSTEM_EFM32_C := system_efm32gg.c
+HEAD_ASRC  =
 else
 $(error unknown efm32 part)
 endif
 
-ext := $(patsubst "%",%,$(strip $(CONFIG_ARCH_CHIP_EFM32_EMLIB_PATH)))
-
-ifeq ($(WINTOOL),y)
-CFLAGS += -I"${shell cygpath -w $(ext)/CMSIS/Include}"
-CFLAGS += -I"${shell cygpath -w $(ext)/Device/EnergyMicro/$(EM_INCDIR)/Include}"
-CFLAGS += -I"${shell cygpath -w $(ext)/emlib/inc}"
-else
-CFLAGS += -I$(ext)/CMSIS/Include
-CFLAGS += -I$(ext)/Device/EnergyMicro/$(EM_INCDIR)/Include
-CFLAGS += -I$(ext)/emlib/inc
-endif
-
-VPATH += $(ext)/emlib/src
-VPATH += $(ext)/Device/EnergyMicro/$(EM_INCDIR)/Source
-
-HEAD_ASRC  =
 CMN_UASRCS =
 CMN_UCSRCS =
 

@@ -227,9 +227,9 @@ configs/efm32-dk3650
   This is Energy Micro's development kit for the Leopard Gecko MCU, which
   is an ARM Cortex-M3 device.
 
-  This port is uses the Energy Micro headers and peripheral drivers as out
-  of tree sources. In order to compile this, you need to set
-  CONFIG_ARCH_CHIP_EFM32_EMLIB_PATH to point to the external sources.
+configs/efm32tg-stk3300/
+  This is Energy Micro's development kit for the Tiny Gecko MCU, which
+  is an ARM Cortex-M3 device.
 
 configs/ekk-lm3s9b96
   TI/Stellaris EKK-LM3S9B96 board.  This board is based on the
