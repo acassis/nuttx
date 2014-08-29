@@ -33,22 +33,43 @@
 #
 ############################################################################
 
-#ifeq ($(CONFIG_ARCH_CHIP_EFM32LG232F128),y)
-#CFLAGS += -DEFM32LG232F128
-#else ifeq ($(CONFIG_ARCH_CHIP_EFM32LG990F256),y)
-#CFLAGS += -DEFM32LG990F256
-#else ifeq ($(CONFIG_ARCH_CHIP_EFM32GG990F1024),y)
-#CFLAGS += -DEFM32GG990F1024
-#endif
+ifeq ($(CONFIG_ARCH_CHIP_EFM32LG232F128),y)
+
+CFLAGS += -DEFM32LG232F128
+
+else ifeq ($(CONFIG_ARCH_CHIP_EFM32LG990F256),y)
+
+CFLAGS += -DEFM32LG990F256
+
+else ifeq ($(CONFIG_ARCH_CHIP_EFM32GG990F1024),y)
+
+CFLAGS += -DEFM32GG990F1024
+
+else ifeq ($(CONFIG_ARCH_CHIP_EFM32TG840F32),y)
+
+CFLAGS += -DEFM32TG840F32
+
+endif
 
 ifeq (-DEFM32LG, $(findstring -DEFM32LG,$(CFLAGS)))
+
 SYSTEM_EFM32_C := system_efm32lg.c
 HEAD_ASRC  =
+
+else ifeq (-DEFM32TG, $(findstring -DEFM32TG,$(CFLAGS)))
+
+SYSTEM_EFM32_C := system_efm32tg.c
+HEAD_ASRC  =
+
 else ifeq (-DEFM32GG, $(findstring -DEFM32GG,$(CFLAGS)))
+
 SYSTEM_EFM32_C := system_efm32gg.c
 HEAD_ASRC  =
+
 else
+
 $(error unknown efm32 part)
+
 endif
 
 CMN_UASRCS =

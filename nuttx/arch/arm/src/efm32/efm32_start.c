@@ -49,8 +49,8 @@
 #include "up_internal.h"
 #include "efm32_lowputc.h"
 
-#include "em_device.h"
-#include "em_cmu.h"
+//#include "em_device.h"
+//#include "em_cmu.h"
 
 /****************************************************************************
  * Private Function prototypes
@@ -123,7 +123,7 @@ static void efm32_clockconfig(void)
 {
   /* Devices boots with 14 MHz HFRCO as the HFCLK source. */
   /* Enable the GPIO clock. */
-  CMU_ClockEnable(cmuClock_GPIO, true);
+  //CMU_ClockEnable(cmuClock_GPIO, true);
 }
 
 static void efm32_gpioinit(void)
