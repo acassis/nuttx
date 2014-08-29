@@ -8265,4 +8265,8 @@
 	* arch/*/*_blocktask.c, arch/*/*_unblocktask.c, and arch/*/*_exit.c:
 	  Add address environment support to all implementation of up_block_task(),
 	  up_unblock_task(), and _exit() (2014-8-31).
+	* arch/arm/src/efm32 and include/efm32: Remove patch that remove EFM32
+	  "Remove support for EFM32.  Not ready to be fielded"
+	  Commit remove ID 79f13683cc25f4ebafde57c72baaf31ae8a55915
+	  From Pierre-Noel Bouteville (2014-8-29).
 
