@@ -33,23 +33,11 @@
 #
 ############################################################################
 
-ifeq ($(CONFIG_ARCH_CHIP_EFM32LG232F128),y)
+EFM32_CHIP_NAME = EFM32$(patsubst "%",%,$(CONFIG_ARCH_CHIP_OPTIONS))
 
-CFLAGS += -DEFM32LG232F128
+$(info $(EFM32_CHIP_NAME))
 
-else ifeq ($(CONFIG_ARCH_CHIP_EFM32LG990F256),y)
-
-CFLAGS += -DEFM32LG990F256
-
-else ifeq ($(CONFIG_ARCH_CHIP_EFM32GG990F1024),y)
-
-CFLAGS += -DEFM32GG990F1024
-
-else ifeq ($(CONFIG_ARCH_CHIP_EFM32TG840F32),y)
-
-CFLAGS += -DEFM32TG840F32
-
-endif
+CFLAGS += -D$(EFM32_CHIP_NAME)
 
 ifeq (-DEFM32LG, $(findstring -DEFM32LG,$(CFLAGS)))
 
