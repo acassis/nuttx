@@ -32,13 +32,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ************************************************************************************/
- 
+
+/* This file should never be included directed but, rather,
+ * only indirectly through nuttx/irq.h
+ */
+
 #ifndef __ARCH_ARM_INCLUDE_EFM32_IRQ_H
 #define __ARCH_ARM_INCLUDE_EFM32_IRQ_H
 
 /************************************************************************************
- * Pre-processor Definitions
+ * Included Files
  ************************************************************************************/
+
+#include <nuttx/config.h>
+#include <nuttx/irq.h>
+#include <arch/efm32/chip.h>
+
+/************************************************************************************
+ * Definitions
+ ************************************************************************************/
+
+/* IRQ numbers.  The IRQ number corresponds vector number and hence map directly to
+ * bits in the NVIC.  This does, however, waste several words of memory in the IRQ
+ * to handle mapping tables.
+ */
+
+/* Processor Exceptions (vectors 0-15) */
 
 #define EFM32_IRQ_RESERVED       (0) /* Reserved vector (only used with CONFIG_DEBUG) */
                                      /* Vector  0: Reset stack pointer value */
@@ -58,8 +77,37 @@
 
 #define EFM32_IRQ_INTERRUPTS    (16) /* Vector number of the first external interrupt */
 
-#define ARMV7M_PERIPHERAL_INTERRUPTS 38
+#if defined(CONFIG_EFM32_EFM32TG)
+#  include <arch/efm32/efm32tgxxx_irq.h>
+#else
+#  error "Unsupported EFM32 chip"
+#endif
 
-#define NR_IRQS (16 + ARMV7M_PERIPHERAL_INTERRUPTS)
+/************************************************************************************
+ * Public Types
+ ************************************************************************************/
+
+/************************************************************************************
+ * Public Data
+ ************************************************************************************/
+
+#ifndef __ASSEMBLY__
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C" {
+#else
+#define EXTERN extern
+#endif
+
+/************************************************************************************
+ * Public Functions
+ ************************************************************************************/
+
+#undef EXTERN
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 #endif /* __ARCH_ARM_INCLUDE_EFM32_IRQ_H */
+

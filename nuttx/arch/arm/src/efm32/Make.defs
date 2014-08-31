@@ -35,8 +35,6 @@
 
 EFM32_CHIP_NAME = EFM32$(patsubst "%",%,$(CONFIG_ARCH_CHIP_OPTIONS))
 
-$(info $(EFM32_CHIP_NAME))
-
 CFLAGS += -D$(EFM32_CHIP_NAME)
 
 ifeq (-DEFM32LG, $(findstring -DEFM32LG,$(CFLAGS)))
@@ -114,11 +112,13 @@ CHIP_CSRCS = \
 efm32_irq.c \
 efm32_start.c \
 efm32_timerisr.c \
-em_cmu.c \
-em_emu.c \
-em_gpio.c \
-em_usart.c \
 $(SYSTEM_EFM32_C)
+
+#em_cmu.c \
+#em_emu.c \
+#em_gpio.c \
+#em_usart.c \
+
 
 ifeq ($(CONFIG_DEV_LOWCONSOLE),y)
 CHIP_CSRCS += efm32_lowputc.c
