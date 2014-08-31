@@ -35,8 +35,8 @@
 
 /* This file should never be included directed but, rather, only indirectly through nuttx/irq.h */
 
-#ifndef __ARCH_ARM_INCLUDE_EFM32TG8XX_IRQ_H
-#define __ARCH_ARM_INCLUDE_EFM32TG8XX_IRQ_H
+#ifndef __ARCH_ARM_INCLUDE_EFM32TG_IRQ_H
+#define __ARCH_ARM_INCLUDE_EFM32TG_IRQ_H
 
 /****************************************************************************************************
  * Included Files
@@ -59,21 +59,32 @@
  * External interrupts (vectors >= 16)
  */
 
-#define EFM32_IRQ_DMA         (EFM32_IRQ_INTERRUPTS+0)  /* 0:  Window Watchdog interrupt */
-#define EFM32_IRQ_GPIO_EVEN   (EFM32_IRQ_INTERRUPTS+1)  /* 1:  PVD through EXTI Line detection interrupt */
-#define EFM32_IRQ_TIMER0      (EFM32_IRQ_INTERRUPTS+2)  /* 2:  Tamper interrupt, or */
-#define EFM32_IRQ_USART0_RX   (EFM32_IRQ_INTERRUPTS+3)  /* 3:  RTC global interrupt */
-#define EFM32_IRQ_USART0_TX   (EFM32_IRQ_INTERRUPTS+4)  /* 4:  Flash global interrupt */
-#define EFM32_IRQ_ACMP        (EFM32_IRQ_INTERRUPTS+5)  /* 5:  RCC global interrupt */
-#define EFM32_IRQ_ADC0        (EFM32_IRQ_INTERRUPTS+6)  /* 6:  EXTI Line 0 interrupt */
-#define EFM32_IRQ_EXTI1       (EFM32_IRQ_INTERRUPTS+7)  /* 7:  EXTI Line 1 interrupt */
-#define EFM32_IRQ_EXTI2       (EFM32_IRQ_INTERRUPTS+8)  /* 8:  EXTI Line 2 interrupt, or */
-#define EFM32_IRQ_TSC         (EFM32_IRQ_INTERRUPTS+8)  /* 8:  TSC interrupt */
-#define EFM32_IRQ_EXTI3       (EFM32_IRQ_INTERRUPTS+9)  /* 9:  EXTI Line 3 interrupt */
-#define EFM32_IRQ_EXTI4       (EFM32_IRQ_INTERRUPTS+10) /* 10: EXTI Line 4 interrupt */
+#define EFM32_IRQ_DMA         (EFM32_IRQ_INTERRUPTS+0)  
+#define EFM32_IRQ_GPIO_EVEN   (EFM32_IRQ_INTERRUPTS+1)  
+#define EFM32_IRQ_TIMER0      (EFM32_IRQ_INTERRUPTS+2)  
+#define EFM32_IRQ_USART0_RX   (EFM32_IRQ_INTERRUPTS+3)  
+#define EFM32_IRQ_USART0_TX   (EFM32_IRQ_INTERRUPTS+4)  
+#define EFM32_IRQ_ACMP        (EFM32_IRQ_INTERRUPTS+5)  
+#define EFM32_IRQ_ADC0        (EFM32_IRQ_INTERRUPTS+6)  
+#define EFM32_IRQ_DAC0        (EFM32_IRQ_INTERRUPTS+7)  
+#define EFM32_IRQ_I2C0        (EFM32_IRQ_INTERRUPTS+8)  
+#define EFM32_IRQ_GPIO_ODD    (EFM32_IRQ_INTERRUPTS+9)  
+#define EFM32_IRQ_TIMER1      (EFM32_IRQ_INTERRUPTS+10) 
+#define EFM32_IRQ_USART1_RX   (EFM32_IRQ_INTERRUPTS+11) 
+#define EFM32_IRQ_USART1_TX   (EFM32_IRQ_INTERRUPTS+12) 
+#define EFM32_IRQ_LESENSE     (EFM32_IRQ_INTERRUPTS+13) 
+#define EFM32_IRQ_LEUART0     (EFM32_IRQ_INTERRUPTS+14) 
+#define EFM32_IRQ_LETIMER0    (EFM32_IRQ_INTERRUPTS+15) 
+#define EFM32_IRQ_PCNT0       (EFM32_IRQ_INTERRUPTS+16) 
+#define EFM32_IRQ_RTC         (EFM32_IRQ_INTERRUPTS+17) 
+#define EFM32_IRQ_CMU         (EFM32_IRQ_INTERRUPTS+18) 
+#define EFM32_IRQ_VCMP        (EFM32_IRQ_INTERRUPTS+19) 
+#define EFM32_IRQ_LCD         (EFM32_IRQ_INTERRUPTS+20) 
+#define EFM32_IRQ_MSC         (EFM32_IRQ_INTERRUPTS+21) 
+#define EFM32_IRQ_AES         (EFM32_IRQ_INTERRUPTS+22) 
 
-#define NR_VECTORS            (EFM32_IRQ_INTERRUPTS+82)
-#define NR_IRQS               (EFM32_IRQ_INTERRUPTS+82)
+#define NR_VECTORS            (EFM32_IRQ_INTERRUPTS+23)
+#define NR_IRQS               (EFM32_IRQ_INTERRUPTS+23)
 
 /****************************************************************************************************
  * Public Types
