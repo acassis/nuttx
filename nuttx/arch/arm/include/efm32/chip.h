@@ -61,9 +61,10 @@
 
 
 #if defined(CONFIG_ARCH_CHIP_EFM32TG840F32) 
-#  define CONFIG_EFM32_EFM32TG               /* EFM32TGxx family */
-#  define CONFIG_EFM32_EFM32TG8XX            /* EFM32TG8XX family */
-#  define CONFIG_EFM32_EFM32TG840            /* EFM32F205x and EFM32F207x */
+#  define CONFIG_EFM32_EFM32TG               
+#  define CONFIG_EFM32_EFM32TG8XX            
+#  define CONFIG_EFM32_EFM32TG840            
+#  define CONFIG_EFM32_EFM32XXXXXF32         
 
 #  define EFM32_LCD                    1   
 #  define EFM32_USART                  2   
