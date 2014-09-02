@@ -59,12 +59,6 @@
  * depend on CONFIG_DEBUG_VERBOSE
  */
 
-#ifndef CONFIG_DEBUG
-#  undef CONFIG_DEBUG_DMA
-#  undef CONFIG_DEBUG_RTC
-#  undef CONFIG_DEBUG_I2C
-#  undef CONFIG_DEBUG_PWM
-#endif
 
 /* Peripherals **********************************************************************/
 
@@ -75,7 +69,7 @@
 //#include "efm32_dbgmcu.h"
 //#include "efm32_dma.h"
 //#include "efm32_exti.h"
-#include "efm32_flash.h"
+//#include "efm32_flash.h"
 //#include "efm32_fsmc.h"
 //#include "efm32_gpio.h"
 //#include "efm32_i2c.h"

@@ -83,6 +83,7 @@
 #  define EFM32_LESENSE                1  
 #  define EFM32_OPAMP                  1  
 
+#  include "EFM32TG/emf32tg840f32.h"
 
 #else
 #  error "Unsupported EFM32 chip"
