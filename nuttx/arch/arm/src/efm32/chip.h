@@ -1,8 +1,10 @@
 /************************************************************************************
  * arch/arm/src/efm32/chip.h
  *
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2009, 2011-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *           Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,15 +42,30 @@
  * Included Files
  ************************************************************************************/
 
-/*
- * Greg says:
- *
- * This arch/arm/src/stm32/chip.h file was a bad idea that happened a
- * long time ago.  Right now, I believe that its only required to be
- * there to provide the number of interrupt vectors.  It is included
- * by armv7-m/up_vectors.c where that value is used.
- */
+#include <nuttx/config.h>
+
+/* Include the chip capabilities file */
 
 #include <arch/efm32/chip.h>
+
+/* Include the chip pin configuration file */
+
+#ifdef CONFIG_ARMV7M_CMNVECTOR
+#  if defined(CONFIG_EFM32_EFM32TG)
+#    include "chip/efm32tg_vectors.h"
+#  elif defined(CONFIG_EFM32_EFM32GG)
+#    include "chip/efm32gg_vectors.h"
+#  else
+#    error "No vector file for this EFM32 family"
+#  endif
+#endif
+
+/* Include the chip memory map. */
+
+//#include "chip/efm32_memorymap.h"
+
+/************************************************************************************
+ * Pre-processor Definitions
+ ************************************************************************************/
 
 #endif /* __ARCH_ARM_SRC_EFM32_CHIP_H */

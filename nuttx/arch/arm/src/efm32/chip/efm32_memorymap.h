@@ -44,7 +44,7 @@
 #include "chip.h"
 
 #if defined(CONFIG_EFM32_EFM32TG8XX)
-#  include "chip/efm32tg8xx_memorymap.h"
+#  include "chip/efm32tg_memorymap.h"
 #else
 #  error "Unsupported EFM32 memory map"
 #endif

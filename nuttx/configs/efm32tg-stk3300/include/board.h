@@ -33,13 +33,15 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H
-#define __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H
+#ifndef __CONFIGS_EFM32_STK3300_INCLUDE_BOARD_H
+#define __CONFIGS_EFM32_STK3300_INCLUDE_BOARD_H
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
 void efm32_boardinitialize(void);
+
+#define CONFIG_EFM32_SWO_LOCATION GPIO_ROUTE_SWLOCATION_LOC0 
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

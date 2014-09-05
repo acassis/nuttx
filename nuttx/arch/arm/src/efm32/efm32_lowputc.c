@@ -40,44 +40,17 @@
 #include <nuttx/config.h>
 
 #include "up_internal.h"
-#include "efm32_lowputc.h"
 
-#include "em_device.h"
-#include "em_cmu.h"
-#include "em_gpio.h"
-#include "em_usart.h"
+/* pnbtodo:is it the right way ? */
+#include "arch/board/board.h"
+
+#include "efm32.h"
+#include "efm32_lowputc.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define BAUDRATE 115200
-
-#if defined UART_PRESENT
-
-#if UART_COUNT > 1
-#define RXPIN      10
-#define RXPORT     gpioPortB
-#define TXPIN      9
-#define TXPORT     gpioPortB
-#define UART       UART1
-#define UART_CLOCK cmuClock_UART1
-#define UART_LOC   USART_ROUTE_LOCATION_LOC2
-#else
-#error unknown efm32 part
-#endif
-
-#elif defined USART_PRESENT
-
-#define RXPIN      11
-#define RXPORT     gpioPortE
-#define TXPIN      10
-#define TXPORT     gpioPortE
-#define UART       USART0
-#define UART_CLOCK cmuClock_USART0
-#define UART_LOC   USART_ROUTE_LOCATION_LOC0
-
-#endif /* USART_PRESENT */
 
 /****************************************************************************
  * Public Functions
@@ -85,27 +58,78 @@
 
 void efm32_lowsetup(void)
 {
-  USART_InitAsync_TypeDef settings = USART_INITASYNC_DEFAULT;
+    /* Enable GPIO clock. */
 
-  CMU_ClockEnable(UART_CLOCK, true);
-  GPIO_PinModeSet(TXPORT, TXPIN, gpioModePushPull, 1);
-  GPIO_PinModeSet(RXPORT, RXPIN, gpioModeInput, 0);
-  settings.baudrate = BAUDRATE;
-  USART_InitAsync(UART, &settings);
-  UART->ROUTE = USART_ROUTE_TXPEN | USART_ROUTE_RXPEN | UART_LOC;
+    EFM32_CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
+
+    /* Enable Serial wire output pin */
+
+    EFM32_GPIO->ROUTE |= GPIO_ROUTE_SWOPEN;
+
+    /* Set location */
+
+    EFM32_GPIO->ROUTE = ( (EFM32_GPIO->ROUTE 
+                           & ~(_GPIO_ROUTE_SWLOCATION_MASK)) 
+                          | CONFIG_EFM32_SWO_LOCATION
+                        );
+
+    /* Enable output on pin */
+
+    sftSET_MODE(SWO, PushPull,0 );
+
+    /* Enable debug clock AUXHFRCO */
+
+    EFM32_CMU->OSCENCMD = CMU_OSCENCMD_AUXHFRCOEN;
+
+    /* Wait until clock is ready */
+
+    while (!(EFM32_CMU->STATUS & CMU_STATUS_AUXHFRCORDY));
+
+    /* Enable trace in core debug */
+
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    ITM->LAR  = 0xC5ACCE55;
+    ITM->TER  = 0x0;
+    ITM->TCR  = 0x0;
+    TPI->SPPR = 2;  /* pin protocol: 2=> Manchester (USART) */
+
+
+    /* default 880kbps */
+
+    TPI->ACPR = 0xf; /* TRACECLKIN/(ACPR+1) SWO speed */
+    ITM->TPR  = 0x0;
+    DWT->CTRL = 0x400003FE;
+    ITM->TCR  = 0x0001000D;
+    TPI->FFCR = 0x00000100;
+    ITM->TER  = 0xFFFFFFFF; /* enable 32 Ports */
 }
 
 void up_lowputc(char c)
 {
-  while (!(UART->STATUS & USART_STATUS_TXBL));
-  UART->TXDATA = c;
+    /* use Port #0 at default */
+
+    int ch = 0;
+
+    /* ITM enabled */
+
+    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0 )   
+        return;
+
+    /* ITM Port "ch" enabled */
+
+    if ( ITM->TER & (1UL << ch) )            
+    {
+        while (ITM->PORT[ch].u32 == 0);
+        ITM->PORT[ch].u8 = (uint8_t) c;
+    }
 }
 
 void up_putc(char c)
 {
-  /* Convert LF into CRLF. */
-  if (c == '\n')
-      up_lowputc('\r');
+    /* Convert LF into CRLF. */
+    
+    if (c == '\n')
+        up_lowputc('\r');
 
-  up_lowputc(c);
+    up_lowputc(c);
 }

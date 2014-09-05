@@ -1,10 +1,8 @@
 /************************************************************************************
  * arch/arm/src/efm32/efm32.h
  *
- *   Copyright (C) 2011 Uros Platise. All rights reserved.
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Authors: Uros Platise <uros.platise@isotel.eu>
- *            Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,32 +57,21 @@
  * depend on CONFIG_DEBUG_VERBOSE
  */
 
+/* CMSIS Minium **********************************************************************/
+
+#define     __I     volatile const       /* Defines 'read only' permissions                 */
+#define     __O     volatile             /* Defines 'write only' permissions                */
+#define     __IO    volatile             /* Defines 'read / write' permissions              */
 
 /* Peripherals **********************************************************************/
 
 #include "chip.h"
-//#include "efm32_adc.h"
-//#include "efm32_bkp.h"
-//#include "efm32_can.h"
-//#include "efm32_dbgmcu.h"
-//#include "efm32_dma.h"
-//#include "efm32_exti.h"
-//#include "efm32_flash.h"
-//#include "efm32_fsmc.h"
-//#include "efm32_gpio.h"
-//#include "efm32_i2c.h"
-//#include "efm32_ltdc.h"
-//#include "efm32_pwr.h"
-//#include "efm32_rcc.h"
-//#include "efm32_rtc.h"
-//#include "efm32_sdio.h"
-//#include "efm32_spi.h"
-//#include "efm32_tim.h"
-//#include "efm32_uart.h"
-//#include "efm32_usbdev.h"
-//#include "efm32_wdg.h"
-//#include "efm32_lowputc.h"
-//#include "efm32_eth.h"
+
+#if defined(CONFIG_EFM32_EFM32TG)
+#   include "efm32tg.h"
+#elif defined(CONFIG_EFM32_EFM32GG)
+#   include "efm32gg.h"
+#endif
 
 #endif /* __ARCH_ARM_SRC_EFM32_EFM32_H */
 

@@ -2,7 +2,9 @@
 # arch/arm/src/efm32/Make.defs
 #
 #   Copyright (C) 2009, 2011-2014 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
+#           Pierre-noel Bouteville <pnb990@gmail.com>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,43 +35,19 @@
 #
 ############################################################################
 
-EFM32_CHIP_NAME = EFM32$(patsubst "%",%,$(CONFIG_ARCH_CHIP_OPTIONS))
-
-CFLAGS += -D$(EFM32_CHIP_NAME)
-
-ifeq (-DEFM32LG, $(findstring -DEFM32LG,$(CFLAGS)))
-
-SYSTEM_EFM32_C := system_efm32lg.c
-HEAD_ASRC  =
-
-else ifeq (-DEFM32TG, $(findstring -DEFM32TG,$(CFLAGS)))
-
-SYSTEM_EFM32_C := system_efm32tg.c
-HEAD_ASRC  =
-
-else ifeq (-DEFM32GG, $(findstring -DEFM32GG,$(CFLAGS)))
-
-SYSTEM_EFM32_C := system_efm32gg.c
-HEAD_ASRC  =
-
+ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
+HEAD_ASRC =
 else
-
-$(error unknown efm32 part)
-
+HEAD_ASRC = efm32_vectors.S
 endif
 
 CMN_UASRCS =
 CMN_UCSRCS =
 
 CMN_ASRCS  = up_saveusercontext.S up_fullcontextrestore.S up_switchcontext.S
-CMN_ASRCS += up_exception.S
 CMN_ASRCS += vfork.S
 
-ifeq ($(CONFIG_ARCH_MEMCPY),y)
-CMN_ASRCS += up_memcpy.S
-endif
-
-CMN_CSRCS  = up_allocateheap.c up_assert.c up_blocktask.c up_copyfullstate.c
+CMN_CSRCS  = up_assert.c up_blocktask.c up_copyfullstate.c
 CMN_CSRCS += up_createstack.c up_mdelay.c up_udelay.c up_exit.c
 CMN_CSRCS += up_initialize.c up_initialstate.c up_interruptcontext.c
 CMN_CSRCS += up_memfault.c up_modifyreg8.c up_modifyreg16.c up_modifyreg32.c
@@ -77,10 +55,18 @@ CMN_CSRCS += up_releasepending.c up_releasestack.c up_reprioritizertr.c
 CMN_CSRCS += up_schedulesigaction.c up_sigdeliver.c up_systemreset.c
 CMN_CSRCS += up_unblocktask.c up_usestack.c up_doirq.c up_hardfault.c
 CMN_CSRCS += up_svcall.c up_vfork.c
+
+ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
+CMN_ASRCS += up_exception.S
 CMN_CSRCS += up_vectors.c
+endif
 
 ifeq ($(CONFIG_ARCH_RAMVECTORS),y)
 CMN_CSRCS += up_ramvec_initialize.c up_ramvec_attach.c
+endif
+
+ifeq ($(CONFIG_ARCH_MEMCPY),y)
+CMN_ASRCS += up_memcpy.S
 endif
 
 ifeq ($(CONFIG_NUTTX_KERNEL),y)
@@ -106,24 +92,27 @@ CMN_CSRCS += up_copyarmstate.c
 endif
 endif
 
-CHIP_ASRCS  = efm32_vectors.S
+CHIP_ASRCS  =
+CHIP_CSRCS  =
 
-CHIP_CSRCS = \
-efm32_irq.c \
-efm32_start.c \
-efm32_timerisr.c \
-$(SYSTEM_EFM32_C)
+CHIP_CSRCS += efm32_start.c
+CHIP_CSRCS += efm32_irq.c 
 
-#em_cmu.c \
-#em_emu.c \
-#em_gpio.c \
-#em_usart.c \
+ifneq ($(CONFIG_SCHED_TICKLESS),y)
+CHIP_CSRCS += efm32_timerisr.c
+endif
+
+ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
+CHIP_ASRCS  += efm32_vectors.S
+endif
+
+ifneq ($(CONFIG_ARCH_IDLE_CUSTOM),y)
+CHIP_CSRCS += efm32_idle.c
+endif
+
 
 
 ifeq ($(CONFIG_DEV_LOWCONSOLE),y)
 CHIP_CSRCS += efm32_lowputc.c
 endif
 
-ifneq ($(CONFIG_IDLE_CUSTOM),y)
-CHIP_CSRCS += efm32_idle.c
-endif

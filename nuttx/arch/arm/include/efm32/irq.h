@@ -78,7 +78,7 @@
 #define EFM32_IRQ_INTERRUPTS    (16) /* Vector number of the first external interrupt */
 
 #if defined(CONFIG_EFM32_EFM32TG)
-#  include <arch/efm32/efm32tgxxx_irq.h>
+#  include <arch/efm32/efm32tg_irq.h>
 #else
 #  error "Unsupported EFM32 chip"
 #endif
