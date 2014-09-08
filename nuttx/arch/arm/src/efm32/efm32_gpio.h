@@ -1,11 +1,8 @@
-/***************************************************************************//**
- * @file em_gpio.h
- * @brief General Purpose IO (GPIO) peripheral API
- * @version 3.20.7
- *******************************************************************************
- * @section License
- * <b>(C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
- *******************************************************************************
+/*******************************************************************************
+ * arch/arm/src/efm32/efm32_gpio.h
+ * 
+ *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
+ *
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -28,32 +25,50 @@
  * special damages, or any other relief, or for any claim by any third party,
  * arising from your use of this Software.
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
  ******************************************************************************/
 
 
-#ifndef __EM_GPIO_H
-#define __EM_GPIO_H
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32_GPIO_H
+#define __ARCH_ARM_SRC_EFM32_EFM32_GPIO_H
 
-#include "em_device.h"
-#if defined(GPIO_COUNT) && (GPIO_COUNT > 0)
+#if (EFM32_GPIO_NBR > 0)
 
-#include <stdbool.h>
-#include "em_bitband.h"
-#include "em_assert.h"
+#include "assert.h"
+#include "efm32_bitband.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/***************************************************************************//**
- * @addtogroup EM_Library
- * @{
- ******************************************************************************/
-
-/***************************************************************************//**
- * @addtogroup GPIO
- * @{
- ******************************************************************************/
 
 /*******************************************************************************
  ********************************   ENUMS   ************************************
@@ -126,15 +141,11 @@ typedef enum
  *******************************   DEFINES   ***********************************
  ******************************************************************************/
 
-/** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
-
 /** Validation of pin typically usable in assert statements. */
 #define GPIO_PIN_VALID(pin)           ((pin) < 16)
 
 /** Validation of port typically usable in assert statements. */
 #define GPIO_PORT_VALID(port)         ((port) <= gpioPortF)
-
-/** @endcond */
 
 
 /*******************************************************************************
@@ -155,60 +166,60 @@ void GPIO_PinModeSet(GPIO_Port_TypeDef port,
                      unsigned int out);
 
 # if defined( GPIO_CTRL_EM4RET )
-__STATIC_INLINE void GPIO_EM4SetPinRetention(bool enable);
+static inline void GPIO_EM4SetPinRetention(bool enable);
 #endif
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/disable serial wire clock pin.
  *
- * @note
+ * note
  *   Disabling SWDClk will disable the debug interface, which may result in
  *   a lockout if done early in startup (before debugger is able to halt core).
  *
- * @param[in] enable
- *   @li false - disable serial wire clock.
- *   @li true - enable serial wire clock (default after reset).
+ * param[in] enable
+ *   * false - disable serial wire clock.
+ *   * true - enable serial wire clock (default after reset).
  ******************************************************************************/
-__STATIC_INLINE void GPIO_DbgSWDClkEnable(bool enable)
+static inline void GPIO_DbgSWDClkEnable(bool enable)
 {
   BITBAND_Peripheral(&(GPIO->ROUTE), _GPIO_ROUTE_SWCLKPEN_SHIFT, (unsigned int)enable);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/disable serial wire data pin.
  *
- * @note
+ * note
  *   Disabling SWDClk will disable the debug interface, which may result in
  *   a lockout if done early in startup (before debugger is able to halt core).
  *
- * @param[in] enable
- *   @li false - disable serial wire data pin.
- *   @li true - enable serial wire data pin (default after reset).
+ * param[in] enable
+ *   * false - disable serial wire data pin.
+ *   * true - enable serial wire data pin (default after reset).
  ******************************************************************************/
-__STATIC_INLINE void GPIO_DbgSWDIOEnable(bool enable)
+static inline void GPIO_DbgSWDIOEnable(bool enable)
 {
   BITBAND_Peripheral(&(GPIO->ROUTE), _GPIO_ROUTE_SWDIOPEN_SHIFT, (unsigned int)enable);
 }
 
 
 #if defined( GPIO_ROUTE_SWOPEN )
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/Disable serial wire output pin.
  *
- * @note
+ * note
  *   Enabling this pin is not sufficient to fully enable serial wire output
  *   which is also dependent on issues outside the GPIO module. Please refer to
  *   DBG_SWOEnable().
  *
- * @param[in] enable
- *   @li false - disable serial wire viewer pin (default after reset).
- *   @li true - enable serial wire viewer pin.
+ * param[in] enable
+ *   * false - disable serial wire viewer pin (default after reset).
+ *   * true - enable serial wire viewer pin.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_DbgSWOEnable(bool enable)
+static inline void GPIO_DbgSWOEnable(bool enable)
 {
   BITBAND_Peripheral(&(GPIO->ROUTE), _GPIO_ROUTE_SWOPEN_SHIFT, (unsigned int)enable);
 }
@@ -218,17 +229,17 @@ void GPIO_DriveModeSet(GPIO_Port_TypeDef port, GPIO_DriveMode_TypeDef mode);
 
 
 # if defined( _GPIO_EM4WUEN_MASK )
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Disable GPIO pin wake-up from EM4.
  *
- * @param[in] pinmask
+ * param[in] pinmask
  *   Bitmask containing the bitwise logic OR of which GPIO pin(s) to disable.
  *   Refer to Reference Manuals for pinmask to GPIO port/pin mapping.
  *****************************************************************************/
-__STATIC_INLINE void GPIO_EM4DisablePinWakeup(uint32_t pinmask)
+static inline void GPIO_EM4DisablePinWakeup(uint32_t pinmask)
 {
-  EFM_ASSERT((pinmask & ~_GPIO_EM4WUEN_MASK) == 0);
+  ASSERT((pinmask & ~_GPIO_EM4WUEN_MASK) == 0);
 
   GPIO->EM4WUEN &= ~pinmask;
 }
@@ -236,27 +247,27 @@ __STATIC_INLINE void GPIO_EM4DisablePinWakeup(uint32_t pinmask)
 
 
 # if defined( _GPIO_EM4WUEN_MASK )
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Enable GPIO pin wake-up from EM4. When the function exits,
  *   EM4 mode can be safely entered.
  *
- * @note
+ * note
  *   It is assumed that the GPIO pin modes are set correctly.
- *   Valid modes are @ref gpioModeInput and @ref gpioModeInputPull.
+ *   Valid modes are gpioModeInput and gpioModeInputPull.
  *
- * @param[in] pinmask
+ * param[in] pinmask
  *   Bitmask containing the bitwise logic OR of which GPIO pin(s) to enable.
  *   Refer to Reference Manuals for pinmask to GPIO port/pin mapping.
- * @param[in] polaritymask
+ * param[in] polaritymask
  *   Bitmask containing the bitwise logic OR of GPIO pin(s) wake-up polarity.
  *   Refer to Reference Manuals for pinmask to GPIO port/pin mapping.
  *****************************************************************************/
-__STATIC_INLINE void GPIO_EM4EnablePinWakeup(uint32_t pinmask,
+static inline void GPIO_EM4EnablePinWakeup(uint32_t pinmask,
                                              uint32_t polaritymask)
 {
-  EFM_ASSERT((pinmask & ~_GPIO_EM4WUEN_MASK) == 0);
-  EFM_ASSERT((polaritymask & ~_GPIO_EM4WUPOL_MASK) == 0);
+  ASSERT((pinmask & ~_GPIO_EM4WUEN_MASK) == 0);
+  ASSERT((polaritymask & ~_GPIO_EM4WUPOL_MASK) == 0);
 
   GPIO->EM4WUPOL &= ~pinmask;               /* Set wakeup polarity */
   GPIO->EM4WUPOL |= pinmask & polaritymask;
@@ -269,15 +280,15 @@ __STATIC_INLINE void GPIO_EM4EnablePinWakeup(uint32_t pinmask,
 #endif
 
 #if defined( _GPIO_EM4WUCAUSE_MASK )
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Check which GPIO pin(s) that caused a wake-up from EM4.
  *
- * @return
+ * return
  *   Bitmask containing the bitwise logic OR of which GPIO pin(s) caused the
  *   wake-up. Refer to Reference Manuals for pinmask to GPIO port/pin mapping.
  *****************************************************************************/
-__STATIC_INLINE uint32_t GPIO_EM4GetPinWakeupCause(void)
+static inline uint32_t GPIO_EM4GetPinWakeupCause(void)
 {
   return GPIO->EM4WUCAUSE & _GPIO_EM4WUCAUSE_MASK;
 }
@@ -285,16 +296,16 @@ __STATIC_INLINE uint32_t GPIO_EM4GetPinWakeupCause(void)
 
 
 # if defined( GPIO_CTRL_EM4RET )
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Enable GPIO pin retention of output enable, output value, pull enable and
  *   pull direction in EM4.
  *
- * @param[in] enable
- *   @li true - enable EM4 pin retention.
- *   @li false - disable EM4 pin retention.
+ * param[in] enable
+ *   * true - enable EM4 pin retention.
+ *   * false - disable EM4 pin retention.
  *****************************************************************************/
-__STATIC_INLINE void GPIO_EM4SetPinRetention(bool enable)
+static inline void GPIO_EM4SetPinRetention(bool enable)
 {
   if (enable)
   {
@@ -308,101 +319,101 @@ __STATIC_INLINE void GPIO_EM4SetPinRetention(bool enable)
 #endif
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/disable input sensing.
  *
- * @details
+ * details
  *   Disabling input sensing if not used, can save some energy consumption.
  *
- * @param[in] val
+ * param[in] val
  *   Bitwise logic OR of one or more of:
- *   @li GPIO_INSENSE_INT - interrupt input sensing.
- *   @li GPIO_INSENSE_PRS - peripheral reflex system input sensing.
+ *   * GPIO_INSENSE_INT - interrupt input sensing.
+ *   * GPIO_INSENSE_PRS - peripheral reflex system input sensing.
  *
- * @param[in] mask
- *   Mask containing bitwise logic OR of bits similar as for @p val used to indicate
+ * param[in] mask
+ *   Mask containing bitwise logic OR of bits similar as for val used to indicate
  *   which input sense options to disable/enable.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_InputSenseSet(uint32_t val, uint32_t mask)
+static inline void GPIO_InputSenseSet(uint32_t val, uint32_t mask)
 {
   GPIO->INSENSE = (GPIO->INSENSE & ~mask) | (val & mask);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Clear one or more pending GPIO interrupts.
  *
- * @param[in] flags
+ * param[in] flags
  *   Bitwise logic OR of GPIO interrupt sources to clear.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_IntClear(uint32_t flags)
+static inline void GPIO_IntClear(uint32_t flags)
 {
   GPIO->IFC = flags;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Disable one or more GPIO interrupts.
  *
- * @param[in] flags
+ * param[in] flags
  *   GPIO interrupt sources to disable.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_IntDisable(uint32_t flags)
+static inline void GPIO_IntDisable(uint32_t flags)
 {
   GPIO->IEN &= ~flags;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable one or more GPIO interrupts.
  *
- * @note
+ * note
  *   Depending on the use, a pending interrupt may already be set prior to
  *   enabling the interrupt. Consider using GPIO_IntClear() prior to enabling
  *   if such a pending interrupt should be ignored.
  *
- * @param[in] flags
+ * param[in] flags
  *   GPIO interrupt sources to enable.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_IntEnable(uint32_t flags)
+static inline void GPIO_IntEnable(uint32_t flags)
 {
   GPIO->IEN |= flags;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get pending GPIO interrupts.
  *
- * @return
+ * return
  *   GPIO interrupt sources pending.
  ******************************************************************************/
-__STATIC_INLINE uint32_t GPIO_IntGet(void)
+static inline uint32_t GPIO_IntGet(void)
 {
   return(GPIO->IF);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get enabled and pending GPIO interrupt flags.
  *   Useful for handling more interrupt sources in the same interrupt handler.
  *
- * @note
+ * note
  *   Interrupt flags are not cleared by the use of this function.
  *
- * @return
+ * return
  *   Pending and enabled GPIO interrupt sources.
  *   The return value is the bitwise AND combination of
  *   - the OR combination of enabled interrupt sources in GPIO_IEN register
  *     and
  *   - the OR combination of valid interrupt flags in GPIO_IF register.
  ******************************************************************************/
-__STATIC_INLINE uint32_t GPIO_IntGetEnabled(void)
+static inline uint32_t GPIO_IntGetEnabled(void)
 {
   uint32_t tmp;
 
@@ -415,280 +426,278 @@ __STATIC_INLINE uint32_t GPIO_IntGetEnabled(void)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Set one or more pending GPIO interrupts from SW.
  *
- * @param[in] flags
+ * param[in] flags
  *   GPIO interrupt sources to set to pending.
  *****************************************************************************/
-__STATIC_INLINE void GPIO_IntSet(uint32_t flags)
+static inline void GPIO_IntSet(uint32_t flags)
 {
   GPIO->IFS = flags;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Locks the GPIO configuration.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_Lock(void)
+static inline void GPIO_Lock(void)
 {
   GPIO->LOCK = GPIO_LOCK_LOCKKEY_LOCK;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Read the pad value for a single pin in a GPIO port.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pin
+ * param[in] pin
  *   The pin number to read.
  *
- * @return
+ * return
  *   The pin value, 0 or 1.
  ******************************************************************************/
-__STATIC_INLINE unsigned int GPIO_PinInGet(GPIO_Port_TypeDef port, unsigned int pin)
+static inline unsigned int GPIO_PinInGet(GPIO_Port_TypeDef port, unsigned int pin)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   return((unsigned int)((GPIO->P[port].DIN >> pin) & 0x1));
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set a single pin in GPIO data out port register to 0.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the output pad, the pin must
  *   have been configured properly. If not, it will take effect whenever the
  *   pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pin
+ * param[in] pin
  *   The pin to set.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PinOutClear(GPIO_Port_TypeDef port, unsigned int pin)
+static inline void GPIO_PinOutClear(GPIO_Port_TypeDef port, unsigned int pin)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   GPIO->P[port].DOUTCLR = 1 << pin;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get current setting for a pin in a GPIO port data out register.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pin
+ * param[in] pin
  *   The pin to get setting for.
  *
- * @return
+ * return
  *   The DOUT setting for the requested pin, 0 or 1.
  ******************************************************************************/
-__STATIC_INLINE unsigned int GPIO_PinOutGet(GPIO_Port_TypeDef port, unsigned int pin)
+static inline unsigned int GPIO_PinOutGet(GPIO_Port_TypeDef port, unsigned int pin)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   return((unsigned int)((GPIO->P[port].DOUT >> pin) & 0x1));
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set a single pin in GPIO data out register to 1.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the output pad, the pin must
  *   have been configured properly. If not, it will take effect whenever the
  *   pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pin
+ * param[in] pin
  *   The pin to set.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PinOutSet(GPIO_Port_TypeDef port, unsigned int pin)
+static inline void GPIO_PinOutSet(GPIO_Port_TypeDef port, unsigned int pin)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   GPIO->P[port].DOUTSET = 1 << pin;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Toggle a single pin in GPIO port data out register.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the output pad, the pin must
  *   have been configured properly. If not, it will take effect whenever the
  *   pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pin
+ * param[in] pin
  *   The pin to toggle.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PinOutToggle(GPIO_Port_TypeDef port, unsigned int pin)
+static inline void GPIO_PinOutToggle(GPIO_Port_TypeDef port, unsigned int pin)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   GPIO->P[port].DOUTTGL = 1 << pin;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Read the pad values for GPIO port.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  ******************************************************************************/
-__STATIC_INLINE uint32_t GPIO_PortInGet(GPIO_Port_TypeDef port)
+static inline uint32_t GPIO_PortInGet(GPIO_Port_TypeDef port)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   return(GPIO->P[port].DIN & _GPIO_P_DIN_DIN_MASK);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set bits in DOUT register for a port to 0.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the output pad, the pin must
  *   have been configured properly. If not, it will take effect whenever the
  *   pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pins
+ * param[in] pins
  *   Bit mask for bits to clear in DOUT register.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PortOutClear(GPIO_Port_TypeDef port, uint32_t pins)
+static inline void GPIO_PortOutClear(GPIO_Port_TypeDef port, uint32_t pins)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   GPIO->P[port].DOUTCLR = pins & _GPIO_P_DOUTCLR_DOUTCLR_MASK;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get current setting for a GPIO port data out register.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @return
+ * return
  *   The data out setting for the requested port.
  ******************************************************************************/
-__STATIC_INLINE uint32_t GPIO_PortOutGet(GPIO_Port_TypeDef port)
+static inline uint32_t GPIO_PortOutGet(GPIO_Port_TypeDef port)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   return(GPIO->P[port].DOUT & _GPIO_P_DOUT_DOUT_MASK);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set bits GPIO data out register to 1.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the respective output pads, the
  *   pins must have been configured properly. If not, it will take effect
  *   whenever the pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pins
+ * param[in] pins
  *   Bit mask for bits to set to 1 in DOUT register.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PortOutSet(GPIO_Port_TypeDef port, uint32_t pins)
+static inline void GPIO_PortOutSet(GPIO_Port_TypeDef port, uint32_t pins)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   GPIO->P[port].DOUTSET = pins & _GPIO_P_DOUTSET_DOUTSET_MASK;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set GPIO port data out register.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the respective output pads, the
  *   pins must have been configured properly. If not, it will take effect
  *   whenever the pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] val
+ * param[in] val
  *   Value to write to port data out register.
  *
- * @param[in] mask
+ * param[in] mask
  *   Mask indicating which bits to modify.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PortOutSetVal(GPIO_Port_TypeDef port, uint32_t val, uint32_t mask)
+static inline void GPIO_PortOutSetVal(GPIO_Port_TypeDef port, uint32_t val, uint32_t mask)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   GPIO->P[port].DOUT = (GPIO->P[port].DOUT & ~mask) | (val & mask);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Toggle a single pin in GPIO port data out register.
  *
- * @note
+ * note
  *   In order for the setting to take effect on the output pad, the pin must
  *   have been configured properly. If not, it will take effect whenever the
  *   pin has been properly configured.
  *
- * @param[in] port
+ * param[in] port
  *   The GPIO port to access.
  *
- * @param[in] pins
+ * param[in] pins
  *   Bitmask with pins to toggle.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_PortOutToggle(GPIO_Port_TypeDef port, uint32_t pins)
+static inline void GPIO_PortOutToggle(GPIO_Port_TypeDef port, uint32_t pins)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port));
+  ASSERT(GPIO_PORT_VALID(port));
 
   GPIO->P[port].DOUTTGL = pins & _GPIO_P_DOUTTGL_DOUTTGL_MASK;
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Unlocks the GPIO configuration.
  ******************************************************************************/
-__STATIC_INLINE void GPIO_Unlock(void)
+static inline void GPIO_Unlock(void)
 {
   GPIO->LOCK = GPIO_LOCK_LOCKKEY_UNLOCK;
 }
 
 
-/** @} (end addtogroup GPIO) */
-/** @} (end addtogroup EM_Library) */
 
 #ifdef __cplusplus
 }

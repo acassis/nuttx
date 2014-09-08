@@ -1,11 +1,7 @@
-/***************************************************************************//**
- * @file em_bitband.h
- * @brief Bitband Peripheral API
- * @version 3.20.7
- *******************************************************************************
- * @section License
- * <b>(C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
- *******************************************************************************
+/*******************************************************************************
+ * arch/arm/src/efm32/efm32_bitband.h
+ * 
+ *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -28,47 +24,65 @@
  * special damages, or any other relief, or for any claim by any third party,
  * arising from your use of this Software.
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
  ******************************************************************************/
 
 
-#ifndef __EM_BITBAND_H
-#define __EM_BITBAND_H
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32_BITBAND_H
+#define __ARCH_ARM_SRC_EFM32_EFM32_BITBAND_H
 
-#include "em_device.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/***************************************************************************//**
- * @addtogroup EM_Library
- * @{
- ******************************************************************************/
-
-/***************************************************************************//**
- * @addtogroup BITBAND
- * @brief BITBAND Peripheral API
- * @{
- ******************************************************************************/
-
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Perform bit-band operation on peripheral memory location.
  *
- * @details
+ * details
  *   Bit-banding provides atomic read-modify-write cycle for single bit
  *   modification. Please refer to the reference manual for further details
  *   about bit-banding.
  *
- * @note
+ * note
  *   This function is only atomic on cores which fully support bitbanding.
  *
- * @param[in] addr Peripheral address location to modify bit in.
+ * param[in] addr Peripheral address location to modify bit in.
  *
- * @param[in] bit Bit position to modify, 0-31.
+ * param[in] bit Bit position to modify, 0-31.
  *
- * @param[in] val Value to set bit to, 0 or 1.
+ * param[in] val Value to set bit to, 0 or 1.
  ******************************************************************************/
-__STATIC_INLINE void BITBAND_Peripheral(volatile uint32_t *addr,
+static inline void BITBAND_Peripheral(volatile uint32_t *addr,
                                         uint32_t bit,
                                         uint32_t val)
 {
@@ -86,23 +100,23 @@ __STATIC_INLINE void BITBAND_Peripheral(volatile uint32_t *addr,
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Perform a read operation on the peripheral bit-band memory location.
  *
- * @details
+ * details
  *   This function reads a single bit from the peripheral bit-band alias region.
  *   Bit-banding provides atomic read-modify-write cycle for single bit
  *   modification. Please refer to the reference manual for further details
  *   about bit-banding.
  *
- * @param[in] addr   Peripheral address location to read.
+ * param[in] addr   Peripheral address location to read.
  *
- * @param[in] bit    Bit position to read, 0-31.
+ * param[in] bit    Bit position to read, 0-31.
  *
- * @return           Value of the requested bit.
+ * return           Value of the requested bit.
  ******************************************************************************/
-__STATIC_INLINE uint32_t BITBAND_PeripheralRead(volatile uint32_t *addr,
+static inline uint32_t BITBAND_PeripheralRead(volatile uint32_t *addr,
                                                 uint32_t bit)
 {
 #if defined(BITBAND_PER_BASE)
@@ -116,25 +130,25 @@ __STATIC_INLINE uint32_t BITBAND_PeripheralRead(volatile uint32_t *addr,
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Perform bit-band operation on SRAM memory location.
  *
- * @details
+ * details
  *   Bit-banding provides atomic read-modify-write cycle for single bit
  *   modification. Please refer to the reference manual for further details
  *   about bit-banding.
  *
- * @note
+ * note
  *   This function is only atomic on cores which fully support bitbanding.
  *
- * @param[in] addr SRAM address location to modify bit in.
+ * param[in] addr SRAM address location to modify bit in.
  *
- * @param[in] bit Bit position to modify, 0-31.
+ * param[in] bit Bit position to modify, 0-31.
  *
- * @param[in] val Value to set bit to, 0 or 1.
+ * param[in] val Value to set bit to, 0 or 1.
  ******************************************************************************/
-__STATIC_INLINE void BITBAND_SRAM(uint32_t *addr, uint32_t bit, uint32_t val)
+static inline void BITBAND_SRAM(uint32_t *addr, uint32_t bit, uint32_t val)
 {
 #if defined(BITBAND_RAM_BASE)
   uint32_t tmp =
@@ -150,23 +164,23 @@ __STATIC_INLINE void BITBAND_SRAM(uint32_t *addr, uint32_t bit, uint32_t val)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Read a single bit from the SRAM bit-band alias region.
  *
- * @details
+ * details
  *   This function reads a single bit from the SRAM bit-band alias region.
  *   Bit-banding provides atomic read-modify-write cycle for single bit
  *   modification. Please refer to the reference manual for further details
  *   about bit-banding.
  *
- * @param[in] addr    SRAM address location to modify bit in.
+ * param[in] addr    SRAM address location to modify bit in.
  *
- * @param[in] bit     Bit position to modify, 0-31.
+ * param[in] bit     Bit position to modify, 0-31.
  *
- * @return            Value of the requested bit.
+ * return            Value of the requested bit.
  ******************************************************************************/
-__STATIC_INLINE uint32_t BITBAND_SRAMRead(uint32_t *addr, uint32_t bit)
+static inline uint32_t BITBAND_SRAMRead(uint32_t *addr, uint32_t bit)
 {
 #if defined(BITBAND_RAM_BASE)
   uint32_t tmp =
@@ -178,8 +192,6 @@ __STATIC_INLINE uint32_t BITBAND_SRAMRead(uint32_t *addr, uint32_t bit)
 #endif /* defined(BITBAND_RAM_BASE) */
 }
 
-/** @} (end addtogroup BITBAND) */
-/** @} (end addtogroup EM_Library) */
 
 #ifdef __cplusplus
 }

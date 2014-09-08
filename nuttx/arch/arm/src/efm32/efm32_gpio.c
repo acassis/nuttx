@@ -1,12 +1,7 @@
-/***************************************************************************//**
- * @file em_gpio.c
- * @brief General Purpose IO (GPIO) peripheral API
- *   devices.
- * @version 3.20.7
- *******************************************************************************
- * @section License
- * <b>(C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
- *******************************************************************************
+/*******************************************************************************
+ * arch/arm/src/efm32/efm32_gpio.h
+ *
+ *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -29,53 +24,72 @@
  * special damages, or any other relief, or for any claim by any third party,
  * arising from your use of this Software.
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
  ******************************************************************************/
 
 
-#include "em_gpio.h"
+#include <nuttx/config.h>
 
-#if defined(GPIO_COUNT) && (GPIO_COUNT > 0)
-/***************************************************************************//**
- * @addtogroup EM_Library
- * @{
- ******************************************************************************/
+#include "efm32.h"
 
-/***************************************************************************//**
- * @addtogroup GPIO
- * @brief General Purpose Input/Output (GPIO) API
- * @{
- ******************************************************************************/
+#include "efm32_gpio.h"
+
+#if (EFM32_GPIO_NBR > 0)
 
 /*******************************************************************************
  *******************************   DEFINES   ***********************************
  ******************************************************************************/
 
-/** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
-
-/** Validation of pin typically usable in assert statements. */
+/* Validation of pin typically usable in assert statements. */
 #define GPIO_DRIVEMODE_VALID(mode)    ((mode) <= 3)
-
-/** @endcond */
 
 
 /*******************************************************************************
  **************************   GLOBAL FUNCTIONS   *******************************
  ******************************************************************************/
 
-/***************************************************************************//**
- * @brief
- *   Sets the pin location of the debug pins (Serial Wire interface).
+/*******************************************************************************
+ * Sets the pin location of the debug pins (Serial Wire interface).
  *
- * @note
+ * note:
  *   Changing the pins used for debugging uncontrolled, may result in a lockout.
  *
- * @param[in] location
- *   The debug pin location to use (0-3).
+ * location : The debug pin location to use (0-3).
+ *
  ******************************************************************************/
 void GPIO_DbgLocationSet(unsigned int location)
 {
 #if defined ( _GPIO_ROUTE_SWLOCATION_MASK )
-  EFM_ASSERT(location < AFCHANLOC_MAX);
+  ASSERT(location < AFCHANLOC_MAX);
 
   GPIO->ROUTE = (GPIO->ROUTE & ~_GPIO_ROUTE_SWLOCATION_MASK) |
                 (location << _GPIO_ROUTE_SWLOCATION_SHIFT);
@@ -85,30 +99,31 @@ void GPIO_DbgLocationSet(unsigned int location)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Sets the drive mode for a GPIO port.
  *
- * @param[in] port
+ * param port
  *   The GPIO port to access.
  *
- * @param[in] mode
+ * param mode
  *   Drive mode to use for port.
  ******************************************************************************/
 void GPIO_DriveModeSet(GPIO_Port_TypeDef port, GPIO_DriveMode_TypeDef mode)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_DRIVEMODE_VALID(mode));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_DRIVEMODE_VALID(mode));
 
-  GPIO->P[port].CTRL = (GPIO->P[port].CTRL & ~(_GPIO_P_CTRL_DRIVEMODE_MASK))
-                       | (mode << _GPIO_P_CTRL_DRIVEMODE_SHIFT);
+  GPIO->P[port].CTRL = ( GPIO->P[port].CTRL 
+                               & ~(_GPIO_P_CTRL_DRIVEMODE_MASK))
+      | (mode << _GPIO_P_CTRL_DRIVEMODE_SHIFT);
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Configure GPIO interrupt.
  *
- * @details
+ * details
  *   If reconfiguring a GPIO interrupt that is already enabled, it is generally
  *   recommended to disable it first, see GPIO_Disable().
  *
@@ -118,25 +133,25 @@ void GPIO_DriveModeSet(GPIO_Port_TypeDef port, GPIO_DriveMode_TypeDef mode)
  *   Notice that any pending interrupt for the selected pin is cleared by this
  *   function.
  *
- * @note
+ * note
  *   A certain pin number can only be associated with one port. Ie, if GPIO
  *   interrupt 1 is assigned to port A/pin 1, then it is not possibly to use
  *   pin 1 from any other ports for interrupts. Please refer to the reference
  *   manual.
  *
- * @param[in] port
- *   The port to associate with @p pin.
+ * param port
+ *   The port to associate with p pin.
  *
- * @param[in] pin
+ * param pin
  *   The GPIO interrupt number (= port pin).
  *
- * @param[in] risingEdge
+ * param risingEdge
  *   Set to true if interrupts shall be enabled on rising edge, otherwise false.
  *
- * @param[in] fallingEdge
+ * param fallingEdge
  *   Set to true if interrupts shall be enabled on falling edge, otherwise false.
  *
- * @param[in] enable
+ * param enable
  *   Set to true if interrupt shall be enabled after configuration completed,
  *   false to leave disabled. See GPIO_IntDisable() and GPIO_IntEnable().
  ******************************************************************************/
@@ -148,7 +163,7 @@ void GPIO_IntConfig(GPIO_Port_TypeDef port,
 {
   uint32_t tmp;
 
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   /* There are two registers controlling the interrupt configuration:
    * The EXTIPSELL register controls pins 0-7 and EXTIPSELH controls
@@ -201,7 +216,7 @@ void GPIO_PinModeSet(GPIO_Port_TypeDef port,
                      GPIO_Mode_TypeDef mode,
                      unsigned int out)
 {
-  EFM_ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
+  ASSERT(GPIO_PORT_VALID(port) && GPIO_PIN_VALID(pin));
 
   /* If disabling pin, do not modify DOUT in order to reduce chance for */
   /* glitch/spike (may not be sufficient precaution in all use cases) */

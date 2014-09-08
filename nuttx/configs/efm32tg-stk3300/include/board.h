@@ -40,8 +40,10 @@
  * Public Function Prototypes
  ****************************************************************************/
 
-void efm32_boardinitialize(void);
+#define CONFIG_EFM32_SWO_LOCATION   0 
+#define CONFIG_EFM32_SWO_PORT       gpioPortF        
+#define CONFIG_EFM32_SWO_PIN        2
 
-#define CONFIG_EFM32_SWO_LOCATION GPIO_ROUTE_SWLOCATION_LOC0 
+void efm32_boardinitialize(void);
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

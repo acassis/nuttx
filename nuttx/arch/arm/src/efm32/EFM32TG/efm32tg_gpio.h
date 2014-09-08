@@ -1,11 +1,7 @@
-/**************************************************************************//**
- * @file efm32tg_gpio.h
- * @brief EFM32TG_GPIO register and bit field definitions
- * @version 3.20.7
- ******************************************************************************
- * @section License
- * <b>(C) Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
- ******************************************************************************
+/******************************************************************************
+ * arch/arm/src/efm32/EFM32TG/efm32tg_gpio.h
+ *
+ *    (C) Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -28,12 +24,42 @@
  * incidental, or special damages, or any other relief, or for any claim by
  * any third party, arising from your use of this Software.
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
  *****************************************************************************/
-/**************************************************************************//**
- * @defgroup EFM32TG_GPIO
- * @brief EFM32TG_GPIO Register Declaration
- * @{
- *****************************************************************************/
+
+
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32TG_EFM32_GPIO_H
+#define __ARCH_ARM_SRC_EFM32_EFM32TG_EFM32_GPIO_H
+
 typedef struct
 {
   GPIO_P_TypeDef P[6];          /**< Port configuration bits */
@@ -57,11 +83,6 @@ typedef struct
   __IO uint32_t  EM4WUPOL;      /**< EM4 Wake-up Polarity Register  */
   __I uint32_t   EM4WUCAUSE;    /**< EM4 Wake-up Cause Register  */
 } GPIO_TypeDef;                 /** @} */
-
-/**************************************************************************//**
- * @defgroup EFM32TG_GPIO_BitFields
- * @{
- *****************************************************************************/
 
 /* Bit fields for GPIO P_CTRL */
 #define _GPIO_P_CTRL_RESETVALUE                           0x00000000UL                           /**< Default value for GPIO_P_CTRL */
@@ -1158,6 +1179,5 @@ typedef struct
 #define GPIO_EM4WUCAUSE_EM4WUCAUSE_F2                     (_GPIO_EM4WUCAUSE_EM4WUCAUSE_F2 << 0)      /**< Shifted mode F2 for GPIO_EM4WUCAUSE */
 #define GPIO_EM4WUCAUSE_EM4WUCAUSE_E13                    (_GPIO_EM4WUCAUSE_EM4WUCAUSE_E13 << 0)     /**< Shifted mode E13 for GPIO_EM4WUCAUSE */
 
-/** @} End of group EFM32TG_GPIO */
-
+#endif
 

@@ -44,7 +44,9 @@
 /* pnbtodo:is it the right way ? */
 #include "arch/board/board.h"
 
+#include "nvic.h"
 #include "efm32.h"
+#include "efm32_gpio.h"
 #include "efm32_lowputc.h"
 
 /****************************************************************************
@@ -60,34 +62,35 @@ void efm32_lowsetup(void)
 {
     /* Enable GPIO clock. */
 
-    EFM32_CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
 
     /* Enable Serial wire output pin */
 
-    EFM32_GPIO->ROUTE |= GPIO_ROUTE_SWOPEN;
+    GPIO->ROUTE |= GPIO_ROUTE_SWOPEN;
 
     /* Set location */
 
-    EFM32_GPIO->ROUTE = ( (EFM32_GPIO->ROUTE 
-                           & ~(_GPIO_ROUTE_SWLOCATION_MASK)) 
-                          | CONFIG_EFM32_SWO_LOCATION
-                        );
+    GPIO_DbgLocationSet(CONFIG_EFM32_SWO_LOCATION);
 
     /* Enable output on pin */
 
-    sftSET_MODE(SWO, PushPull,0 );
+    GPIO_PinModeSet(CONFIG_EFM32_SWO_PORT,
+                    CONFIG_EFM32_SWO_PIN, 
+                    gpioModePushPull, 
+                    0
+                   );
 
     /* Enable debug clock AUXHFRCO */
 
-    EFM32_CMU->OSCENCMD = CMU_OSCENCMD_AUXHFRCOEN;
+    CMU->OSCENCMD = CMU_OSCENCMD_AUXHFRCOEN;
 
     /* Wait until clock is ready */
 
-    while (!(EFM32_CMU->STATUS & CMU_STATUS_AUXHFRCORDY));
+    while (!(CMU->STATUS & CMU_STATUS_AUXHFRCORDY));
 
     /* Enable trace in core debug */
-
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    
+    *(uint32_t*)NVIC_DEMCR |= NVIC_DEMCR_TRCENA;
     ITM->LAR  = 0xC5ACCE55;
     ITM->TER  = 0x0;
     ITM->TCR  = 0x0;

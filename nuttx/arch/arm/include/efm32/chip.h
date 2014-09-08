@@ -68,37 +68,6 @@
 #  define CONFIG_EFM32_EFM32TG840            
 #  define CONFIG_EFM32_EFM32XXXXXF32         
 
-/* Part number capabilities */
-#define EFM32_ACMP_NBR          2 
-#define EFM32_USART_NBR         2 
-#define EFM32_TIMER_NBR         2 
-#define EFM32_LEUART_NBR        1 
-#define EFM32_LETIMER_NBR       1 
-#define EFM32_PCNT_NBR          1 
-#define EFM32_ADC_NBR           1 
-#define EFM32_DAC_NBR           1 
-#define EFM32_I2C_NBR           1 
-#define EFM32_AES_NBR           1
-#define EFM32_DMA_NBR           1
-#define EFM32_LE_NBR            1
-#define EFM32_MSC_NBR           1
-#define EFM32_EMU_NBR           1
-#define EFM32_RMU_NBR           1
-#define EFM32_CMU_NBR           1
-#define EFM32_LESENSE_NBR       1
-#define EFM32_RTC_NBR           1
-#define EFM32_GPIO_NBR          1
-#define EFM32_VCMP_NBR          1
-#define EFM32_PRS_NBR           1
-#define EFM32_OPAMP_NBR         1
-#define EFM32_LCD_NBR           1
-#define EFM32_HFXTAL_NBR        1
-#define EFM32_LFXTAL_NBR        1
-#define EFM32_WDOG_NBR          1
-#define EFM32_DBG_NBR           1
-#define EFM32_BOOTLOADER_NBR    1
-#define EFM32_ANALOG_NBR        1
-
 #else
 #  error "Unsupported EFM32 chip"
 #endif
