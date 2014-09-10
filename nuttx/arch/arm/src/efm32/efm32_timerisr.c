@@ -2,7 +2,9 @@
  * arch/arm/src/efm32/efm32_timerisr.c
  *
  *   Copyright (C) 2009, 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *           Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,6 +52,7 @@
 #include "up_arch.h"
 
 #include "chip.h"
+#include "efm32.h"
 
 /****************************************************************************
  * Definitions
@@ -59,6 +62,11 @@
  * CLK_TCK (see include/time.h).  CLK_TCK defines the desired number of
  * system clock ticks per second.  That value is a user configurable setting
  * that defaults to 100 (100 ticks per second = 10 MS interval).
+ *
+ * The RCC feeds the Cortex System Timer (SysTick) with the AHB clock (HCLK)
+ * divided by 8.  The SysTick can work either with this clock or with the
+ * Cortex clock (HCLK), configurable in the SysTick Control and Status
+ * register.
  */
 
 #define EFM32_HCLK_FREQUENCY 14000000
@@ -103,7 +111,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -111,7 +119,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint32_t regval;
 
@@ -140,3 +148,5 @@ void up_timerinit(void)
 
   up_enable_irq(EFM32_IRQ_SYSTICK);
 }
+
+

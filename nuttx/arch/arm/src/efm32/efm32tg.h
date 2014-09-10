@@ -36,7 +36,9 @@
 #ifndef __ARCH_ARM_SRC_EFM32_EFM32TG_H
 #define __ARCH_ARM_SRC_EFM32_EFM32TG_H
 
-#include "core_cm3.h"
+#include "DWT_cm3.h"
+#include "TPI_cm3.h"
+#include "ITM_cm3.h"
 
 /* Part number capabilities */
 #define EFM32_ACMP_NBR          2 

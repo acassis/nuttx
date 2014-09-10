@@ -64,6 +64,7 @@
 #ifndef __ARCH_ARM_SRC_COMMON_ARMV7_M_ITM_CM3_H
 #define __ARCH_ARM_SRC_COMMON_ARMV7_M_ITM_CM3_H
 
+#include "stdint.h"
 
 /* brief  Structure type to access the Instrumentation Trace Macrocell Register (ITM).  */
 #define ITM_BASE      (0xE0000000UL)
@@ -152,65 +153,12 @@ extern volatile int32_t ITM_RxBuffer;                    /* External variable to
 #define                 ITM_RXBUFFER_EMPTY    0x5AA55AA5 /* Value identifying ITM_RxBuffer is ready for next character. */
 
 
-/* ITM Send Character
-
-   The function transmits a character via the ITM channel 0, and
-   - Just returns when no debugger is connected that has booked the output.
-   - Is blocking when a debugger is connected, but the previous character sent has not been transmitted.
-
-   param [in]     ch  Character to transmit.
-
-   returns            Character to transmit.
- */
-static inline uint32_t ITM_SendChar (uint32_t ch)
-{
-
-    if ((getreg32(ITM_TCR) & ITM_TCR_ITMENA_Msk) &&      /* ITM enabled */
-        (getreg32(ITM_TER) & (1UL << 0)        ) )     /* ITM Port #0 enabled */
-    {
-        while (getreg32(ITM_PORT(0)) == 0);
-        putreg8( (uint8_t)ch, ITM_PORT(0) );
-    }
-    return (ch);
-}
-
-
-/* brief  ITM Receive Character
-
-    The function inputs a character via the external variable ITM_RxBuffer.
-
-    return             Received character.
-    return         -1  No character pending.
- */
-static inline int32_t ITM_ReceiveChar (void) 
-{
-    int32_t ch = -1;                           /* no character available */
-
-    if (ITM_RxBuffer != ITM_RXBUFFER_EMPTY) {
-        ch = ITM_RxBuffer;
-        ITM_RxBuffer = ITM_RXBUFFER_EMPTY;       /* ready for next character */
-    }
-
-    return (ch);
-}
-
-
-/* ITM Check Character
-
-    The function checks whether a character is pending for reading in the variable ITM_RxBuffer.
-
-    return          0  No character available.
-    return          1  Character available.
- */
-static inline int32_t ITM_CheckChar (void) 
-{
-    if (ITM_RxBuffer == ITM_RXBUFFER_EMPTY) {
-        return (0);                                 /* no character available */
-    } else {
-        return (1);                                 /*    character available */
-    }
-}
+extern uint32_t    ITM_SendChar    (uint32_t ch);
+extern int32_t     ITM_ReceiveChar (void);
+extern int32_t     ITM_CheckChar   (void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

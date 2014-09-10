@@ -55,6 +55,7 @@ CMN_CSRCS += up_releasepending.c up_releasestack.c up_reprioritizertr.c
 CMN_CSRCS += up_schedulesigaction.c up_sigdeliver.c up_systemreset.c
 CMN_CSRCS += up_unblocktask.c up_usestack.c up_doirq.c up_hardfault.c
 CMN_CSRCS += up_svcall.c up_vfork.c
+CMN_CSRCS += up_allocateheap.c
 
 ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
 CMN_ASRCS += up_exception.S
@@ -95,6 +96,7 @@ endif
 CHIP_ASRCS  =
 CHIP_CSRCS  =
 
+CHIP_CSRCS += ITM_cm3.c
 CHIP_CSRCS += efm32_start.c
 CHIP_CSRCS += efm32_irq.c 
 CHIP_CSRCS += efm32_gpio.c 

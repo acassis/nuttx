@@ -65,6 +65,7 @@
 
 
 /* the Trace Port Interface Register (TPI) offset  */
+#define TPI_BASE      (0xE0000000UL)
 #define TPI_SSPSR     (TPI_BASE+0x000) /* Supported Parallel Port Size Register         */
 #define TPI_CSPSR     (TPI_BASE+0x004) /* Current Parallel Port Size Register           */
 #define TPI_ACPR      (TPI_BASE+0x010) /* Asynchronous Clock Prescaler Register         */

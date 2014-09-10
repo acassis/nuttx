@@ -49,6 +49,8 @@
 #include "efm32_gpio.h"
 #include "efm32_lowputc.h"
 
+#include "up_arch.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -91,20 +93,20 @@ void efm32_lowsetup(void)
     /* Enable trace in core debug */
     
     *(uint32_t*)NVIC_DEMCR |= NVIC_DEMCR_TRCENA;
-    ITM->LAR  = 0xC5ACCE55;
-    ITM->TER  = 0x0;
-    ITM->TCR  = 0x0;
-    TPI->SPPR = 2;  /* pin protocol: 2=> Manchester (USART) */
+    putreg32(0xC5ACCE55,ITM_LAR );
+    putreg32(0x0,       ITM_TER );
+    putreg32(0x0,       ITM_TCR );
+    putreg32(2  ,       TPI_SPPR); /* pin protocol: 2=> Manchester (USART) */
 
 
     /* default 880kbps */
 
-    TPI->ACPR = 0xf; /* TRACECLKIN/(ACPR+1) SWO speed */
-    ITM->TPR  = 0x0;
-    DWT->CTRL = 0x400003FE;
-    ITM->TCR  = 0x0001000D;
-    TPI->FFCR = 0x00000100;
-    ITM->TER  = 0xFFFFFFFF; /* enable 32 Ports */
+    putreg32(0xf       , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
+    putreg32(0x0       , ITM_TPR  );
+    putreg32(0x400003FE, DWT_CTRL );
+    putreg32(0x0001000D, ITM_TCR  );
+    putreg32(0x00000100, TPI_FFCR );
+    putreg32(0xFFFFFFFF, ITM_TER  ); /* enable 32 Ports */
 }
 
 void up_lowputc(char c)
@@ -115,15 +117,15 @@ void up_lowputc(char c)
 
     /* ITM enabled */
 
-    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0 )   
+    if ((getreg32(ITM_TCR) & ITM_TCR_ITMENA_Msk) == 0 )   
         return;
 
     /* ITM Port "ch" enabled */
 
-    if ( ITM->TER & (1UL << ch) )            
+    if ( getreg32(ITM_TER) & (1UL << ch) )            
     {
-        while (ITM->PORT[ch].u32 == 0);
-        ITM->PORT[ch].u8 = (uint8_t) c;
+        while (getreg32(ITM_PORT(ch)) == 0);
+        putreg8((uint8_t) c,ITM_PORT(ch));
     }
 }
 
@@ -136,3 +138,5 @@ void up_putc(char c)
 
     up_lowputc(c);
 }
+
+
