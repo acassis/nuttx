@@ -68,7 +68,7 @@
  *
  * Description:
  *   Allocate memory for the ELF image (textalloc and dataalloc). If
- *   CONFIG_ARCH_ADDRENV=n, textalloc will be allocated using kzalloc() and
+ *   CONFIG_ARCH_ADDRENV=n, textalloc will be allocated using kmm_zalloc() and
  *   dataalloc will be a offset from textalloc.  If CONFIG_ARCH_ADDRENV-y, then
  *   textalloc and dataalloc will be allocated using up_addrenv_create().  In
  *   either case, there will be a unique instance of textalloc and dataalloc
@@ -129,7 +129,7 @@ int elf_addrenv_alloc(FAR struct elf_loadinfo_s *loadinfo, size_t textsize,
 #else
   /* Allocate memory to hold the ELF image */
 
-  loadinfo->textalloc = (uintptr_t)kuzalloc(textsize + datasize);
+  loadinfo->textalloc = (uintptr_t)kumm_zalloc(textsize + datasize);
   if (!loadinfo->textalloc)
     {
       return -ENOMEM;
@@ -175,7 +175,7 @@ void elf_addrenv_free(FAR struct elf_loadinfo_s *loadinfo)
 
   if (loadinfo->textalloc != 0)
     {
-      kufree((FAR void *)loadinfo->textalloc);
+      kumm_free((FAR void *)loadinfo->textalloc);
     }
 #endif
 

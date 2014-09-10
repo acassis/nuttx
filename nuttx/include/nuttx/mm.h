@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/mm.h
  *
- *   Copyright (C) 2007-2009, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
+#include <stdbool.h>
 #include <semaphore.h>
 
 /****************************************************************************
@@ -63,6 +64,48 @@
 
 #  undef  CONFIG_MM_SMALL
 #  define CONFIG_MM_SMALL 1
+#endif
+
+/* Terminology:
+ *
+ * - Flat Build: In the flat build (CONFIG_BUILD_FLAT=y), there is only a
+ *   single heap access with the standard allocations (malloc/free).  This
+ *   heap is referred to as the user heap.  The kernel logic must
+ *   initialize this single heap at boot time.
+ * - Protected build: In the protected build (CONFIG_BUILD_PROTECTED=y)
+ *   where an MPU is used to protect a region of otherwise flat memory,
+ *   there will be two allocators:  One that allocates protected (kernel)
+ *   memory and one that allocates unprotected (user) memory.  These are
+ *   referred to as the kernel and user heaps, respectively.  Both must be
+ *   initialized by the kernel logic at boot time.
+ * - Kernel Build: If the architecture has an MMU, then it may support the
+ *   kernel build (CONFIG_BUILD_KERNEL=y).  In this configuration, there
+ *   is one kernel heap but multiple user heaps:  One per task group.
+ *   However, in this case, the kernel need only be concerned about
+ *   initializing the single kernel heap here.  User heaps will be created
+ *   as tasks are created.
+ *
+ * These special definitions are provided:
+ *
+ *   MM_KERNEL_USRHEAP_INIT
+ *     Special kernel interfaces to the kernel user-heap are required
+ *     for heap initialization.
+ *   CONFIG_MM_KERNEL_HEAP
+ *     The configuration requires a kernel heap that must initialized
+ *     at boot-up.
+ */
+
+#undef MM_KERNEL_USRHEAP_INIT
+#if defined(CONFIG_BUILD_PROTECTED) && defined(__KERNEL__)
+#  define MM_KERNEL_USRHEAP_INIT 1
+#elif !defined(CONFIG_BUILD_KERNEL)
+#  define MM_KERNEL_USRHEAP_INIT 1
+#endif
+
+/* The kernel heap is never accessible from user code */
+
+#ifndef __KERNEL__
+#  undef CONFIG_MM_KERNEL_HEAP
 #endif
 
 /* Chunk Header Definitions *************************************************/
@@ -220,11 +263,25 @@ extern "C"
 #define EXTERN extern
 #endif
 
-#if !defined(CONFIG_NUTTX_KERNEL) || !defined(__KERNEL__)
-/* This is the user heap */
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
+/* User heap structure:
+ *
+ * - Flat build:  In the FLAT build, the user heap structure is a globally
+ *   accessible variable.
+ * - Protected build:  The user heap structure is directly available only
+ *   in user space.
+ * - Kernel build: There are multiple heaps, one per process.  The heap
+ *   structure is associated with the address environment and there is
+ *   no global user heap structure.
+ */
 
 EXTERN struct mm_heap_s g_mmheap;
+#endif
 
+#ifdef CONFIG_MM_KERNEL_HEAP
+/* This is the kernel heap */
+
+EXTERN struct mm_heap_s g_kmmheap;
 #endif
 
 /****************************************************************************
@@ -240,14 +297,26 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
 
 /* Functions contained in umm_initialize.c **********************************/
 
-#if !defined(CONFIG_NUTTX_KERNEL) || !defined(__KERNEL__)
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
 void umm_initialize(FAR void *heap_start, size_t heap_size);
+#endif
+
+/* Functions contained in kmm_initialize.c **********************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+void kmm_initialize(FAR void *heap_start, size_t heap_size);
 #endif
 
 /* Functions contained in umm_addregion.c ***********************************/
 
-#if !defined(CONFIG_NUTTX_KERNEL) || !defined(__KERNEL__)
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
 void umm_addregion(FAR void *heapstart, size_t heapsize);
+#endif
+
+/* Functions contained in kmm_addregion.c ***********************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+void kmm_addregion(FAR void *heapstart, size_t heapsize);
 #endif
 
 /* Functions contained in mm_sem.c ******************************************/
@@ -257,56 +326,150 @@ void mm_takesemaphore(FAR struct mm_heap_s *heap);
 int  mm_trysemaphore(FAR struct mm_heap_s *heap);
 void mm_givesemaphore(FAR struct mm_heap_s *heap);
 
-/* Functions contained in umm_semaphore.c ***********************************/
+/* Functions contained in umm_sem.c ****************************************/
 
-#if !defined(CONFIG_NUTTX_KERNEL) || !defined(__KERNEL__)
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
 int  umm_trysemaphore(void);
 void umm_givesemaphore(void);
 #endif
 
+/* Functions contained in kmm_sem.c ****************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+int  kmm_trysemaphore(void);
+void kmm_givesemaphore(void);
+#endif
+
 /* Functions contained in mm_malloc.c ***************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size);
+
+/* Functions contained in kmm_malloc.c **************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_malloc(size_t size);
 #endif
 
 /* Functions contained in mm_free.c *****************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 void mm_free(FAR struct mm_heap_s *heap, FAR void *mem);
+
+/* Functions contained in kmm_free.c ****************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+void kmm_free(FAR void *mem);
 #endif
 
 /* Functions contained in mm_realloc.c **************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
                      size_t size);
+
+/* Functions contained in kmm_realloc.c *************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_realloc(FAR void *oldmem, size_t newsize);
 #endif
 
 /* Functions contained in mm_calloc.c ***************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 FAR void *mm_calloc(FAR struct mm_heap_s *heap, size_t n, size_t elem_size);
+
+/* Functions contained in kmm_calloc.c **************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_calloc(size_t n, size_t elem_size);
 #endif
 
 /* Functions contained in mm_zalloc.c ***************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 FAR void *mm_zalloc(FAR struct mm_heap_s *heap, size_t size);
+
+/* Functions contained in kmm_zalloc.c **************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_zalloc(size_t size);
 #endif
 
 /* Functions contained in mm_memalign.c *************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
 FAR void *mm_memalign(FAR struct mm_heap_s *heap, size_t alignment,
                       size_t size);
+
+/* Functions contained in kmm_memalign.c ************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_memalign(size_t alignment, size_t size);
+#endif
+
+/* Functions contained in kmm_heapmember.c **********************************/
+
+#if defined(CONFIG_MM_KERNEL_HEAP) && defined(CONFIG_DEBUG)
+bool kmm_heapmember(FAR void *mem);
+#endif
+
+/* Functions contained in mm_brkaddr.c **************************************/
+
+FAR void *mm_brkaddr(FAR struct mm_heap_s *heap, int region);
+
+/* Functions contained in umm_brkaddr.c *************************************/
+
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
+FAR void *umm_brkaddr(int region);
+#endif
+
+/* Functions contained in kmm_brkaddr.c *************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+FAR void *kmm_brkaddr(int region);
+#endif
+
+/* Functions contained in mm_sbrk.c *****************************************/
+
+#if defined(CONFIG_ARCH_ADDRENV) && defined(CONFIG_MM_PGALLOC) && \
+    defined(CONFIG_ARCH_USE_MMU)
+FAR void *mm_sbrk(FAR struct mm_heap_s *heap, intptr_t incr,
+                  uintptr_t maxbreak);
+#endif
+
+/* Functions contained in kmm_sbrk.c ****************************************/
+
+#if defined(CONFIG_MM_KERNEL_HEAP) && defined(CONFIG_ARCH_ADDRENV) && \
+    defined(CONFIG_MM_PGALLOC) && defined(CONFIG_ARCH_USE_MMU)
+FAR void *kmm_sbrk(intptr_t incr);
+#endif
+
+/* Functions contained in mm_extend.c ***************************************/
+
+void mm_extend(FAR struct mm_heap_s *heap, FAR void *mem, size_t size,
+               int region);
+
+/* Functions contained in umm_extend.c **************************************/
+
+#if !defined(CONFIG_BUILD_PROTECTED) || !defined(__KERNEL__)
+void umm_extend(FAR void *mem, size_t size, int region);
+#endif
+
+/* Functions contained in kmm_extend.c **************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+void kmm_extend(FAR void *mem, size_t size, int region);
 #endif
 
 /* Functions contained in mm_mallinfo.c *************************************/
 
-#ifdef CONFIG_MM_MULTIHEAP
-int  mm_mallinfo(FAR struct mm_heap_s *heap, FAR struct mallinfo *info);
+struct mallinfo; /* Forward reference */
+int mm_mallinfo(FAR struct mm_heap_s *heap, FAR struct mallinfo *info);
+
+/* Functions contained in kmm_mallinfo.c ************************************/
+
+#ifdef CONFIG_MM_KERNEL_HEAP
+#ifdef CONFIG_CAN_PASS_STRUCTS
+struct mallinfo kmm_mallinfo(void);
+#else
+int kmm_mallinfo(struct mallinfo *info);
 #endif
+#endif /* CONFIG_CAN_PASS_STRUCTS */
 
 /* Functions contained in mm_shrinkchunk.c **********************************/
 

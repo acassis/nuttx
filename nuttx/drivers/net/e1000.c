@@ -982,7 +982,7 @@ static int e1000_probe(uint16_t addr, pci_id_t id)
 
   /* alloc e1000_dev memory */
 
-  if ((dev = kzalloc(sizeof(struct e1000_dev))) == NULL)
+  if ((dev = kmm_zalloc(sizeof(struct e1000_dev))) == NULL)
     {
       return -1;
     }
@@ -1119,7 +1119,7 @@ err1:
 err0:
   rgmp_memunmap(mmio_base, mmio_size);
 error:
-  kfree(dev);
+  kmm_free(dev);
   cprintf("e1000 device probe fail: %d\n", err);
   return err;
 }
@@ -1154,7 +1154,7 @@ void e1000_mod_exit(void)
       free(dev->tx_ring.desc);
       pci_free_irq(dev->pci_addr);
       rgmp_memunmap((uintptr_t)dev->io_mem_base, dev->mem_size);
-      kfree(dev);
+      kmm_free(dev);
     }
 
   e1000_list.next = NULL;

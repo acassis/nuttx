@@ -502,12 +502,12 @@ static int smart_setsectorsize(struct smart_struct_s *dev, uint16_t size)
 
   if (dev->sMap != NULL)
     {
-      kfree(dev->sMap);
+      kmm_free(dev->sMap);
     }
 
   if (dev->rwbuffer != NULL)
     {
-      kfree(dev->rwbuffer);
+      kmm_free(dev->rwbuffer);
     }
 
   /* Allocate a virtual to physical sector map buffer.  Also allocate
@@ -517,12 +517,12 @@ static int smart_setsectorsize(struct smart_struct_s *dev, uint16_t size)
   totalsectors = dev->neraseblocks * dev->sectorsPerBlk;
   dev->totalsectors = (uint16_t) totalsectors;
 
-  dev->sMap = (uint16_t *) kmalloc(totalsectors * sizeof(uint16_t) +
+  dev->sMap = (uint16_t *) kmm_malloc(totalsectors * sizeof(uint16_t) +
               (dev->neraseblocks << 1));
   if (!dev->sMap)
     {
       fdbg("Error allocating SMART virtual map buffer\n");
-      kfree(dev);
+      kmm_free(dev);
       return -EINVAL;
     }
 
@@ -531,12 +531,12 @@ static int smart_setsectorsize(struct smart_struct_s *dev, uint16_t size)
 
   /* Allocate a read/write buffer */
 
-  dev->rwbuffer = (char *) kmalloc(size);
+  dev->rwbuffer = (char *) kmm_malloc(size);
   if (!dev->rwbuffer)
     {
       fdbg("Error allocating SMART read/write buffer\n");
-      kfree(dev->sMap);
-      kfree(dev);
+      kmm_free(dev->sMap);
+      kmm_free(dev);
       return -EINVAL;
     }
 
@@ -823,7 +823,7 @@ static int smart_scan(struct smart_struct_s *dev)
                * the SMART device structure and the root directory number.
                */
 
-              rootdirdev = (struct smart_multiroot_device_s*) kmalloc(sizeof(*rootdirdev));
+              rootdirdev = (struct smart_multiroot_device_s*) kmm_malloc(sizeof(*rootdirdev));
               if (rootdirdev == NULL)
                 {
                   fdbg("Memory alloc failed\n");
@@ -2113,7 +2113,7 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
 
   /* Allocate a SMART device structure */
 
-  dev = (struct smart_struct_s *)kmalloc(sizeof(struct smart_struct_s));
+  dev = (struct smart_struct_s *)kmm_malloc(sizeof(struct smart_struct_s));
   if (dev)
     {
       /* Initialize the SMART device structure */
@@ -2131,7 +2131,7 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
       if (ret < 0)
         {
           fdbg("MTD ioctl(MTDIOC_GEOMETRY) failed: %d\n", ret);
-          kfree(dev);
+          kmm_free(dev);
           goto errout;
         }
 
@@ -2142,7 +2142,7 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
       ret = smart_setsectorsize(dev, CONFIG_MTD_SMART_SECTOR_SIZE);
       if (ret != OK)
         {
-          kfree(dev);
+          kmm_free(dev);
           goto errout;
         }
 
@@ -2152,7 +2152,7 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
       if (totalsectors > 65534)
         {
           fdbg("SMART Sector size too small for device\n");
-          kfree(dev);
+          kmm_free(dev);
           ret = -EINVAL;
           goto errout;
         }
@@ -2192,13 +2192,13 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
        * the SMART device structure and the root directory number.
        */
 
-      rootdirdev = (struct smart_multiroot_device_s*) kmalloc(sizeof(*rootdirdev));
+      rootdirdev = (struct smart_multiroot_device_s*) kmm_malloc(sizeof(*rootdirdev));
       if (rootdirdev == NULL)
         {
           fdbg("register_blockdriver failed: %d\n", -ret);
-          kfree(dev->sMap);
-          kfree(dev->rwbuffer);
-          kfree(dev);
+          kmm_free(dev->sMap);
+          kmm_free(dev->rwbuffer);
+          kmm_free(dev);
           ret = -ENOMEM;
           goto errout;
         }
@@ -2227,9 +2227,9 @@ int smart_initialize(int minor, FAR struct mtd_dev_s *mtd, const char *partname)
       if (ret < 0)
         {
           fdbg("register_blockdriver failed: %d\n", -ret);
-          kfree(dev->sMap);
-          kfree(dev->rwbuffer);
-          kfree(dev);
+          kmm_free(dev->sMap);
+          kmm_free(dev->rwbuffer);
+          kmm_free(dev);
           goto errout;
         }
 

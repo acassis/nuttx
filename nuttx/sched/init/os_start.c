@@ -48,6 +48,7 @@
 #include  <nuttx/fs/fs.h>
 #include  <nuttx/net/net.h>
 #include  <nuttx/lib.h>
+#include  <nuttx/mm.h>
 #include  <nuttx/kmalloc.h>
 #include  <nuttx/init.h>
 
@@ -151,7 +152,8 @@ volatile dq_queue_t g_inactivetasks;
 
 volatile sq_queue_t g_delayed_kufree;
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(CONFIG_MM_KERNEL_HEAP)
+#if (defined(CONFIG_BUILD_PROTECTED) || defined(CONFIG_BUILD_KERNEL)) && \
+     defined(CONFIG_MM_KERNEL_HEAP)
 volatile sq_queue_t g_delayed_kfree;
 #endif
 
@@ -206,8 +208,8 @@ const struct tasklist_s g_tasklisttable[NUM_TASK_STATES] =
  ****************************************************************************/
 /* This is the task control block for this thread of execution. This thread
  * of execution is the IDLE task.  NOTE:  the system boots into the IDLE
- * task.  The IDLE task spawns the user initialization task (user_start) and
- * that user init task is responsible for bringing up the rest of the system
+ * task.  The IDLE task spawns the user initialization task and that user
+ * initialization task is responsible for bringing up the rest of the system.
  */
 
 static FAR struct task_tcb_s g_idletcb;
@@ -215,6 +217,10 @@ static FAR struct task_tcb_s g_idletcb;
 /* This is the name of the idle task */
 
 static FAR const char g_idlename[] = "Idle Task";
+
+/* This the IDLE idle threads argument list. */
+
+static FAR char *g_idleargv[2];
 
 /****************************************************************************
  * Private Function Prototypes
@@ -264,7 +270,8 @@ void os_start(void)
 #endif
   dq_init(&g_inactivetasks);
   sq_init(&g_delayed_kufree);
-#if defined(CONFIG_NUTTX_KERNEL) && defined(CONFIG_MM_KERNEL_HEAP)
+#if (defined(CONFIG_BUILD_PROTECTED) || defined(CONFIG_BUILD_KERNEL)) && \
+     defined(CONFIG_MM_KERNEL_HEAP)
   sq_init(&g_delayed_kfree);
 #endif
 
@@ -293,6 +300,7 @@ void os_start(void)
   bzero((void*)&g_idletcb, sizeof(struct task_tcb_s));
   g_idletcb.cmn.task_state = TSTATE_TASK_RUNNING;
   g_idletcb.cmn.entry.main = (main_t)os_start;
+  g_idletcb.cmn.flags      = TCB_FLAG_TTYPE_KERNEL;
 
   /* Set the IDLE task name */
 
@@ -308,13 +316,13 @@ void os_start(void)
    * and there is no support that yet.
    */
 
-#if defined(CONFIG_CUSTOM_STACK) || !defined(CONFIG_NUTTX_KERNEL)
 #if CONFIG_TASK_NAME_SIZE > 0
-  g_idletcb.argv[0] = g_idletcb.cmn.name;
+  g_idleargv[0]  = g_idletcb.cmn.name;
 #else
-  g_idletcb.argv[0] = (char*)g_idlename;
+  g_idleargv[0]  = (FAR char *)g_idlename;
 #endif /* CONFIG_TASK_NAME_SIZE */
-#endif /* CONFIG_CUSTOM_STACK || !CONFIG_NUTTX_KERNEL */
+  g_idleargv[1]  = NULL;
+  g_idletcb.argv = g_idleargv;
 
   /* Then add the idle task's TCB to the head of the ready to run list */
 
@@ -343,14 +351,16 @@ void os_start(void)
     FAR void *heap_start;
     size_t heap_size;
 
+#ifdef MM_KERNEL_USRHEAP_INIT
     /* Get the user-mode heap from the platform specific code and configure
      * the user-mode memory allocator.
      */
 
     up_allocate_heap(&heap_start, &heap_size);
     kumm_initialize(heap_start, heap_size);
+#endif
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(CONFIG_MM_KERNEL_HEAP)
+#ifdef CONFIG_MM_KERNEL_HEAP
     /* Get the kernel-mode heap from the platform specific code and configure
      * the kernel-mode memory allocator.
      */
@@ -370,9 +380,9 @@ void os_start(void)
 #endif
   }
 
+#if defined(CONFIG_SCHED_HAVE_PARENT) && defined(CONFIG_SCHED_CHILD_STATUS)
   /* Initialize tasking data structures */
 
-#if defined(CONFIG_SCHED_HAVE_PARENT) && defined(CONFIG_SCHED_CHILD_STATUS)
 #ifdef CONFIG_HAVE_WEAKFUNCTIONS
   if (task_initialize != NULL)
 #endif
@@ -417,9 +427,9 @@ void os_start(void)
     }
 #endif
 
+#ifndef CONFIG_DISABLE_SIGNALS
   /* Initialize the signal facility (if in link) */
 
-#ifndef CONFIG_DISABLE_SIGNALS
 #ifdef CONFIG_HAVE_WEAKFUNCTIONS
   if (sig_initialize != NULL)
 #endif
@@ -428,9 +438,9 @@ void os_start(void)
     }
 #endif
 
+#ifndef CONFIG_DISABLE_MQUEUE
   /* Initialize the named message queue facility (if in link) */
 
-#ifndef CONFIG_DISABLE_MQUEUE
 #ifdef CONFIG_HAVE_WEAKFUNCTIONS
   if (mq_initialize != NULL)
 #endif
@@ -439,9 +449,9 @@ void os_start(void)
     }
 #endif
 
+#ifndef CONFIG_DISABLE_PTHREAD
   /* Initialize the thread-specific data facility (if in link) */
 
-#ifndef CONFIG_DISABLE_PTHREAD
 #ifdef CONFIG_HAVE_WEAKFUNCTIONS
   if (pthread_initialize != NULL)
 #endif
@@ -450,9 +460,9 @@ void os_start(void)
     }
 #endif
 
+#if CONFIG_NFILE_DESCRIPTORS > 0
   /* Initialize the file system (needed to support device drivers) */
 
-#if CONFIG_NFILE_DESCRIPTORS > 0
 #ifdef CONFIG_HAVE_WEAKFUNCTIONS
   if (fs_initialize != NULL)
 #endif
@@ -461,9 +471,9 @@ void os_start(void)
     }
 #endif
 
+#ifdef CONFIG_NET
   /* Initialize the network system */
 
-#ifdef CONFIG_NET
   net_initialize();
 #endif
 
@@ -487,25 +497,25 @@ void os_start(void)
     }
 
   /* IDLE Group Initialization **********************************************/
-  /* Allocate the IDLE group and suppress child status. */
-
 #ifdef HAVE_TASK_GROUP
-  DEBUGVERIFY(group_allocate(&g_idletcb));
+  /* Allocate the IDLE group */
+
+  DEBUGVERIFY(group_allocate(&g_idletcb, g_idletcb.cmn.flags));
 #endif
 
+#if CONFIG_NFILE_DESCRIPTORS > 0 || CONFIG_NSOCKET_DESCRIPTORS > 0
   /* Create stdout, stderr, stdin on the IDLE task.  These will be
    * inherited by all of the threads created by the IDLE task.
    */
 
-#if CONFIG_NFILE_DESCRIPTORS > 0 || CONFIG_NSOCKET_DESCRIPTORS > 0
   DEBUGVERIFY(group_setupidlefiles(&g_idletcb));
 #endif
 
+#ifdef HAVE_TASK_GROUP
   /* Complete initialization of the IDLE group.  Suppress retention
    * of child status in the IDLE group.
    */
 
-#ifdef HAVE_TASK_GROUP
   DEBUGVERIFY(group_initialize(&g_idletcb));
   g_idletcb.cmn.group->tg_flags = GROUP_FLAG_NOCLDWAIT;
 #endif

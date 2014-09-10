@@ -95,7 +95,7 @@ void weak_function task_initialize(void);
 /* Task group data structure management */
 
 #ifdef HAVE_TASK_GROUP
-int  group_allocate(FAR struct task_tcb_s *tcb);
+int  group_allocate(FAR struct task_tcb_s *tcb, uint8_t ttype);
 int  group_initialize(FAR struct task_tcb_s *tcb);
 #ifndef CONFIG_DISABLE_PTHREAD
 int  group_bind(FAR struct pthread_tcb_s *tcb);

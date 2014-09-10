@@ -1611,7 +1611,8 @@ HSMCI Card Slots
       CONFIG_SCHED_WORKQUEUE=y              : Driver needs work queue support
 
     Application Configuration -> NSH Library
-      CONFIG_NSH_ARCHINIT=y                 : NSH board-initialization
+      CONFIG_NSH_ARCHINIT=y                 : NSH board-initialization, OR
+      CONFIG_BOARD_INITIALIZE=y
 
     Using the SD card
     -----------------
@@ -3526,6 +3527,9 @@ Configurations
       the description below and the section above entitled "Creating and
       Using DRAMBOOT" for more information
     elf:  Demonstrates execution of ELF file from a file system.
+    knsh: An NSH configuration used to test the SAMA5D kernel build
+      configuration.  Uses a tiny NSH configuration that runs at
+      start time from a mounted file system.
     nsh:  This is an NuttShell (NSH) configuration that supports extensive
       functionality as possible (unlike the minimal ramtest configuration).
       See the detailed description below for a summary of the feature
@@ -3684,7 +3688,11 @@ Configurations
        the warning in the section "Information Common to All Configurations"
        for further information.
 
-    3. This configuration currently has Cortex-A address environments selected for testing.  With this option, the MMU is used to create a custom address environment for each ELF program.  This option can be disabled in which case the ELF programs will simply execute out normal memory allocated from the heap.  To disable this feature:
+    3. This configuration currently has Cortex-A address environments selected.
+       With this option, the MMU is used to create a custom address environment
+       for each ELF program (effectively making them processes).  This option
+       can be disabled in which case the ELF programs will simply execute out
+       normal memory allocated from the heap.  To disable this feature:
 
       System Type -> Architecture Options
         CONFIG_ARCH_ADDRENV=n                  : Disable address environment support
@@ -3694,14 +3702,225 @@ Configurations
         CONFIG_SAMA5_DDRCS_PGHEAP=n            : Don't try to set up the page allocator
 
       Memory Management
-        CONFIG_GRAN=n                          : Disable the granule allocator 
+        CONFIG_GRAN=n                          : Disable the granule allocator
         CONFIG_MM_PGALLOC=n                    : Disable the page allocator
 
+    4. A system call interface is enabled and the ELF test programs interface with the base RTOS code system calls.  This eliminates the need for symbol tables to link with the base RTOS (symbol tables are still used, however, to interface with the common C library instaniation).  Relevant configuration settings:
+
+    RTOS Features -> System call support
+      CONFIG_LIB_SYSCALL=y                      : Enable system call support
+      CONFIG_SYS_NNEST=2                        : Max number of nested system calls
+      CONFIG_SYS_RESERVED=1                     : SYStem call 0 is reserved on this platform
+
+    Application Configurations -> Examples -> ELF Loader Example
+      CONFIG_EXAMPLES_ELF_SYSCALL=y             : Link apps with the SYStem call library
+
     STATUS:
-      2014-8024: This configuration works with the address environment
-                 option disable.
-      2014-8-25: But still does not even build successfully with the
-                 address environment option enabled.
+      2014-8-24: This configuration works with the address environment
+                 and system call options disabled.
+      2014-8-28: Now this option works well well with address environments
+                 enabled.  There is a potential issue with the use of
+                 task_create() as it is used in the ELF test, but the code
+                 seems to survive it. See:
+
+                 http://www.nuttx.org/doku.php?id=wiki:nxinternal:memconfigs#task_create
+
+      2014-8-29: System call interface verified.
+
+  knsh:
+    An NSH configuration used to test the SAMA5D kenel build configuration.
+    More to come... this is still a work in progress as of this writing.
+
+    NOTES:
+
+    1. This configuration uses the the USART3 for the serial console
+       which is available at the "DBGU" RS-232 connector (J24).  That
+       is easily changed by reconfiguring to (1) enable a different
+       serial peripheral, and (2) selecting that serial peripheral as
+       the console device.
+
+    2. By default, this configuration is set up to build on Windows
+       under either a Cygwin or MSYS environment using a recent, Windows-
+       native, generic ARM EABI GCC toolchain (such as the CodeSourcery
+       toolchain).  Both the build environment and the toolchain
+       selection can easily be changed by reconfiguring:
+
+       CONFIG_HOST_WINDOWS=y                   : Windows operating system
+       CONFIG_WINDOWS_CYGWIN=y                 : POSIX environment under windows
+       CONFIG_ARMV7A_TOOLCHAIN_CODESOURCERYW=y : CodeSourcery for Windows
+
+       If you are running on Linux, make *certain* that you have
+       CONFIG_HOST_LINUX=y *before* the first make or you will create a
+       corrupt configuration that may not be easy to recover from. See
+       the warning in the section "Information Common to All Configurations"
+       for further information.
+
+    3. Some key setup configuration values for this configuration:
+
+       Build Setup -> Build Configuration -> Memory Organization
+         CONFIG_BUILD_KERNEL=y                  : Kernel build enabled
+
+       RTOS Features -> Tasks and Scheduling
+         CONFIG_INIT_FILEPATH=y                 : Start-up is via an ELF file
+         CONFIG_USER_INITPATH="/bin/init"       : The location of the startup
+         CONFIG_SCHED_HAVE_PARENT=y             : Needed to handle task exit
+
+       RTOS Features -> System call support
+         CONFIG_SYS_RESERVED=5                  : More reserved SYSCALLs
+
+       RTOS Features -> RTOS hooks
+         CONFIG_SCHED_ONEXIT=y                 : Needed to handle task exit
+         CONFIG_SCHED_ONEXIT_MAX=2
+
+       Memory Management
+        CONFIG_MM_KERNEL_HEAP=y                : Enable a kernel heap
+        CONFIG_MM_KERNEL_HEAPSIZE=8192         : (temporary.. will change)
+
+    4. By default, this configuration is setup to boot from an SD card.
+       Unfortunately, there some issues when using the SD card that prevent
+       this from working properly (see STATUS below).  And alternative is to
+       use a built-in ROMFS file system that does not suffer from the
+       (assumed) HSMCI bug.
+
+       So why isn't this the default configuration?  Because it does not
+       build out-of-the-box.  You have to take special steps in the build
+       process as described below.
+
+       Assuming that you will want to reconfigure to use the ROMFS (rather than debugging HSCMI), you will need to disable all of these settings:
+
+       System Type->ATSAMA5 Peripheral Support
+         CONFIG_SAMA5_HSMCI0=n           : Disable HSMCI0 support
+         CONFIG_SAMA5_XDMAC0=n           : XDMAC0 is no longer needed
+
+       System Type
+         CONFIG_SAMA5_PIO_IRQ=n          : PIO interrupts are no longer needed
+
+       Device Drivers -> MMC/SD Driver Support
+         CONFIG_MMCSD=n                  : Disable MMC/SD support
+
+       File System
+         CONFIG_FS_FAT=n                 : FAT file system no longer needed
+
+       Board Selection
+         CONFIG_SAMA5D4EK_HSMCI0_MOUNT=y : Don't mount HSMCI0 at boot
+
+       And then enable these features in order to use the ROMFS boot file
+       system:
+
+       File System
+         CONFIG_FS_ROMFS=y               : Enable the ROMFS file system
+
+       Board Selection
+         CONFIG_SAMA5D4EK_ROMFS_MOUNT=y  : Mount the ROMFS file system at boot
+         CONFIG_SAMA5D4EK_ROMFS_MOUNT_MOUNTPOINT="/bin"
+         CONFIG_SAMA5D4EK_ROMFS_ROMDISK_DEVNAME="/dev/ram0"
+         CONFIG_SAMA5D4EK_ROMFS_ROMDISK_MINOR=0
+         CONFIG_SAMA5D4EK_ROMFS_ROMDISK_SECTSIZE=512
+
+       Then you will need to follow some special build instructions below
+       in order to build and install the ROMFS file system image.
+
+       UPDATE: The ROMFS configuration is pre-configured in the the
+       file nuttx/configs/sama5d4-ek/knsh/defconfig.ROMFS
+
+    5. Board initialization is performed performed before the application
+       is started:
+
+       RTOS Features -> RTOS Hooks
+         CONFIG_BOARD_INITITIALIZE=y
+
+       In the special ROMFS boot configuration, you need to do nothing
+       additional: The board initialization will mount the ROMFS file
+       system at boot time.
+
+       In the default configuration, however, the board initialization
+       will instead mount the FAT filesystem on an SD card inserted in
+       the HSMCI0 slot (full size).  The SAMA4D4-EK provides two SD
+       memory card slots:  (1) a full size SD card slot (J10), and (2) a
+       microSD memory card slot (J11).  The full size SD card slot connects
+       via HSMCI0; the microSD connects vi HSMCI1.  See the relevant
+       configuration settings above in the paragraph entitled "HSMCI Card
+       Slots" above.
+
+       The SD card is mounted at /bin by this board initialization logic.
+       NuttX will boot from the SD card so there are some special operational
+       requirements to use this configuration:
+
+       a. The SD card must contain a NuttX executable called 'init'
+       b. The SD card must be in the HSCMCI slot when NuttX boots and must
+          not be removed while NuttX is running.
+
+       The NuttX automounter is *not* enabled.  It cannot be used it would
+       mount the boot file system with a delay.  In this configuration.  The
+       file system must be mounted immediately at boot up.  To accomplish
+       this, the board logic supports these special configurations:
+
+       Board Selection ->
+         CONFIG_SAMA5D4EK_HSMCI0_AMOUNT=y
+         CONFIG_SAMA5D4EK_HSMCI0_MOUNT_BLKDEV="/dev/mmcsd0"
+         CONFIG_SAMA5D4EK_HSMCI0_MOUNT_FSTYPE="vfat"
+         CONFIG_SAMA5D4EK_HSMCI0_MOUNT_MOUNTPOINT="/bin"
+
+    6a. General build directions (boot from SD card):
+
+        $ cd nuttx/tools                    : Go to the tools sub-directory
+        $ ./configure.sh sama5d4-ek/kernel  : Establish this configuration
+        $ cd ..                             : Back to the NuttX build directory
+                                            : Edit setenv.sh to use the correct path
+        $ . ./setenv.sh                     : Set up the PATH variable
+        $ make                              : Build the kerne with a dummy ROMFS image
+                                            : This should create the nuttx ELF
+        $ make export                       : Create the kernel export package
+                                            : You should have a file like
+                                            : nuttx-export-*.zip
+        $ cd apps/                          : Go to the apps/ directory
+        $ tools/mkimport.sh -x <zip-file>   : Use the full path to nuttx-export-*.zip
+        $ make import                       : This will build the file system.
+
+      You will then need to copy the files from apps/bin to an SD card to
+      create the the bootable SD card.
+
+    6b. General build directions (boot from ROMFS image):
+
+        $ cd nuttx/tools                    : Go to the tools sub-directory
+        $ ./configure.sh sama5d4-ek/kernel  : Establish this configuration
+        $ cd ..                             : Back to the NuttX build directory
+                                            : Edit setenv.sh to use the correct path
+        $ . ./setenv.sh                     : Set up the PATH variable
+        $ touch configs/sama5d4-ek/include/boot_romfsimg.h
+        $ make                              : Build the kernel with a dummy ROMFS image
+                                            : This should create the nuttx ELF
+        $ make export                       : Create the kernel export package
+                                            : You should have a file like
+                                            : nuttx-export-*.zip
+        $ cd apps/                          : Go to the apps/ directory
+        $ tools/mkimport.sh -x <zip-file>   : Use the full path to nuttx-export-*.zip
+        $ make import                       : This will build the file system
+        $ tools/mkromfsimg.sh               : Create the real ROMFS image
+        $ mv boot_romfsimg.h ../nuttx/configs/sama5d4-ek/include/boot_romfsimg.h
+        $ cd nuttx/                         : Rebuild the system with the correct
+        $ make clean_context all            : ROMFS file system
+
+    STATUS:
+
+    2014-9-4: The kernel works up to the point where the nsh 'init'
+       is started from the file system then fails.  This is good,
+       however, because I do not yet have the file system in place yet.
+
+    2014-9-8: I am seeing HSMCI read() failures while loading the ELF image
+       from the SD card.  This seems odd since I have never seen other read()
+       failures with HSMCI (and, hence, this may be some issue unique to this
+       configuration).  In any a event, this has stopped testing for the
+       moment.
+
+       Also, the mount() in configs/sama5d4x-ek/src/sam_bringup.c will fail
+       unless you add a delay between the HSMCI initialization and the mount.
+       No idea why (and there they is now delay in the baseline code... one
+       has to be added).
+
+       Update: I don't believe that this HSMCI error occurs if file system
+       debug output is enabled.
+
   nsh:
 
     This configuration directory provide the NuttShell (NSH).  This is a
@@ -4173,6 +4392,11 @@ Configurations
 
    STATUS:
        See the To-Do list below
+
+   (2014-8-30): Retesting today I am seeing a strange behavior:  Serial
+       output is coming out in chunks with delays between the chunks.  It
+       appears that something is not good in the serial port configuration.
+       I see no such chunky behavior in, for example, grahics output.
 
   nxwm:
 

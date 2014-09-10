@@ -68,6 +68,8 @@
 #define HAVE_WM8904      1
 #define HAVE_AUDIO_NULL  1
 #define HAVE_PMIC        1
+#define HAVE_ELF         1
+#define HAVE_ROMFS       1
 
 /* HSMCI */
 /* Can't support MMC/SD if the card interface(s) are not enable */
@@ -453,6 +455,18 @@
 
 #ifndef CONFIG_EXPERIMENTAL
 #  undef HAVE_PMIC /* REVISIT: Disable anyway because it does not yet work */
+#endif
+
+/* ELF */
+
+#if defined(CONFIG_BINFMT_DISABLE) || !defined(CONFIG_ELF)
+#  undef HAVE_ELF
+#endif
+
+/* ROMFS */
+
+#ifndef CONFIG_FS_ROMFS
+#  undef HAVE_ROMFS
 #endif
 
 /* LEDs *****************************************************************************/
@@ -890,6 +904,16 @@ void sam_sdram_config(void);
 #else
 #  define board_sdram_config(t)
 #endif
+
+/****************************************************************************
+ * Name: sam_bringup
+ *
+ * Description:
+ *   Bring up board features
+ *
+ ****************************************************************************/
+
+int sam_bringup(void);
 
 /****************************************************************************
  * Name: sam_nand_automount

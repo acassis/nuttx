@@ -231,16 +231,15 @@ void up_initial_state(FAR struct tcb_s *tcb);
  *     however, there are certain contexts where the TCB may not be fully
  *     initialized when up_create_stack is called.
  *
- *     If CONFIG_NUTTX_KERNEL is defined, then this thread type may affect
- *     how the stack is allocated.  For example, kernel thread stacks should
- *     be allocated from protected kernel memory.  Stacks for user tasks and
- *     threads must come from memory that is accessible to user code.
+ *     If CONFIG_BUILD_PROTECTED or CONFIG_BUILD_KERNEL are is defined, then
+ *     this thread type may affect how the stack is allocated.  For example,
+ *     kernel thread stacks should be allocated from protected kernel memory.
+ *     Stacks for user tasks and threads must come from memory that is
+ *     accessible to user code.
  *
  ****************************************************************************/
 
-#ifndef CONFIG_CUSTOM_STACK
 int up_create_stack(FAR struct tcb_s *tcb, size_t stack_size, uint8_t ttype);
-#endif
 
 /****************************************************************************
  * Name: up_use_stack
@@ -271,16 +270,14 @@ int up_create_stack(FAR struct tcb_s *tcb, size_t stack_size, uint8_t ttype);
  *
  ****************************************************************************/
 
-#ifndef CONFIG_CUSTOM_STACK
 int up_use_stack(FAR struct tcb_s *tcb, FAR void *stack, size_t stack_size);
-#endif
 
 /****************************************************************************
  * Name: up_stack_frame
  *
  * Description:
  *   Allocate a stack frame in the TCB's stack to hold thread-specific data.
- *   This function may be called anytime after up_create_stack() or
+ *   This function may be called any time after up_create_stack() or
  *   up_use_stack() have been called but before the task has been started.
  *
  *   Thread data may be kept in the stack (instead of in the TCB) if it is
@@ -307,9 +304,7 @@ int up_use_stack(FAR struct tcb_s *tcb, FAR void *stack, size_t stack_size);
  *
  ****************************************************************************/
 
-#if !defined(CONFIG_CUSTOM_STACK) && defined(CONFIG_NUTTX_KERNEL)
 FAR void *up_stack_frame(FAR struct tcb_s *tcb, size_t frame_size);
-#endif
 
 /****************************************************************************
  * Name: up_release_stack
@@ -331,20 +326,18 @@ FAR void *up_stack_frame(FAR struct tcb_s *tcb, size_t frame_size);
  *     however, there are certain error recovery contexts where the TCB may
  *     not be fully initialized when up_release_stack is called.
  *
- *     If CONFIG_NUTTX_KERNEL is defined, then this thread type may affect
- *     how the stack is freed.  For example, kernel thread stacks may have
- *     been allocated from protected kernel memory.  Stacks for user tasks
- *     and threads must have come from memory that is accessible to user
- *     code.
+ *     If CONFIG_BUILD_PROTECTED or CONFIG_BUILD_KERNEL are defined, then
+ *     this thread type may affect how the stack is freed.  For example,
+ *     kernel thread stacks may have been allocated from protected kernel
+ *     memory.  Stacks for user tasks and threads must have come from memory
+ *     that is accessible to user code.
  *
  * Returned Value:
  *   None
  *
  ****************************************************************************/
 
-#ifndef CONFIG_CUSTOM_STACK
 void up_release_stack(FAR struct tcb_s *dtcb, uint8_t ttype);
-#endif
 
 /****************************************************************************
  * Name: up_unblock_task
@@ -526,7 +519,8 @@ void up_schedule_sigaction(FAR struct tcb_s *tcb, sig_deliver_t sigdeliver);
  *
  ****************************************************************************/
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(__KERNEL__)
+#if (defined(CONFIG_BUILD_PROTECTED) && defined(__KERNEL__)) || \
+     defined(CONFIG_BUILD_KERNEL)
 void up_task_start(main_t taskentry, int argc, FAR char *argv[])
        noreturn_function;
 #endif
@@ -555,7 +549,8 @@ void up_task_start(main_t taskentry, int argc, FAR char *argv[])
  *
  ****************************************************************************/
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(__KERNEL__) && !defined(CONFIG_DISABLE_PTHREAD)
+#if (defined(CONFIG_BUILD_PROTECTED) && defined(__KERNEL__)) || \
+     defined(CONFIG_BUILD_KERNEL) && !defined(CONFIG_DISABLE_PTHREAD)
 void up_pthread_start(pthread_startroutine_t entrypt, pthread_addr_t arg)
        noreturn_function;
 #endif
@@ -588,7 +583,8 @@ void up_pthread_start(pthread_startroutine_t entrypt, pthread_addr_t arg)
  *
  ****************************************************************************/
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(__KERNEL__) && !defined(CONFIG_DISABLE_SIGNALS)
+#if (defined(CONFIG_BUILD_PROTECTED) && defined(__KERNEL__)) || \
+     defined(CONFIG_BUILD_KERNEL) && !defined(CONFIG_DISABLE_SIGNALS)
 void up_signal_dispatch(_sa_sigaction_t sighand, int signo,
                         FAR siginfo_t *info, FAR void *ucontext);
 #endif
@@ -612,7 +608,8 @@ void up_signal_dispatch(_sa_sigaction_t sighand, int signo,
  *
  ****************************************************************************/
 
-#if defined(CONFIG_NUTTX_KERNEL) && !defined(__KERNEL__) && !defined(CONFIG_DISABLE_SIGNALS)
+#if (defined(CONFIG_BUILD_PROTECTED) && !defined(__KERNEL__)) && \
+    !defined(CONFIG_DISABLE_SIGNALS)
 void up_signal_handler(_sa_sigaction_t sighand, int signo,
                        FAR siginfo_t *info, FAR void *ucontext)
        noreturn_function;
@@ -624,7 +621,7 @@ void up_signal_handler(_sa_sigaction_t sighand, int signo,
  * Description:
  *   This function will be called to dynamically set aside the heap region.
  *
- *   For the kernel build (CONFIG_NUTTX_KERNEL=y) with both kernel- and
+ *   For the kernel build (CONFIG_BUILD_PROTECTED=y) with both kernel- and
  *   user-space heaps (CONFIG_MM_KERNEL_HEAP=y), this function provides the
  *   size of the unprotected, user-space heap.
  *
@@ -639,13 +636,14 @@ void up_allocate_heap(FAR void **heap_start, size_t *heap_size);
  * Name: up_allocate_kheap
  *
  * Description:
- *   For the kernel build (CONFIG_NUTTX_KERNEL=y) with both kernel- and
- *   user-space heaps (CONFIG_MM_KERNEL_HEAP=y), this function allocates
- *   (and protects) the kernel-space heap.
+ *   For the kernel builds (CONFIG_BUILD_PROTECTED=y or
+ *   CONFIG_BUILD_KERNEL=y) there may be both kernel- and user-space heaps
+ *   as determined by CONFIG_MM_KERNEL_HEAP=y.  This function allocates (and
+ *   protects) the kernel-space heap.
  *
  ****************************************************************************/
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(CONFIG_MM_KERNEL_HEAP)
+#ifdef CONFIG_MM_KERNEL_HEAP
 void up_allocate_kheap(FAR void **heap_start, size_t *heap_size);
 #endif
 
@@ -662,6 +660,44 @@ void up_allocate_kheap(FAR void **heap_start, size_t *heap_size);
 
 #ifdef CONFIG_MM_PGALLOC
 void up_allocate_pgheap(FAR void **heap_start, size_t *heap_size);
+#endif
+
+/****************************************************************************
+ * Name: pgalloc
+ *
+ * Description:
+ *   If there is a page allocator in the configuration and if and MMU is
+ *   available to map physical addresses to virtual address, then function
+ *   must be provided by the platform-specific code.  This is part of the
+ *   implementation of sbrk().  This function will allocate the requested
+ *   number of pages using the page allocator and map them into consecutive
+ *   virtual addresses beginning with 'brkaddr'
+ *
+ *   NOTE:  This function does not use the up_ naming standard because it
+ *   is indirectly callable from user-space code via a system trap.
+ *   Therefore, it is a system interface and follows a different naming
+ *   convention.
+ *
+ * Input Parameters:
+ *   brkaddr - The heap break address.  The next page will be allocated and
+ *     mapped to this address.  Must be page aligned.  If the memory manager
+ *     has not yet been initialized and this is the first block requested for
+ *     the heap, then brkaddr should be zero.  pgalloc will then assigned the
+ *     well-known virtual address of the beginning of the heap.
+ *   npages - The number of pages to allocate and map.  Mapping of pages
+ *     will be contiguous beginning beginning at 'brkaddr'
+ *
+ * Returned Value:
+ *   The (virtual) base address of the mapped page will returned on success.
+ *   Normally this will be the same as the 'brkaddr' input. However, if
+ *   the 'brkaddr' input was zero, this will be the virtual address of the
+ *   beginning of the heap.  Zero is returned on any failure.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_ARCH_ADDRENV) && defined(CONFIG_MM_PGALLOC) && \
+    defined(CONFIG_ARCH_USE_MMU)
+uintptr_t pgalloc(uintptr_t brkaddr, unsigned int npages);
 #endif
 
 /****************************************************************************
@@ -724,7 +760,10 @@ void up_allocate_pgheap(FAR void **heap_start, size_t *heap_size);
  *   textsize - The size (in bytes) of the .text address environment needed
  *     by the task.  This region may be read/execute only.
  *   datasize - The size (in bytes) of the .data/.bss address environment
- *     needed by the task.  This region may be read/write only.
+ *     needed by the task.  This region may be read/write only.  NOTE: The
+ *     actual size of the data region that is allocated will include a
+ *     OS private reserved region at the beginning.  The size of the
+ *     private, reserved region is give by ARCH_DATA_RESERVE_SIZE.
  *   addrenv - The location to return the representation of the task address
  *     environment.
  *
@@ -795,7 +834,11 @@ int up_addrenv_vtext(FAR group_addrenv_t *addrenv, FAR void **vtext);
  *      in the same memory region (read/write/execute) and, in this case,
  *      the virtual address of the data just lies at this offset into the
  *      common region.
- *   vdata - The location to return the virtual address.
+ *   vdata - The location to return the virtual address.  NOTE that the
+ *      beginning of the data region is reserved for use by the OS.  The
+ *      returned address will be at a offset from the actual allocated base
+ *      address to account for the OS private region.  The size of that
+ *      offset is given by ARCH_DATA_RESERVE_SIZE
  *
  * Returned Value:
  *   Zero (OK) on success; a negated errno value on failure.
@@ -1320,9 +1363,9 @@ void up_udelay(useconds_t microseconds);
  *   initialization of the static C++ class instances.
  *
  *   This function should then be called in the application-specific
- *   user_start logic in order to perform the C++ initialization.  NOTE
- *   that no component of the core NuttX RTOS logic is involved; This
- *   function definition only provides the 'contract' between application
+ *   logic in order to perform the C++ initialization.  NOTE  that no
+ *   component of the core NuttX RTOS logic is involved; This function
+ *   definition only provides the 'contract' between application
  *   specific C++ code and platform-specific toolchain support
  *
  ***************************************************************************/

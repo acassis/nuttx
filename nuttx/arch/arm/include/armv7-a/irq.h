@@ -53,7 +53,7 @@
 #endif
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* IRQ Stack Frame Format:
@@ -193,6 +193,20 @@
  * Public Types
  ****************************************************************************/
 
+#ifndef __ASSEMBLY__
+
+/* This structure represents the return state from a system call */
+
+#ifdef CONFIG_LIB_SYSCALL
+struct xcpt_syscall_s
+{
+#ifdef CONFIG_BUILD_KERNEL
+  uint32_t cpsr;        /* The CPSR value */
+#endif
+  uint32_t sysreturn;   /* The return PC */
+};
+#endif
+
 /* This struct defines the way the registers are stored.  We need to save:
  *
  *  1  CPSR
@@ -226,6 +240,15 @@ struct xcptcontext
 
   uint32_t saved_pc;
   uint32_t saved_cpsr;
+
+# ifdef CONFIG_BUILD_KERNEL
+  /* This is the saved address to use when returning from a user-space
+   * signal handler.
+   */
+
+  uint32_t sigreturn;
+
+# endif
 #endif
 
   /* Register save area */
@@ -242,6 +265,15 @@ struct xcptcontext
   uintptr_t far;
 #endif
 
+#ifdef CONFIG_LIB_SYSCALL
+  /* The following array holds the return address and the exc_return value
+   * needed to return from each nested system call.
+   */
+
+  uint8_t nsyscalls;
+  struct xcpt_syscall_s syscall[CONFIG_SYS_NNEST];
+#endif
+
 #ifdef CONFIG_ARCH_ADDRENV
   /* This table holds the physical address of the level 2 page table used
    * to map the thread's stack memory.  This array will be initially of
@@ -255,6 +287,8 @@ struct xcptcontext
 #endif
 };
 #endif
+
+#endif /* __ASSEMBLY__ */
 
 /****************************************************************************
  * Inline functions

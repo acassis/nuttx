@@ -200,7 +200,7 @@ static inline int net_pollsetup(FAR struct socket *psock,
 
   /* Allocate a container to hold the poll information */
 
-  info = (FAR struct net_poll_s *)kmalloc(sizeof(struct net_poll_s));
+  info = (FAR struct net_poll_s *)kmm_malloc(sizeof(struct net_poll_s));
   if (!info)
     {
       return -ENOMEM;
@@ -319,7 +319,7 @@ static inline int net_pollsetup(FAR struct socket *psock,
   return OK;
 
 errout_with_lock:
-  kfree(info);
+  kmm_free(info);
   net_unlock(flags);
   return ret;
 }
@@ -374,7 +374,7 @@ static inline int net_pollteardown(FAR struct socket *psock,
 
       /* Then free the poll info container */
 
-      kfree(info);
+      kmm_free(info);
     }
 
   return OK;

@@ -100,7 +100,7 @@ static void rwb_semtake(sem_t *sem)
        * the wait was awakened by a signal.
        */
 
-      ASSERT(errno == EINTR);
+      ASSERT(get_errno() == EINTR);
     }
 }
 
@@ -654,10 +654,10 @@ int rwb_initialize(FAR struct rwbuffer_s *rwb)
       if (rwb->wrmaxblocks > 0)
         {
           allocsize     = rwb->wrmaxblocks * rwb->blocksize;
-          rwb->wrbuffer = kmalloc(allocsize);
+          rwb->wrbuffer = kmm_malloc(allocsize);
           if (!rwb->wrbuffer)
             {
-              fdbg("Write buffer kmalloc(%d) failed\n", allocsize);
+              fdbg("Write buffer kmm_malloc(%d) failed\n", allocsize);
               return -ENOMEM;
             }
         }
@@ -685,10 +685,10 @@ int rwb_initialize(FAR struct rwbuffer_s *rwb)
       if (rwb->rhmaxblocks > 0)
         {
           allocsize     = rwb->rhmaxblocks * rwb->blocksize;
-          rwb->rhbuffer = kmalloc(allocsize);
+          rwb->rhbuffer = kmm_malloc(allocsize);
           if (!rwb->rhbuffer)
             {
-              fdbg("Read-ahead buffer kmalloc(%d) failed\n", allocsize);
+              fdbg("Read-ahead buffer kmm_malloc(%d) failed\n", allocsize);
               return -ENOMEM;
             }
         }
@@ -713,7 +713,7 @@ void rwb_uninitialize(FAR struct rwbuffer_s *rwb)
       sem_destroy(&rwb->wrsem);
       if (rwb->wrbuffer)
         {
-          kfree(rwb->wrbuffer);
+          kmm_free(rwb->wrbuffer);
         }
     }
 #endif
@@ -724,7 +724,7 @@ void rwb_uninitialize(FAR struct rwbuffer_s *rwb)
       sem_destroy(&rwb->rhsem);
       if (rwb->rhbuffer)
         {
-          kfree(rwb->rhbuffer);
+          kmm_free(rwb->rhbuffer);
         }
     }
 #endif

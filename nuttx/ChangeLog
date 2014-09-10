@@ -8265,6 +8265,194 @@
 	* arch/*/*_blocktask.c, arch/*/*_unblocktask.c, and arch/*/*_exit.c:
 	  Add address environment support to all implementation of up_block_task(),
 	  up_unblock_task(), and _exit() (2014-8-31).
+	* arch/arm/src/stm32/stm32_flash.c and chip/stm32_flash.h,
+	  include/nuttx/progmem.h, and configs/vsn/src/sif.c: STM32 FLASH fixes:
+	  use size_t instead of uint16_t, make interface more generic.  From
+	  Freddie Chopin (2014-8-28).
+	* Kconfig, Makefile.unix, Makefile.win, syscall/Kconfig,
+	  arch/arm/src/armv6-m/svcall.h, up_svcall.c, armv7-m/svcall.h, and
+	  up_svcall.c: The system call library can now be built with
+	  CONFIG_NUTTX_KERNEL.  New selection: CONFIG_LIB_SYSCALL (2014-8-28).
+	* arch/arm/src/armv7-a/syscall.h: "Add an ARMv7-A system call definition
+	  header file (2014-8-28).
+	* arch/arm/include/armv7-a/irq.h, arm_syscall.c, syscall/Kconfig,
+	  syscall_funclookup.c, syscall_nparms.c, and syscall_stublookup.c:
+	  ARMv7-A:  Add SYSCALL handling logic (2014-8-28).
+	* nuttx/fs/, drivers/, and sched/:  Remove explicit references to errno.
+	  That is a problem from within the kernel for certain configurations
+	  (there are still more references to be fixed) (2014-8-28).
+	* sched/clock/clock.h: In some configurations, g_system_tmer must be
+	  extern'ed as a private variable in the OS (2014-8-28).
+	* include/errno.h and nuttx/clock.h:  errno and g_system_timer must be
+	  handled in a special way if there are external modules (2014-8-28).
+	* include/sys/syscall.h: System definitions should depend on
+	  CONFIG_LIB_SYSCALL not CONFIG_NUTTX_KERNEL (2014-8-28).
+	* arch/arm/src/armv7-a: Rename syscall.h to svcall.h to work around
+	  some include path name collisions; fix some compilation errors in
+	  SYSCALL logic when debug is enabled (2014-8-29).
+	* arch/arm/include/arm/syscall.h and armv7-a/syscall.h: Fix ARM7/9
+	  and Cortex-A SYSCALLs:  For threads in SVC mode, the SVC instructions
+	  clobbers R14.  This must be taken account in the inline assembly
+	  (2014-8029).
+	* arch/arm/src/armv7-a/arm_syscall.c: Fix hard coded values in
+	  dispatch_syscall() inline assembly. Back out/corect part of last
+	  change; that was going the wrong direction.  With this change, the
+	  apps/examples/elf test works with address environments and call
+	  gates! (2014-8029).
+	* Many, many files:  Renamed CONFIG_NUTTX_KERNEL to CONFIG_BUILD_PROTECTED.
+	  Added configuration CONFIG_BUILD_KERNEL that will be used to generate
+	  a kernel (only) with full process support and will execute programs
+	  only from a file system.  This new configuration is defined but only
+	  partially integrated (2014-8-29).
+	* tools/refresh.sh: Add a tool to make refreshing configurations easier
+	  when you wnat to do a lot of them (2014-8-29).
+	* tools/mksyscall.c: Build syscalls that do not need header files (there
+	  are none, however) (2014-8-30).
+	* include/nuttx/errno.h syscall/syscall.csv and syscall_funclookup.c:
+	  Yet more issues with errno access via syscalls fixed (2014-8-30).
+	* Makefile.unix, Makefile.win, Directories.mk, FlatLibs.mk, ProtectedLibs.mk,
+	  and KernelLibs.mk:  Separate the common directory selection logic
+	  into Directories.mk; add support for kernel build.  Move library
+	  selection logic in common *.mk files, one each for flat-, protected-,
+	  and kernel- mode builds (2014-8-30).
+	* include/nuttx/syscall.h syscall/syscall.csv: clock_systimer needs the
+	  same fix as for get/set_errno when used with system calls (2014-8-30).
+	* sched/Kconfig sched/init/os_bringup.c tools/cfgdefine.c: Add
+	  configuration options to start the system from a program on a file
+	  system (2014-8-30).
+	* mm/ and include/nuttx/mm.h: Remove CONFIG_MM_MULTIHEAP.  Non-multiheap
+	  operation is no longer supported (2014-8-31).
+	* configs/sama5d4-ek/kernel: Add a configuration for testing the
+	  kernel build configuration (still a work in progress) (2014-8-31).
+	* include/nuttx/arch.h, kmalloc.h, mm.h, sched/init/os_start.c,
+	  sched/sched_free.c, and arch/arm/src/sama5/sam_allocateheap.c: Clean
+	  up some kernel build heap allocation issues.  The Cortex-A kernel
+	  build now compiles without errors (but cannot link until brk() and
+	  sbrk() are implemented) (2014-8-31).
+	* mm/*mm_brkaddr.c, *mm_extend.c, Makefile, and include/nuttx/mm.h: Add
+	  low-level memory management hooks that will be needed to support brk()
+	  and sbrk() (2014-8-31).
+	* Rename krealloc() to kmm_realloc() and kmemalign to kmm_memalign() for
+	  consistency with the rest of the naming (2014-8-31).
+	* Rename kurealloc() to kumm_realloc(), kumemalign to kumm_memalign(),
+	  and kufree to kumm_free for consistency with the rest of the naming
+	  (2014-8-31).
+	* Rename kumalloc() to kumm_malloc() and kuzalloc to kumm_zalloc() for
+	  consistency with the rest of the naming (2014-8-31).
+	* Rename kmalloc() to kmm_malloc(), kzalloc() to kmm_zalloc(), and
+	  kfree() to kmm_free() and kuzalloc to kumm_zalloc() for consistency
+	  with the rest of the naming (2014-8-31).
+	* mm/mm_sbrk.c, kmm_sbrk.c, umm_sbrk.c, and include/unistd.h: Initial
+	* implementation of sbrk() (2014-9-1).
+	* arch/arm/src/armv7-a/arm_pgalloc.c, mm/umm_malloc.c, and mm_zalloc.c:
+	  Completes the implementation of sbrk() (untested) (2014-9-1).
+	* configs/cc3200-launchpad:  Updates to the CC3200-Launchpad configuration
+	  for better compatibility.  From Jim Ewing (2014-9-1).
+	* Removed all support from the 8051 from the NuttX source tree.  The
+	  obsoleted code along with the removal patch can now be found at
+	  misc/Obsoleted/ (2014-9-1).
+	* sched/sched/sched_releasetcb.c and task_setup.c, include/nuttx/arch.h
+	  and sched.h, and arch/*/*/*/Make.defs:  There used to be two ways to
+	  pass parameters to new tasks, depending upon the configuration:  Either
+	  (1) argv[] as created as an array with each string strdup'ed.  Or (1)
+	  argv[] array and strings were created on the stack before the new tas
+	  was started.   Now, there is only one way, way (1).  Way (2) might be
+	  slightly more compact, but this is not worth carry the complexity of
+	  two different ways of doing the same thing (2014-9-1).
+	* sched/init/os_start.c: Fix error in initialize of IDLE TCB due to last
+	  change.  The argument list is no long in the TCB, but in the stack.
+	  But not for the IDLE task.  It needs its own mini-argv[] list so that
+	  it looks more like other threads (2014-9-1).
+	* arch/arm/src/armv7-a/arm_addrenv.c, include/nuttx/addrenv.h, and
+	  mm/umm_*.c: Space at the beginning of the process data space is now
+	  reserved for user heap management structures.  In the kernel build
+	  mode, these heap structures are shared between the kernel and use
+	  code in order to allocate user-specific data (2014-9-2).
+	* include/unistd.h, nuttx/mm.h, and kmalloc.h, sched/init/os_start.c
+	  and sched/sched/sched_free.c, mm/kmm_sbrk.c and mm_sbrk.c, and
+	  arch/arm/src/sama5/sam_allocateheap.c:  Restructuring of build to
+	  allow use of use-space allocators by kernel logic in the kernel
+	  build (2014-9-2).
+	* arch/arm/include/armv7-a/irq.h, arm_syscall.c, crt0.c,
+	  include/nuttx/addrenv.h, and mm/umm_*.c:  Add support for delivery
+	  of use-mode signals in the kernel build (2014-9-2).
+	* mm/mm_graninit.c: Granule allocator initialization uses wrong
+	  allocator to setting aside kernel memory (2014-903).
+	* sched/init/os_start.c: IDLE TCB setup needs to indicate the the
+	  IDLE thread is a privileged, kernel thread (2014-903).
+	* include/nuttx/sched.h: Add a flag to group structure:  If the group
+	  is created by a kernel thread, then all resources in the group must
+	  be privileged (2014-903).
+	* sched/group/group_malloc.c, group_zalloc.c, group_free.c,
+	  group_create.c, group.h: Group creation logic must use new group flag
+	  when allocating resources so that the privileges on the resource are
+	  set correctly (2014-903).
+	* sched/Kconfig and sched/init/os_bringup.c: Add capability to perform
+	  initial board initialization on a separate worker thread (2014-9-3).
+	* tools/mkexport.sh: Fix 'make export'.  Adding subdirectories to the
+	  sched/ directory broke the header file collection logic (2014-9-4).
+	* Makefile.unix, Makefile.win, FlatLibs.mk, KernelLibs.mk, and
+	  ProtectedLibs.mk: In the kernel or protected builds, only the user
+	  libraries should be exported (2014-9-4).
+	* Makefile.unix, Makefile.win, and tools/mkexport.sh: In 'make export',
+	  do not copy internal header files or build scripts if this is a
+	  kernel or protected build (014-9-4).
+	* tools/mkexport.sh, arch/*/src/Makefile, arm/src/a1x/Make.defs,
+	  sama5/Make.defs, armv7-a/crt0.c:  The 'make export' target needs to
+	  bundle up the user C startup file (crt0), not the kernel head object
+	  for the kernel and protected builds (2014-9-4).
+	* tools/mkexport.sh: Add .config file to export package (2014-9-5).
+	* configs/16z:  Support for this board has been removed from the NuttX
+	  source tree (but still can be found in the misc/Obsoleted directory).
+	  This port is not ready for usage but may return to the NuttX tree
+	  at some point in the future (2014-9-5).
+	* tools/Makefile.export and mkexport.sh: The apps/ import build requires
+	  that we extract more information from the platform Make.defs file
+	  (2014-9-5).
+	* tools/Makefile.export and mkexport.sh: Need to export the setting of
+	  WINTOOL as well (2014-9-5).
+	* SAMA5D4-EK kernel configuration now builds NSH instead of examples/elf
+	  (2014-9-6).
+	* libc/pthread/pthread_attrinit.c, sched/pthread/pthread_create.c, and
+	  include/nuttx/pthread.h:  Fix some conditional compilation in kernel
+	  build mode.  And, while we are touching this logic, make
+	  g_default_pthread_attr const (2014-9-7).
+	* arch/arm/src/armv7-a/arm_addrenv.c: Correct size comparison (pages vs.
+	  sections) (2014-9-7).
+	* configs/sama5d4-ek/src/sam_bringup.c and sama5d4-ek.h:  Need to call
+	  elf_initialize() on bring-up before attempting to load ELF modules
+	  (2014-9-7).
+	* arch/arm/src/armv7-a/arm_addrenv.c: Fix loop counter... was overrunning
+	  a table on larger ELF files (2104-9-7).
+	* arch/arm/src/sama5/sam_memories.c, sam_pgalloc.c, and sam_pgalloc.h: In
+	  kernel build with address environment, need logic to map user virtual
+	  addresses to physical addresses, and vice versa (2104-9-7).
+	* SAM3X/Arduino Due: Fix typo in sam3x_periphclks.h; add SCLK
+	  definitions to board.h header file.  From Fabien Comte (2014-9-8).
+	* Several pthread interfaces: Add const storage class to to phthread
+	  parameters.  From Freddie Chopin (2014-9-8).
+	* libc/math: Corrected atan2 implementations from Denis Arnst (2014-9-8).
+	* sama5d4-ek/knsh:  Rename the kernel configuration to knsh to better
+	  match the naming used with other platforms (2014-9-8).
+	* configs/cc3200-launchpad/README.txt: Add README file for the CC3200
+	  Launchpad (2014-9-9).
+	* configs/sama5d4-ek/README.txt, Kconfig, knsh/defconfig.ROMFS,
+	  src/sam_bringup.c, and sama5d4-ek.h: SAMA5D4-EK kernel config can now
+	  boot from a ROMFS file system (2014-9-9).
+	* LibTargets.mk, Makefile.unix, and Makefile.win: Move commit library
+	  targets out of Makefile.unix and Makeifle.win into a new LibTargets.mk
+	  (2014-9-9).
+	* LibTargets.mk and configs/sama5d4-ek/knsh/Make.defs: Add logic that will
+	  permit us to build user libraries with different CFLAGS than kernel
+	  code.  This is needed because we need the -fno-common option when
+	  building ELF code to prevent SHN_COMMON relocations (2014-9-8).
+	* binfmt/libelf/libelf_symbols.c, libelf_bind.c, and all implementations
+	  of up_relocate(): ELF relocations.  Some relocation types do not have
+	  a named symbol associated with them.  The design did not account for
+	  that case (2014-9-9).
+	* binfmt/binfmt_execmodule.c: When allocating a stack for a new process
+	  using the user-sapce allocator, need to select the address environment
+	  first (2014-9-9).
 	* arch/arm/src/efm32 and include/efm32: Remove patch that remove EFM32
 	  "Remove support for EFM32.  Not ready to be fielded"
 	  Commit remove ID 79f13683cc25f4ebafde57c72baaf31ae8a55915

@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/binfmt/elf.h
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -95,8 +95,8 @@ struct elf_loadinfo_s
   /* elfalloc is the base address of the memory that is allocated to hold the
    * ELF program image.
    *
-   * If CONFIG_ARCH_ADDRENV=n, elfalloc will be allocated using kmalloc() (or
-   * kzalloc()).  If CONFIG_ARCH_ADDRENV-y, then elfalloc will be allocated using
+   * If CONFIG_ARCH_ADDRENV=n, elfalloc will be allocated using kmm_malloc() (or
+   * kmm_zalloc()).  If CONFIG_ARCH_ADDRENV-y, then elfalloc will be allocated using
    * up_addrenv_create().  In either case, there will be a unique instance
    * of elfalloc (and stack) for each instance of a process.
    *
@@ -303,6 +303,10 @@ bool up_checkarch(FAR const Elf32_Ehdr *hdr);
  * Input Parameters:
  *   rel - The relocation type
  *   sym - The ELF symbol structure containing the fully resolved value.
+ *         There are a few relocation types for a few architectures that do
+ *         not require symbol information.  For those, this value will be
+ *         NULL.  Implementations of these functions must be able to handle
+ *         that case.
  *   addr - The address that requires the relocation.
  *
  * Returned Value:

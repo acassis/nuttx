@@ -150,13 +150,13 @@ static void set_l2_entry(FAR uint32_t *l2table, uintptr_t paddr,
  * Name: up_addrenv_create_region
  *
  * Description:
- *   Destroy one memory region.
+ *   Create one memory region.
  *
  ****************************************************************************/
 
-int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
-                             uintptr_t vaddr, size_t regionsize,
-                             uint32_t mmuflags)
+static int up_addrenv_create_region(FAR uintptr_t **list,
+                                    unsigned int listlen, uintptr_t vaddr,
+                                    size_t regionsize, uint32_t mmuflags)
 {
   irqstate_t flags;
   uintptr_t paddr;
@@ -173,10 +173,13 @@ int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
 
   /* Verify that we are configured with enough virtual address space to
    * support this memory region.
+   *
+   *   npages pages correspondes to (npages << MM_PGSHIFT) bytes
+   *   listlen sections corresponds to (listlen << 20) bytes
    */
 
   npages = MM_NPAGES(regionsize);
-  if (npages > listlen)
+  if (npages > (listlen << (20 - MM_PGSHIFT)))
     {
       bdbg("ERROR: npages=%u listlen=%u\n", npages, listlen);
       return -E2BIG;
@@ -188,7 +191,7 @@ int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
    */
 
   nmapped = 0;
-  for (i = 0; i < npages; i++)
+  for (i = 0; i < npages; i += ENTRIES_PER_L2TABLE)
     {
       /* Allocate one physical page for the L2 page table */
 
@@ -199,7 +202,7 @@ int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
         }
 
       DEBUGASSERT(MM_ISALIGNED(paddr));
-      list[i] = (FAR uint32_t *)paddr;
+      list[i] = (FAR uintptr_t *)paddr;
 
       /* Temporarily map the page into the virtual address space */
 
@@ -241,7 +244,7 @@ int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
                         (uintptr_t)l2table +
                         ENTRIES_PER_L2TABLE * sizeof(uint32_t));
 
-      /* Restore the original L1 page table entry */
+      /* Restore the scratch section L1 page table entry */
 
       mmu_l1_restore(ARCH_SCRATCH_VBASE, l1save);
       irqrestore(flags);
@@ -258,8 +261,8 @@ int up_addrenv_create_region(FAR uintptr_t **list, unsigned int listlen,
  *
  ****************************************************************************/
 
-void up_addrenv_destroy_region(FAR uintptr_t **list, unsigned int listlen,
-                               uintptr_t vaddr)
+static void up_addrenv_destroy_region(FAR uintptr_t **list,
+                                      unsigned int listlen, uintptr_t vaddr)
 {
   irqstate_t flags;
   uintptr_t paddr;
@@ -300,7 +303,7 @@ void up_addrenv_destroy_region(FAR uintptr_t **list, unsigned int listlen,
                 }
             }
 
-          /* Restore the original L1 page table entry */
+          /* Restore the scratch section L1 page table entry */
 
           mmu_l1_restore(ARCH_SCRATCH_VBASE, l1save);
           irqrestore(flags);
@@ -329,7 +332,10 @@ void up_addrenv_destroy_region(FAR uintptr_t **list, unsigned int listlen,
  *   textsize - The size (in bytes) of the .text address environment needed
  *     by the task.  This region may be read/execute only.
  *   datasize - The size (in bytes) of the .data/.bss address environment
- *     needed by the task.  This region may be read/write only.
+ *     needed by the task.  This region may be read/write only.  NOTE: The
+ *     actual size of the data region that is allocated will include a
+ *     OS private reserved region at the beginning.  The size of the
+ *     private, reserved region is give by ARCH_DATA_RESERVE_SIZE.
  *   addrenv - The location to return the representation of the task address
  *     environment.
  *
@@ -361,18 +367,22 @@ int up_addrenv_create(size_t textsize, size_t datasize,
 
   ret = up_addrenv_create_region(addrenv->text, ARCH_TEXT_NSECTS,
                                  CONFIG_ARCH_TEXT_VBASE, textsize,
-                                 MMU_L2_TEXTFLAGS);
+                                 MMU_L2_UTEXTFLAGS);
   if (ret < 0)
     {
       bdbg("ERROR: Failed to create .text region: %d\n", ret);
       goto errout;
     }
 
-  /* Allocate .bss/.data space pages */
+  /* Allocate .bss/.data space pages.  NOTE that a configurable offset is
+   * added to the allocted size.  This is matched by the offset that is
+   * used when reporting the virtual data address in up_addrenv_vdata().
+   */
 
   ret = up_addrenv_create_region(addrenv->data, ARCH_DATA_NSECTS,
-                                 CONFIG_ARCH_DATA_VBASE, datasize,
-                                 MMU_L2_DATAFLAGS);
+                                 CONFIG_ARCH_DATA_VBASE,
+                                 datasize + ARCH_DATA_RESERVE_SIZE,
+                                 MMU_L2_UDATAFLAGS);
   if (ret < 0)
     {
       bdbg("ERROR: Failed to create .bss/.data region: %d\n", ret);
@@ -488,7 +498,7 @@ int up_addrenv_vdata(FAR group_addrenv_t *addrenv, uintptr_t textsize,
   /* Not much to do in this case */
 
   DEBUGASSERT(addrenv && vdata);
-  *vdata = (FAR void *)CONFIG_ARCH_DATA_VBASE;
+  *vdata = (FAR void *)(CONFIG_ARCH_DATA_VBASE + ARCH_DATA_RESERVE_SIZE);
   return OK;
 }
 
@@ -678,9 +688,6 @@ int up_addrenv_restore(FAR const save_addrenv_t *oldenv)
 
 int up_addrenv_coherent(FAR const group_addrenv_t *addrenv)
 {
-  uintptr_t vaddr;
-  int i;
-
   DEBUGASSERT(addrenv);
 
   /* Invalidate I-Cache */

@@ -69,7 +69,7 @@
  *
  * Description:
  *   Allocate data memory for the NXFLAT image. If CONFIG_ARCH_ADDRENV=n,
- *   memory will be allocated using kzalloc().  If CONFIG_ARCH_ADDRENV-y,
+ *   memory will be allocated using kmm_zalloc().  If CONFIG_ARCH_ADDRENV-y,
  *   then memory will be allocated using up_addrenv_create().
  *
  * Input Parameters:
@@ -95,7 +95,7 @@ int nxflat_addrenv_alloc(FAR struct nxflat_loadinfo_s *loadinfo, size_t envsize)
 
   /* Allocate the struct dspace_s container for the D-Space allocation */
 
-  dspace = (FAR struct dspace_s *)kmalloc(sizeof(struct dspace_s));
+  dspace = (FAR struct dspace_s *)kmm_malloc(sizeof(struct dspace_s));
   if (dspace == 0)
     {
       bdbg("ERROR: Failed to allocate DSpace\n");
@@ -157,15 +157,15 @@ errout_with_addrenv:
   loadinfo->addrenv = 0;
 
 errout_with_dspace:
-  kfree(dspace);
+  kmm_free(dspace);
   return ret;
 #else
   /* Allocate (and zero) memory to hold the ELF image */
 
-  dspace->region = (FAR uint8_t *)kuzalloc(envsize);
+  dspace->region = (FAR uint8_t *)kumm_zalloc(envsize);
   if (!dspace->region)
     {
-      kfree(dspace);
+      kmm_free(dspace);
       return -ENOMEM;
     }
 
@@ -220,14 +220,14 @@ void nxflat_addrenv_free(FAR struct nxflat_loadinfo_s *loadinfo)
 
       if (dspace->region)
         {
-          kufree(dspace->region);
+          kumm_free(dspace->region);
         }
 #endif
 
       /* Now destroy the D-Space container */
 
       DEBUGASSERT(dspace->crefs == 1);
-      kfree(dspace);
+      kmm_free(dspace);
       loadinfo->dspace = NULL;
     }
 }

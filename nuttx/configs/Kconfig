@@ -12,15 +12,6 @@ choice
 		be available for selection.  Use ARCH_BOARD_CUSTOM to create a new
 		board configuration.
 
-config ARCH_BOARD_16Z
-	bool "16z Board"
-	depends on ARCH_CHIP_Z16F2811
-	select ARCH_HAVE_LEDS
-	---help---
-		This selection enables the port of NuttX port to the 16z board. The
-		16z board is based on the ZiLOG ZNEO Z16F2811AL20EG part.  See
-		https://github.com/toyaga/16z for further information.
-
 config ARCH_BOARD_AMBER
 	bool "Amber Web Server"
 	depends on ARCH_CHIP_ATMEGA128
@@ -134,13 +125,6 @@ config ARCH_BOARD_EAGLE100
 		Micromint Eagle-100 Development board.  This board is based on the
 		an ARM Cortex-M3 MCU, the Luminary LM3S6918. This OS is built with the
 		arm-nuttx-elf toolchain*.  STATUS:  This port is complete and mature.
-
-config ARCH_BOARD_EFM32LG_DK3650
-	bool "EFM32 Leopard Gecko Development Kit"
-	depends on ARCH_CHIP_EFM32
-	---help---
-		This is Energy Micro's development kit for the Leopard
-		Gecko MCU, which is an ARM Cortex-M3 device.
 
 config ARCH_BOARD_EFM32TG_STK3300
 	bool "EFM32 Tiny Gecko Starter Kit"
@@ -522,14 +506,6 @@ config ARCH_BOARD_PIRELLI_DPL10
 	---help---
 		This directory contains the board support for Pirelli dpl10 phones.  The
 		additions were made by Craig Comstock (with help form Alan Carvalho de Assis).
-
-config ARCH_BOARD_PJRC_87C52
-	bool "PJRC 87C52 development system"
-	depends on ARCH_CHIP_8052
-	select ARCH_HAVE_LEDS
-	---help---
-		8051 Microcontroller.  This port uses the PJRC 87C52 development system
-		and the SDCC toolchain.   This port is not quite ready for prime time.
 
 config ARCH_BOARD_PX4FMU_V2
 	bool "PX4FMU v2"
@@ -979,7 +955,6 @@ config ARCH_BOARD_CUSTOM_DIR
 
 config ARCH_BOARD
 	string
-	default "16z"                 if ARCH_BOARD_16Z
 	default "amber"               if ARCH_BOARD_AMBER
 	default "arduino-due"         if ARCH_BOARD_ARDUINO_DUE
 	default "avr32dev1"           if ARCH_BOARD_AVR32DEV1
@@ -991,7 +966,7 @@ config ARCH_BOARD
 	default "ea3131"              if ARCH_BOARD_EA3131
 	default "ea3152"              if ARCH_BOARD_EA3152
 	default "eagle100"            if ARCH_BOARD_EAGLE100
-	default "efm32-dk3650"        if ARCH_BOARD_EFM32LG_DK3650
+	default "efm32-stk3300"       if ARCH_BOARD_EFM32TG_STK3300
 	default "ekk-lm3s9b96"        if ARCH_BOARD_EKKLM3S9B96
 	default "ez80f910200kitg"     if ARCH_BOARD_EZ80F910200KITG
 	default "ez80f910200zco"      if ARCH_BOARD_EZ80F910200ZCO
@@ -1030,7 +1005,6 @@ config ARCH_BOARD
 	default "pic32-starterkit"    if ARCH_BOARD_PIC32_STARTERKIT
 	default "pic32mx7mmb"         if ARCH_BOARD_PIC32MX7MMB
 	default "pirelli_dpl10"       if ARCH_BOARD_PIRELLI_DPL10
-	default "pjrc-8051"           if ARCH_BOARD_PJRC_87C52
 	default "px4fmu-v2_upstream"  if ARCH_BOARD_PX4FMU_V2
 	default "nucleo-f401re"       if ARCH_BOARD_NUCLEO_F401RE
 	default "qemu-i486"           if ARCH_BOARD_QEMU_I486
@@ -1131,9 +1105,6 @@ config NSH_MMCSDSPIPORTNO
 
 comment "Board-Specific Options"
 
-if ARCH_BOARD_16Z
-source "configs/16z/Kconfig"
-endif
 if ARCH_BOARD_AMBER
 source "configs/amber/Kconfig"
 endif
@@ -1167,8 +1138,8 @@ endif
 if ARCH_BOARD_EAGLE100
 source "configs/eagle100/Kconfig"
 endif
-if ARCH_BOARD_EFM32LG_DK3650
-source "configs/efm32-dk3650/Kconfig"
+if ARCH_BOARD_EFM32TG_STK3300
+source "configs/efm32-stk3300/Kconfig"
 endif
 if ARCH_BOARD_EKKLM3S9B96
 source "configs/ekk-lm3s9b96/Kconfig"
@@ -1280,9 +1251,6 @@ source "configs/pic32mx7mmb/Kconfig"
 endif
 if ARCH_BOARD_PIRELLI_DPL10
 source "configs/pirelli_dpl10/Kconfig"
-endif
-if ARCH_BOARD_PJRC_87C52
-source "configs/pjrc-8051/Kconfig"
 endif
 if ARCH_BOARD_NUCLEO_F401RE
 source "configs/nucleo-f401re/Kconfig"

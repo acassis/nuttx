@@ -134,6 +134,7 @@
 
 #define GROUP_FLAG_NOCLDWAIT       (1 << 0) /* Bit 0: Do not retain child exit status */
 #define GROUP_FLAG_ADDRENV         (1 << 1) /* Bit 1: Group has an address environment */
+#define GROUP_FLAG_PRIVILEGED      (1 << 2) /* Bit 2: Group is privileged */
 
 /* Values for struct child_status_s ch_flags */
 
@@ -259,7 +260,7 @@ struct dspace_s
   uint16_t crefs;
 
   /* This is the allocated D-Space memory region.  This may be a physical
-   * address allocated with kmalloc(), or it may be virtual address associated
+   * address allocated with kmm_malloc(), or it may be virtual address associated
    * with an address environment (if CONFIG_ARCH_ADDRENV=y).
    */
 
@@ -396,7 +397,8 @@ struct task_group_s
    * allocated using a user-space allocator.
    */
 
-#if defined(CONFIG_NUTTX_KERNEL) && defined(CONFIG_MM_KERNEL_HEAP)
+#if (defined(CONFIG_BUILD_PROTECTED) || defined(CONFIG_BUILD_KERNEL)) && \
+     defined(CONFIG_MM_KERNEL_HEAP)
   FAR struct streamlist *tg_streamlist;
 #else
   struct streamlist tg_streamlist;  /* Holds C buffered I/O info                */
@@ -481,7 +483,6 @@ struct tcb_s
 
   /* Stack-Related Fields *******************************************************/
 
-#ifndef CONFIG_CUSTOM_STACK
   size_t    adj_stack_size;              /* Stack size after adjustment         */
                                          /* for hardware, processor, etc.       */
                                          /* (for debug purposes only)           */
@@ -489,7 +490,6 @@ struct tcb_s
                                          /* Need to deallocate stack            */
   FAR void *adj_stack_ptr;               /* Adjusted stack_alloc_ptr for HW     */
                                          /* The initial stack pointer value     */
-#endif
 
   /* External Module Support ****************************************************/
 
@@ -558,17 +558,7 @@ struct task_tcb_s
   /* Values needed to restart a task ********************************************/
 
   uint8_t  init_priority;                /* Initial priority of the task        */
-
-#if !defined(CONFIG_CUSTOM_STACK) && defined(CONFIG_NUTTX_KERNEL)
-  /* In the kernel mode build, the arguments are saved on the task's stack      */
-
   FAR char **argv;                       /* Name+start-up parameters            */
-#else
-  /* Otherwise, the arguments are strdup'ed and the argv[] is statically        */
-  /* defined here:                                                              */
-
-  char    *argv[CONFIG_MAX_TASK_ARGS+1]; /* Name+start-up parameters            */
-#endif
 };
 
 /* struct pthread_tcb_s **********************************************************/

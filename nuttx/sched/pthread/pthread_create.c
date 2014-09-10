@@ -68,10 +68,13 @@
 /****************************************************************************
  * Global Variables
  ****************************************************************************/
+/* Default pthread attributes (see include/nuttx/pthread.h).  When configured
+ * to build separate kernel- and user-address spaces, this global is
+ * duplicated in each address spaced.  This copy can only be shared within
+ * the kernel address space.
+ */
 
-/* Default pthread attributes */
-
-pthread_attr_t g_default_pthread_attr = PTHREAD_ATTR_INITIALIZER;
+const pthread_attr_t g_default_pthread_attr = PTHREAD_ATTR_INITIALIZER;
 
 /****************************************************************************
  * Private Variables
@@ -190,7 +193,7 @@ static void pthread_start(void)
    * to switch to user-mode before calling into the pthread.
    */
 
-#ifdef CONFIG_NUTTX_KERNEL
+#if defined(CONFIG_BUILD_PROTECTED) || defined(CONFIG_BUILD_KERNEL)
   up_pthread_start(ptcb->cmn.entry.pthread, ptcb->arg);
   exit_status = NULL;
 #else
@@ -225,7 +228,7 @@ static void pthread_start(void)
  *
  ****************************************************************************/
 
-int pthread_create(FAR pthread_t *thread, FAR pthread_attr_t *attr,
+int pthread_create(FAR pthread_t *thread, FAR const pthread_attr_t *attr,
                    pthread_startroutine_t start_routine, pthread_addr_t arg)
 {
   FAR struct pthread_tcb_s *ptcb;
@@ -247,7 +250,7 @@ int pthread_create(FAR pthread_t *thread, FAR pthread_attr_t *attr,
 
   /* Allocate a TCB for the new task. */
 
-  ptcb = (FAR struct pthread_tcb_s *)kzalloc(sizeof(struct pthread_tcb_s));
+  ptcb = (FAR struct pthread_tcb_s *)kmm_zalloc(sizeof(struct pthread_tcb_s));
   if (!ptcb)
     {
       sdbg("ERROR: Failed to allocate TCB\n");
@@ -281,7 +284,7 @@ int pthread_create(FAR pthread_t *thread, FAR pthread_attr_t *attr,
 
   /* Allocate a detachable structure to support pthread_join logic */
 
-  pjoin = (FAR struct join_s*)kzalloc(sizeof(struct join_s));
+  pjoin = (FAR struct join_s*)kmm_zalloc(sizeof(struct join_s));
   if (!pjoin)
     {
       sdbg("ERROR: Failed to allocate join\n");

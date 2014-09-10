@@ -1,7 +1,7 @@
 /****************************************************************************
  * mm/mm_free.c
  *
- *   Copyright (C) 2007, 2009, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2009, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,6 @@
 
 #include <nuttx/config.h>
 
-#include <stdlib.h>
 #include <assert.h>
 #include <debug.h>
 
@@ -54,6 +53,10 @@
  ****************************************************************************/
 
 /****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
  * Name: mm_free
  *
  * Description:
@@ -62,9 +65,6 @@
  *
  ****************************************************************************/
 
-#ifndef CONFIG_MM_MULTIHEAP
-static inline
-#endif
 void mm_free(FAR struct mm_heap_s *heap, FAR void *mem)
 {
   FAR struct mm_freenode_s *node;
@@ -153,23 +153,3 @@ void mm_free(FAR struct mm_heap_s *heap, FAR void *mem)
   mm_addfreechunk(heap, node);
   mm_givesemaphore(heap);
 }
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: free
- *
- * Description:
- *   Returns a chunk of memory to the list of free nodes,  merging with
- *   adjacent free chunks if possible.
- *
- ****************************************************************************/
-
-#if !defined(CONFIG_NUTTX_KERNEL) || !defined(__KERNEL__)
-void free(FAR void *mem)
-{
-  mm_free(&g_mmheap, mem);
-}
-#endif

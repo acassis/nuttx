@@ -135,9 +135,10 @@ static void exec_ctors(FAR void *arg)
 int exec_module(FAR const struct binary_s *binp)
 {
   FAR struct task_tcb_s *tcb;
-#ifndef CONFIG_CUSTOM_STACK
-  FAR uint32_t *stack;
+#ifdef CONFIG_ARCH_ADDRENV
+  save_addrenv_t oldenv;
 #endif
+  FAR uint32_t *stack;
   pid_t pid;
   int err;
   int ret;
@@ -152,40 +153,56 @@ int exec_module(FAR const struct binary_s *binp)
     }
 #endif
 
-  bdbg("Executing %s\n", binp->filename);
+  bvdbg("Executing %s\n", binp->filename);
 
   /* Allocate a TCB for the new task. */
 
-  tcb = (FAR struct task_tcb_s*)kzalloc(sizeof(struct task_tcb_s));
+  tcb = (FAR struct task_tcb_s*)kmm_zalloc(sizeof(struct task_tcb_s));
   if (!tcb)
     {
       err = ENOMEM;
       goto errout;
     }
 
-#ifndef CONFIG_CUSTOM_STACK
+  /* Instantiate the address environment containing the destructors */
+
+#ifdef CONFIG_ARCH_ADDRENV
+  ret = up_addrenv_select(&binp->addrenv, &oldenv);
+  if (ret < 0)
+    {
+      bdbg("ERROR: up_addrenv_select() failed: %d\n", ret);
+      err = -ret;
+      goto errout_with_tcb;
+    }
+#endif
+
   /* Allocate the stack for the new task (always from the user heap) */
 
-  stack = (FAR uint32_t*)kumalloc(binp->stacksize);
+  stack = (FAR uint32_t*)kumm_malloc(binp->stacksize);
   if (!tcb)
     {
       err = ENOMEM;
       goto errout_with_tcb;
     }
 
+  /* Restore the address environment */
+
+#ifdef CONFIG_ARCH_ADDRENV
+  ret = up_addrenv_restore(&oldenv);
+  if (ret < 0)
+    {
+      bdbg("ERROR: up_addrenv_select() failed: %d\n", ret);
+      err = -ret;
+      goto errout_with_stack;
+    }
+#endif
   /* Initialize the task */
 
   ret = task_init((FAR struct tcb_s *)tcb, binp->filename, binp->priority,
                   stack, binp->stacksize, binp->entrypt, binp->argv);
-#else
-  /* Initialize the task */
-
-  ret = task_init((FAR struct tcb_s *)tcb, binp->filename, binp->priority,
-                  stack, binp->entrypt, binp->argv);
-#endif
   if (ret < 0)
     {
-      err = errno;
+      err = get_errno();
       bdbg("task_init() failed: %d\n", err);
       goto errout_with_stack;
     }
@@ -239,7 +256,7 @@ int exec_module(FAR const struct binary_s *binp)
   ret = task_activate((FAR struct tcb_s *)tcb);
   if (ret < 0)
     {
-      err = errno;
+      err = get_errno();
       bdbg("task_activate() failed: %d\n", err);
       goto errout_with_stack;
     }
@@ -247,19 +264,15 @@ int exec_module(FAR const struct binary_s *binp)
   return (int)pid;
 
 errout_with_stack:
-#ifndef CONFIG_CUSTOM_STACK
   tcb->cmn.stack_alloc_ptr = NULL;
   sched_releasetcb(&tcb->cmn, TCB_FLAG_TTYPE_TASK);
-  kufree(stack);
-#else
-  sched_releasetcb(&tcb->cmn, TCB_FLAG_TTYPE_TASK);
-#endif
+  kumm_free(stack);
   goto errout;
 
 errout_with_tcb:
-  kfree(tcb);
+  kmm_free(tcb);
 errout:
-  errno = err;
+  set_errno(err);
   bdbg("returning errno: %d\n", err);
   return ERROR;
 }

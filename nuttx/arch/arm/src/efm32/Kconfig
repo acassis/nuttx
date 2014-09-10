@@ -8,35 +8,22 @@ comment "EFM32 Configuration Options"
 
 choice
 	prompt "EFM32 Chip Selection"
-	default ARCH_CHIP_EFM32LG990F256
+	default ARCH_CHIP_EFM32TG840F32
 
-config ARCH_CHIP_EFM32LG232F128
-	bool "EFM32LG232F128"
+config ARCH_CHIP_EFM32TG840F32
+	bool "EFM32TG840F32"
 	select ARCH_CORTEXM3
 	---help---
-		This chip is a Leopard Gecko with 128 KB flash
-		and 32 KB RAM in a QFP64 package
-
-config ARCH_CHIP_EFM32LG990F256
-	bool "EFM32LG990F256"
-	select ARCH_CORTEXM3
-	---help---
-		This chip is a Leopard Gecko with 256 KB flash
-		and 32 KB RAM in a BGA112 package.
-
-config ARCH_CHIP_EFM32GG990F1024
-	bool "EFM32GG990F1024"
-	select ARCH_CORTEXM3
-	---help---
-		This chip is a Giant Gecko with 1024 KB flash
-		and 128 KB RAM in a BGA112 package.
+		This chip is a Tiny Gecko with 32 KB flash
+		and 4 KB RAM in a QFN64 package
 
 config ARCH_CHIP_EFM32GG330F1024
 	bool "EFM32GG330F1024"
 	select ARCH_CORTEXM3
 	---help---
 		This chip is a Giant Gecko with 1024 KB flash
-		and 128 KB RAM in a QFP64 package.
+		and 128 KB RAM in a QFP64 package
+        Planned but not done yet ! 
 
 endchoice
 
