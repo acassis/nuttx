@@ -23,7 +23,7 @@ config ARCH_CHIP_EFM32GG330F1024
 	---help---
 		This chip is a Giant Gecko with 1024 KB flash
 		and 128 KB RAM in a QFP64 package
-        Planned but not done yet ! 
+		Planned but not done yet ! 
 
 endchoice
 
