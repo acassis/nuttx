@@ -101,6 +101,7 @@ CHIP_CSRCS += ITM_cm3.c
 CHIP_CSRCS += efm32_start.c
 CHIP_CSRCS += efm32_irq.c 
 CHIP_CSRCS += efm32_gpio.c 
+CHIP_CSRCS += efm32_serial.c
 
 ifneq ($(CONFIG_SCHED_TICKLESS),y)
 CHIP_CSRCS += efm32_timerisr.c

@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/efm32-dk3650/include/board.h
+ * arch/arm/src/efm32/efm32_serial.c
  *
  *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
@@ -33,24 +33,43 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_STK3300_INCLUDE_BOARD_H
-#define __CONFIGS_EFM32_STK3300_INCLUDE_BOARD_H
-
 /****************************************************************************
- * Public Function Prototypes
+ * Included Files
  ****************************************************************************/
 
-#define CONFIG_EFM32_SWO_LOCATION   1 
+#include <nuttx/config.h>
 
-/* Both ar possible depend of debugger used */
-#if ( CONFIG_EFM32_SWO_LOCATION == 0 )
-#   define CONFIG_EFM32_SWO_PORT       gpioPortF
-#   define CONFIG_EFM32_SWO_PIN        2
-#elif ( CONFIG_EFM32_SWO_LOCATION == 1 )
-#   define CONFIG_EFM32_SWO_PORT       gpioPortC
-#   define CONFIG_EFM32_SWO_PIN        15
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <string.h>
+#include <errno.h>
+#include <debug.h>
+
+#include <nuttx/irq.h>
+#include <nuttx/arch.h>
+#include <nuttx/serial/serial.h>
+#include <nuttx/power/pm.h>
+
+#ifdef CONFIG_SERIAL_TERMIOS
+#  include <termios.h>
 #endif
 
-void efm32_boardinitialize(void);
+#include <arch/serial.h>
+#include <arch/board/board.h>
 
-#endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */
+#include "chip.h"
+//#include "efm32_uart.h"
+//#include "efm32_dma.h"
+//#include "efm32_rcc.h"
+#include "up_arch.h"
+#include "up_internal.h"
+
+void up_serialinit(void)
+{
+    /* dummy driver I'm done yet ! sorry */
+}
+
+

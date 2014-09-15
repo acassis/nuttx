@@ -3,6 +3,8 @@
  *
  *   Copyright (C) 2014 Richard Cochran. All rights reserved.
  *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -92,7 +94,7 @@ void efm32_lowsetup(void)
 
     /* Enable trace in core debug */
     
-    *(uint32_t*)NVIC_DEMCR |= NVIC_DEMCR_TRCENA;
+    putreg32(getreg32(NVIC_DEMCR)|NVIC_DEMCR_TRCENA, NVIC_DEMCR);
     putreg32(0xC5ACCE55,ITM_LAR );
     putreg32(0x0,       ITM_TER );
     putreg32(0x0,       ITM_TCR );
@@ -101,7 +103,8 @@ void efm32_lowsetup(void)
 
     /* default 880kbps */
 
-    putreg32(0xf       , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
+    //putreg32(0xf       , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
+    putreg32(14        , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
     putreg32(0x0       , ITM_TPR  );
     putreg32(0x400003FE, DWT_CTRL );
     putreg32(0x0001000D, ITM_TCR  );
