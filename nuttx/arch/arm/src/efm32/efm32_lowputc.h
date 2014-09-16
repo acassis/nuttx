@@ -40,7 +40,7 @@
  * Public Functions
  ****************************************************************************/
 
-#ifdef CONFIG_DEV_LOWCONSOLE
+#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
 
 void efm32_lowsetup(void);
 

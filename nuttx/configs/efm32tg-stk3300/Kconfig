@@ -7,4 +7,17 @@ if ARCH_BOARD_EFM32TG_STK3300
 
 comment "EFM32 STK3300 Hardware Configuration"
 
+config EFM32_SWO_LOCATION
+	int "Swo location output"
+	default 1
+	---help---
+		Select with location of SWO pin.
+
+config EFM32_SWO_DIV
+	int "Swo divider output (=14Mhz/x)"
+	default 16
+	---help---
+		Choose SWO speed by set divider.
+		SWO speed is 14Mhz/(swo_divider).
+
 endif

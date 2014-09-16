@@ -427,7 +427,9 @@ void up_lowputc(char ch);
 void up_puts(const char *str);
 void up_lowputs(const char *str);
 
-#if CONFIG_NFILE_DESCRIPTORS > 0
+#if (  (defined CONFIG_SERIAL ) \
+     &&( CONFIG_NFILE_DESCRIPTORS > 0 ) \
+    )
 void up_earlyserialinit(void);
 void up_serialinit(void);
 #else

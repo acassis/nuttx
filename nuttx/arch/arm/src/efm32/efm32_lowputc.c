@@ -53,6 +53,15 @@
 
 #include "up_arch.h"
 
+
+#ifndef CONFIG_EFM32_SWO_DIV
+#   define CONFIG_EFM32_SWO_DIV 0xf 
+#endif
+#if ( CONFIG_EFM32_SWO_DIV < 0 )
+#   error "CONFIG_EFM32_SWO_DIV should be at least equal to 1"
+#endif
+
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -102,9 +111,7 @@ void efm32_lowsetup(void)
 
 
     /* default 880kbps */
-
-    //putreg32(0xf       , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
-    putreg32(14        , TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
+    putreg32(CONFIG_EFM32_SWO_DIV-1, TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
     putreg32(0x0       , ITM_TPR  );
     putreg32(0x400003FE, DWT_CTRL );
     putreg32(0x0001000D, ITM_TCR  );
@@ -114,6 +121,7 @@ void efm32_lowsetup(void)
 
 void up_lowputc(char c)
 {
+#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
     /* use Port #0 at default */
 
     int ch = 0;
@@ -130,16 +138,23 @@ void up_lowputc(char c)
         while (getreg32(ITM_PORT(ch)) == 0);
         putreg8((uint8_t) c,ITM_PORT(ch));
     }
+#else
+    (void)c;
+#endif
 }
 
 void up_putc(char c)
 {
+#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
     /* Convert LF into CRLF. */
     
     if (c == '\n')
         up_lowputc('\r');
 
     up_lowputc(c);
+#else
+    (void)c;
+#endif
 }
 
 

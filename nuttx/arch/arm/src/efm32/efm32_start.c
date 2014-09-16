@@ -113,6 +113,7 @@ static void go_os_start(void *pv, unsigned int nbytes)
     "\tbne  1b\n"               /* Bottom of the loop */
 
     "2:\n"
+CHIP_CSRCS += efm32_lowputc.c
     "\tmov  r14, #0\n"          /* LR = return address (none) */
     "\tb    os_start\n"         /* Branch to os_start */
   );
@@ -181,9 +182,9 @@ void __start(void)
 
   /* Perform early serial initialization */
 
-#ifdef USE_EARLYSERIALINIT
+
   up_earlyserialinit();
-#endif
+
   showprogress('D');
 
   /* For the case of the separate user-/kernel-space build, perform whatever
