@@ -1,8 +1,9 @@
-/*****************************************************************************
- * configs/efm32-dk3650/src/efm32_boot.c
+/****************************************************************************
+ * arch/arm/src/efm32/keypad/keypad.h
+ * Driver for Stk3300 keypad hardware
  *
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2011 Stefan Richter. All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,38 +34,32 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-#include <nuttx/config.h>
-
 #ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
 
-#   include <efm32_gpio_keypad.h>
+#include <nuttx/input/kbd_codec.h>
 
-efm32_gpio_kbd_list_t gpio_kbd_list[] = 
+struct 
 {
-    {
-        .pin        =   0           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_LEFT,
-    },
-    {
-        .pin        =   1           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_RIGHT,
-    }
-    {
-        .pin = -1,
-    }
-};
+    /* pin number of this key, set -1 to indicate end */
+
+    int pin;
+
+    /* port of this key 0 first port */
+
+    int port;
+
+    /* key correspondence for specific key. for normal key put "KEYCODE_NORMAL" */
+
+    enum kbd_keycode_e keycode;
+
+    /* 
+       key correspondence for normal key. 
+       keycode should be set at "KEYCODE_NORMAL" 
+     */
+
+    char ch;
+}efm32_gpio_kbd_list_t; 
 
 #endif
-
-void efm32_boardinitialize(void)
-{
-    efm32_gpio_kbd_init(gpio_kbd_list);
-}
 
 

@@ -71,6 +71,10 @@ ifneq ($(CONFIG_INPUT_STMPE811_TEMP_DISABLE),y)
 endif
 endif
 
+ifeq ($(CONFIG_INPUT_EFM32_GPIO_KEYPAD),y)
+  CSRCS += efm32_gpio_keypad.c
+endif
+
 # Include input device driver build support
 
 DEPPATH += --dep-path input

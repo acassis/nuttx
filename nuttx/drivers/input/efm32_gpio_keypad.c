@@ -1,8 +1,9 @@
-/*****************************************************************************
- * configs/efm32-dk3650/src/efm32_boot.c
+/****************************************************************************
+ * arch/arm/src/efm32/keypad/keypad.c
+ * Driver for Stk3300 keypad hardware
  *
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2011 Stefan Richter. All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,38 +34,43 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
 #include <nuttx/config.h>
 
-#ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
+#include <nuttx/arch.h>
+#include <nuttx/irq.h>
 
-#   include <efm32_gpio_keypad.h>
+#include <stdint.h>
+#include <errno.h>
+#include <unistd.h>
 
-efm32_gpio_kbd_list_t gpio_kbd_list[] = 
+#include <nuttx/streams.h>
+#include <nuttx/input/kbd_codec.h>
+
+#include <efm32_gpio_keypad.h>
+
+static efm32_gpio_kpd_list_t kbd_list_p = NULL;
+
+/****************************************************************************
+ * Keypad interrupt handler
+ *   mask interrupts
+ *   prepare column drivers for scan
+ *   posts keypad semaphore
+ ****************************************************************************/
+
+inline int efm32_gpio_kbd_irq(int irq, uint32_t * regs)
 {
-    {
-        .pin        =   0           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_LEFT,
-    },
-    {
-        .pin        =   1           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_RIGHT,
-    }
-    {
-        .pin = -1,
-    }
-};
+    (void)irq;
+    (void)regs;
+    return 0;
+}
 
-#endif
+/****************************************************************************
+ * Initialize GPIO for key pad.
+ ****************************************************************************/
 
-void efm32_boardinitialize(void)
+void efm32_gpio_kbd_init(efm32_gpio_kpd_list_t* list)
 {
-    efm32_gpio_kbd_init(gpio_kbd_list);
+    (void)list;
 }
 
 

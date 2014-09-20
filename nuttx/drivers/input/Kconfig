@@ -321,3 +321,12 @@ config STMPE811_REGDEBUG
 		Enable very low register-level debug output.
 
 endif
+
+config INPUT_EFM32_GPIO_KEYPAD
+	bool "EFM32 GPIO keypad Driver"
+	depends on ARCH_CHIP_EFM32
+	default n
+	---help---
+		Enables support for keypad on gpio.
+
+
