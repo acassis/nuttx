@@ -47,17 +47,17 @@
 keybad_gpio_list_t gpio_kbd_list[] = 
 {
     {
+        .port       =   2               ,
         .pin        =   0               ,
-        .port       =   1               , /* 1 => portB */
         .keycode    =   KEYCODE_LEFT    ,
     },
     {
+        .port       =   2               , 
         .pin        =   1               ,
-        .port       =   1               , /* 1 => portB */ 
         .keycode    =   KEYCODE_RIGHT   ,
     },
     {
-        .pin = -1,
+        .port = 0,
     }
 };
 

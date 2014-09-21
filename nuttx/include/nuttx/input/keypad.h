@@ -48,13 +48,18 @@ extern "C" {
 
 typedef struct 
 {
-    /* pin number of this key, set -1 to indicate end */
-
-    int8_t pin;
-
-    /* port of this key 0 first port */
+    /* GPIO port of this key.
+       0 => end of list
+       1 => first port 
+       2 => second port 
+       etc...
+     */
 
     uint8_t port;
+
+    /* pin number of this key */
+
+    uint8_t pin;
 
     /* key correspondence of one of enum kbd_keycode_e. 
        for normal key put "KEYCODE_NORMAL" 
