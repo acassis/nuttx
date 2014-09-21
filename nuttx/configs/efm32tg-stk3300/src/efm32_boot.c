@@ -65,7 +65,7 @@ keybad_gpio_list_t gpio_kbd_list[] =
 
 void efm32_boardinitialize(void)
 {
-    //efm32_gpio_kbd_init(gpio_kbd_list);
+    keypad_gpio_init(gpio_kbd_list);
 }
 
 

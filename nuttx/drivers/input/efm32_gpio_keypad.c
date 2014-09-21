@@ -69,7 +69,7 @@ inline int efm32_gpio_kbd_irq(int irq, uint32_t * regs)
  * Initialize GPIO for key pad.
  ****************************************************************************/
 
-int keybad_gpio_init(keybad_gpio_list_t* list)
+int keypad_gpio_init(keybad_gpio_list_t* list)
 {
 
     DEBUGASSERT(gpio_list_p == NULL);

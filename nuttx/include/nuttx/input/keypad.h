@@ -72,7 +72,7 @@ typedef struct
 }keybad_gpio_list_t; 
 
 
-int keybad_gpio_init(keybad_gpio_list_t* list);
+int keypad_gpio_init(keybad_gpio_list_t* list);
 
 int keypad_kbdinit(void);
 
