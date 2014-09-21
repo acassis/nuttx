@@ -46,9 +46,10 @@
 #include <nuttx/streams.h>
 #include <nuttx/input/kbd_codec.h>
 
-#include <efm32_gpio_keypad.h>
+#include <nuttx/input/keypad.h>
 
-static efm32_gpio_kpd_list_t kbd_list_p = NULL;
+
+static keybad_gpio_list_t *gpio_list_p = NULL;
 
 /****************************************************************************
  * Keypad interrupt handler
@@ -68,9 +69,16 @@ inline int efm32_gpio_kbd_irq(int irq, uint32_t * regs)
  * Initialize GPIO for key pad.
  ****************************************************************************/
 
-void efm32_gpio_kbd_init(efm32_gpio_kpd_list_t* list)
+int keybad_gpio_init(keybad_gpio_list_t* list)
 {
-    (void)list;
+
+    DEBUGASSERT(gpio_list_p == NULL);
+
+    gpio_list_p = list;
+    /* pnbtodo : initialise irq pin or polling */
+
+    return 0;
 }
+
 
 

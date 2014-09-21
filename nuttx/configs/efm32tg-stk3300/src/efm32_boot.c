@@ -41,20 +41,21 @@
 
 #ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
 
-#   include <efm32_gpio_keypad.h>
+#include <nuttx/input/kbd_codec.h>
+#include <nuttx/input/keypad.h>
 
-efm32_gpio_kbd_list_t gpio_kbd_list[] = 
+keybad_gpio_list_t gpio_kbd_list[] = 
 {
     {
-        .pin        =   0           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_LEFT,
+        .pin        =   0               ,
+        .port       =   1               , /* 1 => portB */
+        .keycode    =   KEYCODE_LEFT    ,
     },
     {
-        .pin        =   1           ,
-        .port       =   gpioPortB   ,
-        .keycode    =   KEYCODE_RIGHT,
-    }
+        .pin        =   1               ,
+        .port       =   1               , /* 1 => portB */ 
+        .keycode    =   KEYCODE_RIGHT   ,
+    },
     {
         .pin = -1,
     }
@@ -64,7 +65,7 @@ efm32_gpio_kbd_list_t gpio_kbd_list[] =
 
 void efm32_boardinitialize(void)
 {
-    efm32_gpio_kbd_init(gpio_kbd_list);
+    //efm32_gpio_kbd_init(gpio_kbd_list);
 }
 
 

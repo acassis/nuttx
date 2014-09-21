@@ -324,6 +324,7 @@ endif
 
 config INPUT_EFM32_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
+    select LIB_KBDCODEC
 	depends on ARCH_CHIP_EFM32
 	default n
 	---help---
