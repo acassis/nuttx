@@ -39,33 +39,16 @@
 
 #include <nuttx/config.h>
 
-#ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
-
-#include <nuttx/input/kbd_codec.h>
 #include <nuttx/input/keypad.h>
 
-keybad_gpio_list_t gpio_kbd_list[] = 
-{
-    {
-        .port       =   2               ,
-        .pin        =   0               ,
-        .keycode    =   KEYCODE_LEFT    ,
-    },
-    {
-        .port       =   2               , 
-        .pin        =   1               ,
-        .keycode    =   KEYCODE_RIGHT   ,
-    },
-    {
-        .port = 0,
-    }
-};
-
-#endif
 
 void efm32_boardinitialize(void)
 {
-    keypad_gpio_init(gpio_kbd_list);
+
+#ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
+    keypad_kbdinit();
+#endif
+
 }
 
 

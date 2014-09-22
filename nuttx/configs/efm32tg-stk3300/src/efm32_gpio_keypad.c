@@ -48,8 +48,9 @@
 
 #include <nuttx/input/keypad.h>
 
+#include "efm32.h"
+#include <efm32_gpio.h>
 
-static keybad_gpio_list_t *gpio_list_p = NULL;
 
 /****************************************************************************
  * Keypad interrupt handler
@@ -58,10 +59,10 @@ static keybad_gpio_list_t *gpio_list_p = NULL;
  *   posts keypad semaphore
  ****************************************************************************/
 
-inline int efm32_gpio_kbd_irq(int irq, uint32_t * regs)
+int efm32_gpio_kbd_irq(int irq, FAR void* context)
 {
     (void)irq;
-    (void)regs;
+    (void)context;
     return 0;
 }
 
@@ -69,13 +70,41 @@ inline int efm32_gpio_kbd_irq(int irq, uint32_t * regs)
  * Initialize GPIO for key pad.
  ****************************************************************************/
 
-int keypad_gpio_init(keybad_gpio_list_t* list)
+int keypad_kbdinit(void)
 {
 
-    DEBUGASSERT(gpio_list_p == NULL);
-
-    gpio_list_p = list;
     /* pnbtodo : initialise irq pin or polling */
+
+    irq_attach(EFM32_IRQ_GPIO_ODD,  efm32_gpio_kbd_irq);
+    irq_attach(EFM32_IRQ_GPIO_EVEN, efm32_gpio_kbd_irq);
+    up_enable_irq(EFM32_IRQ_GPIO_ODD);
+    up_enable_irq(EFM32_IRQ_GPIO_EVEN);
+
+    GPIO_PinModeSet( gpioPortB,
+                     0,
+                     gpioModeInputPullFilter,
+                     1
+                   );
+
+    GPIO_PinModeSet( gpioPortB,
+                     1,
+                     gpioModeInputPullFilter,
+                     1
+                   );
+
+    GPIO_IntConfig( gpioPortB,
+                    0,
+                    true,
+                    true,
+                    true
+                  );
+
+    GPIO_IntConfig( gpioPortB,
+                    0,
+                    true,
+                    true,
+                    true
+                  );
 
     return 0;
 }

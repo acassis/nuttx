@@ -44,41 +44,6 @@
 extern "C" {
 #endif
 
-#include <nuttx/input/kbd_codec.h>
-
-typedef struct 
-{
-    /* GPIO port of this key.
-       0 => end of list
-       1 => first port 
-       2 => second port 
-       etc...
-     */
-
-    uint8_t port;
-
-    /* pin number of this key */
-
-    uint8_t pin;
-
-    /* key correspondence of one of enum kbd_keycode_e. 
-       for normal key put "KEYCODE_NORMAL" 
-     */
-
-    uint8_t keycode;
-
-    /* 
-       key correspondence for normal key. 
-       keycode should be set at "KEYCODE_NORMAL" 
-     */
-
-    char ch;
-
-}keybad_gpio_list_t; 
-
-
-int keypad_gpio_init(keybad_gpio_list_t* list);
-
 int keypad_kbdinit(void);
 
 #ifdef __cplusplus

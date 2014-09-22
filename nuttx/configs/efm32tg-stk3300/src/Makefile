@@ -36,9 +36,29 @@
 -include $(TOPDIR)/Make.defs
 
 CSRCS = efm32_boot.c
+
+ifeq ($(CONFIG_INPUT_EFM32_GPIO_KEYPAD),y)
+CSRCS += efm32_gpio_keypad.c
+endif
+
 COBJS = $(CSRCS:.c=$(OBJEXT))
 SRCS = $(ASRCS) $(CSRCS)
 OBJS = $(AOBJS) $(COBJS)
+
+ARCH_SRCDIR = $(TOPDIR)/arch/$(CONFIG_ARCH)/src
+ifeq ($(CONFIG_WINDOWS_NATIVE),y)
+  CFLAGS += -I$(ARCH_SRCDIR)\chip -I$(ARCH_SRCDIR)\common -I$(ARCH_SRCDIR)\armv7-m
+else
+ifeq ($(WINTOOL),y)
+  CFLAGS += -I "${shell cygpath -w $(ARCH_SRCDIR)/chip}" \
+			-I "${shell cygpath -w $(ARCH_SRCDIR)/common}" \
+			-I "${shell cygpath -w $(ARCH_SRCDIR)/armv7-m}"
+else
+  CFLAGS += -I$(ARCH_SRCDIR)/chip -I$(ARCH_SRCDIR)/common -I$(ARCH_SRCDIR)/armv7-m
+endif
+endif
+
+
 
 $(COBJS) $(LINKOBJS): %$(OBJEXT): %.c
 	$(call COMPILE, $<, $@)
