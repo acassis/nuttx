@@ -129,6 +129,14 @@ static void efm32_clockconfig(void)
 
 static void efm32_gpioinit(void)
 {
+    if ( *((uint32_t*)0x40006044) != 0xFFFF )
+    {
+        showprogress('Z');
+    }
+    else
+    {
+        showprogress('Y');
+    }
 }
 
 /****************************************************************************
@@ -143,12 +151,14 @@ static void efm32_gpioinit(void)
  *
  ****************************************************************************/
 
+volatile bool lock = true;
+
 void __start(void)
 {
   const uint32_t *src;
   uint32_t *dest;
 
-  /* Configure the uart so that we can get debug output as soon as possible */
+  /* Configure the uart so that we can get debug outuput as soon as possible */
 
   efm32_clockconfig();
   efm32_lowsetup();

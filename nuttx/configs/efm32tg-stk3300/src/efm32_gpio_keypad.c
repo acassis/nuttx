@@ -68,6 +68,8 @@ int efm32_gpio_kbd_irq(int irq, FAR void* context)
 
 /****************************************************************************
  * Initialize GPIO for key pad.
+ PortD  8  => PB0 LEFT
+ PortB 11  => PB1 RIGHT
  ****************************************************************************/
 
 int keypad_kbdinit(void)
@@ -81,26 +83,26 @@ int keypad_kbdinit(void)
     up_enable_irq(EFM32_IRQ_GPIO_EVEN);
 
     GPIO_PinModeSet( gpioPortB,
-                     0,
+                     11,
                      gpioModeInputPullFilter,
                      1
                    );
 
-    GPIO_PinModeSet( gpioPortB,
-                     1,
+    GPIO_PinModeSet( gpioPortD,
+                     8,
                      gpioModeInputPullFilter,
                      1
                    );
 
     GPIO_IntConfig( gpioPortB,
-                    0,
+                    11,
                     true,
                     true,
                     true
                   );
 
-    GPIO_IntConfig( gpioPortB,
-                    0,
+    GPIO_IntConfig( gpioPortD,
+                    8,
                     true,
                     true,
                     true
