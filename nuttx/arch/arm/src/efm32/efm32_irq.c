@@ -104,11 +104,9 @@ static void efm32_dumpnvic(const char *msg, int irq)
   lldbg("NVIC (%s, irq=%d):\n", msg, irq);
   lldbg("  INTCTRL:    %08x VECTAB:  %08x\n",
         getreg32(NVIC_INTCTRL), getreg32(NVIC_VECTAB));
-#if 0
   lldbg("  SYSH ENABLE MEMFAULT: %08x BUSFAULT: %08x USGFAULT: %08x SYSTICK: %08x\n",
         getreg32(NVIC_SYSHCON_MEMFAULTENA), getreg32(NVIC_SYSHCON_BUSFAULTENA),
         getreg32(NVIC_SYSHCON_USGFAULTENA), getreg32(NVIC_SYSTICK_CTRL_ENABLE));
-#endif
   lldbg("  IRQ ENABLE: %08x %08x %08x\n",
         getreg32(NVIC_IRQ0_31_ENABLE), getreg32(NVIC_IRQ32_63_ENABLE),
         getreg32(NVIC_IRQ64_95_ENABLE));
@@ -537,3 +535,6 @@ int up_prioritize_irq(int irq, int priority)
   return OK;
 }
 #endif
+
+
+

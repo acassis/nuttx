@@ -27,4 +27,10 @@ config ARCH_CHIP_EFM32GG330F1024
 
 endchoice
 
+
+config GPIO_IRQ_DISPATCHER
+	bool "GPIO interrupts dispatch"
+	---help---
+		Enable dispatcher for interrupting GPIO pins
+
 endif

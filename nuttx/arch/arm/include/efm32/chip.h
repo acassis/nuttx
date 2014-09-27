@@ -61,7 +61,6 @@
 /* EFM32 EnergyMicro ************************************************************/
 
 
-
 #if defined(CONFIG_ARCH_CHIP_EFM32TG840F32) 
 #  define CONFIG_EFM32_EFM32TG               
 #  define CONFIG_EFM32_EFM32TG8XX            
@@ -71,6 +70,8 @@
 #else
 #  error "Unsupported EFM32 chip"
 #endif
+
+
 
 /* NVIC priority levels *************************************************************/
 

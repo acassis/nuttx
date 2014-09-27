@@ -120,6 +120,10 @@ ifeq ($(CONFIG_SERIAL),y)
 CHIP_CSRCS += efm32_serial.c
 endif
 
+ifeq ($(CONFIG_GPIO_IRQ_DISPATCHER),y)
+CHIP_CSRCS += efm32_gpio_irq.c
+endif
+
 
 
 

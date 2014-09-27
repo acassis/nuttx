@@ -2,7 +2,9 @@
  * arch/arm/src/efm32/efm32_start.c
  *
  *   Copyright (C) 2009, 2011-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *           Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,6 +50,7 @@
 #include "up_arch.h"
 #include "up_internal.h"
 #include "efm32_lowputc.h"
+#include "efm32_gpio_irq.h"
 
 //#include "em_device.h"
 //#include "em_cmu.h"
@@ -129,14 +132,9 @@ static void efm32_clockconfig(void)
 
 static void efm32_gpioinit(void)
 {
-    if ( *((uint32_t*)0x40006044) != 0xFFFF )
-    {
-        showprogress('Z');
-    }
-    else
-    {
-        showprogress('Y');
-    }
+#ifdef CONFIG_GPIO_IRQ_DISPATCHER
+    irq_gpio_init();
+#endif
 }
 
 /****************************************************************************
@@ -192,7 +190,6 @@ void __start(void)
 
   /* Perform early serial initialization */
 
-
   up_earlyserialinit();
 
   showprogress('D');
@@ -207,11 +204,6 @@ void __start(void)
   efm32_userspace();
   showprogress('E');
 #endif
-
-  /* Initialize onboard resources */
-
-  efm32_boardinitialize();
-  showprogress('F');
 
   /* Then start NuttX */
 

@@ -22,6 +22,7 @@ config EFM32_SWO_DIV
 
 config INPUT_EFM32_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
+    select GPIO_IRQ_DISPATCHER
     select LIB_KBDCODEC
 	depends on ARCH_CHIP_EFM32
 	default y

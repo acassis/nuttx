@@ -60,6 +60,7 @@
 #define EFM32_LESENSE_NBR       1
 #define EFM32_RTC_NBR           1
 #define EFM32_GPIO_NBR          1
+#define EFM32_GPIO_IRQ_NBR      16
 #define EFM32_VCMP_NBR          1
 #define EFM32_PRS_NBR           1
 #define EFM32_OPAMP_NBR         1

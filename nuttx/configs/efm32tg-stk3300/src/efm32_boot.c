@@ -45,9 +45,6 @@
 void efm32_boardinitialize(void)
 {
 
-#ifdef CONFIG_INPUT_EFM32_GPIO_KEYPAD
-    keypad_kbdinit();
-#endif
 
 }
 
