@@ -34,22 +34,19 @@
  *
  ****************************************************************************/
 
+
+
 #include <nuttx/config.h>
 
 #include <nuttx/arch.h>
-#include <nuttx/irq.h>
 
-#include <stdint.h>
-#include <errno.h>
-#include <unistd.h>
-
-#include <nuttx/streams.h>
 #include <nuttx/input/kbd_codec.h>
 
-#include <nuttx/input/keypad.h>
-
-#include "efm32.h"
+#include <debug.h>
+#include <efm32.h>
+#include <efm32_lowputc.h>
 #include <efm32_gpio.h>
+#include <efm32_gpio_irq.h>
 
 
 /****************************************************************************
@@ -59,10 +56,36 @@
  *   posts keypad semaphore
  ****************************************************************************/
 
-int efm32_gpio_kbd_irq(int irq, FAR void* context)
+int efm32_gpio_kbd_irq(int pin, FAR void* context)
 {
-    (void)irq;
     (void)context;
+    switch (pin)
+    {
+        case 11:
+            if ( GPIO_PinInGet(gpioPortB,11) == 0 )
+            {
+                lldbg("PB1 pressed\n"); 
+            }
+            else
+            {
+                lldbg("PB1 released\n"); 
+            }
+            break;
+        case 8:
+            if ( GPIO_PinInGet(gpioPortD,8) == 0 )
+            {
+                lldbg("PB0 pressed\n"); 
+            }
+            else
+            {
+                lldbg("PB0 released\n"); 
+            }
+            break;
+        default: 
+            lldbg("Unknown pin %d \n",pin);
+            break;
+    }
+
     return 0;
 }
 
@@ -75,12 +98,8 @@ int efm32_gpio_kbd_irq(int irq, FAR void* context)
 int keypad_kbdinit(void)
 {
 
-    /* pnbtodo : initialise irq pin or polling */
-
-    irq_attach(EFM32_IRQ_GPIO_ODD,  efm32_gpio_kbd_irq);
-    irq_attach(EFM32_IRQ_GPIO_EVEN, efm32_gpio_kbd_irq);
-    up_enable_irq(EFM32_IRQ_GPIO_ODD);
-    up_enable_irq(EFM32_IRQ_GPIO_EVEN);
+    irq_gpio_attach(11,  efm32_gpio_kbd_irq);
+    irq_gpio_attach(8,   efm32_gpio_kbd_irq);
 
     GPIO_PinModeSet( gpioPortB,
                      11,

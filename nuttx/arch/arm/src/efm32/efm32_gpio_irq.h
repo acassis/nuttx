@@ -36,13 +36,11 @@
 #ifndef __ARCH_ARM_SRC_EFM32_EFM32_GPIO_IRQ_H
 #define __ARCH_ARM_SRC_EFM32_EFM32_GPIO_IRQ_H
 
-#include  "irq/irq.h"
+#include <nuttx/irq.h>
 
 void irq_gpio_init(void);
 
-void irq_gpio_request(int pin, xcpt_t handler);
-
-#define irq_gpio_free(pin) irq_gpio_request(pin, NULL)
+void irq_gpio_attach(int pin, xcpt_t handler);
 
 #endif
 

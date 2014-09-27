@@ -37,7 +37,7 @@
 
 CSRCS = efm32_boot.c
 
-ifeq ($(CONFIG_INPUT_EFM32_GPIO_KEYPAD),y)
+ifeq ($(CONFIG_EFM32_GPIO_KEYPAD),y)
 CSRCS += efm32_gpio_keypad.c
 endif
 

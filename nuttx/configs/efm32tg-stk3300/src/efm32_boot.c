@@ -48,4 +48,14 @@ void efm32_boardinitialize(void)
 
 }
 
+#ifdef CONFIG_BOARD_INITIALIZE
+void board_initialize(void)
+{
+
+#if defined(CONFIG_EFM32_GPIO_KEYPAD) 
+    keypad_kbdinit();
+#endif
+
+}
+#endif
 

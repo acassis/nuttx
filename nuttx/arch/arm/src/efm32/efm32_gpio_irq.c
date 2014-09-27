@@ -132,17 +132,18 @@ static int irq_gpio_dispatcher(int irq, FAR void *context)
 
 
 /****************************************************************************
- * Name: irq_gpio_request
+ * Name: irq_gpio_attach
  *
  * Description:
- *   request an gpio interrupts.
+ *   attach an gpio interrupts to handler function.
  *
  ****************************************************************************/
-void irq_gpio_request(int pin, xcpt_t handler)
+void irq_gpio_attach(int pin, xcpt_t handler)
 {
     DEBUGASSERT(pin < EFM32_GPIO_IRQ_NBR);
 
-    irqstate_t irq_state = irqsave();
+    up_disable_irq(EFM32_IRQ_GPIO_ODD);
+    up_disable_irq(EFM32_IRQ_GPIO_EVEN);
 
     irq_gpio_handler_table[pin] = handler;
 
@@ -162,9 +163,11 @@ void irq_gpio_request(int pin, xcpt_t handler)
     }
 
     irq_attach(EFM32_IRQ_GPIO_ODD, (odd )?irq_gpio_dispatcher:NULL);
-    irq_attach(EFM32_IRQ_GPIO_EVEN,(even)?irq_gpio_dispatcher:NULL);
+    if ( odd ) up_enable_irq(EFM32_IRQ_GPIO_ODD);
 
-    irqrestore(irq_state);
+    irq_attach(EFM32_IRQ_GPIO_EVEN,(even)?irq_gpio_dispatcher:NULL);
+    if ( even ) up_enable_irq(EFM32_IRQ_GPIO_EVEN);
+
 
 }
 
