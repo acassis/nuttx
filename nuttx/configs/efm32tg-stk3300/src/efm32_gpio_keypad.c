@@ -48,6 +48,14 @@
 #include <efm32_gpio.h>
 #include <efm32_gpio_irq.h>
 
+#define BP0_PIN     8
+#define BP0_PORT    gpioPortD
+
+#define BP1_PIN     11
+#define BP1_PORT    gpioPortB
+
+//#define EFM32_GPIO_KBD_LOG(...)
+#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
 
 /****************************************************************************
  * Keypad interrupt handler
@@ -59,31 +67,32 @@
 int efm32_gpio_kbd_irq(int pin, FAR void* context)
 {
     (void)context;
+    int port;
+    int key;
     switch (pin)
     {
-        case 11:
-            if ( GPIO_PinInGet(gpioPortB,11) == 0 )
-            {
-                lldbg("PB1 pressed\n"); 
-            }
-            else
-            {
-                lldbg("PB1 released\n"); 
-            }
+        case BP0_PIN:
+            port    = BP0_PORT;
+            key     = KEYCODE_LEFT;
             break;
-        case 8:
-            if ( GPIO_PinInGet(gpioPortD,8) == 0 )
-            {
-                lldbg("PB0 pressed\n"); 
-            }
-            else
-            {
-                lldbg("PB0 released\n"); 
-            }
+        case BP1_PIN:
+            port    = BP1_PORT;
+            key     = KEYCODE_RIGHT;
             break;
         default: 
             lldbg("Unknown pin %d \n",pin);
-            break;
+            return -1;
+    }
+
+    if ( GPIO_PinInGet(port,pin) == 0 )
+    {
+        EFM32_GPIO_KBD_LOG("PB on %c,%2d pressed\n",'A'+port,pin); 
+        //kbd_specpress(key);
+    }
+    else
+    {
+        EFM32_GPIO_KBD_LOG("PB on %c,%2d Released\n",'A'+port,pin); 
+        //kbd_specrel(key)
     }
 
     return 0;
