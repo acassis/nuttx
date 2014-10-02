@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/efm32/keypad/keypad.c
+ * arch/arm/include/efm32/keypad/keypad.c
  * Driver for Stk3300 keypad hardware
  *
  *   Copyright (C) 2011 Stefan Richter. All rights reserved.
@@ -34,48 +34,42 @@
  *
  ****************************************************************************/
 
-
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32_GPIO_KEYPAD_H
+#define __ARCH_ARM_SRC_EFM32_EFM32_GPIO_KEYPAD_H
 
 #include <nuttx/config.h>
 
 #include <nuttx/arch.h>
 
-#include <efm32_gpio_keypad.h>
+#include <nuttx/input/kbd_codec.h>
 
+#include <debug.h>
+#include <efm32.h>
+#include <efm32_gpio.h>
+#include <efm32_gpio_irq.h>
 
-/****************************************************************************
- * Keypad mapping for stk3300 board
- ****************************************************************************/
-
-efm32_gpio_keypad_t stk3300_key_map[] = 
-{
-    {
-        .port = gpioPortD,
-        .pin  = 8,
-        .special_key = KEYCODE_RIGHT
-    },
-    {
-        .port = gpioPortB,
-        .pin  = 11,
-        .special_key = KEYCODE_LEFT
-    },
-    {
-        .pin = -1
-    }
-};
-
-
-/****************************************************************************
- * Register all board drivers for key pad.
- ****************************************************************************/
-
-int keypad_kbdinit(void)
+typedef struct 
 {
 
-    efm32_gpio_keypad_init(stk3300_key_map);
+    /* pin of GPIO */
 
-    return 0;
-}
+    int pin;
 
+    /* pin of GPIO */
 
+    int port;
+
+    /* in case of special key otherwise set to KEYCODE_NORMAL */
+
+    enum kbd_keycode_e special_key;
+
+    /* in case of normal key, set special_key to KEYCODE_NORMAL */
+
+    char key;
+
+}efm32_gpio_keypad_t;
+
+void efm32_gpio_keypad_init(efm32_gpio_keypad_t *config );
+
+#endif
 

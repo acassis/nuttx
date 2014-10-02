@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/efm32/keypad/keypad.c
+ * arch/arm/include/efm32/keypad/keypad.c
  * Driver for Stk3300 keypad hardware
  *
  *   Copyright (C) 2011 Stefan Richter. All rights reserved.
@@ -34,47 +34,93 @@
  *
  ****************************************************************************/
 
-
-
 #include <nuttx/config.h>
 
 #include <nuttx/arch.h>
 
 #include <efm32_gpio_keypad.h>
 
+//#define EFM32_GPIO_KBD_LOG(...)
+#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
 
-/****************************************************************************
- * Keypad mapping for stk3300 board
- ****************************************************************************/
+static efm32_gpio_keypad_t* key_mapping = NULL;
 
-efm32_gpio_keypad_t stk3300_key_map[] = 
+int efm32_gpio_kbd_irq(int pin, FAR void* context)
 {
+    (void)context;
+    efm32_gpio_keypad_t* _key_map;
+
+    DEBUGASSERT(key_mapping != NULL);
+
+    _key_map = key_mapping;
+
+    while ( _key_map->pin >= 0 )
     {
-        .port = gpioPortD,
-        .pin  = 8,
-        .special_key = KEYCODE_RIGHT
-    },
-    {
-        .port = gpioPortB,
-        .pin  = 11,
-        .special_key = KEYCODE_LEFT
-    },
-    {
-        .pin = -1
+        if ( _key_map->pin == pin )
+        {
+            if ( GPIO_PinInGet(_key_map->port,_key_map->pin) == 0 )
+            {
+                EFM32_GPIO_KBD_LOG("PB on %c,%2d pressed\n",
+                                   'A'+_key_map->port,
+                                   _key_map->pin
+                                  ); 
+                //kbd_specpress(key);
+            }
+            else
+            {
+                EFM32_GPIO_KBD_LOG("PB on %c,%2d Released\n",
+                                   'A'+_key_map->port,
+                                   _key_map->pin
+                                  ); 
+                //kbd_specrel(key)
+            }
+        }
+        _key_map++;
     }
-};
-
-
-/****************************************************************************
- * Register all board drivers for key pad.
- ****************************************************************************/
-
-int keypad_kbdinit(void)
-{
-
-    efm32_gpio_keypad_init(stk3300_key_map);
 
     return 0;
+}
+
+/****************************************************************************
+ * Name: efm32_gpio_keypad_init
+ *
+ * Description:
+ *  Initialize All GPIO for key pad.
+ * Input parameters:
+ *  _key_map    - first key mapping of mapping GPIO<=>Key list.
+ *                    to Finish list set Pin with negative value.
+ * Returned Value:
+ *   None (User allocated instance initialized).
+ ****************************************************************************/
+void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map )
+{
+
+    /* can be called only once */
+
+    DEBUGASSERT(key_mapping == NULL);
+
+    key_mapping = _key_map;
+
+    while ( _key_map->pin >= 0 )
+    {
+        irq_gpio_attach(_key_map->pin, efm32_gpio_kbd_irq);
+
+        GPIO_PinModeSet(_key_map->port,
+                        _key_map->pin,
+                        gpioModeInputPullFilter,
+                        1
+                       );
+
+        GPIO_IntConfig( _key_map->port,
+                        _key_map->pin,
+                        true,
+                        true,
+                        true
+                      );
+
+        _key_map++;
+    }
+
 }
 
 

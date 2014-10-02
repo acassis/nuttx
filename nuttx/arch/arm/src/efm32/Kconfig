@@ -33,4 +33,9 @@ config GPIO_IRQ_DISPATCHER
 	---help---
 		Enable dispatcher for interrupting GPIO pins
 
+config EFM32_GPIO_KEYPAD
+	bool "Key pad on GPIO mapped to keyboard"
+	---help---
+		Enable keypad with GPIO pins
+
 endif

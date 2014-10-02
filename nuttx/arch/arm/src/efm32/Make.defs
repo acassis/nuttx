@@ -124,6 +124,10 @@ ifeq ($(CONFIG_GPIO_IRQ_DISPATCHER),y)
 CHIP_CSRCS += efm32_gpio_irq.c
 endif
 
+ifeq ($(CONFIG_EFM32_GPIO_KEYPAD),y)
+CHIP_CSRCS += efm32_gpio_keypad.c
+endif
+
 
 
 
