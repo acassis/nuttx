@@ -72,7 +72,7 @@ efm32_gpio_keypad_t stk3300_key_map[] =
 int keypad_kbdinit(void)
 {
 
-    efm32_gpio_keypad_init(stk3300_key_map);
+    efm32_gpio_keypad_init(stk3300_key_map,"/dev/keypad");
 
     return 0;
 }

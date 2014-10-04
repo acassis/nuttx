@@ -43,8 +43,43 @@
 //#define EFM32_GPIO_KBD_LOG(...)
 #define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
 
+/****************************************************************************
+ * Fileops Prototypes and Structures
+ ****************************************************************************/
+
+typedef FAR struct file file_t;
+
+static int efm32_gpio_kbd_open(file_t * filep);
+static int efm32_gpio_kbd_close(file_t * filep);
+static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buffer, size_t buflen);
+#ifndef CONFIG_DISABLE_POLL
+static int efm32_gpio_kbd_read(file_t * filep, FAR struct pollfd *fds, bool setup);
+#endif
+
+static const struct file_operations keypad_ops =
+{
+    efm32_gpio_kbd_open,  /* open */
+    efm32_gpio_kbd_close, /* close */
+    efm32_gpio_kbd_read,  /* read */
+    0,                    /* write */
+    0,                    /* seek */
+    0,                    /* ioctl */
+#ifndef CONFIG_DISABLE_POLL
+    efm32_gpio_kbd_poll   /* poll */
+#endif
+};
+
+
+
+/****************************************************************************
+ * Name: key_mapping
+ *  keep mapping of keyboard.
+ ****************************************************************************/
 static efm32_gpio_keypad_t* key_mapping = NULL;
 
+/****************************************************************************
+ * irq handler
+ ****************************************************************************/
 int efm32_gpio_kbd_irq(int pin, FAR void* context)
 {
     (void)context;
@@ -82,6 +117,41 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
 }
 
 /****************************************************************************
+ * Name: efm32_gpio_kbd_open
+ ****************************************************************************/
+
+static int efm32_gpio_kbd_open(file_t * filep)
+{
+
+    /** todo */
+
+    return OK;
+}
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_close
+ ****************************************************************************/
+
+static int efm32_gpio_kbd_close(file_t * filep)
+{
+
+    /** todo */
+
+    return OK;
+}
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_read
+ ****************************************************************************/
+
+static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buf, size_t buflen)
+{
+    ssize_t size = -1;
+
+    return size;
+}
+
+/****************************************************************************
  * Name: efm32_gpio_keypad_init
  *
  * Description:
@@ -92,12 +162,18 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
  * Returned Value:
  *   None (User allocated instance initialized).
  ****************************************************************************/
-void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map )
+void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map,
+                             const char *devname
+                           )
 {
 
     /* can be called only once */
 
-    DEBUGASSERT(key_mapping == NULL);
+    if ( key_mapping != NULL)
+    {
+        lldbg("Already initialized !");
+        return;
+    }
 
     key_mapping = _key_map;
 
@@ -120,6 +196,8 @@ void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map )
 
         _key_map++;
     }
+
+    register_driver(devname, &keypad_ops, 0444, NULL);
 
 }
 

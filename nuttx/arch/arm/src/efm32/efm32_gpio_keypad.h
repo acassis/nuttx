@@ -69,7 +69,9 @@ typedef struct
 
 }efm32_gpio_keypad_t;
 
-void efm32_gpio_keypad_init(efm32_gpio_keypad_t *config );
+void efm32_gpio_keypad_init( efm32_gpio_keypad_t *config,
+                             const char * devname
+                           );
 
 #endif
 
