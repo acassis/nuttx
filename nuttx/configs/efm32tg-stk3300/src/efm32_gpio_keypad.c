@@ -52,12 +52,16 @@ efm32_gpio_keypad_t stk3300_key_map[] =
     {
         .port = gpioPortD,
         .pin  = 8,
-        .special_key = KEYCODE_RIGHT
+        //.special_key = KEYCODE_RIGHT
+        .special_key = KEYCODE_NORMAL,
+        .key    = 'a'
     },
     {
         .port = gpioPortB,
         .pin  = 11,
-        .special_key = KEYCODE_LEFT
+        //.special_key = KEYCODE_LEFT
+        .special_key = KEYCODE_NORMAL,
+        .key    = 'b'
     },
     {
         .pin = -1

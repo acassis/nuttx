@@ -40,8 +40,16 @@
 
 #include <efm32_gpio_keypad.h>
 
-//#define EFM32_GPIO_KBD_LOG(...)
-#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
+#include <nuttx/kmalloc.h>
+#include <string.h>
+#include <errno.h>
+
+#define EFM32_GPIO_KBD_LOG(...)
+//#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
+
+#ifndef CONFIG_EFM32_GPIO_KBD_BUFSIZE
+#  define CONFIG_EFM32_GPIO_KBD_BUFSIZE 64
+#endif
 
 /****************************************************************************
  * Fileops Prototypes and Structures
@@ -70,12 +78,63 @@ static const struct file_operations keypad_ops =
 };
 
 
+/****************************************************************************
+ * Name: efm32_gpio_kbd_t
+ * Description:
+ *  variable of keypad
+ ****************************************************************************/
+typedef struct 
+{
+    sem_t   mutex;
+    sem_t   rd_sem;
+    int     rd_idx;
+    int     wr_idx;
+    uint8_t kbdbuffer[CONFIG_EFM32_GPIO_KBD_BUFSIZE];
+}efm32_gpio_kbd_t;
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd
+ * Description:
+ *  variable of keypad instance.
+ ****************************************************************************/
+efm32_gpio_kbd_t* efm32_gpio_kbd;
 
 /****************************************************************************
  * Name: key_mapping
  *  keep mapping of keyboard.
  ****************************************************************************/
 static efm32_gpio_keypad_t* key_mapping = NULL;
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_open
+ ****************************************************************************/
+void efm32_gpio_kbd_putc(FAR struct lib_outstream_s *this, int ch)
+{
+    if ( efm32_gpio_kbd == NULL )
+    {
+        lldbg("driver not initialized!\n");
+        return; 
+    }
+
+    int level = efm32_gpio_kbd->wr_idx - efm32_gpio_kbd->rd_idx;
+
+    if ( level < 0 )
+        level += CONFIG_EFM32_GPIO_KBD_BUFSIZE;
+
+    if (level >= CONFIG_EFM32_GPIO_KBD_BUFSIZE)
+    {
+        lldbg("Buffer overflow\n");
+        return; 
+    }
+
+    efm32_gpio_kbd->kbdbuffer[efm32_gpio_kbd->wr_idx++] = ch;
+    if ( efm32_gpio_kbd->wr_idx >= CONFIG_EFM32_GPIO_KBD_BUFSIZE )
+        efm32_gpio_kbd->wr_idx = 0;
+
+    sem_post(&efm32_gpio_kbd->rd_sem);
+
+    this->nput++;
+}
 
 /****************************************************************************
  * irq handler
@@ -93,13 +152,26 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
     {
         if ( _key_map->pin == pin )
         {
+            struct lib_outstream_s stream = {
+                .put  = efm32_gpio_kbd_putc,
+                .nput = 0
+            };
+
             if ( GPIO_PinInGet(_key_map->port,_key_map->pin) == 0 )
             {
                 EFM32_GPIO_KBD_LOG("PB on %c,%2d pressed\n",
                                    'A'+_key_map->port,
                                    _key_map->pin
                                   ); 
-                //kbd_specpress(key);
+
+                if ( _key_map->special_key != KEYCODE_NORMAL )
+                {
+                    kbd_specpress(_key_map->special_key, &stream);
+                }
+                else
+                {
+                    kbd_press(_key_map->key, &stream);
+                }
             }
             else
             {
@@ -107,8 +179,16 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
                                    'A'+_key_map->port,
                                    _key_map->pin
                                   ); 
-                //kbd_specrel(key)
+                if ( _key_map->special_key != KEYCODE_NORMAL )
+                {
+                    kbd_specrel(_key_map->special_key, &stream);
+                }
+                else
+                {
+                    kbd_release(_key_map->key, &stream);
+                }
             }
+
         }
         _key_map++;
     }
@@ -116,40 +196,6 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
     return 0;
 }
 
-/****************************************************************************
- * Name: efm32_gpio_kbd_open
- ****************************************************************************/
-
-static int efm32_gpio_kbd_open(file_t * filep)
-{
-
-    /** todo */
-
-    return OK;
-}
-
-/****************************************************************************
- * Name: efm32_gpio_kbd_close
- ****************************************************************************/
-
-static int efm32_gpio_kbd_close(file_t * filep)
-{
-
-    /** todo */
-
-    return OK;
-}
-
-/****************************************************************************
- * Name: efm32_gpio_kbd_read
- ****************************************************************************/
-
-static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buf, size_t buflen)
-{
-    ssize_t size = -1;
-
-    return size;
-}
 
 /****************************************************************************
  * Name: efm32_gpio_keypad_init
@@ -171,9 +217,21 @@ void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map,
 
     if ( key_mapping != NULL)
     {
-        lldbg("Already initialized !");
+        lldbg("Already initialized !\n");
         return;
     }
+
+    efm32_gpio_kbd = (efm32_gpio_kbd_t*)kmm_malloc(sizeof(efm32_gpio_kbd_t));
+    if ( efm32_gpio_kbd == NULL )
+    {
+        lldbg("Cannot allocate it!\n");
+        return;
+    }
+
+    memset(efm32_gpio_kbd,0,sizeof(*efm32_gpio_kbd));
+
+    sem_init(&efm32_gpio_kbd->rd_sem,    0, 0);
+    sem_init(&efm32_gpio_kbd->mutex, 0, 1);
 
     key_mapping = _key_map;
 
@@ -202,4 +260,78 @@ void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map,
 }
 
 
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_open
+ ****************************************************************************/
+
+static int efm32_gpio_kbd_open(file_t * filep)
+{
+    if ( efm32_gpio_kbd == NULL )
+    {
+        lldbg("Not initialized!\n");
+        return -EINVAL;
+    }
+
+    return OK;
+}
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_close
+ ****************************************************************************/
+
+static int efm32_gpio_kbd_close(file_t * filep)
+{
+
+    /* nothing to do */
+
+    return OK;
+}
+
+/****************************************************************************
+ * Name: efm32_gpio_kbd_read
+ ****************************************************************************/
+
+static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buf, size_t buflen)
+{
+    ssize_t size = 0;
+
+    if ( efm32_gpio_kbd == NULL )
+    {
+        lldbg("Not initialized!\n");
+        return -EINVAL;
+    }
+
+    sem_wait( &efm32_gpio_kbd->mutex );
+
+    while (size < buflen)
+    {
+
+        /* first lock it then only try lock */
+
+        if ( size == 0 )
+            sem_wait( &efm32_gpio_kbd->rd_sem);
+        else if ( sem_trywait( &efm32_gpio_kbd->rd_sem) < 0 )
+            break;
+
+        irqstate_t saved_state;
+
+
+        saved_state = irqsave();
+
+        buf[size] = efm32_gpio_kbd->kbdbuffer[efm32_gpio_kbd->rd_idx++];
+        if (efm32_gpio_kbd->rd_idx >= CONFIG_EFM32_GPIO_KBD_BUFSIZE )
+            efm32_gpio_kbd->rd_idx=0;
+
+        irqrestore(saved_state);
+
+        EFM32_GPIO_KBD_LOG("Read %c,0x%2X\n",buf[size],buf[size]);
+
+        size++; 
+    }
+
+    sem_post( &efm32_gpio_kbd->mutex );
+
+    return size;
+}
 
