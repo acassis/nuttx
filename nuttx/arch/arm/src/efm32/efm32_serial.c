@@ -67,9 +67,5 @@
 #include "up_arch.h"
 #include "up_internal.h"
 
-void up_serialinit(void)
-{
-    /* dummy driver I'm done yet ! sorry */
-}
 
 
