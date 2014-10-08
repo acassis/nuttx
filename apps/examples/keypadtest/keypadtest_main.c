@@ -51,6 +51,8 @@
 #include <nuttx/input/keypad.h>
 
 #ifdef CONFIG_EXAMPLES_KEYPADTEST_ENCODED
+#  include <string.h>
+#  include <ctype.h>
 #  include <nuttx/streams.h>
 #  include <nuttx/input/kbd_codec.h>
 #endif
@@ -182,6 +184,7 @@ static void keypad_decode(FAR char *buffer, ssize_t nbytes)
           break;
         }
     }
+  fflush(stdout);
 }
 #endif
 
@@ -242,7 +245,7 @@ int keypadtest_main(int argc, char *argv[])
 #ifdef CONFIG_EXAMPLES_KEYPADTEST_ENCODED
           keypad_decode(buffer, nbytes);
 #else
-          (void)write(1, buffer, nbytes);
+          (void)write(stdout, buffer, nbytes);
 #endif
         }
     }
