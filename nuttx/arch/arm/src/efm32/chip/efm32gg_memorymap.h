@@ -89,8 +89,8 @@
 #define BITBAND_PER_BASE     ((uint32_t) 0x42000000UL) /* Peripheral Address Space bit-band area */
 #define BITBAND_RAM_BASE     ((uint32_t) 0x22000000UL) /* SRAM Address Space bit-band area */
 
-/* Flash and SRAM limits for EFM32TG840F32 */
-#ifdef (EFM32GG332F1024)
+/* Flash and SRAM limits for EFM32XXXXXF32 */
+#ifdef (CONFIG_EFM32_EFM32XXXXXF1024)
 #define FLASH_SIZE           (0x00100000UL) /* Available Flash Memory */
 #define SRAM_SIZE            (0x00001000UL) /* Available SRAM Memory */
 #endif

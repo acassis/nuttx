@@ -67,6 +67,12 @@
 #  define CONFIG_EFM32_EFM32TG840            
 #  define CONFIG_EFM32_EFM32XXXXXF32         
 
+#elif defined(CONFIG_ARCH_CHIP_EFM32GG332F1024) 
+#  define CONFIG_EFM32_EFM32GG               
+#  define CONFIG_EFM32_EFM32GG8XX            
+#  define CONFIG_EFM32_EFM32GG332
+#  define CONFIG_EFM32_EFM32XXXXXF1024
+
 #else
 #  error "Unsupported EFM32 chip"
 #endif

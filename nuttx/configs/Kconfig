@@ -133,6 +133,14 @@ config ARCH_BOARD_EFM32TG_STK3300
 		This is Energy Micro's development kit for the Tiny
 		Gecko MCU, which is an ARM Cortex-M3 device.
 
+config ARCH_BOARD_EFM32GG_PNBFANO
+	bool "Pnbfano with EFM32 Giant Gecko"
+	depends on ARCH_CHIP_EFM32
+	---help---
+		This is Energy Micro's Pnbfano for the Tiny
+		Gecko MCU, which is an ARM Cortex-M3 device.
+		If you are interested contact me to pnb990@gmail.com.
+
 config ARCH_BOARD_EKKLM3S9B96
 	bool "TI/Stellaris EKK-LM3S9B96"
 	depends on ARCH_CHIP_LM3S9B96

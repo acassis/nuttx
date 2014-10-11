@@ -14,7 +14,7 @@ config EFM32_SWO_DIV
 		Choose SWO speed by set divider.
 		SWO speed is 14Mhz/(swo_divider).
 
-config EFM32_GPIO_KEYPAD
+config PNBFANO_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
     select GPIO_IRQ_DISPATCHER
     select EFM32_GPIO_KEYPAD

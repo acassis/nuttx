@@ -90,7 +90,7 @@
 #define BITBAND_RAM_BASE     ((uint32_t) 0x22000000UL) /* SRAM Address Space bit-band area */
 
 /* Flash and SRAM limits */
-#ifdef (EFM32TG840F32)
+#ifdef (EFM32XXXXXF32)
 #define FLASH_SIZE           (0x00008000UL) /* Available Flash Memory */
 #define SRAM_SIZE            (0x00001000UL) /* Available SRAM Memory */
 #endif

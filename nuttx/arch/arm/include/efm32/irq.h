@@ -79,6 +79,8 @@
 
 #if defined(CONFIG_EFM32_EFM32TG)
 #  include <arch/efm32/efm32tg_irq.h>
+#elif defined(CONFIG_EFM32_EFM32GG)
+#  include <arch/efm32/efm32gg_irq.h>
 #else
 #  error "Unsupported EFM32 chip"
 #endif
