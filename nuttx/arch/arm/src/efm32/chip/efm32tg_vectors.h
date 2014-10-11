@@ -1,10 +1,8 @@
 /************************************************************************************
- * arch/arm/src/efm32/chip/efm32l15xxx_vectors.h
- * For STM32L100xx, STM32L151xx, STM32L152xx and STM32L162xx advanced ARM-based
- * 32-bit MCUs
+ * arch/arm/src/efm32/chip/efm32tgxxx_vectors.h
  *
- *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,8 +37,8 @@
  * Pre-processor definitions
  ************************************************************************************/
 /* This file is included by efm32_vectors.S.  It provides the macro VECTOR that
- * supplies ach STM32F10xxx vector in terms of a (lower-case) ISR label and an
- * (upper-case) IRQ number as defined in arch/arm/include/efm32/efm32f10xxx_irq.h.
+ * supplies ach EFM32TGxxx vector in terms of a (lower-case) ISR label and an
+ * (upper-case) IRQ number as defined in arch/arm/include/efm32/efm32TGxxx_irq.h.
  * efm32_vectors.S will defined the VECTOR in different ways in order to generate
  * the interrupt vectors and handlers in their final form.
  *
