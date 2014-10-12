@@ -17,8 +17,8 @@ config ARCH_CHIP_EFM32TG840F32
 		This chip is a Tiny Gecko with 32 KB flash
 		and 4 KB RAM in a QFN64 package
 
-config ARCH_CHIP_EFM32GG330F1024
-	bool "EFM32GG330F1024"
+config ARCH_CHIP_EFM32GG332F1024
+	bool "EFM32GG332F1024"
 	select ARCH_CORTEXM3
 	---help---
 		This chip is a Giant Gecko with 1024 KB flash

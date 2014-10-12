@@ -129,6 +129,7 @@ config ARCH_BOARD_EAGLE100
 config ARCH_BOARD_EFM32TG_STK3300
 	bool "EFM32 Tiny Gecko Starter Kit"
 	depends on ARCH_CHIP_EFM32
+	depends on ARCH_CHIP_EFM32TG840F32
 	---help---
 		This is Energy Micro's development kit for the Tiny
 		Gecko MCU, which is an ARM Cortex-M3 device.
@@ -136,6 +137,7 @@ config ARCH_BOARD_EFM32TG_STK3300
 config ARCH_BOARD_EFM32GG_PNBFANO
 	bool "Pnbfano with EFM32 Giant Gecko"
 	depends on ARCH_CHIP_EFM32
+	depends on ARCH_CHIP_EFM32GG332F1024
 	---help---
 		This is Energy Micro's Pnbfano for the Tiny
 		Gecko MCU, which is an ARM Cortex-M3 device.
@@ -975,6 +977,7 @@ config ARCH_BOARD
 	default "ea3152"              if ARCH_BOARD_EA3152
 	default "eagle100"            if ARCH_BOARD_EAGLE100
 	default "efm32tg-stk3300"     if ARCH_BOARD_EFM32TG_STK3300
+	default "efm32gg-pnbfano"     if ARCH_BOARD_EFM32GG_PNBFANO
 	default "ekk-lm3s9b96"        if ARCH_BOARD_EKKLM3S9B96
 	default "ez80f910200kitg"     if ARCH_BOARD_EZ80F910200KITG
 	default "ez80f910200zco"      if ARCH_BOARD_EZ80F910200ZCO
@@ -1148,6 +1151,9 @@ source "configs/eagle100/Kconfig"
 endif
 if ARCH_BOARD_EFM32TG_STK3300
 source "configs/efm32tg-stk3300/Kconfig"
+endif
+if ARCH_BOARD_EFM32GG_PNBFANO
+source "configs/efm32gg-pnbfano/Kconfig"
 endif
 if ARCH_BOARD_EKKLM3S9B96
 source "configs/ekk-lm3s9b96/Kconfig"
