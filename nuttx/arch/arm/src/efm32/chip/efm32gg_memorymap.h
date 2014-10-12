@@ -90,15 +90,13 @@
 #define BITBAND_RAM_BASE     ((uint32_t) 0x22000000UL) /* SRAM Address Space bit-band area */
 
 /* Flash and SRAM limits for EFM32XXXXXF32 */
-#ifdef (CONFIG_EFM32_EFM32XXXXXF1024)
-#define FLASH_SIZE           (0x00100000UL) /* Available Flash Memory */
-#define SRAM_SIZE            (0x00001000UL) /* Available SRAM Memory */
+#if defined(CONFIG_EFM32_EFM32XXXXXF1024)
+#   define FLASH_SIZE           (0x00100000UL) /* Available Flash Memory */
+#   define SRAM_SIZE            (0x00001000UL) /* Available SRAM Memory */
 #endif
 #define FLASH_BASE           (0x00000000UL) /* Flash Base Address */
-#define FLASH_SIZE           (0x00008000UL) /* Available Flash Memory */
 #define FLASH_PAGE_SIZE      512            /* Flash Memory page size */
 #define SRAM_BASE            (0x20000000UL) /* SRAM Base Address */
-#define SRAM_SIZE            (0x00020000UL) /* Available SRAM Memory */
 #define CM3_REV              0x201          /* Cortex-M3 Core revision r2p1 */
 #define PRS_CHAN_COUNT       8              /* Number of PRS channels */
 #define DMA_CHAN_COUNT       8              /* Number of DMA channels */
