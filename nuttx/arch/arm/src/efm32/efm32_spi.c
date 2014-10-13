@@ -84,7 +84,7 @@
 #include "efm32_dma.h"
 #include "efm32_spi.h"
 
-#if defined(CONFIG_EFM32_SPI) 
+#if defined(CONFIG_EFM32_SPI_NBR) && ( CONFIG_EFM32_SPI_NBR > 0 ) 
 
 /************************************************************************************
  * Definitions
@@ -123,38 +123,6 @@
 #  define spivdbg(x...)
 #endif
 
-/************************************************************************************
- * Private Types
- ************************************************************************************/
-
-struct efm32_spidev_s
-{
-  struct spi_dev_s spidev;     /* Externally visible part of the SPI interface */
-  uint32_t         spibase;    /* SPIn base address */
-  uint32_t         spiclock;   /* Clocking for the SPI module */
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-  uint8_t          spiirq;     /* SPI IRQ number */
-#endif
-#ifdef CONFIG_EFM32_SPI_DMA
-  volatile uint8_t rxresult;   /* Result of the RX DMA */
-  volatile uint8_t txresult;   /* Result of the RX DMA */
-  uint8_t          rxch;       /* The RX DMA channel number */
-  uint8_t          txch;       /* The TX DMA channel number */
-  DMA_HANDLE       rxdma;      /* DMA channel handle for RX transfers */
-  DMA_HANDLE       txdma;      /* DMA channel handle for TX transfers */
-  sem_t            rxsem;      /* Wait for RX DMA to complete */
-  sem_t            txsem;      /* Wait for TX DMA to complete */
-  uint32_t         txccr;      /* DMA control register for TX transfers */
-  uint32_t         rxccr;      /* DMA control register for RX transfers */
-#endif
-#ifndef CONFIG_SPI_OWNBUS
-  sem_t            exclsem;    /* Held while chip is selected for mutual exclusion */
-  uint32_t         frequency;  /* Requested clock frequency */
-  uint32_t         actual;     /* Actual clock frequency */
-  int8_t           nbits;      /* Width of word in bits (8 or 16) */
-  uint8_t          mode;       /* Mode 0,1,2,3 */
-#endif
-};
 
 /************************************************************************************
  * Private Function Prototypes
@@ -162,37 +130,10 @@ struct efm32_spidev_s
 
 /* Helpers */
 
-static inline uint16_t  spi_getreg(FAR struct efm32_spidev_s *priv, uint8_t offset);
-static inline void      spi_putreg(FAR struct efm32_spidev_s *priv, 
-                                   uint8_t offset,
-                                   uint16_t value
-                                  );
-static inline uint16_t spi_readword(FAR struct efm32_spidev_s *priv);
-static inline void spi_writeword(FAR struct efm32_spidev_s *priv, uint16_t byte);
-static inline bool spi_16bitmode(FAR struct efm32_spidev_s *priv);
+static inline uint16_t  spi_readword(FAR struct efm32_spidev_s *priv);
+static inline void      spi_writeword(FAR struct efm32_spidev_s *priv, uint16_t byte);
+static inline bool      spi_16bitmode(FAR struct efm32_spidev_s *priv);
 
-/* DMA support */
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void        spi_dmarxwait(   FAR struct efm32_spidev_s *priv);
-static void        spi_dmatxwait(   FAR struct efm32_spidev_s *priv);
-static inline void spi_dmarxwakeup( FAR struct efm32_spidev_s *priv);
-static inline void spi_dmatxwakeup( FAR struct efm32_spidev_s *priv);
-static void        spi_dmarxcallback(DMA_HANDLE handle, uint8_t isr, void *arg);
-static void        spi_dmatxcallback(DMA_HANDLE handle, uint8_t isr, void *arg);
-static void        spi_dmarxsetup(FAR struct efm32_spidev_s *priv,
-                                  FAR void *rxbuffer, 
-                                  FAR void *rxdummy, 
-                                  size_t nwords
-                                 );
-static void        spi_dmatxsetup(FAR struct efm32_spidev_s *priv,
-                                  FAR const void *txbuffer, 
-                                  FAR const void *txdummy, 
-                                  size_t nwords
-                                 );
-static inline void spi_dmarxstart(FAR struct efm32_spidev_s *priv);
-static inline void spi_dmatxstart(FAR struct efm32_spidev_s *priv);
-#endif
 
 /* SPI methods */
 
@@ -329,289 +270,6 @@ static inline void spi_writeword(FAR struct efm32_spidev_s *priv, uint16_t word)
   spi_putreg(priv, STM32_SPI_DR_OFFSET, word);
 }
 
-/************************************************************************************
- * Name: spi_16bitmode
- *
- * Description:
- *   Check if the SPI is operating in 16-bit mode
- *
- * Input Parameters:
- *   priv     - Device-specific state data
- *
- * Returned Value:
- *   true: 16-bit mode, false: 8-bit mode
- *
- ************************************************************************************/
-
-static inline bool spi_16bitmode(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  return ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_DFF) != 0);
-}
-
-/************************************************************************************
- * Name: spi_dmarxwait
- *
- * Description:
- *   Wait for DMA to complete.
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmarxwait(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  /* Take the semaphore (perhaps waiting).  If the result is zero, then the DMA
-   * must not really have completed???
-   */
-
-  while (sem_wait(&priv->rxsem) != 0 || priv->rxresult == 0)
-    {
-      /* The only case that an error should occur here is if the wait was awakened
-       * by a signal.
-       */
-
-      ASSERT(errno == EINTR);
-    }
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmatxwait
- *
- * Description:
- *   Wait for DMA to complete.
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmatxwait(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  /* Take the semaphore (perhaps waiting).  If the result is zero, then the DMA
-   * must not really have completed???
-   */
-
-  while (sem_wait(&priv->txsem) != 0 || priv->txresult == 0)
-    {
-      /* The only case that an error should occur here is if the wait was awakened
-       * by a signal.
-       */
-
-      ASSERT(errno == EINTR);
-    }
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmarxwakeup
- *
- * Description:
- *   Signal that DMA is complete
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static inline void spi_dmarxwakeup(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  (void)sem_post(&priv->rxsem);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmatxwakeup
- *
- * Description:
- *   Signal that DMA is complete
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static inline void spi_dmatxwakeup(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  (void)sem_post(&priv->txsem);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmarxcallback
- *
- * Description:
- *   Called when the RX DMA completes
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmarxcallback(DMA_HANDLE handle, uint8_t isr, void *arg)
-{
-    /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)arg;
-
-  /* Wake-up the SPI driver */
-
-  priv->rxresult = isr | 0x080;  /* OR'ed with 0x80 to assure non-zero */
-  spi_dmarxwakeup(priv);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmatxcallback
- *
- * Description:
- *   Called when the RX DMA completes
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmatxcallback(DMA_HANDLE handle, uint8_t isr, void *arg)
-{
-    /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)arg;
-
-  /* Wake-up the SPI driver */
-
-  priv->txresult = isr | 0x080;  /* OR'ed with 0x80 to assure non-zero */
-  spi_dmatxwakeup(priv);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmarxsetup
- *
- * Description:
- *   Setup to perform RX DMA
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmarxsetup(FAR struct efm32_spidev_s *priv, FAR void *rxbuffer,
-                           FAR void *rxdummy, size_t nwords)
-{
-    /* TODO */
-  /* 8- or 16-bit mode? */
-
-  if (spi_16bitmode(priv))
-    {
-      /* 16-bit mode -- is there a buffer to receive data in? */
-
-      if (rxbuffer)
-        {
-          priv->rxccr = SPI_RXDMA16_CONFIG;
-        }
-      else
-        {
-          rxbuffer    = rxdummy;
-          priv->rxccr = SPI_RXDMA16NULL_CONFIG;
-        }
-    }
-  else
-    {
-      /* 8-bit mode -- is there a buffer to receive data in? */
-
-      if (rxbuffer)
-        {
-          priv->rxccr = SPI_RXDMA8_CONFIG;
-        }
-      else
-        {
-          rxbuffer    = rxdummy;
-          priv->rxccr = SPI_RXDMA8NULL_CONFIG;
-        }
-     }
-
-  /* Configure the RX DMA */
-
-  stm32_dmasetup(priv->rxdma, priv->spibase + STM32_SPI_DR_OFFSET,
-                 (uint32_t)rxbuffer, nwords, priv->rxccr);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmatxsetup
- *
- * Description:
- *   Setup to perform TX DMA
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static void spi_dmatxsetup(FAR struct efm32_spidev_s *priv, FAR const void *txbuffer,
-                           FAR const void *txdummy, size_t nwords)
-{
-    /* TODO */
-  /* 8- or 16-bit mode? */
-
-  if (spi_16bitmode(priv))
-    {
-      /* 16-bit mode -- is there a buffer to transfer data from? */
-
-      if (txbuffer)
-        {
-          priv->txccr = SPI_TXDMA16_CONFIG;
-        }
-      else
-        {
-          txbuffer    = txdummy;
-          priv->txccr = SPI_TXDMA16NULL_CONFIG;
-        }
-    }
-  else
-    {
-      /* 8-bit mode -- is there a buffer to transfer data from? */
-
-      if (txbuffer)
-        {
-          priv->txccr = SPI_TXDMA8_CONFIG;
-        }
-      else
-        {
-          txbuffer    = txdummy;
-          priv->txccr = SPI_TXDMA8NULL_CONFIG;
-        }
-    }
-
-  /* Setup the TX DMA */
-
-  stm32_dmasetup(priv->txdma, priv->spibase + STM32_SPI_DR_OFFSET,
-                 (uint32_t)txbuffer, nwords, priv->txccr);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmarxstart
- *
- * Description:
- *   Start RX DMA
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static inline void spi_dmarxstart(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  priv->rxresult = 0;
-  stm32_dmastart(priv->rxdma, spi_dmarxcallback, priv, false);
-}
-#endif
-
-/************************************************************************************
- * Name: spi_dmatxstart
- *
- * Description:
- *   Start TX DMA
- *
- ************************************************************************************/
-
-#ifdef CONFIG_EFM32_SPI_DMA
-static inline void spi_dmatxstart(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  priv->txresult = 0;
-  stm32_dmastart(priv->txdma, spi_dmatxcallback, priv, false);
-}
-#endif
 
 
 /************************************************************************************
@@ -793,49 +451,43 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 {
     /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  uint16_t setbits;
-  uint16_t clrbits;
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
 
-  spivdbg("mode=%d\n", mode);
+    spivdbg("mode=%d\n", mode);
 
-  /* Has the mode changed? */
+    /* Has the mode changed? */
 
 #ifndef CONFIG_SPI_OWNBUS
-  if (mode != priv->mode)
+    if (mode != priv->mode)
     {
 #endif
-      /* Yes... Set CR1 appropriately */
+        unsigned int u;
 
-      switch (mode)
+        switch (mode)
         {
-        case SPIDEV_MODE0: /* CPOL=0; CPHA=0 */
-          setbits = 0;
-          clrbits = SPI_CR1_CPOL|SPI_CR1_CPHA;
-          break;
+            case SPIDEV_MODE0: /* CPOL=0; CPHA=0 */
+                u = USART_CTRL_CLKPOL_IDLELOW | USART_CTRL_CLKPHA_SAMPLELEADING;
+                break;
 
-        case SPIDEV_MODE1: /* CPOL=0; CPHA=1 */
-          setbits = SPI_CR1_CPHA;
-          clrbits = SPI_CR1_CPOL;
-          break;
+            case SPIDEV_MODE1: /* CPOL=0; CPHA=1 */
+                u = USART_CTRL_CLKPOL_IDLELOW | USART_CTRL_CLKPHA_SAMPLETRAILING;
+                break;
 
-        case SPIDEV_MODE2: /* CPOL=1; CPHA=0 */
-          setbits = SPI_CR1_CPOL;
-          clrbits = SPI_CR1_CPHA;
-          break;
+            case SPIDEV_MODE2: /* CPOL=1; CPHA=0 */
+                u = USART_CTRL_CLKPOL_IDLEHIGH | USART_CTRL_CLKPHA_SAMPLELEADING;
+                break;
 
-        case SPIDEV_MODE3: /* CPOL=1; CPHA=1 */
-          setbits = SPI_CR1_CPOL|SPI_CR1_CPHA;
-          clrbits = 0;
-          break;
+            case SPIDEV_MODE3: /* CPOL=1; CPHA=1 */
+                u = USART_CTRL_CLKPOL_IDLEHIGH | USART_CTRL_CLKPHA_SAMPLETRAILING;
+                break;
 
-        default:
-          return;
+            default:
+                return;
         }
 
-        spi_modifycr1(priv, 0, SPI_CR1_SPE);
-        spi_modifycr1(priv, setbits, clrbits);
-        spi_modifycr1(priv, SPI_CR1_SPE, 0);
+        priv->usart->CTRL &= ~(USART_CTRL_CLKPOL_MASK | USART_CTRL_CLKPHA_MASK);
+        priv->usart->CTRL = u;
+
 
         /* Save the mode so that subsequent re-configurations will be faster */
 
@@ -863,54 +515,55 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 {
     /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  uint16_t setbits;
-  uint16_t clrbits;
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
 
-  spivdbg("nbits=%d\n", nbits);
+    spivdbg("nbits=%d\n", nbits);
 
-  /* Has the number of bits changed? */
+    /* Has the number of bits changed? */
 
 #ifndef CONFIG_SPI_OWNBUS
-  if (nbits != priv->nbits)
+    if (nbits != priv->nbits)
     {
 #endif
-      /* Yes... Set CR1 appropriately */
+        int i;
+        uint32_t frame = priv->usart->FRAME;
 
-      switch (nbits)
+        if ( nbits < 0 )
         {
-        case -8:
-          setbits = SPI_CR1_LSBFIRST;
-          clrbits = SPI_CR1_DFF;
-          break;
-
-        case 8:
-          setbits = 0;
-          clrbits = SPI_CR1_DFF|SPI_CR1_LSBFIRST;
-          break;
-
-        case -16:
-          setbits = SPI_CR1_DFF|SPI_CR1_LSBFIRST;
-          clrbits = 0;
-          break;
-
-        case 16:
-          setbits = SPI_CR1_DFF;
-          clrbits = SPI_CR1_LSBFIRST;
-          break;
-
-        default:
-          return;
+            priv->usart->CTRL &= ~USART_CTRL_MSBF;
+            i = -nbits;
+        }
+        else
+        {
+            priv->usart->CTRL |= USART_CTRL_MSBF;
+            i = nbits;
         }
 
-      spi_modifycr1(priv, 0, SPI_CR1_SPE);
-      spi_modifycr1(priv, setbits, clrbits);
-      spi_modifycr1(priv, SPI_CR1_SPE, 0);
+        switch (i)
+        {
+            case  4  : i= USART_FRAME_DATABITS_FOUR;    break;
+            case  5  : i= USART_FRAME_DATABITS_FIVE;    break;
+            case  6  : i= USART_FRAME_DATABITS_SIX;     break;
+            case  7  : i= USART_FRAME_DATABITS_SEVEN;   break;
+            case  8  : i= USART_FRAME_DATABITS_EIGHT;   break;
+            case  9  : i= USART_FRAME_DATABITS_NINE;    break;
+            case  10 : i= USART_FRAME_DATABITS_TEN;     break;
+            case  11 : i= USART_FRAME_DATABITS_ELEVEN;  break;
+            case  12 : i= USART_FRAME_DATABITS_TWELVE;  break;
+            case  13 : i= USART_FRAME_DATABITS_THIRTEEN;break;
+            case  14 : i= USART_FRAME_DATABITS_FOURTEEN;break;
+            case  15 : i= USART_FRAME_DATABITS_FIFTEEN; break;
+            case  16 : i= USART_FRAME_DATABITS_SIXTEEN  break;
+            default:
+                       return;
+        }
 
-      /* Save the selection so the subsequence re-configurations will be faster */
+        priv->usart->FRAME &= USART_FRAME_DATABITS_MASK;
+        priv->usart->FRAME |= i;
+        /* Save the selection so the subsequence re-configurations will be faster */
 
 #ifndef CONFIG_SPI_OWNBUS
-      priv->nbits = nbits;
+        priv->nbits = nbits;
     }
 #endif
 }
