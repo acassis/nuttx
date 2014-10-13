@@ -195,7 +195,7 @@ static const struct spi_ops_s g_spiops_tb[CONFIG_EFM32_SPI_NBR] =
 static struct efm32_spidev_s g_spidev_tb[CONFIG_EFM32_SPI_NBR] =
 {
   .spidev   = NULL, /* TODO: { &g_spiops[x] } */
-  .spibase  = NULL, /* TODO: EFM32_SPIx_BASE */
+  .usart    = NULL, /* TODO: base address of USART */
   .spiclock = EFM32_PCLK2_FREQUENCY,
 #ifdef CONFIG_EFM32_SPI_INTERRUPTS
   .spiirq   = -1,   /* TODO: EFM32_IRQ_SPI */
@@ -336,101 +336,76 @@ static int spi_lock(FAR struct spi_dev_s *dev, bool lock)
 
 static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 {
-    /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  uint16_t setbits;
-  uint32_t actual;
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
 
-  /* Limit to max possible (if STM32_SPI_CLK_MAX is defined in board.h) */
-
-  if (frequency > STM32_SPI_CLK_MAX)
-    {
-      frequency = STM32_SPI_CLK_MAX;
-    }
-
-  /* Has the frequency changed? */
+    /* Has the frequency changed? */
 
 #ifndef CONFIG_SPI_OWNBUS
-  if (frequency != priv->frequency)
+    if (frequency != priv->frequency)
     {
 #endif
-      /* Choices are limited by PCLK frequency with a set of divisors */
 
-      if (frequency >= priv->spiclock >> 1)
-        {
-          /* More than fPCLK/2.  This is as fast as we can go */
+        uint32_t clkdiv;
 
-          setbits = SPI_CR1_FPCLCKd2; /* 000: fPCLK/2 */
-          actual = priv->spiclock >> 1;
-        }
-      else if (frequency >= priv->spiclock >> 2)
-        {
-          /* Between fPCLCK/2 and fPCLCK/4, pick the slower */
+        /*
+         * We want to use integer division to avoid forcing in float division
+         * utils, and yet keep rounding effect errors to a minimum.
+         *
+         * CLKDIV in synchronous mode is given by:
+         *
+         * CLKDIV = 256 * (fHFPERCLK/(2 * br) - 1)
+         * or
+         * CLKDIV = (256 * fHFPERCLK)/(2 * br) - 256 = (128 * fHFPERCLK)/br - 256
+         *
+         * The basic problem with integer division in the above formula is that
+         * the dividend (128 * fHFPERCLK) may become higher than max 32 bit
+         * integer. Yet, we want to evaluate dividend first before dividing in
+         * order to get as small rounding effects as possible. We do not want
+         * to make too harsh restrictions on max fHFPERCLK value either.
+         *
+         * One can possibly factorize 128 and br. However, since the last
+         * 6 bits of CLKDIV are don't care, we can base our integer arithmetic
+         * on the below formula without loosing any extra precision:
+         *
+         * CLKDIV / 64 = (2 * fHFPERCLK)/br - 4
+         *
+         * and calculate 1/64 of CLKDIV first. This allows for fHFPERCLK
+         * up to 2GHz without overflowing a 32 bit value!
+         */
 
-          setbits = SPI_CR1_FPCLCKd4; /* 001: fPCLK/4 */
-          actual = priv->spiclock >> 2;
-       }
-      else if (frequency >= priv->spiclock >> 3)
-        {
-          /* Between fPCLCK/4 and fPCLCK/8, pick the slower */
+        /* HFPERCLK used to clock all USART/UART peripheral modules */
+        refFreq = CMU_ClockFreqGet(cmuClock_HFPER);
 
-          setbits = SPI_CR1_FPCLCKd8; /* 010: fPCLK/8 */
-          actual = priv->spiclock >> 3;
-        }
-      else if (frequency >= priv->spiclock >> 4)
-        {
-          /* Between fPCLCK/8 and fPCLCK/16, pick the slower */
+        /* Calculate and set CLKDIV with fractional bits */
+        clkdiv  = 2 * refFreq;
+        clkdiv += baudrate - 1;
+        clkdiv /= baudrate;
+        clkdiv -= 4;
+        clkdiv *= 64;
+        /* Make sure we don't use fractional bits by rounding CLKDIV */
+        /* up (and thus reducing baudrate, not increasing baudrate above */
+        /* specified value). */
+        clkdiv += 0xc0;
+        clkdiv &= 0xffffff00;
 
-          setbits = SPI_CR1_FPCLCKd16; /* 011: fPCLK/16 */
-          actual = priv->spiclock >> 4;
-        }
-      else if (frequency >= priv->spiclock >> 5)
-        {
-          /* Between fPCLCK/16 and fPCLCK/32, pick the slower */
+        /* Verify that resulting clock divider is within limits */
+        ASSERT(clkdiv <= _USART_CLKDIV_MASK);
 
-          setbits = SPI_CR1_FPCLCKd32; /* 100: fPCLK/32 */
-          actual = priv->spiclock >> 5;
-        }
-      else if (frequency >= priv->spiclock >> 6)
-        {
-          /* Between fPCLCK/32 and fPCLCK/64, pick the slower */
+        /* If EFM_ASSERT is not enabled, make sure we don't write to reserved bits */
+        clkdiv &= _USART_CLKDIV_DIV_MASK;
 
-          setbits = SPI_CR1_FPCLCKd64; /*  101: fPCLK/64 */
-          actual = priv->spiclock >> 6;
-        }
-      else if (frequency >= priv->spiclock >> 7)
-        {
-          /* Between fPCLCK/64 and fPCLCK/128, pick the slower */
+        priv->usart->CLKDIV = clkdiv;
+        /* Save the frequency selection so that subsequent reconfigurations will be
+         * faster.
+         */
 
-          setbits = SPI_CR1_FPCLCKd128; /* 110: fPCLK/128 */
-          actual = priv->spiclock >> 7;
-        }
-      else
-        {
-          /* Less than fPCLK/128.  This is as slow as we can go */
-
-          setbits = SPI_CR1_FPCLCKd256; /* 111: fPCLK/256 */
-          actual = priv->spiclock >> 8;
-        }
-
-      spi_modifycr1(priv, 0, SPI_CR1_SPE);
-      spi_modifycr1(priv, setbits, SPI_CR1_BR_MASK);
-      spi_modifycr1(priv, SPI_CR1_SPE, 0);
-
-      /* Save the frequency selection so that subsequent reconfigurations will be
-       * faster.
-       */
-
-      spivdbg("Frequency %d->%d\n", frequency, actual);
+        spivdbg("Frequency %d\n", frequency);
 
 #ifndef CONFIG_SPI_OWNBUS
-      priv->frequency = frequency;
-      priv->actual    = actual;
+        priv->frequency = frequency;
     }
-  return priv->actual;
-#else
-  return actual;
 #endif
+    return frequency;
 }
 
 /************************************************************************************
@@ -444,13 +419,12 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
  *   mode - The SPI mode requested
  *
  * Returned Value:
- *   Returns the actual frequency selected
+ *   Returns void
  *
  ************************************************************************************/
 
 static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 {
-    /* TODO */
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
 
     spivdbg("mode=%d\n", mode);
@@ -514,7 +488,6 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 
 static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 {
-    /* TODO */
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
 
     spivdbg("nbits=%d\n", nbits);
@@ -586,24 +559,26 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 
 static uint16_t spi_send(FAR struct spi_dev_s *dev, uint16_t wd)
 {
-    /* TODO */
-  FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  uint32_t regval;
-  uint16_t ret;
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    uint16_t ret;
 
-  DEBUGASSERT(priv && priv->spibase);
+    DEBUGASSERT(priv && priv->usart);
 
-  spi_writeword(priv, wd);
-  ret = spi_readword(priv);
+    spi_writeword(priv, wd);
+    ret = spi_readword(priv);
 
-  /* Check and clear any error flags (Reading from the SR clears the error flags) */
+    {
+        while (!(priv->usart->STATUS & USART_STATUS_TXBL))
+        {};
+        priv->usart->TXDATA = (uint32_t) data;
+        while (!(priv->usart->STATUS & USART_STATUS_TXC))
+        {};
+        ret = (uint16_t) (priv->usart->RXDATA);
+    }
 
-  regval = spi_getreg(priv, STM32_SPI_SR_OFFSET);
+    spivdbg("Sent: %04x Return: %04x \n", wd, ret);
 
-  spivdbg("Sent: %04x Return: %04x Status: %02x\n", wd, ret, regval);
-  UNUSED(regval);
-
-  return ret;
+    return ret;
 }
 
 /************************************************************************************
@@ -636,7 +611,7 @@ static void spi_exchange_nodma(FAR struct spi_dev_s *dev, FAR const void *txbuff
 #endif
 {
   FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  DEBUGASSERT(priv && priv->spibase);
+  DEBUGASSERT(priv && priv->usart);
 
   spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
 
@@ -752,7 +727,7 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
       static const uint16_t txdummy = 0xffff;
 
       spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
-      DEBUGASSERT(priv && priv->spibase);
+      DEBUGASSERT(priv && priv->usart);
 
       /* Setup DMAs */
 
@@ -882,22 +857,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
   /* Initialize the SPI semaphores that is used to wait for DMA completion */
 
 #ifdef CONFIG_EFM32_SPI_DMA
-  sem_init(&priv->rxsem, 0, 0);
-  sem_init(&priv->txsem, 0, 0);
-
-  /* Get DMA channels.  NOTE: stm32_dmachannel() will always assign the DMA channel.
-   * if the channel is not available, then stm32_dmachannel() will block and wait
-   * until the channel becomes available.  WARNING: If you have another device sharing
-   * a DMA channel with SPI and the code never releases that channel, then the call
-   * to stm32_dmachannel()  will hang forever in this function!  Don't let your
-   * design do that!
-   */
-
-  priv->rxdma = stm32_dmachannel(priv->rxch);
-  priv->txdma = stm32_dmachannel(priv->txch);
-  DEBUGASSERT(priv->rxdma && priv->txdma);
-
-  spi_putreg(priv, STM32_SPI_CR2_OFFSET, SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN);
+  spi_portinitialize_dma(priv);
 #endif
 
   /* Enable spi */
@@ -925,161 +885,40 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
 FAR struct spi_dev_s *up_spiinitialize(int port)
 {
-  FAR struct efm32_spidev_s *priv = NULL;
+    /* TODO */
+    FAR struct efm32_spidev_s *priv = NULL;
 
-  irqstate_t flags = irqsave();
+    irqstate_t flags = irqsave();
 
-#ifdef CONFIG_STM32_SPI1
-  if (port == 1)
+    if (port == 6)
     {
-      /* Select SPI1 */
+        /* Select SPI6 */
 
-      priv = &g_spi1dev;
+        priv = &g_spi6dev;
 
-      /* Only configure if the port is not already configured */
+        /* Only configure if the port is not already configured */
 
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
+        if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
         {
-          /* Configure SPI1 pins: SCK, MISO, and MOSI */
+            /* Configure SPI6 pins: SCK, MISO, and MOSI */
 
-          stm32_configgpio(GPIO_SPI1_SCK);
-          stm32_configgpio(GPIO_SPI1_MISO);
-          stm32_configgpio(GPIO_SPI1_MOSI);
+            stm32_configgpio(GPIO_SPI6_SCK);
+            stm32_configgpio(GPIO_SPI6_MISO);
+            stm32_configgpio(GPIO_SPI6_MOSI);
 
-          /* Set up default configuration: Master, 8-bit, etc. */
+            /* Set up default configuration: Master, 8-bit, etc. */
 
-          spi_portinitialize(priv);
+            spi_portinitialize(priv);
         }
     }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI2
-  if (port == 2)
+    else
     {
-      /* Select SPI2 */
-
-      priv = &g_spi2dev;
-
-      /* Only configure if the port is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI2 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI2_SCK);
-          stm32_configgpio(GPIO_SPI2_MISO);
-          stm32_configgpio(GPIO_SPI2_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_portinitialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI3
-  if (port == 3)
-    {
-      /* Select SPI3 */
-
-      priv = &g_spi3dev;
-
-      /* Only configure if the port is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI3 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI3_SCK);
-          stm32_configgpio(GPIO_SPI3_MISO);
-          stm32_configgpio(GPIO_SPI3_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_portinitialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI4
-  if (port == 4)
-    {
-      /* Select SPI4 */
-
-      priv = &g_spi4dev;
-
-      /* Only configure if the port is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI4 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI4_SCK);
-          stm32_configgpio(GPIO_SPI4_MISO);
-          stm32_configgpio(GPIO_SPI4_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_portinitialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI5
-  if (port == 5)
-    {
-      /* Select SPI5 */
-
-      priv = &g_spi5dev;
-
-      /* Only configure if the port is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI5 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI5_SCK);
-          stm32_configgpio(GPIO_SPI5_MISO);
-          stm32_configgpio(GPIO_SPI5_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_portinitialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI6
-  if (port == 6)
-    {
-      /* Select SPI6 */
-
-      priv = &g_spi6dev;
-
-      /* Only configure if the port is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI6 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI6_SCK);
-          stm32_configgpio(GPIO_SPI6_MISO);
-          stm32_configgpio(GPIO_SPI6_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_portinitialize(priv);
-        }
-    }
-  else
-#endif
-    {
-      spidbg("ERROR: Unsupported SPI port: %d\n", port);
-      return NULL;
+        spidbg("ERROR: Unsupported SPI port: %d\n", port);
+        return NULL;
     }
 
-  irqrestore(flags);
-  return (FAR struct spi_dev_s *)priv;
+    irqrestore(flags);
+    return (FAR struct spi_dev_s *)priv;
 }
 
-#endif /* CONFIG_STM32_SPI1 || CONFIG_STM32_SPI2 || CONFIG_STM32_SPI3 || CONFIG_STM32_SPI4 || CONFIG_STM32_SPI5 || CONFIG_STM32_SPI6 */
+#endif /* CONFIG_EFM32_SPI_NBR */
