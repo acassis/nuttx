@@ -71,8 +71,8 @@ ifeq ($(CONFIG_ARCH_MEMCPY),y)
 CMN_ASRCS += up_memcpy.S
 endif
 
-ifeq ($(CONFIG_NUTTX_KERNEL),y)
-CMN_CSRCS += up_mpu.c up_task_start.c up_pthread_start.c up_stackframe.c
+ifeq ($(CONFIG_BUILD_PROTECTED),y)
+CMN_CSRCS += up_mpu.c up_task_start.c up_pthread_start.c
 ifneq ($(CONFIG_DISABLE_SIGNALS),y)
 CMN_CSRCS += up_signal_dispatch.c
 CMN_UASRCS += up_signal_handler.S
@@ -126,6 +126,11 @@ endif
 
 ifeq ($(CONFIG_EFM32_GPIO_KEYPAD),y)
 CHIP_CSRCS += efm32_gpio_keypad.c
+endif
+
+ifneq ($(CONFIG_EFM32_SPI_NBR),'0')
+CHIP_CSRCS += efm32_spi.c
+CHIP_CSRCS += efm32_spi_dma.c
 endif
 
 

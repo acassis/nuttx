@@ -35,17 +35,18 @@
  *
  ************************************************************************************/
 
-#ifndef __ARCH_ARM_EFM32_EFM32_SPI_H
-#define __ARCH_ARM_EFM32_EFM32_SPI_H
+#ifndef __ARCH_ARM_EFM32_EFM32_SPI_P_H
+#define __ARCH_ARM_EFM32_EFM32_SPI_P_H
 
+#include "efm32_spi.h"
 /************************************************************************************
  * Private Types
  ************************************************************************************/
 
-struct efm31_spidev_s
+struct efm32_spidev_s
 {
   struct spi_dev_s spidev;     /* Externally visible part of the SPI interface */
-  uint32_t         spibase;    /* SPIn base address */
+  efm32_spi_cfg_t  cfg;        /* SPI hardware config */
   uint32_t         spiclock;   /* Clocking for the SPI module */
 #ifdef CONFIG_EFM32_SPI_INTERRUPTS
   uint8_t          spiirq;     /* SPI IRQ number */

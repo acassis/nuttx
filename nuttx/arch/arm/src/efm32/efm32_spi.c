@@ -81,8 +81,10 @@
 #include "chip.h"
 #include "efm32.h"
 #include "efm32_gpio.h"
-#include "efm32_dma.h"
-#include "efm32_spi.h"
+#include "efm32_cmu.h"
+#include "efm32_usart.h"
+//#include "efm32_dma.h"
+#include "efm32_spi_p.h"
 
 #if defined(CONFIG_EFM32_SPI_NBR) && ( CONFIG_EFM32_SPI_NBR > 0 ) 
 
@@ -128,13 +130,6 @@
  * Private Function Prototypes
  ************************************************************************************/
 
-/* Helpers */
-
-static inline uint16_t  spi_readword(FAR struct efm32_spidev_s *priv);
-static inline void      spi_writeword(FAR struct efm32_spidev_s *priv, uint16_t byte);
-static inline bool      spi_16bitmode(FAR struct efm32_spidev_s *priv);
-
-
 /* SPI methods */
 
 #ifndef CONFIG_SPI_OWNBUS
@@ -169,42 +164,8 @@ static void        spi_portinitialize(FAR struct efm32_spidev_s *priv);
  ************************************************************************************/
 
 #ifdef CONFIG_EFM32_SPI_NBR
-static const struct spi_ops_s g_spiops_tb[CONFIG_EFM32_SPI_NBR] =
-{
-#ifndef CONFIG_SPI_OWNBUS
-  .lock              = spi_lock,
-#endif
-  .select            = spi_elect, /* TODO */
-  .setfrequency      = spi_setfrequency,
-  .setmode           = spi_setmode,
-  .setbits           = spi_setbits,
-  .status            = spi_status, /* TODO */
-#ifdef CONFIG_SPI_CMDDATA
-  .cmddata           = spi_cmddata, /* TODO */
-#endif
-  .send              = spi_send,
-#ifdef CONFIG_SPI_EXCHANGE
-  .exchange          = spi_exchange,
-#else
-  .sndblock          = spi_sndblock,
-  .recvblock         = spi_recvblock,
-#endif
-  .registercallback  = 0,
-};
-
-static struct efm32_spidev_s g_spidev_tb[CONFIG_EFM32_SPI_NBR] =
-{
-  .spidev   = NULL, /* TODO: { &g_spiops[x] } */
-  .usart    = NULL, /* TODO: base address of USART */
-  .spiclock = EFM32_PCLK2_FREQUENCY,
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-  .spiirq   = -1,   /* TODO: EFM32_IRQ_SPI */
-#endif
-#ifdef CONFIG_EFM32_SPI_DMA
-  .rxch     = NULL, /* TODO: DMACHAN_SPI1_RX */
-  .txch     = NULL, /* TODO: DMACHAN_SPI1_TX */
-#endif
-};
+static const struct spi_ops_s g_spiops_tb[CONFIG_EFM32_SPI_NBR];
+static struct efm32_spidev_s  g_spidev_tb[CONFIG_EFM32_SPI_NBR];
 #endif
 
 
@@ -215,60 +176,6 @@ static struct efm32_spidev_s g_spidev_tb[CONFIG_EFM32_SPI_NBR] =
 /************************************************************************************
  * Private Functions
  ************************************************************************************/
-
-
-/************************************************************************************
- * Name: spi_readword
- *
- * Description:
- *   Read one byte from SPI
- *
- * Input Parameters:
- *   priv - Device-specific state data
- *
- * Returned Value:
- *   Byte as read
- *
- ************************************************************************************/
-
-static inline uint16_t spi_readword(FAR struct efm32_spidev_s *priv)
-{
-    /* TODO */
-  /* Wait until the receive buffer is not empty */
-
-  while ((spi_getreg(priv, STM32_SPI_SR_OFFSET) & SPI_SR_RXNE) == 0);
-
-  /* Then return the received byte */
-
-  return spi_getreg(priv, STM32_SPI_DR_OFFSET);
-}
-
-/************************************************************************************
- * Name: spi_writeword
- *
- * Description:
- *   Write one byte to SPI
- *
- * Input Parameters:
- *   priv - Device-specific state data
- *   byte - Byte to send
- *
- * Returned Value:
- *   None
- *
- ************************************************************************************/
-
-static inline void spi_writeword(FAR struct efm32_spidev_s *priv, uint16_t word)
-{
-    /* TODO */
-  /* Wait until the transmit buffer is empty */
-
-  while ((spi_getreg(priv, STM32_SPI_SR_OFFSET) & SPI_SR_TXE) == 0);
-
-  /* Then send the byte */
-
-  spi_putreg(priv, STM32_SPI_DR_OFFSET, word);
-}
 
 
 
@@ -345,56 +252,8 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
     {
 #endif
 
-        uint32_t clkdiv;
+        USART_BaudrateSyncSet(priv->cfg->usart, 0, frequency);
 
-        /*
-         * We want to use integer division to avoid forcing in float division
-         * utils, and yet keep rounding effect errors to a minimum.
-         *
-         * CLKDIV in synchronous mode is given by:
-         *
-         * CLKDIV = 256 * (fHFPERCLK/(2 * br) - 1)
-         * or
-         * CLKDIV = (256 * fHFPERCLK)/(2 * br) - 256 = (128 * fHFPERCLK)/br - 256
-         *
-         * The basic problem with integer division in the above formula is that
-         * the dividend (128 * fHFPERCLK) may become higher than max 32 bit
-         * integer. Yet, we want to evaluate dividend first before dividing in
-         * order to get as small rounding effects as possible. We do not want
-         * to make too harsh restrictions on max fHFPERCLK value either.
-         *
-         * One can possibly factorize 128 and br. However, since the last
-         * 6 bits of CLKDIV are don't care, we can base our integer arithmetic
-         * on the below formula without loosing any extra precision:
-         *
-         * CLKDIV / 64 = (2 * fHFPERCLK)/br - 4
-         *
-         * and calculate 1/64 of CLKDIV first. This allows for fHFPERCLK
-         * up to 2GHz without overflowing a 32 bit value!
-         */
-
-        /* HFPERCLK used to clock all USART/UART peripheral modules */
-        refFreq = CMU_ClockFreqGet(cmuClock_HFPER);
-
-        /* Calculate and set CLKDIV with fractional bits */
-        clkdiv  = 2 * refFreq;
-        clkdiv += baudrate - 1;
-        clkdiv /= baudrate;
-        clkdiv -= 4;
-        clkdiv *= 64;
-        /* Make sure we don't use fractional bits by rounding CLKDIV */
-        /* up (and thus reducing baudrate, not increasing baudrate above */
-        /* specified value). */
-        clkdiv += 0xc0;
-        clkdiv &= 0xffffff00;
-
-        /* Verify that resulting clock divider is within limits */
-        ASSERT(clkdiv <= _USART_CLKDIV_MASK);
-
-        /* If EFM_ASSERT is not enabled, make sure we don't write to reserved bits */
-        clkdiv &= _USART_CLKDIV_DIV_MASK;
-
-        priv->usart->CLKDIV = clkdiv;
         /* Save the frequency selection so that subsequent reconfigurations will be
          * faster.
          */
@@ -563,9 +422,6 @@ static uint16_t spi_send(FAR struct spi_dev_s *dev, uint16_t wd)
     uint16_t ret;
 
     DEBUGASSERT(priv && priv->usart);
-
-    spi_writeword(priv, wd);
-    ret = spi_readword(priv);
 
     {
         while (!(priv->usart->STATUS & USART_STATUS_TXBL))
@@ -890,26 +746,49 @@ FAR struct spi_dev_s *up_spiinitialize(int port)
 
     irqstate_t flags = irqsave();
 
-    if (port == 6)
+    if (port < CONFIG_EFM32_SPI_NBR)
     {
-        /* Select SPI6 */
+        priv = &(g_spidev[port]);
 
-        priv = &g_spi6dev;
+        priv->spidev   = &g_spiops_tb[port]; 
+        priv->usart    = NULL; /* TODO: base address of USART */
+#ifdef CONFIG_EFM32_SPI_INTERRUPTS
+        priv->spiirq   = -1;   /* TODO: EFM32_IRQ_SPI */
+#endif
+#ifdef CONFIG_EFM32_SPI_DMA
+        priv->rxch     = NULL; /* TODO: DMACHAN_SPI1_RX */
+        priv->txch     = NULL; /* TODO: DMACHAN_SPI1_TX */
+#endif
 
-        /* Only configure if the port is not already configured */
+#if 0
+#ifndef CONFIG_SPI_OWNBUS
+        priv->lock              = spi_lock;
+#endif
+        priv->select            = spi_elect; /* TODO */
+        priv->setfrequency      = spi_setfrequency;
+        priv->setmode           = spi_setmode;
+        priv->setbits           = spi_setbits;
+        priv->status            = spi_status; /* TODO */
+#ifdef CONFIG_SPI_CMDDATA
+        priv->cmddata           = spi_cmddata; /* TODO */
+#endif
+        priv->send              = spi_send;
+#ifdef CONFIG_SPI_EXCHANGE
+        priv->exchange          = spi_exchange;
+#else
+        priv->sndblock          = spi_sndblock;
+        priv->recvblock         = spi_recvblock;
+#endif
+        priv->registercallback  = 0;
+#endif
 
-        if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-            /* Configure SPI6 pins: SCK, MISO, and MOSI */
+        GPIO_PinModeSet(cfg->clk_port,cfg->clk_pin,gpioModePushPull,0);
+        GPIO_PinModeSet(cfg->miso_port,cfg->miso_pin,gpioModePushPull,0);
+        GPIO_PinModeSet(cfg->mosi_port,cfg->mosi_pin,gpioModePushPull,0);
+        GPIO_PinModeSet(cfg->cs_port,cfg->cs_pin,gpioModePushPull,0);
 
-            stm32_configgpio(GPIO_SPI6_SCK);
-            stm32_configgpio(GPIO_SPI6_MISO);
-            stm32_configgpio(GPIO_SPI6_MOSI);
+        spi_portinitialize(priv);
 
-            /* Set up default configuration: Master, 8-bit, etc. */
-
-            spi_portinitialize(priv);
-        }
     }
     else
     {

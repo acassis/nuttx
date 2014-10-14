@@ -38,4 +38,11 @@ config EFM32_GPIO_KEYPAD
 	---help---
 		Enable keypad with GPIO pins
 
+config EFM32_SPI_NBR
+	int "SPI driver number max"
+	default 1
+	---help---
+		You need to Enable also DRIVERS->SPI.
+
 endif
+

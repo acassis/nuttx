@@ -59,8 +59,12 @@
 #include "chip.h"
 #include "efm32.h"
 #include "efm32_gpio.h"
+
+#ifdef CONFIG_EFM32_SPI_DMA
+#  error "DMA driven SPI not yet supported"
+
 #include "efm32_dma.h"
-#include "efm32_spi.h"
+#include "efm32_spi_p.h"
 
 #if defined(CONFIG_EFM32_SPI) 
 
@@ -70,8 +74,6 @@
 /* Configuration ********************************************************************/
 /* SPI interrupts */
 
-#ifdef CONFIG_EFM32_SPI_DMA
-#  error "DMA driven SPI not yet supported"
 
 
 

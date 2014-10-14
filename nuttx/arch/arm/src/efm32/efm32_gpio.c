@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_gpio.h
+ * arch/arm/src/efm32/efm32_gpio.c
  *
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *

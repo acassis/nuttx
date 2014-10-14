@@ -91,7 +91,7 @@
 //#include "EFM32GG/efm32gg_lesense.h"
 //#include "EFM32GG/efm32gg_rtc.h"
 //#include "EFM32GG/efm32gg_acmp.h"
-//#include "EFM32GG/efm32gg_usart.h"
+#include "EFM32GG/efm32gg_usart.h"
 //#include "EFM32GG/efm32gg_timer_cc.h"
 //#include "EFM32GG/efm32gg_timer.h"
 #include "EFM32GG/efm32gg_gpio_p.h"
