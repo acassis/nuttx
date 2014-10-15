@@ -72,7 +72,6 @@
 #  define CONFIG_EFM32_EFM32GG8XX            
 #  define CONFIG_EFM32_EFM32GG332
 #  define CONFIG_EFM32_EFM32XXXXXF1024
-#  define CONFIG_EFM32_GIANT_FAMILY
 
 #else
 #  error "Unsupported EFM32 chip"

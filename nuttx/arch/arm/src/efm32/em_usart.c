@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_usart.c
+ * arch/arm/src/efm32/em_usart.c
  *
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -62,7 +62,7 @@
 #include "efm32.h"
 #include "efm32_gpio.h"
 
-#if defined(EFM32_USART_NBR) && (EFM32_USART_NBR > 0)
+#if defined(USART_PRESENT)
 
 #include "efm32_cmu.h"
 #include "assert.h"

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_bitband.h
+ * arch/arm/src/efm32/em_bitband.h
  * 
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -57,8 +57,8 @@
  ******************************************************************************/
 
 
-#ifndef __ARCH_ARM_SRC_EFM32_EFM32_BITBAND_H
-#define __ARCH_ARM_SRC_EFM32_EFM32_BITBAND_H
+#ifndef __ARCH_ARM_SRC_EFM32_EM_BITBAND_H
+#define __ARCH_ARM_SRC_EFM32_EM_BITBAND_H
 
 #ifdef __cplusplus
 extern "C" {

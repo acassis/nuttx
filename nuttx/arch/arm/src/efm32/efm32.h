@@ -68,16 +68,19 @@
 
 #define EFM_ASSERT DEBUGASSERT
 
-#include "core_cmInstr.h"
 
 /* Peripherals **********************************************************************/
 
 #include "chip.h"
 
 #if defined(CONFIG_EFM32_EFM32TG)
+
 #   include "efm32tg.h"
+
 #elif defined(CONFIG_EFM32_EFM32GG)
+
 #   include "efm32gg.h"
+
 #endif
 
 #endif /* __ARCH_ARM_SRC_EFM32_EFM32_H */

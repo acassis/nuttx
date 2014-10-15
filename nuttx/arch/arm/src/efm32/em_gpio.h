@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_gpio.h
+ * arch/arm/src/efm32/em_gpio.h
  * 
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -58,10 +58,10 @@
  ******************************************************************************/
 
 
-#ifndef __ARCH_ARM_SRC_EFM32_EFM32_GPIO_H
-#define __ARCH_ARM_SRC_EFM32_EFM32_GPIO_H
+#ifndef __ARCH_ARM_SRC_EFM32_EM_GPIO_H
+#define __ARCH_ARM_SRC_EFM32_EM_GPIO_H
 
-#if (EFM32_GPIO_NBR > 0)
+#if (GPIO_PRESENT > 0)
 
 #include "assert.h"
 #include "em_bitband.h"

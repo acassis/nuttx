@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_cmu.c
+ * arch/arm/src/efm32/em_cmu.c
  * 
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -62,53 +62,49 @@
 #include <nuttx/config.h>
 #include "efm32.h"
 
-#if defined( EFM32_CMU_NBR ) && ( EFM32_CMU_NBR > 0 )
+#if defined( CMU_PRESENT ) 
 
 #include "assert.h"
 #include "em_bitband.h"
 #include "em_cmu.h"
-//#include "em_emu.h"
+#include "em_emu.h"
 
 /*******************************************************************************
  ******************************   DEFINES   ************************************
  ******************************************************************************/
 
-/** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
-
-/** Maximum allowed core frequency when using 0 wait states on flash access. */
+/* Maximum allowed core frequency when using 0 wait states on flash access. */
 #define CMU_MAX_FREQ_0WS    16000000
-/** Maximum allowed core frequency when using 1 wait states on flash access */
+/* Maximum allowed core frequency when using 1 wait states on flash access */
 #define CMU_MAX_FREQ_1WS    32000000
 
 #if defined( CMU_CTRL_HFLE )
-/** Maximum frequency for HFLE needs to be enabled on Giant, Leopard and
+/* Maximum frequency for HFLE needs to be enabled on Giant, Leopard and
     Wonder. */
-#if defined (CONFIG_EFM32_WONDER_FAMILY)
+#if defined (_EFM32_WONDER_FAMILY)
 #define CMU_MAX_FREQ_HFLE   (24000000)
-#elif defined (CONFIG_EFM32_GIANT_FAMILY)
+#elif defined (_EFM32_GIANT_FAMILY)
 #define CMU_MAX_FREQ_HFLE   (CMU_MaxFreqHfle())
 #else
 #error Invalid part/device.
 #endif
 #endif
 
-/** Low frequency A group identifier */
+/* Low frequency A group identifier */
 #define CMU_LFA             0
 
-/** Low frequency B group identifier */
+/* Low frequency B group identifier */
 #define CMU_LFB             1
 
-/** @endcond */
 
 /*******************************************************************************
  **************************   LOCAL FUNCTIONS   ********************************
  ******************************************************************************/
 
-/** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
 
-#if defined( CMU_CTRL_HFLE ) && !defined (CONFIG_EFM32_WONDER_FAMILY)
+#if defined( CMU_CTRL_HFLE ) && !defined (_EFM32_WONDER_FAMILY)
 /***************************************************************************
- * @brief
+ * brief
  *   Return max allowed frequency for low energy peripherals.
  ******************************************************************************/
 static uint32_t CMU_MaxFreqHfle(void)
@@ -148,7 +144,7 @@ static uint32_t CMU_MaxFreqHfle(void)
 #endif
 
 /***************************************************************************
- * @brief
+ * brief
  *   Configure flash access wait states to most conservative setting for
  *   this target. Retain SCBTP setting.
  ******************************************************************************/
@@ -194,9 +190,9 @@ static void CMU_FlashWaitStateMax(void)
 
 
 /***************************************************************************
- * @brief Convert dividend to prescaler logarithmic value. Only works for even
+ * brief Convert dividend to prescaler logarithmic value. Only works for even
  *        numbers equal to 2^n
- * @param[in] div Unscaled dividend,
+ * param[in] div Unscaled dividend,
  * @return Base 2 logarithm of input, as used by fixed prescalers
  ******************************************************************************/
 static inline uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
@@ -214,8 +210,8 @@ static inline uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
 
 
 /***************************************************************************
- * @brief Convert logarithm of 2 prescaler to division factor
- * @param[in] log2
+ * brief Convert logarithm of 2 prescaler to division factor
+ * param[in] log2
  * @return Dividend
  ******************************************************************************/
 static inline uint32_t CMU_Log2ToDiv(uint32_t log2)
@@ -225,11 +221,11 @@ static inline uint32_t CMU_Log2ToDiv(uint32_t log2)
 
 
 /***************************************************************************
- * @brief
+ * brief
  *   Configure flash access wait states in order to support given HFCORECLK
  *   frequency.
  *
- * @param[in] hfcoreclk
+ * param[in] hfcoreclk
  *   HFCORECLK frequency that flash access wait states must be configured for.
  ******************************************************************************/
 static void CMU_FlashWaitStateControl(uint32_t hfcoreclk)
@@ -306,9 +302,9 @@ static void CMU_FlashWaitStateControl(uint32_t hfcoreclk)
 }
 
 
-#if defined(EFM32_USB_NBR) && ( EFM32_USB_NBR > 0 )
+#if defined(USB_PRESENT)
 /***************************************************************************
- * @brief
+ * brief
  *   Get the USBC frequency
  *
  * @return
@@ -343,8 +339,8 @@ static uint32_t CMU_USBCClkGet(void)
 #endif
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get the AUX clock frequency. Used by MSC flash programming and LESENSE,
  *   by default also as debug clock.
  *
@@ -355,7 +351,7 @@ static uint32_t CMU_AUXClkGet(void)
 {
   uint32_t ret;
 
-#if defined(_EFM32_GECKO_FAMILY)
+#if defined(CONFIG_EFM32_GECKO_FAMILY)
   /* Gecko has a fixed 14Mhz AUXHFRCO clock */
   ret = 14000000;
 #else
@@ -390,8 +386,8 @@ static uint32_t CMU_AUXClkGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get the Debug Trace clock frequency
  *
  * @return
@@ -429,11 +425,11 @@ static uint32_t CMU_DBGClkGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get the LFnCLK frequency based on current configuration.
  *
- * @param[in] lfClkBranch
+ * param[in] lfClkBranch
  *   LF branch, 0 = LFA, 1 = LFB, ...
  *
  * @return
@@ -498,11 +494,11 @@ static uint32_t CMU_LFClkGet(unsigned int lfClkBranch)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Wait for ongoing sync of register(s) to low frequency domain to complete.
  *
- * @param[in] mask
+ * param[in] mask
  *   Bitmask corresponding to SYNCBUSY register defined bits, indicating
  *   registers that must complete any ongoing synchronization.
  ******************************************************************************/
@@ -526,22 +522,22 @@ static inline void CMU_Sync(uint32_t mask)
  **************************   GLOBAL FUNCTIONS   *******************************
  ******************************************************************************/
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Calibrate clock.
  *
- * @details
+ * details
  *   Run a calibration for HFCLK against a selectable reference clock. Please
  *   refer to the EFM32 reference manual, CMU chapter, for further details.
  *
- * @note
+ * note
  *   This function will not return until calibration measurement is completed.
  *
- * @param[in] HFCycles
+ * param[in] HFCycles
  *   The number of HFCLK cycles to run calibration. Increasing this number
  *   increases precision, but the calibration will take more time.
  *
- * @param[in] ref
+ * param[in] ref
  *   The reference clock used to compare HFCLK with.
  *
  * @return
@@ -595,28 +591,28 @@ uint32_t CMU_Calibrate(uint32_t HFCycles, CMU_Osc_TypeDef ref)
 
 
 #if defined( _CMU_CALCTRL_UPSEL_MASK ) && defined( _CMU_CALCTRL_DOWNSEL_MASK )
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Configure clock calibration
  *
- * @details
+ * details
  *   Configure a calibration for a selectable clock source against another
  *   selectable reference clock.
  *   Refer to the EFM32 reference manual, CMU chapter, for further details.
  *
- * @note
+ * note
  *   After configuration, a call to CMU_CalibrateStart() is required, and
  *   the resulting calibration value can be read out with the
  *   CMU_CalibrateCountGet() function call.
  *
- * @param[in] downCycles
+ * param[in] downCycles
  *   The number of downSel clock cycles to run calibration. Increasing this
  *   number increases precision, but the calibration will take more time.
  *
- * @param[in] downSel
+ * param[in] downSel
  *   The clock which will be counted down downCycles
  *
- * @param[in] upSel
+ * param[in] upSel
  *   The reference clock, the number of cycles generated by this clock will
  *   be counted and added up, the result can be given with the
  *   CMU_CalibrateCountGet() function call.
@@ -694,11 +690,11 @@ void CMU_CalibrateConfig(uint32_t downCycles, CMU_Osc_TypeDef downSel,
 #endif
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get clock divisor/prescaler.
  *
- * @param[in] clock
+ * param[in] clock
  *   Clock point to get divisor/prescaler for. Notice that not all clock points
  *   have a divisor/prescaler. Please refer to CMU overview in reference manual.
  *
@@ -813,23 +809,23 @@ CMU_ClkDiv_TypeDef CMU_ClockDivGet(CMU_Clock_TypeDef clock)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set clock divisor/prescaler.
  *
- * @note
+ * note
  *   If setting a LF clock prescaler, synchronization into the low frequency
  *   domain is required. If the same register is modified before a previous
  *   update has completed, this function will stall until the previous
  *   synchronization has completed. Please refer to CMU_FreezeEnable() for
  *   a suggestion on how to reduce stalling time in some use cases.
  *
- * @param[in] clock
+ * param[in] clock
  *   Clock point to set divisor/prescaler for. Notice that not all clock points
  *   have a divisor/prescaler, please refer to CMU overview in the reference
  *   manual.
  *
- * @param[in] div
+ * param[in] div
  *   The clock divisor to use (<= cmuClkDiv_512).
  ******************************************************************************/
 void CMU_ClockDivSet(CMU_Clock_TypeDef clock, CMU_ClkDiv_TypeDef div)
@@ -1026,30 +1022,30 @@ void CMU_ClockDivSet(CMU_Clock_TypeDef clock, CMU_ClkDiv_TypeDef div)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/disable a clock.
  *
- * @details
+ * details
  *   In general, module clocking is disabled after a reset. If a module
  *   clock is disabled, the registers of that module are not accessible and
  *   reading from such registers may return undefined values. Writing to
  *   registers of clock disabled modules have no effect. One should normally
  *   avoid accessing module registers of a module with a disabled clock.
  *
- * @note
+ * note
  *   If enabling/disabling a LF clock, synchronization into the low frequency
  *   domain is required. If the same register is modified before a previous
  *   update has completed, this function will stall until the previous
  *   synchronization has completed. Please refer to CMU_FreezeEnable() for
  *   a suggestion on how to reduce stalling time in some use cases.
  *
- * @param[in] clock
+ * param[in] clock
  *   The clock to enable/disable. Notice that not all defined clock
  *   points have separate enable/disable control, please refer to CMU overview
  *   in reference manual.
  *
- * @param[in] enable
+ * param[in] enable
  *   @li true - enable specified clock.
  *   @li false - disable specified clock.
  ******************************************************************************/
@@ -1121,11 +1117,11 @@ void CMU_ClockEnable(CMU_Clock_TypeDef clock, bool enable)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get clock frequency for a clock point.
  *
- * @param[in] clock
+ * param[in] clock
  *   Clock point to fetch frequency for.
  *
  * @return
@@ -1281,11 +1277,11 @@ uint32_t CMU_ClockFreqGet(CMU_Clock_TypeDef clock)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Get currently selected reference clock used for a clock branch.
  *
- * @param[in] clock
+ * param[in] clock
  *   Clock branch to fetch selected ref. clock for. One of:
  *   @li #cmuClock_HF
  *   @li #cmuClock_LFA
@@ -1400,13 +1396,13 @@ CMU_Select_TypeDef CMU_ClockSelectGet(CMU_Clock_TypeDef clock)
       break;
     }
 #endif
-#if defined(_EFM32_GECKO_FAMILY)
+#if defined(CONFIG_EFM32_GECKO_FAMILY)
     ret = cmuSelect_AUXHFRCO;
 #endif
     break;
 
 
-#if defined(USB_PRESENT)
+#if defined(USB_PRESENT) 
   case CMU_USBCCLKSEL_REG:
     switch(CMU->STATUS & (CMU_STATUS_USBCHFCLKSEL |
                           CMU_STATUS_USBCLFXOSEL |
@@ -1441,11 +1437,11 @@ CMU_Select_TypeDef CMU_ClockSelectGet(CMU_Clock_TypeDef clock)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Select reference clock/oscillator used for a clock branch.
  *
- * @details
+ * details
  *   Notice that if a selected reference is not enabled prior to selecting its
  *   use, it will be enabled, and this function will wait for the selected
  *   oscillator to be stable. It will however NOT be disabled if another
@@ -1455,7 +1451,7 @@ CMU_Select_TypeDef CMU_ClockSelectGet(CMU_Clock_TypeDef clock)
  *   clock for the clock branch clocking the core, otherwise the system
  *   may halt.
  *
- * @param[in] clock
+ * param[in] clock
  *   Clock branch to select reference clock for. One of:
  *   @li #cmuClock_HF
  *   @li #cmuClock_LFA
@@ -1464,7 +1460,7 @@ CMU_Select_TypeDef CMU_ClockSelectGet(CMU_Clock_TypeDef clock)
  *   @li #cmuClock_USBC
  *   @endif
  *
- * @param[in] ref
+ * param[in] ref
  *   Reference selected for clocking, please refer to reference manual for
  *   for details on which reference is available for a specific clock branch.
  *   @li #cmuSelect_HFRCO
@@ -1483,7 +1479,7 @@ void CMU_ClockSelectSet(CMU_Clock_TypeDef clock, CMU_Select_TypeDef ref)
   CMU_Osc_TypeDef osc    = cmuOsc_HFRCO;
   uint32_t        freq;
   uint32_t        selReg;
-#if !defined(_EFM32_GECKO_FAMILY)
+#if !defined(CONFIG_EFM32_GECKO_FAMILY)
   uint32_t        lfExtended = 0;
 #endif
   uint32_t        tmp;
@@ -1726,11 +1722,11 @@ void CMU_ClockSelectSet(CMU_Clock_TypeDef clock, CMU_Select_TypeDef ref)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   CMU low frequency register synchronization freeze control.
  *
- * @details
+ * details
  *   Some CMU registers requires synchronization into the low frequency (LF)
  *   domain. The freeze feature allows for several such registers to be
  *   modified before passing them to the LF domain simultaneously (which
@@ -1741,7 +1737,7 @@ void CMU_ClockSelectSet(CMU_Clock_TypeDef clock, CMU_Select_TypeDef ref)
  *   same register. If freeze mode is enabled during this sequence, stalling
  *   can be avoided.
  *
- * @note
+ * note
  *   When enabling freeze mode, this function will wait for all current
  *   ongoing CMU synchronization to LF domain to complete (Normally
  *   synchronization will not be in progress.) However for this reason, when
@@ -1749,7 +1745,7 @@ void CMU_ClockSelectSet(CMU_Clock_TypeDef clock, CMU_Select_TypeDef ref)
  *   should be done within one freeze enable/disable block to avoid unecessary
  *   stalling.
  *
- * @param[in] enable
+ * param[in] enable
  *   @li true - enable freeze, modified registers are not propagated to the
  *       LF domain
  *   @li false - disable freeze, modified registers are propagated to LF
@@ -1779,8 +1775,8 @@ void CMU_FreezeEnable(bool enable)
 
 
 #if defined( _CMU_AUXHFRCOCTRL_BAND_MASK )
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get AUXHFRCO band in use.
  *
  * @return
@@ -1792,12 +1788,12 @@ CMU_AUXHFRCOBand_TypeDef CMU_AUXHFRCOBandGet(void)
                                  _CMU_AUXHFRCOCTRL_BAND_SHIFT);
 }
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set AUIXHFRCO band and the tuning value based on the value in the
  *   calibration table made during production.
  *
- * @param[in] band
+ * param[in] band
  *   AUXHFRCO band to activate.
  ******************************************************************************/
 void CMU_AUXHFRCOBandSet(CMU_AUXHFRCOBand_TypeDef band)
@@ -1854,8 +1850,8 @@ void CMU_AUXHFRCOBandSet(CMU_AUXHFRCOBand_TypeDef band)
 #endif
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get HFRCO band in use.
  *
  * @return
@@ -1868,12 +1864,12 @@ CMU_HFRCOBand_TypeDef CMU_HFRCOBandGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set HFRCO band and the tuning value based on the value in the calibration
  *   table made during production.
  *
- * @param[in] band
+ * param[in] band
  *   HFRCO band to activate.
  ******************************************************************************/
 void CMU_HFRCOBandSet(CMU_HFRCOBand_TypeDef band)
@@ -1951,11 +1947,11 @@ void CMU_HFRCOBandSet(CMU_HFRCOBand_TypeDef band)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get the HFRCO startup delay.
  *
- * @details
+ * details
  *   Please refer to the reference manual for further details.
  *
  * @return
@@ -1968,14 +1964,14 @@ uint32_t CMU_HFRCOStartupDelayGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set the HFRCO startup delay.
  *
- * @details
+ * details
  *   Please refer to the reference manual for further details.
  *
- * @param[in] delay
+ * param[in] delay
  *   The startup delay to set (<= 31).
  ******************************************************************************/
 void CMU_HFRCOStartupDelaySet(uint32_t delay)
@@ -1988,8 +1984,8 @@ void CMU_HFRCOStartupDelaySet(uint32_t delay)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get the LCD framerate divisor (FDIV) setting.
  *
  * @return
@@ -2005,17 +2001,17 @@ uint32_t CMU_LCDClkFDIVGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set the LCD framerate divisor (FDIV) setting.
  *
- * @note
+ * note
  *   The FDIV field (CMU LCDCTRL register) should only be modified while the
  *   LCD module is clock disabled (CMU LFACLKEN0.LCD bit is 0). This function
  *   will NOT modify FDIV if the LCD module clock is enabled. Please refer to
  *   CMU_ClockEnable() for disabling/enabling LCD clock.
  *
- * @param[in] div
+ * param[in] div
  *   The FDIV setting to use.
  ******************************************************************************/
 void CMU_LCDClkFDIVSet(uint32_t div)
@@ -2038,25 +2034,25 @@ void CMU_LCDClkFDIVSet(uint32_t div)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Enable/disable oscillator.
  *
- * @note
+ * note
  *   WARNING: When this function is called to disable either cmuOsc_LFXO or
  *   cmuOsc_HFXO the LFXOMODE or HFXOMODE fields of the CMU_CTRL register
  *   are reset to the reset value. I.e. if external clock sources are selected
  *   in either LFXOMODE or HFXOMODE fields, the configuration will be cleared
  *   and needs to be reconfigured if needed later.
  *
- * @param[in] osc
+ * param[in] osc
  *   The oscillator to enable/disable.
  *
- * @param[in] enable
+ * param[in] enable
  *   @li true - enable specified oscillator.
  *   @li false - disable specified oscillator.
  *
- * @param[in] wait
+ * param[in] wait
  *   Only used if @p enable is true.
  *   @li true - wait for oscillator start-up time to timeout before returning.
  *   @li false - do not wait for oscillator start-up time to timeout before
@@ -2133,11 +2129,11 @@ void CMU_OscillatorEnable(CMU_Osc_TypeDef osc, bool enable, bool wait)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Get oscillator frequency tuning setting.
  *
- * @param[in] osc
+ * param[in] osc
  *   Oscillator to get tuning value for, one of:
  *   @li #cmuOsc_LFRCO
  *   @li #cmuOsc_HFRCO
@@ -2177,22 +2173,22 @@ uint32_t CMU_OscillatorTuningGet(CMU_Osc_TypeDef osc)
 }
 
 
-/***************************************************************************//**
- * @brief
+/*******************************************************************************
+ * brief
  *   Set the oscillator frequency tuning control.
  *
- * @note
+ * note
  *   Oscillator tuning is done during production, and the tuning value is
  *   automatically loaded after a reset. Changing the tuning value from the
  *   calibrated value is for more advanced use.
  *
- * @param[in] osc
+ * param[in] osc
  *   Oscillator to set tuning value for, one of:
  *   @li #cmuOsc_LFRCO
  *   @li #cmuOsc_HFRCO
  *   @li #cmuOsc_AUXHFRCO
  *
- * @param[in] val
+ * param[in] val
  *   The oscillator frequency tuning setting to use.
  ******************************************************************************/
 void CMU_OscillatorTuningSet(CMU_Osc_TypeDef osc, uint32_t val)
@@ -2230,11 +2226,11 @@ void CMU_OscillatorTuningSet(CMU_Osc_TypeDef osc, uint32_t val)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Determine if currently selected PCNTn clock used is external or LFBCLK.
  *
- * @param[in] inst
+ * param[in] inst
  *   PCNT instance number to get currently selected clock source for.
  *
  * @return
@@ -2283,14 +2279,14 @@ bool CMU_PCNTClockExternalGet(unsigned int inst)
 }
 
 
-/**************************************************************************//**
- * @brief
+/******************************************************************************
+ * brief
  *   Select PCNTn clock.
  *
- * @param[in] inst
+ * param[in] inst
  *   PCNT instance number to set selected clock source for.
  *
- * @param[in] external
+ * param[in] external
  *   Set to true to select external clock, false to select LFBCLK.
  *****************************************************************************/
 void CMU_PCNTClockExternalSet(unsigned int inst, bool external)
@@ -2314,6 +2310,4 @@ void CMU_PCNTClockExternalSet(unsigned int inst, bool external)
 }
 
 
-/** @} (end addtogroup CMU) */
-/** @} (end addtogroup EM_Library) */
 #endif /* __EM_CMU_H */

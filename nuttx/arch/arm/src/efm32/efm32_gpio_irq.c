@@ -49,7 +49,7 @@
 
 /* dynamique gpio table */
 
-xcpt_t irq_gpio_handler_table[EFM32_GPIO_IRQ_NBR];
+xcpt_t irq_gpio_handler_table[GPIO_IRQ_PRESENT];
 
 
 /****************************************************************************
@@ -65,7 +65,7 @@ void irq_gpio_init(void)
      * certain that there are no issues with the state of global variables.
      */
 
-    int i = EFM32_GPIO_IRQ_NBR;
+    int i = GPIO_IRQ_PRESENT;
     while (i--)
     {
         irq_gpio_handler_table[i] = NULL;
@@ -115,7 +115,7 @@ static int irq_gpio_dispatcher(int irq, FAR void *context)
     }
 #else
     /* check for all flags set in IF register */
-    int irqIdx = EFM32_GPIO_IRQ_NBR;
+    int irqIdx = GPIO_IRQ_PRESENT;
     while(irqIdx--)
     {
         /* clear flag*/
@@ -140,14 +140,14 @@ static int irq_gpio_dispatcher(int irq, FAR void *context)
  ****************************************************************************/
 void irq_gpio_attach(int pin, xcpt_t handler)
 {
-    DEBUGASSERT(pin < EFM32_GPIO_IRQ_NBR);
+    DEBUGASSERT(pin < GPIO_IRQ_PRESENT);
 
     up_disable_irq(EFM32_IRQ_GPIO_ODD);
     up_disable_irq(EFM32_IRQ_GPIO_EVEN);
 
     irq_gpio_handler_table[pin] = handler;
 
-    int i = EFM32_GPIO_IRQ_NBR;
+    int i = GPIO_IRQ_PRESENT;
 
     bool odd = false;
     bool even = false;

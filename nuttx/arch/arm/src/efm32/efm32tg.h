@@ -40,37 +40,39 @@
 #include "TPI_cm3.h"
 #include "ITM_cm3.h"
 
+#   include "core_cmInstr.h"
+
 /* Part number capabilities */
-#define EFM32_ACMP_NBR          2 
-#define EFM32_USART_NBR         2 
-#define EFM32_TIMER_NBR         2 
-#define EFM32_LEUART_NBR        1 
-#define EFM32_LETIMER_NBR       1 
-#define EFM32_PCNT_NBR          1 
-#define EFM32_ADC_NBR           1 
-#define EFM32_DAC_NBR           1 
-#define EFM32_I2C_NBR           1 
-#define EFM32_AES_NBR           1
-#define EFM32_DMA_NBR           1
-#define EFM32_LE_NBR            1
-#define EFM32_MSC_NBR           1
-#define EFM32_EMU_NBR           1
-#define EFM32_RMU_NBR           1
-#define EFM32_CMU_NBR           1
-#define EFM32_LESENSE_NBR       1
-#define EFM32_RTC_NBR           1
-#define EFM32_GPIO_NBR          1
-#define EFM32_GPIO_IRQ_NBR      16
-#define EFM32_VCMP_NBR          1
-#define EFM32_PRS_NBR           1
-#define EFM32_OPAMP_NBR         1
-#define EFM32_LCD_NBR           1
-#define EFM32_HFXTAL_NBR        1
-#define EFM32_LFXTAL_NBR        1
-#define EFM32_WDOG_NBR          1
-#define EFM32_DBG_NBR           1
-#define EFM32_BOOTLOADER_NBR    1
-#define EFM32_ANALOG_NBR        1
+#define ACMP_PRESENT          2 
+#define USART_PRESENT         2 
+#define TIMER_PRESENT         2 
+#define LEUART_PRESENT        1 
+#define LETIMER_PRESENT       1 
+#define PCNT_PRESENT          1 
+#define ADC_PRESENT           1 
+#define DAC_PRESENT           1 
+#define I2C_PRESENT           1 
+#define AES_PRESENT           1
+#define DMA_PRESENT           1
+#define LE_PRESENT            1
+#define MSC_PRESENT           1
+#define EMU_PRESENT           1
+#define RMU_PRESENT           1
+#define CMU_PRESENT           1
+#define LESENSE_PRESENT       1
+#define RTC_PRESENT           1
+#define GPIO_PRESENT          1
+#define GPIO_IRQ_PRESENT      16
+#define VCMP_PRESENT          1
+#define PRS_PRESENT           1
+#define OPAMP_PRESENT         1
+#define LCD_PRESENT           1
+#define HFXTAL_PRESENT        1
+#define LFXTAL_PRESENT        1
+#define WDOG_PRESENT          1
+#define DBG_PRESENT           1
+#define BOOTLOADER_PRESENT    1
+#define ANALOG_PRESENT        1
 
 
 #define AFCHANLOC_MAX   7

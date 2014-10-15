@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32_cmu.h
+ * arch/arm/src/efm32/em_cmu.h
  * 
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -58,11 +58,11 @@
  ******************************************************************************/
 
 
-#ifndef __ARCH_ARM_SRC_EFM32_EFM32_CMU_H
-#define __ARCH_ARM_SRC_EFM32_EFM32_CMU_H
+#ifndef __ARCH_ARM_SRC_EFM32_EM_CMU_H
+#define __ARCH_ARM_SRC_EFM32_EM_CMU_H
 
 #include "efm32.h"
-#if defined( EFM32_CMU_NBR ) && ( EFM32_CMU_NBR > 0 )
+#if defined(CMU_PRESENT) 
 
 #include <stdbool.h>
 //#include "em_bitband.h"
@@ -872,5 +872,5 @@ static inline void CMU_CalibrateCont(bool enable)
 }
 #endif
 
-#endif /* defined( CMU_PRESENT ) */
+#endif 
 #endif /* __EM_CMU_H */
