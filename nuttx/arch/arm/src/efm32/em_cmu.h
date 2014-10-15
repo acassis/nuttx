@@ -71,17 +71,6 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
- * @addtogroup EM_Library
- * @{
- ******************************************************************************/
-
-/***************************************************************************//**
- * @addtogroup CMU
- * @{
- ******************************************************************************/
-
-/** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
 
 /* Select register ids, for internal use */
 #define CMU_NOSEL_REG              0
@@ -151,22 +140,22 @@ extern "C" {
  ******************************************************************************/
 
 /** Clock divisors. These values are valid for prescalers. */
-#define cmuClkDiv_1     1     /**< Divide clock by 1. */
-#define cmuClkDiv_2     2     /**< Divide clock by 2. */
-#define cmuClkDiv_4     4     /**< Divide clock by 4. */
-#define cmuClkDiv_8     8     /**< Divide clock by 8. */
-#define cmuClkDiv_16    16    /**< Divide clock by 16. */
-#define cmuClkDiv_32    32    /**< Divide clock by 32. */
-#define cmuClkDiv_64    64    /**< Divide clock by 64. */
-#define cmuClkDiv_128   128   /**< Divide clock by 128. */
-#define cmuClkDiv_256   256   /**< Divide clock by 256. */
-#define cmuClkDiv_512   512   /**< Divide clock by 512. */
-#define cmuClkDiv_1024  1024  /**< Divide clock by 1024. */
-#define cmuClkDiv_2048  2048  /**< Divide clock by 2048. */
-#define cmuClkDiv_4096  4096  /**< Divide clock by 4096. */
-#define cmuClkDiv_8192  8192  /**< Divide clock by 8192. */
-#define cmuClkDiv_16384 16384 /**< Divide clock by 16384. */
-#define cmuClkDiv_32768 32768 /**< Divide clock by 32768. */
+#define cmuClkDiv_1     1     /* Divide clock by 1. */
+#define cmuClkDiv_2     2     /* Divide clock by 2. */
+#define cmuClkDiv_4     4     /* Divide clock by 4. */
+#define cmuClkDiv_8     8     /* Divide clock by 8. */
+#define cmuClkDiv_16    16    /* Divide clock by 16. */
+#define cmuClkDiv_32    32    /* Divide clock by 32. */
+#define cmuClkDiv_64    64    /* Divide clock by 64. */
+#define cmuClkDiv_128   128   /* Divide clock by 128. */
+#define cmuClkDiv_256   256   /* Divide clock by 256. */
+#define cmuClkDiv_512   512   /* Divide clock by 512. */
+#define cmuClkDiv_1024  1024  /* Divide clock by 1024. */
+#define cmuClkDiv_2048  2048  /* Divide clock by 2048. */
+#define cmuClkDiv_4096  4096  /* Divide clock by 4096. */
+#define cmuClkDiv_8192  8192  /* Divide clock by 8192. */
+#define cmuClkDiv_16384 16384 /* Divide clock by 16384. */
+#define cmuClkDiv_32768 32768 /* Divide clock by 32768. */
 
 /** Clock divider configuration */
 typedef uint32_t CMU_ClkDiv_TypeDef;
@@ -608,13 +597,13 @@ typedef enum
 /** Oscillator types. */
 typedef enum
 {
-  cmuOsc_LFXO,     /**< Low frequency crystal oscillator. */
-  cmuOsc_LFRCO,    /**< Low frequency RC oscillator. */
-  cmuOsc_HFXO,     /**< High frequency crystal oscillator. */
-  cmuOsc_HFRCO,    /**< High frequency RC oscillator. */
-  cmuOsc_AUXHFRCO, /**< Auxiliary high frequency RC oscillator. */
+  cmuOsc_LFXO,     /* Low frequency crystal oscillator. */
+  cmuOsc_LFRCO,    /* Low frequency RC oscillator. */
+  cmuOsc_HFXO,     /* High frequency crystal oscillator. */
+  cmuOsc_HFRCO,    /* High frequency RC oscillator. */
+  cmuOsc_AUXHFRCO, /* Auxiliary high frequency RC oscillator. */
 #if !defined(_EFM32_GECKO_FAMILY)
-  cmuOsc_ULFRCO    /**< Ultra low frequency RC oscillator. */
+  cmuOsc_ULFRCO    /* Ultra low frequency RC oscillator. */
 #endif
 } CMU_Osc_TypeDef;
 
@@ -622,17 +611,17 @@ typedef enum
 /** Selectable clock sources. */
 typedef enum
 {
-  cmuSelect_Error,      /**< Usage error. */
-  cmuSelect_Disabled,   /**< Clock selector disabled. */
-  cmuSelect_LFXO,       /**< Low frequency crystal oscillator. */
-  cmuSelect_LFRCO,      /**< Low frequency RC oscillator. */
-  cmuSelect_HFXO,       /**< High frequency crystal oscillator. */
-  cmuSelect_HFRCO,      /**< High frequency RC oscillator. */
-  cmuSelect_CORELEDIV2, /**< Core low energy clock divided by 2. */
-  cmuSelect_AUXHFRCO,   /**< Auxilliary clock source can be used for debug clock */
-  cmuSelect_HFCLK,      /**< Divided HFCLK on Giant for debug clock, undivided on Tiny Gecko and for USBC (not used on Gecko) */
+  cmuSelect_Error,      /* Usage error. */
+  cmuSelect_Disabled,   /* Clock selector disabled. */
+  cmuSelect_LFXO,       /* Low frequency crystal oscillator. */
+  cmuSelect_LFRCO,      /* Low frequency RC oscillator. */
+  cmuSelect_HFXO,       /* High frequency crystal oscillator. */
+  cmuSelect_HFRCO,      /* High frequency RC oscillator. */
+  cmuSelect_CORELEDIV2, /* Core low energy clock divided by 2. */
+  cmuSelect_AUXHFRCO,   /* Auxilliary clock source can be used for debug clock */
+  cmuSelect_HFCLK,      /* Divided HFCLK on Giant for debug clock, undivided on Tiny Gecko and for USBC (not used on Gecko) */
 #if !defined(_EFM32_GECKO_FAMILY)
-  cmuSelect_ULFRCO,     /**< Ultra low frequency RC oscillator. */
+  cmuSelect_ULFRCO,     /* Ultra low frequency RC oscillator. */
 #endif
 } CMU_Select_TypeDef;
 
@@ -677,11 +666,11 @@ void CMU_CalibrateConfig(uint32_t downCycles, CMU_Osc_TypeDef downSel,
                          CMU_Osc_TypeDef upSel);
 #endif
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Clear one or more pending CMU interrupts.
  *
- * @param[in] flags
+ * param[in] flags
  *   CMU interrupt sources to clear.
  ******************************************************************************/
 static inline void CMU_IntClear(uint32_t flags)
@@ -690,11 +679,11 @@ static inline void CMU_IntClear(uint32_t flags)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Disable one or more CMU interrupts.
  *
- * @param[in] flags
+ * param[in] flags
  *   CMU interrupt sources to disable.
  ******************************************************************************/
 static inline void CMU_IntDisable(uint32_t flags)
@@ -703,16 +692,16 @@ static inline void CMU_IntDisable(uint32_t flags)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Enable one or more CMU interrupts.
  *
- * @note
+ * note
  *   Depending on the use, a pending interrupt may already be set prior to
  *   enabling the interrupt. Consider using CMU_IntClear() prior to enabling
  *   if such a pending interrupt should be ignored.
  *
- * @param[in] flags
+ * param[in] flags
  *   CMU interrupt sources to enable.
  ******************************************************************************/
 static inline void CMU_IntEnable(uint32_t flags)
@@ -721,11 +710,11 @@ static inline void CMU_IntEnable(uint32_t flags)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Get pending CMU interrupts.
  *
- * @return
+ * return
  *   CMU interrupt sources pending.
  ******************************************************************************/
 static inline uint32_t CMU_IntGet(void)
@@ -734,17 +723,17 @@ static inline uint32_t CMU_IntGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Get enabled and pending CMU interrupt flags.
  *
- * @details
+ * details
  *   Useful for handling more interrupt sources in the same interrupt handler.
  *
- * @note
+ * note
  *   The event bits are not cleared by the use of this function.
  *
- * @return
+ * return
  *   Pending and enabled CMU interrupt sources.
  *   The return value is the bitwise AND combination of
  *   - the OR combination of enabled interrupt sources in CMU_IEN_nnn
@@ -766,11 +755,11 @@ static inline uint32_t CMU_IntGetEnabled(void)
 }
 
 
-/**************************************************************************//**
- * @brief
+/**************************************************************************
+ * brief
  *   Set one or more pending CMU interrupts from SW.
  *
- * @param[in] flags
+ * param[in] flags
  *   CMU interrupt sources to set to pending.
  *****************************************************************************/
 static inline void CMU_IntSet(uint32_t flags)
@@ -779,16 +768,16 @@ static inline void CMU_IntSet(uint32_t flags)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Lock the CMU in order to protect some of its registers against unintended
  *   modification.
  *
- * @details
+ * details
  *   Please refer to the reference manual for CMU registers that will be
  *   locked.
  *
- * @note
+ * note
  *   If locking the CMU registers, they must be unlocked prior to using any
  *   CMU API functions modifying CMU registers protected by the lock.
  ******************************************************************************/
@@ -798,8 +787,8 @@ static inline void CMU_Lock(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Unlock the CMU so that writing to locked registers again is possible.
  ******************************************************************************/
 static inline void CMU_Unlock(void)
@@ -808,15 +797,15 @@ static inline void CMU_Unlock(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *    Get calibration count register
- * @note
+ * note
  *    If continuous calibrartion mode is active, calibration busy will allmost
  *    always be on, and we just need to read the value, where the normal case
  *    would be that this function call has been triggered by the CALRDY
  *    interrupt flag.
- * @return
+ * return
  *    Calibration count, the number of UPSEL clocks (see CMU_CalibrateConfig)
  *    in the period of DOWNSEL oscillator clock cycles configured by a previous
  *    write operation to CMU->CALCNT
@@ -839,10 +828,10 @@ static inline uint32_t CMU_CalibrateCountGet(void)
 }
 
 
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Starts calibration
- * @note
+ * note
  *   This call is usually invoked after CMU_CalibrateConfig() and possibly
  *   CMU_CalibrateCont()
  ******************************************************************************/
@@ -853,8 +842,8 @@ static inline void CMU_CalibrateStart(void)
 
 
 #if defined( CMU_CMD_CALSTOP )
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Stop the calibration counters
  ******************************************************************************/
 static inline void CMU_CalibrateStop(void)
@@ -865,10 +854,10 @@ static inline void CMU_CalibrateStop(void)
 
 
 #if defined( CMU_CALCTRL_CONT )
-/***************************************************************************//**
- * @brief
+/***************************************************************************
+ * brief
  *   Configures continuous calibration mode
- * @param[in] enable
+ * param[in] enable
  *   If true, enables continuous calibration, if false disables continuous
  *   calibrartion
  ******************************************************************************/
@@ -878,8 +867,6 @@ static inline void CMU_CalibrateCont(bool enable)
 }
 #endif
 
-/** @} (end addtogroup CMU) */
-/** @} (end addtogroup EM_Library) */
 
 #ifdef __cplusplus
 }

@@ -66,6 +66,9 @@
 #define     __O     volatile             /* Defines 'write only' permissions                */
 #define     __IO    volatile             /* Defines 'read / write' permissions              */
 
+#define EFM_ASSERT DEBUGASSERT
+
+#include "core_cmInstr.h"
 
 /* Peripherals **********************************************************************/
 

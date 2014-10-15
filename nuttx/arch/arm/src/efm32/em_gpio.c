@@ -58,7 +58,6 @@
 
 
 #include <nuttx/config.h>
-
 #include "efm32.h"
 
 #include "em_gpio.h"

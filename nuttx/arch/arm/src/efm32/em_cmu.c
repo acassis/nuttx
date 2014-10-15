@@ -59,25 +59,15 @@
 
 
 
+#include <nuttx/config.h>
 #include "efm32.h"
+
 #if defined( EFM32_CMU_NBR ) && ( EFM32_CMU_NBR > 0 )
 
 #include "assert.h"
 #include "em_bitband.h"
+#include "em_cmu.h"
 //#include "em_emu.h"
-
-#define EFM_ASSERT DEBUGASSERT
-
-/***************************************************************************//**
- * @addtogroup EM_Library
- * @{
- ******************************************************************************/
-
-/***************************************************************************//**
- * @addtogroup CMU
- * @brief Clock management unit (CMU) Peripheral API
- * @{
- ******************************************************************************/
 
 /*******************************************************************************
  ******************************   DEFINES   ************************************
@@ -116,8 +106,8 @@
 
 /** @cond DO_NOT_INCLUDE_WITH_DOXYGEN */
 
-#if defined( CMU_CTRL_HFLE ) && !defined (_EFM32_WONDER_FAMILY)
-/***************************************************************************//**
+#if defined( CMU_CTRL_HFLE ) && !defined (CONFIG_EFM32_WONDER_FAMILY)
+/***************************************************************************
  * @brief
  *   Return max allowed frequency for low energy peripherals.
  ******************************************************************************/
@@ -157,7 +147,7 @@ static uint32_t CMU_MaxFreqHfle(void)
 }
 #endif
 
-/***************************************************************************//**
+/***************************************************************************
  * @brief
  *   Configure flash access wait states to most conservative setting for
  *   this target. Retain SCBTP setting.
@@ -203,13 +193,13 @@ static void CMU_FlashWaitStateMax(void)
 }
 
 
-/***************************************************************************//**
+/***************************************************************************
  * @brief Convert dividend to prescaler logarithmic value. Only works for even
  *        numbers equal to 2^n
  * @param[in] div Unscaled dividend,
  * @return Base 2 logarithm of input, as used by fixed prescalers
  ******************************************************************************/
-__STATIC_INLINE uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
+static inline uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
 {
   uint32_t log2;
 
@@ -223,18 +213,18 @@ __STATIC_INLINE uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
 }
 
 
-/***************************************************************************//**
+/***************************************************************************
  * @brief Convert logarithm of 2 prescaler to division factor
  * @param[in] log2
  * @return Dividend
  ******************************************************************************/
-__STATIC_INLINE uint32_t CMU_Log2ToDiv(uint32_t log2)
+static inline uint32_t CMU_Log2ToDiv(uint32_t log2)
 {
   return 1<<log2;
 }
 
 
-/***************************************************************************//**
+/***************************************************************************
  * @brief
  *   Configure flash access wait states in order to support given HFCORECLK
  *   frequency.
@@ -316,8 +306,8 @@ static void CMU_FlashWaitStateControl(uint32_t hfcoreclk)
 }
 
 
-#if defined(USB_PRESENT)
-/***************************************************************************//**
+#if defined(EFM32_USB_NBR) && ( EFM32_USB_NBR > 0 )
+/***************************************************************************
  * @brief
  *   Get the USBC frequency
  *
@@ -516,7 +506,7 @@ static uint32_t CMU_LFClkGet(unsigned int lfClkBranch)
  *   Bitmask corresponding to SYNCBUSY register defined bits, indicating
  *   registers that must complete any ongoing synchronization.
  ******************************************************************************/
-__STATIC_INLINE void CMU_Sync(uint32_t mask)
+static inline void CMU_Sync(uint32_t mask)
 {
   /* Avoid deadlock if modifying the same register twice when freeze mode is */
   /* activated. */
