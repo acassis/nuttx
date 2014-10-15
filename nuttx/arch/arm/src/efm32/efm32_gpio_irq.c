@@ -43,7 +43,7 @@
 #include <debug.h>
 #include "efm32.h"
 #include "arch/irq.h"
-#include "efm32_gpio.h"
+#include "em_gpio.h"
 #include "efm32_gpio_irq.h"
 
 

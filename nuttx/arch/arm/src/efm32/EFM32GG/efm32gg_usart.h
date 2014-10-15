@@ -1,5 +1,5 @@
 /*******************************************************************************
- * arch/arm/src/efm32/efm32gg_usart.h
+ * arch/arm/src/efm32/EFM32GG/efm32gg_usart.h
  * 
  *    (C) Copyright 2014 Silicon Labs, http://www.silabs.com</b>
  *
@@ -87,7 +87,7 @@ typedef struct
   __IO uint32_t ROUTE;      /* I/O Routing Register  */
   __IO uint32_t INPUT;      /* USART Input Register  */
   __IO uint32_t I2SCTRL;    /* I2S Control Register  */
-} USART_TypeDef;            /** @} */
+} USART_TypeDef;            
 
 
 /* Bit fields for USART CTRL */

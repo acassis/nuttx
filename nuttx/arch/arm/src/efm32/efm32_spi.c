@@ -80,9 +80,8 @@
 
 #include "chip.h"
 #include "efm32.h"
-#include "efm32_gpio.h"
-#include "efm32_cmu.h"
-#include "efm32_usart.h"
+#include "em_gpio.h"
+#include "em_cmu.h"
 //#include "efm32_dma.h"
 #include "efm32_spi_p.h"
 
@@ -252,7 +251,54 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
     {
 #endif
 
-        USART_BaudrateSyncSet(priv->cfg->usart, 0, frequency);
+        /*
+         * We want to use integer division to avoid forcing in float division
+         * utils, and yet keep rounding effect errors to a minimum.
+         *
+         * CLKDIV in synchronous mode is given by:
+         *
+         * CLKDIV = 256 * (fHFPERCLK/(2 * br) - 1)
+         * or
+         * CLKDIV = (256 * fHFPERCLK)/(2 * br) - 256 = (128 * fHFPERCLK)/br - 256
+         *
+         * The basic problem with integer division in the above formula is that
+         * the dividend (128 * fHFPERCLK) may become higher than max 32 bit
+         * integer. Yet, we want to evaluate dividend first before dividing in
+         * order to get as small rounding effects as possible. We do not want
+         * to make too harsh restrictions on max fHFPERCLK value either.
+         *
+         * One can possibly factorize 128 and br. However, since the last
+         * 6 bits of CLKDIV are don't care, we can base our integer arithmetic
+         * on the below formula without loosing any extra precision:
+         *
+         * CLKDIV / 64 = (2 * fHFPERCLK)/br - 4
+         *
+         * and calculate 1/64 of CLKDIV first. This allows for fHFPERCLK
+         * up to 2GHz without overflowing a 32 bit value!
+         */
+
+        /* HFPERCLK used to clock all USART/UART peripheral modules */
+        refFreq = CMU_ClockFreqGet(cmuClock_HFPER);
+
+        /* Calculate and set CLKDIV with fractional bits */
+        clkdiv  = 2 * refFreq;
+        clkdiv += frequency - 1;
+        clkdiv /= frequency;
+        clkdiv -= 4;
+        clkdiv *= 64;
+        /* Make sure we don't use fractional bits by rounding CLKDIV */
+        /* up (and thus reducing baudrate, not increasing baudrate above */
+        /* specified value). */
+        clkdiv += 0xc0;
+        clkdiv &= 0xffffff00;
+
+        /* Verify that resulting clock divider is within limits */
+        EFM_ASSERT(clkdiv <= _USART_CLKDIV_MASK);
+
+        /* If EFM_ASSERT is not enabled, make sure we don't write to reserved bits */
+        clkdiv &= _USART_CLKDIV_DIV_MASK;
+
+        usart->CLKDIV = clkdiv;
 
         /* Save the frequency selection so that subsequent reconfigurations will be
          * faster.

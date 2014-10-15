@@ -100,7 +100,8 @@ CHIP_CSRCS  =
 CHIP_CSRCS += ITM_cm3.c
 CHIP_CSRCS += efm32_start.c
 CHIP_CSRCS += efm32_irq.c 
-CHIP_CSRCS += efm32_gpio.c 
+CHIP_CSRCS += em_gpio.c 
+CHIP_CSRCS += em_cmu.c 
 
 CHIP_CSRCS += efm32_lowputc.c
 

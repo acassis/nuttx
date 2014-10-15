@@ -1,7 +1,7 @@
-/******************************************************************************
- * arch/arm/src/efm32/EFM32GG/efm32gg_gpio_p.h
+/************************************************************************************
+ * arch/arm/src/efm32/EFM32GG/efm32gg_romtable.h
  *
- *    (C) Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
+ *  Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -54,23 +54,38 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- *****************************************************************************/
+ ************************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32_GPIO_P_H
-#define __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32_GPIO_P_H
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32GG_ROMTABLE_H_
+#define __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32GG_ROMTABLE_H_
+
+
 
 typedef struct
 {
-  __IO uint32_t CTRL;     /* Port Control Register  */
-  __IO uint32_t MODEL;    /* Port Pin Mode Low Register  */
-  __IO uint32_t MODEH;    /* Port Pin Mode High Register  */
-  __IO uint32_t DOUT;     /* Port Data Out Register  */
-  __O uint32_t  DOUTSET;  /* Port Data Out Set Register  */
-  __O uint32_t  DOUTCLR;  /* Port Data Out Clear Register  */
-  __O uint32_t  DOUTTGL;  /* Port Data Out Toggle Register  */
-  __I uint32_t  DIN;      /* Port Data In Register  */
-  __IO uint32_t PINLOCKN; /* Port Unlocked Pins Register  */
-} GPIO_P_TypeDef;
+  __I uint32_t PID4; /* JEP_106_BANK */
+  __I uint32_t PID5; /* Unused */
+  __I uint32_t PID6; /* Unused */
+  __I uint32_t PID7; /* Unused */
+  __I uint32_t PID0; /* Chip family LSB, chip major revision */
+  __I uint32_t PID1; /* JEP_106_NO, Chip family MSB */
+  __I uint32_t PID2; /* Chip minor rev MSB, JEP_106_PRESENT, JEP_106_NO */
+  __I uint32_t PID3; /* Chip minor rev LSB */
+  __I uint32_t CID0; /* Unused */
+} ROMTABLE_TypeDef;  
+
+/* Bit fields for EFM32GG_ROMTABLE */
+#define _ROMTABLE_PID0_FAMILYLSB_MASK       0x000000C0UL /* Least Significant Bits [1:0] of CHIP FAMILY, mask */
+#define _ROMTABLE_PID0_FAMILYLSB_SHIFT      6            /* Least Significant Bits [1:0] of CHIP FAMILY, shift */
+#define _ROMTABLE_PID0_REVMAJOR_MASK        0x0000003FUL /* CHIP MAJOR Revison, mask */
+#define _ROMTABLE_PID0_REVMAJOR_SHIFT       0            /* CHIP MAJOR Revison, shift */
+#define _ROMTABLE_PID1_FAMILYMSB_MASK       0x0000000FUL /* Most Significant Bits [5:2] of CHIP FAMILY, mask */
+#define _ROMTABLE_PID1_FAMILYMSB_SHIFT      0            /* Most Significant Bits [5:2] of CHIP FAMILY, shift */
+#define _ROMTABLE_PID2_REVMINORMSB_MASK     0x000000F0UL /* Most Significant Bits [7:4] of CHIP MINOR revision, mask */
+#define _ROMTABLE_PID2_REVMINORMSB_SHIFT    4            /* Most Significant Bits [7:4] of CHIP MINOR revision, mask */
+#define _ROMTABLE_PID3_REVMINORLSB_MASK     0x000000F0UL /* Least Significant Bits [3:0] of CHIP MINOR revision, mask */
+#define _ROMTABLE_PID3_REVMINORLSB_SHIFT    4            /* Least Significant Bits [3:0] of CHIP MINOR revision, shift */
+
 
 #endif
 

@@ -48,7 +48,7 @@
 
 #include "nvic.h"
 #include "efm32.h"
-#include "efm32_gpio.h"
+#include "em_gpio.h"
 #include "efm32_lowputc.h"
 
 #include "up_arch.h"

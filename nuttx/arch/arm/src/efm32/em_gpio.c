@@ -61,7 +61,7 @@
 
 #include "efm32.h"
 
-#include "efm32_gpio.h"
+#include "em_gpio.h"
 
 #if (EFM32_GPIO_NBR > 0)
 

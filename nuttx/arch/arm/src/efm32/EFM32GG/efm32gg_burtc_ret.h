@@ -1,7 +1,7 @@
-/******************************************************************************
- * arch/arm/src/efm32/EFM32GG/efm32gg_gpio_p.h
+/************************************************************************************
+ * arch/arm/src/efm32/EFM32GG/efm32gg_burtc_ret.h
  *
- *    (C) Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
+ *  Copyright 2014 Silicon Laboratories, Inc. http://www.silabs.com</b>
  *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
@@ -54,23 +54,17 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- *****************************************************************************/
+ ************************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32_GPIO_P_H
-#define __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32_GPIO_P_H
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32GG_BURTC_RET_H_
+#define __ARCH_ARM_SRC_EFM32_EFM32GG_EFM32GG_BURTC_RET_H_
+
 
 typedef struct
 {
-  __IO uint32_t CTRL;     /* Port Control Register  */
-  __IO uint32_t MODEL;    /* Port Pin Mode Low Register  */
-  __IO uint32_t MODEH;    /* Port Pin Mode High Register  */
-  __IO uint32_t DOUT;     /* Port Data Out Register  */
-  __O uint32_t  DOUTSET;  /* Port Data Out Set Register  */
-  __O uint32_t  DOUTCLR;  /* Port Data Out Clear Register  */
-  __O uint32_t  DOUTTGL;  /* Port Data Out Toggle Register  */
-  __I uint32_t  DIN;      /* Port Data In Register  */
-  __IO uint32_t PINLOCKN; /* Port Unlocked Pins Register  */
-} GPIO_P_TypeDef;
+  __IO uint32_t REG; /* Retention Register  */
+} BURTC_RET_TypeDef;
 
 #endif
+
 

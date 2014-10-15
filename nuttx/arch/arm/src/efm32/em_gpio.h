@@ -64,7 +64,7 @@
 #if (EFM32_GPIO_NBR > 0)
 
 #include "assert.h"
-#include "efm32_bitband.h"
+#include "em_bitband.h"
 
 #ifdef __cplusplus
 extern "C" {

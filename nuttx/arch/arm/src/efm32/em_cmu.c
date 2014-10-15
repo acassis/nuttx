@@ -64,7 +64,7 @@
 
 #include "assert.h"
 #include "em_bitband.h"
-#include "em_emu.h"
+//#include "em_emu.h"
 
 #define EFM_ASSERT DEBUGASSERT
 
@@ -93,9 +93,9 @@
 #if defined( CMU_CTRL_HFLE )
 /** Maximum frequency for HFLE needs to be enabled on Giant, Leopard and
     Wonder. */
-#if defined (_EFM32_WONDER_FAMILY)
+#if defined (CONFIG_EFM32_WONDER_FAMILY)
 #define CMU_MAX_FREQ_HFLE   (24000000)
-#elif defined (_EFM32_GIANT_FAMILY)
+#elif defined (CONFIG_EFM32_GIANT_FAMILY)
 #define CMU_MAX_FREQ_HFLE   (CMU_MaxFreqHfle())
 #else
 #error Invalid part/device.
