@@ -45,30 +45,26 @@
 
 struct efm32_spidev_s
 {
-  struct spi_dev_s spidev;     /* Externally visible part of the SPI interface */
-  efm32_spi_cfg_t  cfg;        /* SPI hardware config */
-  uint32_t         spiclock;   /* Clocking for the SPI module */
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-  uint8_t          spiirq;     /* SPI IRQ number */
-#endif
+  struct spi_dev_s          spidev;     /* Externally visible part of the SPI interface */
+  const efm32_spi_cfg_t*    cfg;        /* SPI hardware config */
 #ifdef CONFIG_EFM32_SPI_DMA
-  volatile uint8_t rxresult;   /* Result of the RX DMA */
-  volatile uint8_t txresult;   /* Result of the RX DMA */
-  uint8_t          rxch;       /* The RX DMA channel number */
-  uint8_t          txch;       /* The TX DMA channel number */
-  DMA_HANDLE       rxdma;      /* DMA channel handle for RX transfers */
-  DMA_HANDLE       txdma;      /* DMA channel handle for TX transfers */
-  sem_t            rxsem;      /* Wait for RX DMA to complete */
-  sem_t            txsem;      /* Wait for TX DMA to complete */
-  uint32_t         txccr;      /* DMA control register for TX transfers */
-  uint32_t         rxccr;      /* DMA control register for RX transfers */
+  volatile uint8_t          rxresult;   /* Result of the RX DMA */
+  volatile uint8_t          txresult;   /* Result of the RX DMA */
+  uint8_t                   rxch;       /* The RX DMA channel number */
+  uint8_t                   txch;       /* The TX DMA channel number */
+  DMA_HANDLE                rxdma;      /* DMA channel handle for RX transfers */
+  DMA_HANDLE                txdma;      /* DMA channel handle for TX transfers */
+  sem_t                     rxsem;      /* Wait for RX DMA to complete */
+  sem_t                     txsem;      /* Wait for TX DMA to complete */
+  uint32_t                  txccr;      /* DMA control register for TX transfers */
+  uint32_t                  rxccr;      /* DMA control register for RX transfers */
 #endif
 #ifndef CONFIG_SPI_OWNBUS
-  sem_t            exclsem;    /* Held while chip is selected for mutual exclusion */
-  uint32_t         frequency;  /* Requested clock frequency */
-  uint32_t         actual;     /* Actual clock frequency */
-  int8_t           nbits;      /* Width of word in bits (8 or 16) */
-  uint8_t          mode;       /* Mode 0,1,2,3 */
+  sem_t                     exclsem;    /* Held while chip is selected for mutual exclusion */
+  uint32_t                  frequency;  /* Requested clock frequency */
+  uint32_t                  actual;     /* Actual clock frequency */
+  int8_t                    nbits;      /* Width of word in bits (8 or 16) */
+  uint8_t                   mode;       /* Mode 0,1,2,3 */
 #endif
 };
 

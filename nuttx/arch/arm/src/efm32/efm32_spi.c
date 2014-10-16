@@ -97,6 +97,10 @@
 #  error "DMA driven SPI not yet supported"
 #endif
 
+#ifdef CONFIG_EFM32_SPI_INTERRUPTS
+#  error "INTERRUPTION driven SPI not yet supported"
+#endif
+
 /* Can't have both interrupt driven SPI and SPI DMA */
 
 #if defined(CONFIG_EFM32_SPI_INTERRUPTS) && defined(CONFIG_EFM32_SPI_DMA)
@@ -129,11 +133,28 @@
  * Private Function Prototypes
  ************************************************************************************/
 
+/* helper SPI function */
+static bool spi_16bitmode(FAR struct efm32_spidev_s *priv)
+{
+#ifndef CONFIG_SPI_OWNBUS
+    return (priv->nbits > 8)?true:false;
+#else
+    uint32_t f = priv->cfg->usart->FRAME;
+    f &= _USART_FRAME_DATABITS_MASK;
+    f >>= _USART_FRAME_DATABITS_SHIFT;
+    return (f > _USART_FRAME_DATABITS_EIGHT);
+#endif
+}
+
 /* SPI methods */
 
 #ifndef CONFIG_SPI_OWNBUS
 static int         spi_lock(        FAR struct spi_dev_s *dev, bool lock);
 #endif
+static void        spi_select(      FAR struct spi_dev_s *dev, 
+                                    enum spi_dev_e devid,
+                                    bool selected
+                             );
 static uint32_t    spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency);
 static void        spi_setmode(     FAR struct spi_dev_s *dev, enum spi_mode_e mode);
 static void        spi_setbits(     FAR struct spi_dev_s *dev, int nbits);
@@ -163,8 +184,29 @@ static void        spi_portinitialize(FAR struct efm32_spidev_s *priv);
  ************************************************************************************/
 
 #ifdef CONFIG_EFM32_SPI_NBR
-static const struct spi_ops_s g_spiops_tb[CONFIG_EFM32_SPI_NBR];
 static struct efm32_spidev_s  g_spidev_tb[CONFIG_EFM32_SPI_NBR];
+
+static const struct spi_ops_s g_spiops = {
+#ifndef CONFIG_SPI_OWNBUS
+  .lock              = spi_lock,
+#endif
+  .select            = spi_select,
+  .setfrequency      = spi_setfrequency,
+  .setmode           = spi_setmode,
+  .setbits           = spi_setbits,
+  .status            = 0,
+#ifdef CONFIG_SPI_CMDDATA
+  .cmddata           = ,
+#endif
+  .send              = spi_send,
+#ifdef CONFIG_SPI_EXCHANGE
+  .exchange          = spi_exchange,
+#else
+  .sndblock          = spi_sndblock,
+  .recvblock         = spi_recvblock,
+#endif
+  .registercallback  = 0,
+};
 #endif
 
 
@@ -226,6 +268,41 @@ static int spi_lock(FAR struct spi_dev_s *dev, bool lock)
 #endif
 
 /************************************************************************************
+ * Name: spi_select
+ *
+ * Description:
+ *   Enable/disable the SPI chip select. 
+ *
+ * Input Parameters:
+ *   dev -      Device-specific state data
+ *   devid -    Identifies the device to select
+ *   selected - true: slave selected, false: slave de-selected
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static void spi_select( FAR struct spi_dev_s *dev, 
+                        enum spi_dev_e devid,
+                        bool selected
+                      )
+{
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
+    UNUSED(devid);
+
+    if ( selected )
+    {
+        GPIO_PinOutSet( cfg->cs_port, cfg->cs_pin );
+    }
+    else
+    {
+        GPIO_PinOutClear( cfg->cs_port, cfg->cs_pin );
+    }
+}
+
+/************************************************************************************
  * Name: spi_setfrequency
  *
  * Description:
@@ -243,6 +320,7 @@ static int spi_lock(FAR struct spi_dev_s *dev, bool lock)
 static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     /* Has the frequency changed? */
 
@@ -300,7 +378,7 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
         /* If EFM_ASSERT is not enabled, make sure we don't write to reserved bits */
         clkdiv &= _USART_CLKDIV_DIV_MASK;
 
-        usart->CLKDIV = clkdiv;
+        cfg->usart->CLKDIV = clkdiv;
 
         /* Save the frequency selection so that subsequent reconfigurations will be
          * faster.
@@ -333,6 +411,7 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     spivdbg("mode=%d\n", mode);
 
@@ -342,7 +421,7 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
     if (mode != priv->mode)
     {
 #endif
-        unsigned int u;
+        unsigned int u = 0;
 
         switch (mode)
         {
@@ -366,8 +445,10 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
                 return;
         }
 
-        priv->usart->CTRL &= ~(USART_CTRL_CLKPOL_MASK | USART_CTRL_CLKPHA_MASK);
-        priv->usart->CTRL = u;
+        cfg->usart->CTRL &= ~(_USART_CTRL_CLKPOL_MASK | 
+                                    _USART_CTRL_CLKPHA_MASK
+                                    );
+        cfg->usart->CTRL |= u;
 
 
         /* Save the mode so that subsequent re-configurations will be faster */
@@ -396,6 +477,7 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     spivdbg("nbits=%d\n", nbits);
 
@@ -406,16 +488,15 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
     {
 #endif
         int i;
-        uint32_t frame = priv->usart->FRAME;
 
         if ( nbits < 0 )
         {
-            priv->usart->CTRL &= ~USART_CTRL_MSBF;
+            cfg->usart->CTRL &= ~USART_CTRL_MSBF;
             i = -nbits;
         }
         else
         {
-            priv->usart->CTRL |= USART_CTRL_MSBF;
+            cfg->usart->CTRL |= USART_CTRL_MSBF;
             i = nbits;
         }
 
@@ -433,13 +514,13 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
             case  13 : i= USART_FRAME_DATABITS_THIRTEEN;break;
             case  14 : i= USART_FRAME_DATABITS_FOURTEEN;break;
             case  15 : i= USART_FRAME_DATABITS_FIFTEEN; break;
-            case  16 : i= USART_FRAME_DATABITS_SIXTEEN  break;
+            case  16 : i= USART_FRAME_DATABITS_SIXTEEN; break;
             default:
                        return;
         }
 
-        priv->usart->FRAME &= USART_FRAME_DATABITS_MASK;
-        priv->usart->FRAME |= i;
+        cfg->usart->FRAME &= _USART_FRAME_DATABITS_MASK;
+        cfg->usart->FRAME |= i;
         /* Save the selection so the subsequence re-configurations will be faster */
 
 #ifndef CONFIG_SPI_OWNBUS
@@ -467,17 +548,18 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 static uint16_t spi_send(FAR struct spi_dev_s *dev, uint16_t wd)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
     uint16_t ret;
 
-    DEBUGASSERT(priv && priv->usart);
+    DEBUGASSERT(priv && cfg->usart);
 
     {
-        while (!(priv->usart->STATUS & USART_STATUS_TXBL))
+        while (!(cfg->usart->STATUS & USART_STATUS_TXBL))
         {};
-        priv->usart->TXDATA = (uint32_t) data;
-        while (!(priv->usart->STATUS & USART_STATUS_TXC))
+        cfg->usart->TXDATA = (uint32_t) wd;
+        while (!(cfg->usart->STATUS & USART_STATUS_TXC))
         {};
-        ret = (uint16_t) (priv->usart->RXDATA);
+        ret = (uint16_t) (cfg->usart->RXDATA);
     }
 
     spivdbg("Sent: %04x Return: %04x \n", wd, ret);
@@ -515,7 +597,8 @@ static void spi_exchange_nodma(FAR struct spi_dev_s *dev, FAR const void *txbuff
 #endif
 {
   FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-  DEBUGASSERT(priv && priv->usart);
+    const efm32_spi_cfg_t* cfg = priv->cfg;
+  DEBUGASSERT(priv && cfg->usart);
 
   spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
 
@@ -615,6 +698,7 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
                          FAR void *rxbuffer, size_t nwords)
 {
   FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
 
 #ifdef CONFIG_STM32_DMACAPABLE
   if ((txbuffer && !stm32_dmacapable((uint32_t)txbuffer, nwords, priv->txccr)) ||
@@ -631,7 +715,7 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
       static const uint16_t txdummy = 0xffff;
 
       spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
-      DEBUGASSERT(priv && priv->usart);
+      DEBUGASSERT(priv && cfg->usart);
 
       /* Setup DMAs */
 
@@ -721,8 +805,12 @@ static void spi_recvblock(FAR struct spi_dev_s *dev, FAR void *rxbuffer, size_t 
 
 static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 {
+  const efm32_spi_cfg_t* cfg = priv->cfg;
+
   uint16_t setbits;
   uint16_t clrbits;
+
+  /* TODO spi_portinitialize */
 
   /* Configure CR1. Default configuration:
    *   Mode 0:                        CPHA=0 and CPOL=0
@@ -780,60 +868,51 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
  *   Initialize the selected SPI port
  *
  * Input Parameter:
- *   Port number (for hardware that has mutiple SPI interfaces)
+ *   cfg spi configuration (Should be constant or always valid during spi use)
  *
  * Returned Value:
  *   Valid SPI device structure reference on succcess; a NULL on failure
  *
  ************************************************************************************/
 
-FAR struct spi_dev_s *up_spiinitialize(int port)
+FAR struct spi_dev_s *up_spiinitialize(efm32_spi_cfg_t cfg)
 {
-    /* TODO */
-    FAR struct efm32_spidev_s *priv = NULL;
+    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     irqstate_t flags = irqsave();
 
     if (port < CONFIG_EFM32_SPI_NBR)
     {
-        priv = &(g_spidev[port]);
+        priv = &(g_spidev_tb[port]);
 
-        priv->spidev   = &g_spiops_tb[port]; 
-        priv->usart    = NULL; /* TODO: base address of USART */
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-        priv->spiirq   = -1;   /* TODO: EFM32_IRQ_SPI */
-#endif
+        priv->spidev    = &g_spiops; 
+        priv->cfg       = cfg; /* TODO: base address of USART */
 #ifdef CONFIG_EFM32_SPI_DMA
         priv->rxch     = NULL; /* TODO: DMACHAN_SPI1_RX */
         priv->txch     = NULL; /* TODO: DMACHAN_SPI1_TX */
 #endif
 
-#if 0
-#ifndef CONFIG_SPI_OWNBUS
-        priv->lock              = spi_lock;
-#endif
-        priv->select            = spi_elect; /* TODO */
-        priv->setfrequency      = spi_setfrequency;
-        priv->setmode           = spi_setmode;
-        priv->setbits           = spi_setbits;
-        priv->status            = spi_status; /* TODO */
-#ifdef CONFIG_SPI_CMDDATA
-        priv->cmddata           = spi_cmddata; /* TODO */
-#endif
-        priv->send              = spi_send;
-#ifdef CONFIG_SPI_EXCHANGE
-        priv->exchange          = spi_exchange;
-#else
-        priv->sndblock          = spi_sndblock;
-        priv->recvblock         = spi_recvblock;
-#endif
-        priv->registercallback  = 0;
-#endif
-
-        GPIO_PinModeSet(cfg->clk_port,cfg->clk_pin,gpioModePushPull,0);
-        GPIO_PinModeSet(cfg->miso_port,cfg->miso_pin,gpioModePushPull,0);
-        GPIO_PinModeSet(cfg->mosi_port,cfg->mosi_pin,gpioModePushPull,0);
-        GPIO_PinModeSet(cfg->cs_port,cfg->cs_pin,gpioModePushPull,0);
+        GPIO_PinModeSet(cfg->clk_port,
+                        cfg->clk_pin,
+                        _GPIO_P_MODEL_MODE0_PUSHPULL,
+                        0
+                       );
+        GPIO_PinModeSet(cfg->miso_port,
+                        cfg->miso_pin,
+                        _GPIO_P_MODEL_MODE0_PUSHPULL,
+                        0
+                       );
+        GPIO_PinModeSet(cfg->mosi_port,
+                        cfg->mosi_pin,
+                        _GPIO_P_MODEL_MODE0_PUSHPULL,
+                        0
+                       );
+        GPIO_PinModeSet(cfg->cs_port,
+                        cfg->cs_pin,
+                        _GPIO_P_MODEL_MODE0_PUSHPULL,
+                        1
+                       );
 
         spi_portinitialize(priv);
 

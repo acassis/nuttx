@@ -25,5 +25,13 @@ config PNBFANO_GPIO_KEYPAD
 	---help---
 		Enables support for keypad on gpio.
 
+config PNBFANO_USE_MMCSD
+	bool "Enable MMCSD support Driver"
+    select BOARD_INITIALIZE
+	depends on ARCH_CHIP_EFM32
+	default y
+	---help---
+		Enables support for SD card on gpio.
+
 
 endif

@@ -41,10 +41,74 @@
 
 #include <nuttx/input/keypad.h>
 
+#ifdef CONFIG_PNBFANO_USE_MMCSD
+static const efm32_spi_cfg_t sdcard_spi_cfg = 
+{
+    .usart      = USART0;
+    .location   = 2;
+#ifdef CONFIG_EFM32_SPI_INTERRUPTS
+    .spiirq     = -1;     /* SPI IRQ number : -1 => No interrupts */
+#endif
+    .clk_port    = gpioPortC;            
+    .clk_pin     =  9;             
+    .mosi_port   = gpioPortC;            
+    .mosi_pin    = 11;             
+    .miso_port   = gpioPortC;            
+    .miso_pin    = 10;             
+    .cs_port     = gpioPortC;            
+    .cs_pin      =  8;             
+} ;
+
+void efm32_boardinitialize_sdio(void)
+{
+  int ret;
+  FAR struct spi_dev_s *spi;
+
+  /* First, get an instance of the SDIO interface */
+
+  message("Initializing spi for sdcard \n");
+  sdio = up_spiinitialize(&sdcard_spi_cfg);
+  if ( sdio != NULL )
+    {
+      message("Failed to initialize SPI for sdcard \n");
+      return -ENODEV;
+    }
+
+  /* Now bind the SDIO interface to the MMC/SD driver */
+
+  message("Bind spi to the MMC/SD driver, minor=%d\n",CONFIG_NSH_MMCSDMINOR);
+  ret = mmcsd_slotinitialize(CONFIG_NSH_MMCSDMINOR, sdio);
+  if (ret != OK)
+    {
+      message("nsh_archinitialize: Failed to bind SDIO to the MMC/SD driver: %d\n", ret);
+      return ret;
+    }
+  message("nsh_archinitialize: Successfully bound SDIO to the MMC/SD driver\n");
+
+  /* Then let's guess and say that there is a card in the slot.  I need to check to
+   * see if the STM3210E-EVAL board supports a GPIO to detect if there is a card in
+   * the slot.
+   */
+
+   sdio_mediachange(sdio, true);
+}
+#else
+#   define efm32_boardinitialize_sdio()
+#endif
 
 void efm32_boardinitialize(void)
 {
 
+#ifdef CONFIG_STM32_SPI1
+  FAR struct spi_dev_s *spi;
+  FAR struct mtd_dev_s *mtd;
+#endif
+#ifdef NSH_HAVEMMCSD
+#endif
+
+  /* Mount the SDIO-based MMC/SD block driver */
+
+  efm32_boardinitialize_sdio();
 
 }
 
