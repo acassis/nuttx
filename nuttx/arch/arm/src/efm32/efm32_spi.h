@@ -36,9 +36,6 @@
 #ifndef __ARCH_ARM_EFM32_EFM32_SPI_H
 #define __ARCH_ARM_EFM32_EFM32_SPI_H
 
-#include "em_gpio.h"
-//#include "efm32_usart.h"
-
 typedef const struct 
 {
     int             port;

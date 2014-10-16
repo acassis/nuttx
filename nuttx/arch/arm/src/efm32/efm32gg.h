@@ -36,15 +36,10 @@
 #ifndef __ARCH_ARM_SRC_EFM32_EFM32TG_H
 #define __ARCH_ARM_SRC_EFM32_EFM32TG_H
 
-#ifndef __CORTEX_M
-#   define __CORTEX_M 3
-#endif
-
-#include "DWT_cm3.h"
-#include "TPI_cm3.h"
-#include "ITM_cm3.h"
-
-#   include "core_cmInstr.h"
+#include "cm3_DWT.h"
+#include "cm3_TPI.h"
+#include "cm3_ITM.h"
+#include "cm3_asm.h"
 
 #  define _EFM32_GIANT_FAMILY
 

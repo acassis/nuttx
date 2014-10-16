@@ -66,9 +66,6 @@
 #include <stdbool.h>
 #include "em_bitband.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*******************************************************************************
  * @addtogroup EM_Library
@@ -222,17 +219,10 @@ typedef struct
  ******************************************************************************/
 
 /*******************************************************************************
- * brief
+ * name:
  *   Enter energy mode 1 (EM1).
  ******************************************************************************/
-static inline void EMU_EnterEM1(void)
-{
-  /* Just enter Cortex-M3 sleep mode */
-  SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
-  __WFI();
-}
-
-
+void EMU_EnterEM1(void);
 void EMU_EnterEM2(bool restore);
 void EMU_EnterEM3(bool restore);
 void EMU_EnterEM4(void);
@@ -245,7 +235,7 @@ void EMU_BUThresholdSet(EMU_BODMode_TypeDef mode, uint32_t value);
 void EMU_BUThresRangeSet(EMU_BODMode_TypeDef mode, uint32_t value);
 
 /*******************************************************************************
- * brief
+ * name:
  *   Enable or disable EM4 lock configuration
  * param[in] enable
  *   If true, locks down EM4 configuration
@@ -256,7 +246,7 @@ static inline void EMU_EM4Lock(bool enable)
 }
 
 /*******************************************************************************
- * brief
+ * name:
  *   Halts until backup power functionality is ready
  ******************************************************************************/
 static inline void EMU_BUReady(void)
@@ -265,7 +255,7 @@ static inline void EMU_BUReady(void)
 }
 
 /*******************************************************************************
- * brief
+ * name:
  *   Disable BU_VIN support
  * param[in] enable
  *   If true, enables BU_VIN input pin support, if false disables it
@@ -277,7 +267,7 @@ static inline void EMU_BUPinEnable(bool enable)
 #endif
 
 /*******************************************************************************
- * brief
+ * name:
  *   Lock the EMU in order to protect all its registers against unintended
  *   modification.
  *
@@ -294,7 +284,7 @@ static inline void EMU_Lock(void)
 
 
 /*******************************************************************************
- * brief
+ * name:
  *   Unlock the EMU so that writing to locked registers again is possible.
  ******************************************************************************/
 static inline void EMU_Unlock(void)
@@ -303,7 +293,7 @@ static inline void EMU_Unlock(void)
 }
 
 /*******************************************************************************
- * brief
+ * name:
  *   Block entering EM2 or higher number energy modes.
  ******************************************************************************/
 static inline void EMU_EM2Block(void)
@@ -312,7 +302,7 @@ static inline void EMU_EM2Block(void)
 }
 
 /*******************************************************************************
- * brief
+ * name:
  *   Unblock entering EM2 or higher number energy modes.
  ******************************************************************************/
 static inline void EMU_EM2UnBlock(void)
@@ -321,9 +311,6 @@ static inline void EMU_EM2UnBlock(void)
 }
 
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif 
 #endif 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * arch/arm/src/armv7-m/DWT_cm3.h
+ * arch/arm/src/efm32/cm3_DWT.h
  *
  *   Copyright (c) 2009 - 2013 ARM LIMITED
  *
@@ -60,8 +60,8 @@
  ******************************************************************************/
 
 
-#ifndef __ARCH_ARM_SRC_COMMON_ARMV7_M_DWT_CM3_H
-#define __ARCH_ARM_SRC_COMMON_ARMV7_M_DWT_CM3_H
+#ifndef __ARCH_ARM_SRC_EFM32_CM3_DWT_H_
+#define __ARCH_ARM_SRC_EFM32_CM3_DWT_H_
 
 
 /* the Data Watchpoint and Trace Register (DWT) Offset  */

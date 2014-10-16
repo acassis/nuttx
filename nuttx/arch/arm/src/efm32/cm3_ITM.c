@@ -1,5 +1,5 @@
 /******************************************************************************
- * arch/arm/src/armv7-m/nvic.c
+ * arch/arm/src/efm32/cm3_ITM.c
  *
  *   Copyright (c) 2009 - 2013 ARM LIMITED
  *
@@ -60,19 +60,25 @@
  ******************************************************************************/
 
 
-#include "ITM_cm3.h"
+#include <nuttx/config.h>
+#include "efm32.h"
+
 #include "up_arch.h"
 
 
-/* ITM Send Character
-
-   The function transmits a character via the ITM channel 0, and
-   - Just returns when no debugger is connected that has booked the output.
-   - Is blocking when a debugger is connected, but the previous character sent has not been transmitted.
-
-   param [in]     ch  Character to transmit.
-
-   returns            Character to transmit.
+/* name:ITM_SendChar
+ *
+ * ITM Send Character
+ *
+ * The function transmits a character via the ITM channel 0, and
+ * - Just returns when no debugger is connected that has booked the output.
+ * - Is blocking when a debugger is connected, but the previous character sent has not been transmitted.
+ *
+ * param ch:  
+ *      Character to transmit.
+ *
+ * return:
+ *      Character to transmit.
  */
 uint32_t ITM_SendChar (uint32_t ch)
 {
@@ -87,12 +93,15 @@ uint32_t ITM_SendChar (uint32_t ch)
 }
 
 
-/* brief  ITM Receive Character
-
-    The function inputs a character via the external variable ITM_RxBuffer.
-
-    return             Received character.
-    return         -1  No character pending.
+/* name: ITM_ReceiveChar
+ *  
+ * ITM Receive Character
+ *
+ *  The function inputs a character via the external variable ITM_RxBuffer.
+ *
+ * return:
+ *      Received character.
+ *      or -1 No character pending.
  */
 int32_t ITM_ReceiveChar (void) 
 {
@@ -107,12 +116,15 @@ int32_t ITM_ReceiveChar (void)
 }
 
 
-/* ITM Check Character
-
-    The function checks whether a character is pending for reading in the variable ITM_RxBuffer.
-
-    return          0  No character available.
-    return          1  Character available.
+/* name: ITM_CheckChar
+ *
+ * ITM Check Character
+ *
+ *  The function checks whether a character is pending for reading in the variable ITM_RxBuffer.
+ *
+ * return:
+ *      0  No character available.
+ *      1  Character available.
  */
 int32_t ITM_CheckChar (void) 
 {

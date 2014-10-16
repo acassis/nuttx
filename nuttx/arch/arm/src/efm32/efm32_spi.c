@@ -278,6 +278,8 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
          */
 
         /* HFPERCLK used to clock all USART/UART peripheral modules */
+        uint32_t clkdiv;
+        uint32_t refFreq;
         refFreq = CMU_ClockFreqGet(cmuClock_HFPER);
 
         /* Calculate and set CLKDIV with fractional bits */

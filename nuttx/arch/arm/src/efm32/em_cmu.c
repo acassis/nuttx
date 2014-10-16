@@ -104,8 +104,9 @@
 
 #if defined( CMU_CTRL_HFLE ) && !defined (_EFM32_WONDER_FAMILY)
 /***************************************************************************
- * brief
- *   Return max allowed frequency for low energy peripherals.
+ * name: CMU_MaxFreqHfle
+ * Return: 
+ *      max allowed frequency for low energy peripherals.
  ******************************************************************************/
 static uint32_t CMU_MaxFreqHfle(void)
 {
@@ -144,9 +145,11 @@ static uint32_t CMU_MaxFreqHfle(void)
 #endif
 
 /***************************************************************************
- * brief
- *   Configure flash access wait states to most conservative setting for
- *   this target. Retain SCBTP setting.
+ * name: CMU_FlashWaitStateMax
+ *      Configure flash access wait states to most conservative setting for
+ *  this target. Retain SCBTP setting.
+ * Return:
+ *      None
  ******************************************************************************/
 static void CMU_FlashWaitStateMax(void)
 {
@@ -190,10 +193,13 @@ static void CMU_FlashWaitStateMax(void)
 
 
 /***************************************************************************
- * brief Convert dividend to prescaler logarithmic value. Only works for even
- *        numbers equal to 2^n
- * param[in] div Unscaled dividend,
- * @return Base 2 logarithm of input, as used by fixed prescalers
+ * name: CMU_DivToLog2
+ *      Convert dividend to prescaler logarithmic value. Only works for even
+ *  numbers equal to 2^n
+ * param div: 
+ *      Unscaled dividend,
+ * return: 
+ *      Base 2 logarithm of input, as used by fixed prescalers
  ******************************************************************************/
 static inline uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
 {
@@ -210,9 +216,11 @@ static inline uint32_t CMU_DivToLog2(CMU_ClkDiv_TypeDef div)
 
 
 /***************************************************************************
- * brief Convert logarithm of 2 prescaler to division factor
- * param[in] log2
- * @return Dividend
+ * name: CMU_Log2ToDiv
+ *      Convert logarithm of 2 prescaler to division factor
+ * param log2
+ * return:
+ *      Dividend
  ******************************************************************************/
 static inline uint32_t CMU_Log2ToDiv(uint32_t log2)
 {
@@ -221,12 +229,12 @@ static inline uint32_t CMU_Log2ToDiv(uint32_t log2)
 
 
 /***************************************************************************
- * brief
- *   Configure flash access wait states in order to support given HFCORECLK
- *   frequency.
+ * name: CMU_FlashWaitStateControl
+ *      Configure flash access wait states in order to support given HFCORECLK
+ *  frequency.
  *
- * param[in] hfcoreclk
- *   HFCORECLK frequency that flash access wait states must be configured for.
+ * param hfcoreclk:
+ *      HFCORECLK frequency that flash access wait states must be configured for.
  ******************************************************************************/
 static void CMU_FlashWaitStateControl(uint32_t hfcoreclk)
 {
@@ -304,10 +312,10 @@ static void CMU_FlashWaitStateControl(uint32_t hfcoreclk)
 
 #if defined(USB_PRESENT)
 /***************************************************************************
- * brief
- *   Get the USBC frequency
+ * name:CMU_USBCClkGet
+ *      Get the USBC frequency
  *
- * @return
+ * return:
  *   USBC frequency in Hz
  ******************************************************************************/
 static uint32_t CMU_USBCClkGet(void)
@@ -340,11 +348,11 @@ static uint32_t CMU_USBCClkGet(void)
 
 
 /*******************************************************************************
- * brief
- *   Get the AUX clock frequency. Used by MSC flash programming and LESENSE,
- *   by default also as debug clock.
+ * name: CMU_AUXClkGet
+ *      Get the AUX clock frequency. Used by MSC flash programming and LESENSE,
+ *  by default also as debug clock.
  *
- * @return
+ * return:
  *   AUX Frequency in Hz
  ******************************************************************************/
 static uint32_t CMU_AUXClkGet(void)
@@ -387,11 +395,11 @@ static uint32_t CMU_AUXClkGet(void)
 
 
 /*******************************************************************************
- * brief
- *   Get the Debug Trace clock frequency
+ * Name:CMU_DBGClkGet
+ *      Get the Debug Trace clock frequency
  *
- * @return
- *   Debug Trace frequency in Hz
+ * return:
+ *      Debug Trace frequency in Hz
  ******************************************************************************/
 static uint32_t CMU_DBGClkGet(void)
 {
@@ -426,15 +434,15 @@ static uint32_t CMU_DBGClkGet(void)
 
 
 /*******************************************************************************
- * brief
- *   Get the LFnCLK frequency based on current configuration.
+ * name:CMU_LFClkGet
+ *      Get the LFnCLK frequency based on current configuration.
  *
- * param[in] lfClkBranch
- *   LF branch, 0 = LFA, 1 = LFB, ...
+ * param lfClkBranch:
+ *      LF branch, 0 = LFA, 1 = LFB, ...
  *
- * @return
- *   The LFnCLK frequency in Hz. If no LFnCLK is selected (disabled), 0 is
- *   returned.
+ * return:
+ *      The LFnCLK frequency in Hz. If no LFnCLK is selected (disabled), 0 is
+ *  returned.
  ******************************************************************************/
 static uint32_t CMU_LFClkGet(unsigned int lfClkBranch)
 {
@@ -2294,7 +2302,7 @@ void CMU_PCNTClockExternalSet(unsigned int inst, bool external)
 #if defined(PCNT_PRESENT)
   uint32_t setting = 0;
 
-  EFM_ASSERT(inst < PCNT_COUNT);
+  EFM_ASSERT(inst < PCNT_PRESENT);
 
   if (external)
   {

@@ -1,5 +1,5 @@
 /******************************************************************************
- * arch/arm/src/armv7-m/nvic.h
+ * arch/arm/src/efm32/cm3_ITM.h
  *
  *   Copyright (c) 2009 - 2013 ARM LIMITED
  *
@@ -59,16 +59,15 @@
  *
  ******************************************************************************/
 
-
-
-#ifndef __ARCH_ARM_SRC_COMMON_ARMV7_M_ITM_CM3_H
-#define __ARCH_ARM_SRC_COMMON_ARMV7_M_ITM_CM3_H
+#ifndef __ARCH_ARM_SRC_EFM32_CM3_ITM_H_
+#define __ARCH_ARM_SRC_EFM32_CM3_ITM_H_
 
 #include "stdint.h"
 
-/* brief  Structure type to access the Instrumentation Trace Macrocell Register (ITM).  */
+/* Structure type to access the Instrumentation Trace Macrocell Register (ITM).  */
 #define ITM_BASE      (0xE0000000UL)
-/* i ITM port used : 0-31 */
+
+/* ITM port used : 0-31 */
 #define ITM_PORT(i)   (ITM_BASE+(i*4)) /* Stimulus Port 32-bit                  */
 #define ITM_TER       (ITM_BASE+0xE00) /* Trace Enable Register                 */
 #define ITM_TPR       (ITM_BASE+0xE40) /* Trace Privilege Register              */

@@ -1,5 +1,5 @@
 /******************************************************************************
- * arch/arm/src/armv7-m/TPI_cm3.h
+ * arch/arm/src/EFM32/cm3_TPI.h
  *
  *   Copyright (c) 2009 - 2013 ARM LIMITED
  *
@@ -60,8 +60,8 @@
  ******************************************************************************/
 
 
-#ifndef __ARCH_ARM_SRC_COMMON_ARMV7_M_CORE_CM3_H
-#define __ARCH_ARM_SRC_COMMON_ARMV7_M_CORE_CM3_H
+#ifndef __ARCH_ARM_SRC_EFM32_CM3_TPI_H_
+#define __ARCH_ARM_SRC_EFM32_CM3_TPI_H_
 
 
 /* the Trace Port Interface Register (TPI) offset  */
