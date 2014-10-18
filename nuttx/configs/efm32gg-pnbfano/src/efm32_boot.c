@@ -33,32 +33,46 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
 #include <nuttx/config.h>
 
 #include <nuttx/input/keypad.h>
 
-#ifdef CONFIG_PNBFANO_USE_MMCSD
-static const efm32_spi_cfg_t sdcard_spi_cfg = 
-{
-    .usart      = USART0;
-    .location   = 2;
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-    .spiirq     = -1;     /* SPI IRQ number : -1 => No interrupts */
-#endif
-    .clk_port    = gpioPortC;            
-    .clk_pin     =  9;             
-    .mosi_port   = gpioPortC;            
-    .mosi_pin    = 11;             
-    .miso_port   = gpioPortC;            
-    .miso_pin    = 10;             
-    .cs_port     = gpioPortC;            
-    .cs_pin      =  8;             
-} ;
+#include "efm32.h"
+#include "efm32_spi.h"
 
+/****************************************************************************
+ * Board configuration Functions
+ ****************************************************************************/
+
+const efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR] = 
+{
+#ifdef CONFIG_PNBFANO_USE_MMCSD
+    {
+        .usart      = USART0;
+        .location   = 2;
+#ifdef CONFIG_EFM32_SPI_INTERRUPTS
+        .spiirq     = -1;     /* SPI IRQ number : -1 => No interrupts */
+#endif
+        .clk_port    = gpioPortC;            
+        .clk_pin     =  9;             
+        .mosi_port   = gpioPortC;            
+        .mosi_pin    = 11;             
+        .miso_port   = gpioPortC;            
+        .miso_pin    = 10;             
+        .cs_port     = gpioPortC;            
+        .cs_pin      =  8;             
+    }
+#endif
+};
+
+
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+
+#ifdef CONFIG_PNBFANO_USE_MMCSD
 void efm32_boardinitialize_sdio(void)
 {
   int ret;

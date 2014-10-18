@@ -45,7 +45,7 @@
 
 struct efm32_spidev_s
 {
-  struct spi_dev_s          spidev;     /* Externally visible part of the SPI interface */
+  const struct spi_ops_s*   spidev;     /* Externally visible part of the SPI interface */
   const efm32_spi_cfg_t*    cfg;        /* SPI hardware config */
 #ifdef CONFIG_EFM32_SPI_DMA
   volatile uint8_t          rxresult;   /* Result of the RX DMA */

@@ -36,6 +36,8 @@
 #ifndef __ARCH_ARM_EFM32_EFM32_SPI_H
 #define __ARCH_ARM_EFM32_EFM32_SPI_H
 
+#include "em_gpio.h"
+
 typedef const struct 
 {
     USART_TypeDef*  usart;

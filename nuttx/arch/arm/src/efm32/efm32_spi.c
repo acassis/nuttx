@@ -45,9 +45,8 @@
  *
  *   1. Provide logic in efm32_boardinitialize() to configure SPI chip select
  *      pins.
- *   2. Provide efm32_spi1/2/3select() and efm32_spi1/2/3status() functions in your
- *      board-specific logic.  These functions will perform chip selection and
- *      status operations using GPIOs in the way your board is configured.
+ *   2. Provide efm32_spi_cfg_t efm32_spi_cfg_tb[] table that contain spi configuration 
+ *      in your low level application.
  *   3. Add a calls to up_spiinitialize() in your low level application
  *      initialization logic
  *   4. The handle returned by up_spiinitialize() may then be used to bind the
@@ -185,6 +184,10 @@ static void        spi_portinitialize(FAR struct efm32_spidev_s *priv);
 
 #ifdef CONFIG_EFM32_SPI_NBR
 static struct efm32_spidev_s  g_spidev_tb[CONFIG_EFM32_SPI_NBR];
+
+/* Should be defined in low level board files */
+
+extern const  efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR]; 
 
 static const struct spi_ops_s g_spiops = {
 #ifndef CONFIG_SPI_OWNBUS
@@ -793,13 +796,14 @@ static void spi_recvblock(FAR struct spi_dev_s *dev, FAR void *rxbuffer, size_t 
  * Name: spi_portinitialize
  *
  * Description:
- *   Initialize the selected SPI port in its default state (Master, 8-bit, mode 0, etc.)
+ *      Initialize the selected SPI port in its default state 
+ *  (Master, 8-bit, mode 0, etc.)
  *
  * Input Parameter:
- *   priv   - private SPI device structure
+ *      priv   - private SPI device structure
  *
  * Returned Value:
- *   None
+ *      None
  *
  ************************************************************************************/
 
@@ -807,24 +811,27 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 {
   const efm32_spi_cfg_t* cfg = priv->cfg;
 
-  uint16_t setbits;
-  uint16_t clrbits;
+  /* Init USART registers to HW reset state. */
 
-  /* TODO spi_portinitialize */
+  //USART_Reset(usart); May be ? 
 
   /* Configure CR1. Default configuration:
-   *   Mode 0:                        CPHA=0 and CPOL=0
-   *   Master:                        MSTR=1
-   *   8-bit:                         DFF=0
-   *   MSB tranmitted first:          LSBFIRST=0
-   *   Replace NSS with SSI & SSI=1:  SSI=1 SSM=1 (prevents MODF error)
-   *   Two lines full duplex:         BIDIMODE=0 BIDIOIE=(Don't care) and RXONLY=0
+   *   Mode 0:                          USART_CTRL_CLKPOL_IDLELOW 
+   *                                    USART_CTRL_CLKPHA_SAMPLELEADING  
+   *   8-bit:                           USART_FRAME_DATABITS_EIGHT 
+   *   MSB tranmitted first:            ~USART_CTRL_MSBF
    */
 
-  clrbits = SPI_CR1_CPHA|SPI_CR1_CPOL|SPI_CR1_BR_MASK|SPI_CR1_LSBFIRST|
-            SPI_CR1_RXONLY|SPI_CR1_DFF|SPI_CR1_BIDIOE|SPI_CR1_BIDIMODE;
-  setbits = SPI_CR1_MSTR|SPI_CR1_SSI|SPI_CR1_SSM;
-  spi_modifycr1(priv, setbits, clrbits);
+  /* Set bits for synchronous mode */
+  cfg->usart->CTRL = _USART_CTRL_RESETVALUE             | \
+                     USART_CTRL_SYNC                    | \
+                     USART_CTRL_CLKPOL_IDLELOW          | \
+                     USART_CTRL_CLKPHA_SAMPLELEADING    | \
+                     0;
+
+  /* LSB First */
+
+  cfg->usart->CTRL &= ~USART_CTRL_MSBF;
 
 #ifndef CONFIG_SPI_OWNBUS
   priv->frequency = 0;
@@ -832,13 +839,20 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
   priv->mode      = SPIDEV_MODE0;
 #endif
 
+  /* 8 bits */
+
+  cfg->usart->FRAME = USART_FRAME_DATABITS_EIGHT    | \
+                      USART_FRAME_STOPBITS_DEFAULT  | \
+                      USART_FRAME_PARITY_DEFAULT    | \
+                      0;
+
   /* Select a default frequency of approx. 400KHz */
 
   spi_setfrequency((FAR struct spi_dev_s *)priv, 400000);
 
-  /* CRCPOLY configuration */
+  /* Master mode */
 
-  spi_putreg(priv, STM32_SPI_CRCPR_OFFSET, 7);
+  cfg->usart->CMD = USART_CMD_MASTEREN;
 
   /* Initialize the SPI semaphore that enforces mutually exclusive access */
 
@@ -854,7 +868,8 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
   /* Enable spi */
 
-  spi_modifycr1(priv, SPI_CR1_SPE, 0);
+  cfg->usart->CMD = (USART_CMD_RXEN | USART_CMD_TXEN);
+
 }
 
 /************************************************************************************
@@ -868,25 +883,27 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
  *   Initialize the selected SPI port
  *
  * Input Parameter:
- *   cfg spi configuration (Should be constant or always valid during spi use)
+ *   port index to initialise. order is defined by your efm32_spi_cfg_tb table.
  *
  * Returned Value:
  *   Valid SPI device structure reference on succcess; a NULL on failure
  *
  ************************************************************************************/
 
-FAR struct spi_dev_s *up_spiinitialize(efm32_spi_cfg_t cfg)
+FAR struct spi_dev_s *up_spiinitialize(int port)
 {
-    FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
+    FAR struct efm32_spidev_s *priv = g_spidev_tb;
+
+    ASSERT(port > 0 );
+    ASSERT(port < CONFIG_EFM32_SPI_NBR );
+
+    const efm32_spi_cfg_t* cfg = &efm32_spi_cfg_tb[port-1];
 
     irqstate_t flags = irqsave();
 
     if (port < CONFIG_EFM32_SPI_NBR)
     {
-        priv = &(g_spidev_tb[port]);
-
-        priv->spidev    = &g_spiops; 
+        priv->spidev    = &g_spiops; /* all SPI use same function  */
         priv->cfg       = cfg; /* TODO: base address of USART */
 #ifdef CONFIG_EFM32_SPI_DMA
         priv->rxch     = NULL; /* TODO: DMACHAN_SPI1_RX */
