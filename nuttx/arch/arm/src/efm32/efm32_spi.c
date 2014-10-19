@@ -894,15 +894,13 @@ FAR struct spi_dev_s *up_spiinitialize(int port)
 {
     FAR struct efm32_spidev_s *priv = g_spidev_tb;
 
-    ASSERT(port > 0 );
-    ASSERT(port < CONFIG_EFM32_SPI_NBR );
-
-    const efm32_spi_cfg_t* cfg = &efm32_spi_cfg_tb[port-1];
 
     irqstate_t flags = irqsave();
 
-    if (port < CONFIG_EFM32_SPI_NBR)
+    if ( (port > 0 ) && (port <= CONFIG_EFM32_SPI_NBR) )
     {
+        const efm32_spi_cfg_t* cfg = &efm32_spi_cfg_tb[port-1];
+
         priv->spidev    = &g_spiops; /* all SPI use same function  */
         priv->cfg       = cfg; /* TODO: base address of USART */
 #ifdef CONFIG_EFM32_SPI_DMA
