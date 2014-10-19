@@ -127,6 +127,37 @@
 #  define spivdbg(x...)
 #endif
 
+static USART_TypeDef* usart_link[USART_PRESENT] =
+{
+#ifdef USART0
+    USART0
+#endif
+#ifdef USART1
+    ,USART1
+#endif
+#ifdef USART2
+    ,USART2
+#endif
+#ifdef USART3
+    ,USART3
+#endif
+};
+
+static int usart_clk_link[USART_PRESENT] = 
+{
+#ifdef CMU_HFPERCLKEN0_USART0
+    CMU_HFPERCLKEN0_USART0
+#endif
+#ifdef CMU_HFPERCLKEN0_USART1
+    ,CMU_HFPERCLKEN0_USART1
+#endif
+#ifdef CMU_HFPERCLKEN0_USART2
+    ,CMU_HFPERCLKEN0_USART2
+#endif
+#ifdef CMU_HFPERCLKEN0_USART3
+    ,CMU_HFPERCLKEN0_USART3
+#endif
+};
 
 /************************************************************************************
  * Private Function Prototypes
@@ -292,7 +323,9 @@ static void spi_select( FAR struct spi_dev_s *dev,
                       )
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
+    
     const efm32_spi_cfg_t* cfg = priv->cfg;
+
     UNUSED(devid);
 
     if ( selected )
@@ -323,7 +356,6 @@ static void spi_select( FAR struct spi_dev_s *dev,
 static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     /* Has the frequency changed? */
 
@@ -381,7 +413,7 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
         /* If EFM_ASSERT is not enabled, make sure we don't write to reserved bits */
         clkdiv &= _USART_CLKDIV_DIV_MASK;
 
-        cfg->usart->CLKDIV = clkdiv;
+        priv->usart->CLKDIV = clkdiv;
 
         /* Save the frequency selection so that subsequent reconfigurations will be
          * faster.
@@ -414,7 +446,6 @@ static uint32_t spi_setfrequency(FAR struct spi_dev_s *dev, uint32_t frequency)
 static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     spivdbg("mode=%d\n", mode);
 
@@ -448,10 +479,10 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
                 return;
         }
 
-        cfg->usart->CTRL &= ~(_USART_CTRL_CLKPOL_MASK | 
+        priv->usart->CTRL &= ~(_USART_CTRL_CLKPOL_MASK | 
                                     _USART_CTRL_CLKPHA_MASK
                                     );
-        cfg->usart->CTRL |= u;
+        priv->usart->CTRL |= u;
 
 
         /* Save the mode so that subsequent re-configurations will be faster */
@@ -480,7 +511,6 @@ static void spi_setmode(FAR struct spi_dev_s *dev, enum spi_mode_e mode)
 static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
 
     spivdbg("nbits=%d\n", nbits);
 
@@ -494,12 +524,12 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 
         if ( nbits < 0 )
         {
-            cfg->usart->CTRL &= ~USART_CTRL_MSBF;
+            priv->usart->CTRL &= ~USART_CTRL_MSBF;
             i = -nbits;
         }
         else
         {
-            cfg->usart->CTRL |= USART_CTRL_MSBF;
+            priv->usart->CTRL |= USART_CTRL_MSBF;
             i = nbits;
         }
 
@@ -522,8 +552,8 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
                        return;
         }
 
-        cfg->usart->FRAME &= _USART_FRAME_DATABITS_MASK;
-        cfg->usart->FRAME |= i;
+        priv->usart->FRAME &= _USART_FRAME_DATABITS_MASK;
+        priv->usart->FRAME |= i;
         /* Save the selection so the subsequence re-configurations will be faster */
 
 #ifndef CONFIG_SPI_OWNBUS
@@ -551,18 +581,17 @@ static void spi_setbits(FAR struct spi_dev_s *dev, int nbits)
 static uint16_t spi_send(FAR struct spi_dev_s *dev, uint16_t wd)
 {
     FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
     uint16_t ret;
 
-    DEBUGASSERT(priv && cfg->usart);
+    DEBUGASSERT(priv && priv->usart);
 
     {
-        while (!(cfg->usart->STATUS & USART_STATUS_TXBL))
+        while (!(priv->usart->STATUS & USART_STATUS_TXBL))
         {};
-        cfg->usart->TXDATA = (uint32_t) wd;
-        while (!(cfg->usart->STATUS & USART_STATUS_TXC))
+        priv->usart->TXDATA = (uint32_t) wd;
+        while (!(priv->usart->STATUS & USART_STATUS_TXC))
         {};
-        ret = (uint16_t) (cfg->usart->RXDATA);
+        ret = (uint16_t) (priv->usart->RXDATA);
     }
 
     spivdbg("Sent: %04x Return: %04x \n", wd, ret);
@@ -600,8 +629,7 @@ static void spi_exchange_nodma(FAR struct spi_dev_s *dev, FAR const void *txbuff
 #endif
 {
   FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
-  DEBUGASSERT(priv && cfg->usart);
+  DEBUGASSERT(priv && priv->usart);
 
   spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
 
@@ -701,7 +729,6 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
                          FAR void *rxbuffer, size_t nwords)
 {
   FAR struct efm32_spidev_s *priv = (FAR struct efm32_spidev_s *)dev;
-    const efm32_spi_cfg_t* cfg = priv->cfg;
 
 #ifdef CONFIG_STM32_DMACAPABLE
   if ((txbuffer && !stm32_dmacapable((uint32_t)txbuffer, nwords, priv->txccr)) ||
@@ -718,7 +745,6 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
       static const uint16_t txdummy = 0xffff;
 
       spivdbg("txbuffer=%p rxbuffer=%p nwords=%d\n", txbuffer, rxbuffer, nwords);
-      DEBUGASSERT(priv && cfg->usart);
 
       /* Setup DMAs */
 
@@ -809,7 +835,6 @@ static void spi_recvblock(FAR struct spi_dev_s *dev, FAR void *rxbuffer, size_t 
 
 static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 {
-  const efm32_spi_cfg_t* cfg = priv->cfg;
 
   /* Init USART registers to HW reset state. */
 
@@ -823,7 +848,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
    */
 
   /* Set bits for synchronous mode */
-  cfg->usart->CTRL = _USART_CTRL_RESETVALUE             | \
+  priv->usart->CTRL = _USART_CTRL_RESETVALUE             | \
                      USART_CTRL_SYNC                    | \
                      USART_CTRL_CLKPOL_IDLELOW          | \
                      USART_CTRL_CLKPHA_SAMPLELEADING    | \
@@ -831,7 +856,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
   /* LSB First */
 
-  cfg->usart->CTRL &= ~USART_CTRL_MSBF;
+  priv->usart->CTRL &= ~USART_CTRL_MSBF;
 
 #ifndef CONFIG_SPI_OWNBUS
   priv->frequency = 0;
@@ -841,7 +866,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
   /* 8 bits */
 
-  cfg->usart->FRAME = USART_FRAME_DATABITS_EIGHT    | \
+  priv->usart->FRAME = USART_FRAME_DATABITS_EIGHT    | \
                       USART_FRAME_STOPBITS_DEFAULT  | \
                       USART_FRAME_PARITY_DEFAULT    | \
                       0;
@@ -852,7 +877,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
   /* Master mode */
 
-  cfg->usart->CMD = USART_CMD_MASTEREN;
+  priv->usart->CMD = USART_CMD_MASTEREN;
 
   /* Initialize the SPI semaphore that enforces mutually exclusive access */
 
@@ -868,7 +893,7 @@ static void spi_portinitialize(FAR struct efm32_spidev_s *priv)
 
   /* Enable spi */
 
-  cfg->usart->CMD = (USART_CMD_RXEN | USART_CMD_TXEN);
+  priv->usart->CMD = (USART_CMD_RXEN | USART_CMD_TXEN);
 
 }
 
@@ -899,35 +924,39 @@ FAR struct spi_dev_s *up_spiinitialize(int port)
 
     if ( (port > 0 ) && (port <= CONFIG_EFM32_SPI_NBR) )
     {
-        const efm32_spi_cfg_t* cfg = &efm32_spi_cfg_tb[port-1];
-
         priv->spidev    = &g_spiops; /* all SPI use same function  */
-        priv->cfg       = cfg; /* TODO: base address of USART */
+        priv->cfg       = &efm32_spi_cfg_tb[port-1]; 
+        priv->usart     = usart_link[priv->cfg->usart_idx]; 
 #ifdef CONFIG_EFM32_SPI_DMA
         priv->rxch     = NULL; /* TODO: DMACHAN_SPI1_RX */
         priv->txch     = NULL; /* TODO: DMACHAN_SPI1_TX */
 #endif
 
-        GPIO_PinModeSet(cfg->clk_port,
-                        cfg->clk_pin,
+        GPIO_PinModeSet(priv->cfg->clk_port,
+                        priv->cfg->clk_pin,
                         _GPIO_P_MODEL_MODE0_PUSHPULL,
                         0
                        );
-        GPIO_PinModeSet(cfg->miso_port,
-                        cfg->miso_pin,
+        GPIO_PinModeSet(priv->cfg->miso_port,
+                        priv->cfg->miso_pin,
                         _GPIO_P_MODEL_MODE0_PUSHPULL,
                         0
                        );
-        GPIO_PinModeSet(cfg->mosi_port,
-                        cfg->mosi_pin,
+        GPIO_PinModeSet(priv->cfg->mosi_port,
+                        priv->cfg->mosi_pin,
                         _GPIO_P_MODEL_MODE0_PUSHPULL,
                         0
                        );
-        GPIO_PinModeSet(cfg->cs_port,
-                        cfg->cs_pin,
+        GPIO_PinModeSet(priv->cfg->cs_port,
+                        priv->cfg->cs_pin,
                         _GPIO_P_MODEL_MODE0_PUSHPULL,
                         1
                        );
+
+        /* Enable GPIO clock. */
+
+        CMU->HFPERCLKEN0 |= usart_clk_link[priv->cfg->usart_idx];
+
 
         spi_portinitialize(priv);
 

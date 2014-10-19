@@ -40,11 +40,9 @@
 
 typedef const struct 
 {
-    USART_TypeDef*  usart;
-    int             location;
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-    uint8_t                   spiirq;     /* SPI IRQ number */
-#endif
+    int                 usart_idx;
+    int                 location;
+
     GPIO_Port_TypeDef   clk_port;            
     int                 clk_pin;             
     GPIO_Port_TypeDef   mosi_port;            

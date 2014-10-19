@@ -53,7 +53,7 @@ const efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR] =
 {
 #ifdef CONFIG_PNBFANO_USE_MMCSD
     {
-        .usart      = USART0,
+        .usart_idx  = 0,
         .location   = 2,
 #ifdef CONFIG_EFM32_SPI_INTERRUPTS
         .spiirq     = -1,     /* SPI IRQ number : -1 => No interrupts */
