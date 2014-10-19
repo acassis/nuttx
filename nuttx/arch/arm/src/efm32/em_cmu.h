@@ -65,7 +65,7 @@
 #if defined(CMU_PRESENT) 
 
 #include <stdbool.h>
-//#include "em_bitband.h"
+#include "em_bitband.h"
 
 #ifdef __cplusplus
 extern "C" {

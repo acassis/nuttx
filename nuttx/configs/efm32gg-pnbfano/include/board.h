@@ -45,6 +45,6 @@
 #define CONFIG_EFM32_SWO_PORT       gpioPortF
 #define CONFIG_EFM32_SWO_PIN        2
 
-void nsh_boardinitialize(void);
+void nsh_archinitialize(void);
 
 #endif 

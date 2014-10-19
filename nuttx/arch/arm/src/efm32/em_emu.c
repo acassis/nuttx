@@ -62,8 +62,11 @@
 #if defined( EMU_PRESENT )
 
 #include "em_cmu.h"
-#include "em_system.h"
-#include "em_assert.h"
+#include "em_emu.h"
+#include "nvic.h"
+#include "up_arch.h"
+//#include "em_system.h"
+//#include "em_assert.h"
 
 
 /* Consistency check, since restoring assumes similar bitpositions in */
@@ -196,7 +199,7 @@ static void EMU_Restore(void)
 
 /* Get enable conditions for errata EMU_E107 fix. */
 #if defined(ERRATA_FIX_EMU_E107_EN)  
-static __INLINE bool getErrataFixEmuE107En(void)
+static inline bool getErrataFixEmuE107En(void)
 {
   /* SYSTEM_ChipRevisionGet could have been used here, but we would like a faster implementation in this case. */
   uint16_t majorMinorRev;  
@@ -282,7 +285,11 @@ void EMU_EnterEM2(bool restore)
   cmuStatus = (uint16_t)(CMU->STATUS);
   
   /* Enter Cortex-M3 deep sleep mode */
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+  /* SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; */
+
+  putreg32( getreg32(NVIC_SYSCON_OFFSET) | NVIC_SYSCON_SLEEPDEEP, NVIC_SYSCON_OFFSET);
+
   
   /* Fix for errata EMU_E107 - store non-WIC interrupt enable flags.
      Disable the enabled non-WIC interrupts. */
@@ -290,11 +297,25 @@ void EMU_EnterEM2(bool restore)
   errataFixEmuE107En = getErrataFixEmuE107En();
   if (errataFixEmuE107En)
   {
-    nonWicIntEn[0] = NVIC->ISER[0] & NON_WIC_INT_MASK_0;    
-    NVIC->ICER[0] = nonWicIntEn[0];
+
+    /* nonWicIntEn[0] = NVIC->ISER[0] & NON_WIC_INT_MASK_0; */
+
+    nonWicIntEn[0] = getreg32(NVIC_IRQ0_31_ENABLE) & NON_WIC_INT_MASK_0;    
+
+    /* NVIC->ICER[0] = nonWicIntEn[0]; */
+
+    putreg32(nonWicIntEn[0],NVIC_IRQ0_31_CLEAR);
+
 #if (NON_WIC_INT_MASK_1 != (~(0x0U)))   
-    nonWicIntEn[1] = NVIC->ISER[1] & NON_WIC_INT_MASK_1;
-    NVIC->ICER[1] = nonWicIntEn[1];  
+    
+    /* nonWicIntEn[1] = NVIC->ISER[1] & NON_WIC_INT_MASK_1; */
+
+    nonWicIntEn[1] = getreg32(NVIC_IRQ32_63_ENABLE) & NON_WIC_INT_MASK_1;    
+
+    /* NVIC->ICER[1] = nonWicIntEn[1]; */ 
+
+    putreg32(nonWicIntEn[1],NVIC_IRQ32_63_CLEAR);
+
 #endif
   }
 #endif
@@ -305,9 +326,16 @@ void EMU_EnterEM2(bool restore)
 #if defined(ERRATA_FIX_EMU_E107_EN)
   if (errataFixEmuE107En)
   {
-    NVIC->ISER[0] = nonWicIntEn[0];
+    /* NVIC->ISER[0] = nonWicIntEn[0]; */
+
+    putreg32(nonWicIntEn[0],NVIC_IRQ0_31_ENABLE);
+
 #if (NON_WIC_INT_MASK_1 != (~(0x0U)))   
-    NVIC->ISER[1] = nonWicIntEn[1];
+
+    /* NVIC->ISER[1] = nonWicIntEn[1]; */
+
+    putreg32(nonWicIntEn[1],NVIC_IRQ32_63_ENABLE);
+
 #endif
   }
 #endif
@@ -396,7 +424,11 @@ void EMU_EnterEM3(bool restore)
   }
 
   /* Enter Cortex-M3 deep sleep mode */
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+  /* SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; */
+
+  putreg32( getreg32(NVIC_SYSCON_OFFSET) | NVIC_SYSCON_SLEEPDEEP, NVIC_SYSCON_OFFSET);
+
   
   /* Fix for errata EMU_E107 - store non-WIC interrupt enable flags.
      Disable the enabled non-WIC interrupts. */
@@ -404,11 +436,25 @@ void EMU_EnterEM3(bool restore)
   errataFixEmuE107En = getErrataFixEmuE107En();
   if (errataFixEmuE107En)
   {
-    nonWicIntEn[0] = NVIC->ISER[0] & NON_WIC_INT_MASK_0;    
-    NVIC->ICER[0] = nonWicIntEn[0];
+
+    /* nonWicIntEn[0] = NVIC->ISER[0] & NON_WIC_INT_MASK_0; */
+
+    nonWicIntEn[0] = getreg32(NVIC_IRQ0_31_ENABLE) & NON_WIC_INT_MASK_0;    
+
+    /* NVIC->ICER[0] = nonWicIntEn[0]; */
+
+    putreg32(nonWicIntEn[0],NVIC_IRQ0_31_CLEAR);
+
 #if (NON_WIC_INT_MASK_1 != (~(0x0U)))    
-    nonWicIntEn[1] = NVIC->ISER[1] & NON_WIC_INT_MASK_1;
-    NVIC->ICER[1] = nonWicIntEn[1];  
+    
+    /* nonWicIntEn[1] = NVIC->ISER[1] & NON_WIC_INT_MASK_1; */
+
+    nonWicIntEn[1] = getreg32(NVIC_IRQ32_63_ENABLE) & NON_WIC_INT_MASK_1;    
+
+    /* NVIC->ICER[1] = nonWicIntEn[1]; */ 
+
+    putreg32(nonWicIntEn[1],NVIC_IRQ32_63_CLEAR);
+
 #endif    
     
   }
@@ -420,9 +466,16 @@ void EMU_EnterEM3(bool restore)
 #if defined(ERRATA_FIX_EMU_E107_EN)
   if (errataFixEmuE107En)
   {
-    NVIC->ISER[0] = nonWicIntEn[0];
+    /* NVIC->ISER[0] = nonWicIntEn[0]; */
+
+    putreg32(nonWicIntEn[0],NVIC_IRQ0_31_ENABLE);
+
 #if (NON_WIC_INT_MASK_1 != (~(0x0U)))  
-    NVIC->ISER[1] = nonWicIntEn[1];
+
+    /* NVIC->ISER[1] = nonWicIntEn[1]; */
+
+    putreg32(nonWicIntEn[1],NVIC_IRQ32_63_ENABLE);
+
 #endif
   }
 #endif
@@ -483,8 +536,6 @@ void EMU_EnterEM4(void)
 void EMU_MemPwrDown(uint32_t blocks)
 {
 #if defined(_EMU_MEMCTRL_RESETVALUE)
-  EFM_ASSERT(blocks <= _EMU_MEMCTRL_MASK);
-
   EMU->MEMCTRL = blocks;
 #else
   (void)blocks;
@@ -619,8 +670,6 @@ void EMU_BUPDInit(EMU_BUPDInit_TypeDef *bupdInit)
  ******************************************************************************/
 void EMU_BUThresholdSet(EMU_BODMode_TypeDef mode, uint32_t value)
 {
-  EFM_ASSERT(value<=(_EMU_BUACT_BUEXTHRES_MASK>>_EMU_BUACT_BUEXTHRES_SHIFT));
-
   switch(mode)
   {
   case emuBODMode_Active:
@@ -643,8 +692,6 @@ void EMU_BUThresholdSet(EMU_BODMode_TypeDef mode, uint32_t value)
  ******************************************************************************/
 void EMU_BUThresRangeSet(EMU_BODMode_TypeDef mode, uint32_t value)
 {
-  EFM_ASSERT(value<=(_EMU_BUACT_BUEXRANGE_MASK>>_EMU_BUACT_BUEXRANGE_SHIFT));
-
   switch(mode)
   {
   case emuBODMode_Active:
