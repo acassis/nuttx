@@ -44,7 +44,7 @@
 #include "up_internal.h"
 
 /* pnbtodo:is it the right way ? */
-#include "arch/board/board.h"
+#include <arch/board/board.h>
 
 #include "nvic.h"
 #include "efm32.h"
@@ -83,7 +83,8 @@ void efm32_lowsetup(void)
 
     /* Set location */
 
-    GPIO_DbgLocationSet(CONFIG_EFM32_SWO_LOCATION);
+    GPIO->ROUTE = (GPIO->ROUTE               & ~_GPIO_ROUTE_SWLOCATION_MASK) | \
+                  (CONFIG_EFM32_SWO_LOCATION << _GPIO_ROUTE_SWLOCATION_SHIFT );
 
     /* Enable output on pin */
 

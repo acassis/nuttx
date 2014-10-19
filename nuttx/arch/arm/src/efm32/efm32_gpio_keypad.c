@@ -61,7 +61,8 @@ static int efm32_gpio_kbd_open(file_t * filep);
 static int efm32_gpio_kbd_close(file_t * filep);
 static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buffer, size_t buflen);
 #ifndef CONFIG_DISABLE_POLL
-static int efm32_gpio_kbd_read(file_t * filep, FAR struct pollfd *fds, bool setup);
+/* TODO */
+//static int efm32_gpio_kbd_poll(file_t * filep, FAR struct pollfd *fds, bool setup);
 #endif
 
 static const struct file_operations keypad_ops =
@@ -69,11 +70,11 @@ static const struct file_operations keypad_ops =
     efm32_gpio_kbd_open,  /* open */
     efm32_gpio_kbd_close, /* close */
     efm32_gpio_kbd_read,  /* read */
-    0,                    /* write */
-    0,                    /* seek */
-    0,                    /* ioctl */
+    NULL,                 /* write */
+    NULL,                 /* seek */
+    NULL,                 /* ioctl */
 #ifndef CONFIG_DISABLE_POLL
-    efm32_gpio_kbd_poll   /* poll */
+    NULL,                 /* TODO: efm32_gpio_kbd_poll */ /* poll */
 #endif
 };
 

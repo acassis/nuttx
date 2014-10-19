@@ -76,27 +76,6 @@
  **************************   GLOBAL FUNCTIONS   *******************************
  ******************************************************************************/
 
-/*******************************************************************************
- * Sets the pin location of the debug pins (Serial Wire interface).
- *
- * note:
- *   Changing the pins used for debugging uncontrolled, may result in a lockout.
- *
- * location : The debug pin location to use (0-3).
- *
- ******************************************************************************/
-void GPIO_DbgLocationSet(unsigned int location)
-{
-#if defined ( _GPIO_ROUTE_SWLOCATION_MASK )
-    ASSERT(location < AFCHANLOC_MAX);
-
-    GPIO->ROUTE = (GPIO->ROUTE & ~_GPIO_ROUTE_SWLOCATION_MASK) |
-        (location << _GPIO_ROUTE_SWLOCATION_SHIFT);
-#else
-    (void)location;
-#endif
-}
-
 
 /*******************************************************************************
  * brief

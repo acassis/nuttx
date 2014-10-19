@@ -77,8 +77,6 @@
 #define ANALOG_PRESENT        1
 
 
-#define AFCHANLOC_MAX   7
-
 #include "chip/efm32gg_memorymap.h"
 
 #include "EFM32GG/system_efm32gg.h"
