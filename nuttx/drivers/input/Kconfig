@@ -321,5 +321,3 @@ config STMPE811_REGDEBUG
 		Enable very low register-level debug output.
 
 endif
-
-
