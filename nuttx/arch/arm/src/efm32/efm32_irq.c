@@ -541,6 +541,7 @@ void up_enable_irq(int irq)
 
       efm32_gpioirqenable(irq);
     }
+#endif
 
   efm32_dumpnvic("enable", irq);
 }

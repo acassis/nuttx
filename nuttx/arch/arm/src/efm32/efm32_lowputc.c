@@ -46,33 +46,6 @@
 
 #include <nuttx/config.h>
 
-<<<<<<< HEAD
-#include "up_internal.h"
-
-/* pnbtodo:is it the right way ? */
-#include <arch/board/board.h>
-
-#include "nvic.h"
-#include "efm32.h"
-#include "em_gpio.h"
-#include "efm32_lowputc.h"
-
-#include "up_arch.h"
-
-
-#ifndef CONFIG_EFM32_SWO_DIV
-#   define CONFIG_EFM32_SWO_DIV 0xf 
-#endif
-#if ( CONFIG_EFM32_SWO_DIV < 0 )
-#   error "CONFIG_EFM32_SWO_DIV should be at least equal to 1"
-#endif
-
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-=======
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -234,102 +207,11 @@ static void efm32_setbaud(uintptr_t base,  uint32_t baud)
            base + EFM32_USART_CLKDIV_OFFSET);
 }
 #endif
->>>>>>> upstream/master
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-<<<<<<< HEAD
-void efm32_lowsetup(void)
-{
-    /* Enable GPIO clock. */
-
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;
-
-    /* Enable Serial wire output pin */
-
-    GPIO->ROUTE |= GPIO_ROUTE_SWOPEN;
-
-    /* Set location */
-
-    GPIO->ROUTE = (GPIO->ROUTE               & ~_GPIO_ROUTE_SWLOCATION_MASK) | \
-                  (CONFIG_EFM32_SWO_LOCATION << _GPIO_ROUTE_SWLOCATION_SHIFT );
-
-    /* Enable output on pin */
-
-    GPIO_PinModeSet(CONFIG_EFM32_SWO_PORT,
-                    CONFIG_EFM32_SWO_PIN, 
-                    gpioModePushPull, 
-                    0
-                   );
-
-    /* Enable debug clock AUXHFRCO */
-
-    CMU->OSCENCMD = CMU_OSCENCMD_AUXHFRCOEN;
-
-    /* Wait until clock is ready */
-
-    while (!(CMU->STATUS & CMU_STATUS_AUXHFRCORDY));
-
-    /* Enable trace in core debug */
-    
-    putreg32(getreg32(NVIC_DEMCR)|NVIC_DEMCR_TRCENA, NVIC_DEMCR);
-    putreg32(0xC5ACCE55,ITM_LAR );
-    putreg32(0x0,       ITM_TER );
-    putreg32(0x0,       ITM_TCR );
-    putreg32(2  ,       TPI_SPPR); /* pin protocol: 2=> Manchester (USART) */
-
-
-    /* default 880kbps */
-    putreg32(CONFIG_EFM32_SWO_DIV-1, TPI_ACPR ); /* TRACECLKIN/(ACPR+1) SWO speed */
-    putreg32(0x0       , ITM_TPR  );
-    putreg32(0x400003FE, DWT_CTRL );
-    putreg32(0x0001000D, ITM_TCR  );
-    putreg32(0x00000100, TPI_FFCR );
-    putreg32(0xFFFFFFFF, ITM_TER  ); /* enable 32 Ports */
-}
-
-void up_lowputc(char c)
-{
-#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
-    /* use Port #0 at default */
-
-    int ch = 0;
-
-    /* ITM enabled */
-
-    if ((getreg32(ITM_TCR) & ITM_TCR_ITMENA_Msk) == 0 )   
-        return;
-
-    /* ITM Port "ch" enabled */
-
-    if ( getreg32(ITM_TER) & (1UL << ch) )            
-    {
-        while (getreg32(ITM_PORT(ch)) == 0);
-        putreg8((uint8_t) c,ITM_PORT(ch));
-    }
-#else
-    (void)c;
-#endif
-}
-
-void up_putc(char c)
-{
-#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
-    /* Convert LF into CRLF. */
-    
-    if (c == '\n')
-        up_lowputc('\r');
-
-    up_lowputc(c);
-#else
-    (void)c;
-#endif
-}
-
-
-=======
 /****************************************************************************
  * Name: efm32_lowsetup
  *
@@ -611,4 +493,3 @@ void efm32_uartreset(uintptr_t base)
 #endif
 }
 #endif
->>>>>>> upstream/master

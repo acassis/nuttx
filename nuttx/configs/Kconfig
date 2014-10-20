@@ -1181,6 +1181,7 @@ source "configs/efm32tg-stk3300/Kconfig"
 endif
 if ARCH_BOARD_EFM32GG_PNBFANO
 source "configs/efm32gg-pnbfano/Kconfig"
+endif
 if ARCH_BOARD_EFM32G8XXSTK
 source "configs/efm32-g8xx-stk/Kconfig"
 endif
