@@ -1,7 +1,7 @@
 /****************************************************************************
  * binfmt/libelf/libelf_read.c
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,8 +54,6 @@
  ****************************************************************************/
 
 #undef ELF_DUMP_READDATA       /* Define to dump all file data read */
-#define DUMPER syslog          /* If ELF_DUMP_READDATA is defined, this
-                                * is the API used to dump data */
 
 /****************************************************************************
  * Private Constant Data
@@ -78,12 +76,13 @@ static inline void elf_dumpreaddata(char *buffer, int buflen)
 
   for (i = 0; i < buflen; i += 32)
     {
-      DUMPER("%04x:", i);
+      syslog(LOG_DEBUG, "%04x:", i);
       for (j = 0; j < 32; j += sizeof(uint32_t))
         {
-          DUMPER("  %08x", *buf32++);
+          syslog(LOG_DEBUG, "  %08x", *buf32++);
         }
-      DUMPER("\n");
+
+      syslog(LOG_DEBUG, "\n");
     }
 }
 #else
@@ -128,7 +127,8 @@ int elf_read(FAR struct elf_loadinfo_s *loadinfo, FAR uint8_t *buffer,
       if (rpos != offset)
         {
           int errval = errno;
-          bdbg("Failed to seek to position %ld: %d\n", (long)offset, errval);
+          bdbg("Failed to seek to position %lu: %d\n",
+               (unsigned long)offset, errval);
           return -errval;
         }
 
@@ -143,7 +143,8 @@ int elf_read(FAR struct elf_loadinfo_s *loadinfo, FAR uint8_t *buffer,
 
            if (errval != EINTR)
              {
-               bdbg("Read of .data failed: %d\n", errval);
+               bdbg("Read from offset %lu failed: %d\n",
+                    (unsigned long)offset, errval);
                return -errval;
              }
          }

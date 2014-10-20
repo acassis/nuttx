@@ -12,7 +12,6 @@ Contents
     - 64-bit Issues
     - Compiler differences
     - Stack Size Issues
-    - Buffered I/O Issues
     - Networking Issues
     - X11 Issues
   o Configurations
@@ -87,26 +86,18 @@ Issues
 
 64-Bit Issues
 -------------
-As mentioned above, context switching is based on logic like setjmp and longjmp.
-This context switching is only available for 32-bit targets.  On 64-bit machines,
-this context switching will fail.
+As mentioned above, context switching is based on logic like setjmp() and
+longjmp().  This context switching is available for 32-bit and 64-bit
+targets.  You must, however, set the correct target in the configuration
+before you build: HOST_X86_64 or HOST_X86 for 62- and 32-bit targets,
+respectively.  On a 64-bit machine, you can also force the 32-bit build
+with CONFIG_SIM_M32=y.
 
 There are other 64-bit issues as well.  For example, addresses are retained in
 32-bit unsigned integer types in a few places.  On a 64-bit machine, the 32-bit
 address storage may correcupt 64-bit addressing.  NOTE:  This is really a bug --
 addresses should not be retained in uint32_t types but rather in uintptr_t types
 to avoid issues just like this.
-
-The workaround on 64-bit machines for now is to build for a 32-bit target on the
-64-bit machine.  The workaround for this issue has been included in NuttX 6.15 and
-beyond.  For thoses versions, you must add CONFIG_SIM_M32=y to the .config file in
-order to enable building a 32-bit image on a 64-bit platform.
-
-For older versions of NuttX, a patch also exists.  The patch the Make.defs file in the
-appropriate places so that -m32 is included in the CFLAGS and -m32 and -melf_386
-are included in the LDFLAGS. See the patch
-0001-Quick-hacks-to-build-sim-nsh-ostest-on-x86_64-as-32-.patch that can be found at
-http://tech.groups.yahoo.com/group/nuttx/files.
 
 Compiler differences
 --------------------
@@ -115,12 +106,6 @@ operator new:
 
   Problem:     "'operator new' takes size_t ('...') as first parameter"
   Workaround:   Add -fpermissive to the compilation flags
-
-Continue up_setjmp() issues:
-
-  With some newer compilers, I am now getting segmentation faults in
-  up_setjmp.S (even when built with the -m32 option).  I have not looked into
-  this yet.
 
 Stack Size Issues
 -----------------
@@ -151,13 +136,6 @@ steps for increasing the stack size in that case:
   cd ../apps/builtin    # Go to the builtin apps directory
   vi builtin_list.h     # Edit this file and increase the stack size of the add-on
   rm .built *.o         # This will force the builtin apps logic to rebuild
-
-Buffered I/O Issues
--------------------
-The simulated serial driver has some odd behavior.  It will stall for a long time
-on reads when the C stdio buffers are being refilled. This only effects the behavior
-of things like fgetc().  Workaround: Set CONFIG_STDIO_BUFFER_SIZE=0, suppressing
-all C buffered I/O.
 
 Networking Issues
 -----------------
@@ -262,6 +240,11 @@ mtdpart
   This is the apps/examples/mtdpart test using a MTD RAM driver to
   simulate the FLASH part.
 
+mtdrwb
+
+  This is the apps/examples/mtdrwb test using a MTD RAM driver to
+  simulate the FLASH part.
+
 nettest
 
   Configures to use apps/examples/nettest.  This configuration
@@ -270,13 +253,13 @@ nettest
   NOTES:
 
   1. The NuttX network is not, however, functional on the Linux TAP
-    device yet.
+     device yet.
 
-    UPDATE:  The TAP device does apparently work according to a NuttX
-    user (provided that it is not used with NSH: NSH waits on readline()
-    for console input.  When it calls readline(), the whole system blocks
-    waiting from input from the host OS).  My failure to get the TAP
-    device working appears to have been a cockpit error.
+     UPDATE:  The TAP device does apparently work according to a NuttX
+     user (provided that it is not used with NSH: NSH waits on readline()
+     for console input.  When it calls readline(), the whole system blocks
+     waiting from input from the host OS).  My failure to get the TAP
+     device working appears to have been a cockpit error.
 
   2. As of NuttX-5.18, when built on Windows, this test does not try
      to use the TAP device (which is not available on Cygwin anyway),
@@ -452,15 +435,15 @@ nx11
        CONFG_NX_MULTIUSER=y
        CONFIG_DISABLE_MQUEUE=n
 
-   6. apps/examples/nxconsole
+   6. apps/examples/nxterm
 
-      This configuration is also set up to use the apps/examples/nxconsole
+      This configuration is also set up to use the apps/examples/nxterm
       test instead of apps/examples/nx.  To enable this configuration,
       First, select Multi-User mode as described above.  Then add the
       following definitions to the defconfig file:
 
-       -CONFIG_NXCONSOLE=n
-       +CONFIG_NXCONSOLE=y
+       -CONFIG_NXTERM=n
+       +CONFIG_NXTERM=y
 
        -CONFIG_NX_MULTIUSER=n
        +CONFIG_NX_MULTIUSER=y
@@ -468,8 +451,8 @@ nx11
        -CONFIG_EXAMPLES_NX=y
        +CONFIG_EXAMPLES_NX=n
 
-       -CONFIG_EXAMPLES_NXCONSOLE=n
-       +CONFIG_EXAMPLES_NXCONSOLE=y
+       -CONFIG_EXAMPLES_NXTERM=n
+       +CONFIG_EXAMPLES_NXTERM=y
 
      See apps/examples/README.txt for further details.
 
@@ -501,7 +484,7 @@ nxwm
 
   1. There is an issue with running this example under the
      simulation.  In the default configuration, this example will
-     run the NxConsole example which waits on readline() for console
+     run the NxTerm example which waits on readline() for console
      input.  When it calls readline(), the whole system blocks
      waiting from input from the host OS.  So, in order to get
      this example to run, you must comment out the readline call in
@@ -539,6 +522,12 @@ nxwm
           }
 
         /* Clean up */
+
+     UPDATE:  I recently implemented a good UART simulation to driver
+     the serial console.  So I do not believe that problem exists and
+     I think that the above workaround should no longer be necessary.
+     However, I will leave the above text in place until I get then
+     oppotunity to verify that the new UART simulation fixes the problem.
 
 ostest
 

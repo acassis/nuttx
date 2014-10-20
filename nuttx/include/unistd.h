@@ -146,6 +146,8 @@ int     fsync(int fd);
 off_t   lseek(int fd, off_t offset, int whence);
 ssize_t read(int fd, FAR void *buf, size_t nbytes);
 ssize_t write(int fd, FAR const void *buf, size_t nbytes);
+ssize_t pread(int fd, FAR void *buf, size_t nbytes, off_t offset);
+ssize_t pwrite(int fd, FAR const void *buf, size_t nbytes, off_t offset);
 
 /* Memory management */
 
@@ -173,12 +175,6 @@ int     rmdir(FAR const char *pathname);
 #ifdef CONFIG_LIBC_EXECFUNCS
 int     execl(FAR const char *path, ...);
 int     execv(FAR const char *path, FAR char *const argv[]);
-
-/* Non-standard functions to manage symbol tables */
-
-struct symtab_s; /* See include/nuttx/binfmt/symtab.h */
-void exec_getsymtab(FAR const struct symtab_s **symtab, FAR int *nsymbols);
-void exec_setsymtab(FAR const struct symtab_s *symtab, int nsymbols);
 #endif
 
 /* Other */

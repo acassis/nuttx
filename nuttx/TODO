@@ -1,4 +1,4 @@
-NuttX TODO List (Last updated August 18, 2014)
+NuttX TODO List (Last updated October 10, 2014)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This file summarizes known NuttX bugs, limitations, inconsistencies with
@@ -9,21 +9,21 @@ board port.
 nuttx/
 
   (9)  Task/Scheduler (sched/)
-  (2)  Memory Managment (mm/)
+  (1)  Memory Managment (mm/)
   (3)  Signals (sched/, arch/)
   (2)  pthreads (sched/)
- (11)  Kernel Build
+  (8)  Kernel/Protected Builds
   (4)  C++ Support
   (6)  Binary loaders (binfmt/)
  (13)  Network (net/, drivers/net)
   (4)  USB (drivers/usbdev, drivers/usbhost)
  (10)  Libraries (libc/, )
- (13)  File system/Generic drivers (fs/, drivers/)
+ (12)  File system/Generic drivers (fs/, drivers/)
   (6)  Graphics subystem (graphics/)
   (1)  Pascal add-on (pcode/)
   (1)  Documentation (Documentation/)
-  (5)  Build system / Toolchains
-  (5)  Linux/Cywgin simulation (arch/sim)
+  (2)  Build system / Toolchains
+  (3)  Linux/Cywgin simulation (arch/sim)
   (4)  ARM (arch/arm/)
   (1)  ARM/C5471 (arch/arm/src/c5471/)
   (3)  ARM/DM320 (arch/arm/src/dm320/)
@@ -32,8 +32,8 @@ nuttx/
   (7)  ARM/LPC214x (arch/arm/src/lpc214x/)
   (2)  ARM/LPC313x (arch/arm/src/lpc313x/)
   (0)  ARM/LPC43x (arch/arm/src/lpc43xx/)
-  (3)  ARM/STR71x (arch/arm/src/str71x/)
-  (3)  ARM/LM3S6918 (arch/arm/src/lm/)
+  (2)  ARM/STR71x (arch/arm/src/str71x/)
+  (2)  ARM/LM3S6918 (arch/arm/src/tiva/)
   (x)  ARM/SAMA5D3 ((arch/arm/src/sama5/)
   (5)  ARM/STM32 (arch/arm/src/stm32/)
   (3)  AVR (arch/avr)
@@ -48,9 +48,9 @@ nuttx/
 apps/
 
   (4)  Network Utilities (apps/netutils/)
-  (3)  NuttShell (NSH) (apps/nshlib)
+  (2)  NuttShell (NSH) (apps/nshlib)
   (1)  System libraries apps/system (apps/system)
-  (5)  Other Applications & Tests (apps/examples/)
+  (4)  Other Applications & Tests (apps/examples/)
 
 o Task/Scheduler (sched/)
   ^^^^^^^^^^^^^^^^^^^^^^^
@@ -225,12 +225,6 @@ o Memory Managment (mm/)
   Priority:    Medium/Low, a good feature to prevent memory leaks but would
                have negative impact on memory usage and code size.
 
-  Title:       KERNEL MODE PAGE ALLOCATOR
-  Description: The KERNEL mode build for platforms with an MMU really needs
-               a page-oriented allocator and support for sbrk() and brk()
-  Status:      Open
-  Priority:    Low
-
 o Signals (sched/, arch/)
   ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -238,7 +232,7 @@ o Signals (sched/, arch/)
   Description: 'Standard' signals and signal actions are not supported.
                (e.g., SIGINT, SIGSEGV, etc).
 
-               Update:  SIG_CHLD is supported if so configured.
+               Update:  SIGCHLD is supported if so configured.
   Status:      Open.  No changes are planned.
   Priority:    Low, required by standards but not so critical for an
                embedded system.
@@ -326,26 +320,17 @@ o pthreads (sched/)
                solution. So I discarded a few hours of programming. Not a
                big loss from the experience I gained."
 
-o Kernel Build
-  ^^^^^^^^^^^^
-
-  Title:       GRAPHICS PARTITIONING.
-  Description: In the kernel build mode (where NuttX is built as a monolithic
-               kernel and user code must trap into the protected kernel via
-               syscalls), the single user mode cannot be supported.  In this
-               built configuration, only the multiple user mode can be supported
-               with the NX server residing inside of the kernel space.
-  Status:      Closed.  This is not a bug, this is just way the things are.
-  Priority:    N/A.
+o Kernel/Protected Build
+  ^^^^^^^^^^^^^^^^^^^^^^
 
   Title:       NSH PARTITIONING.
   Description: There are issues with several NSH commands in the NuttX kernel
-               build mode (where NuttX is built as a monolithic kernel and
-               user code must trap into the protected kernel via syscalls).
-               The current NSH implementation has several commands that call
-               directly into kernel internel functions for whicht there is
-               no syscall available.  The commands cause link failures in
-               the kernel build mode and must currently be disabled.
+               and protected build modes (where NuttX is built as a monolithic
+               kernel and user code must trap into the protected kernel via
+               syscalls). The current NSH implementation has several commands
+               that call  directly into kernel internal functions for which
+               there is no syscall available.  The commands cause link failures
+               in the kernel/protected build mode and must currently be disabled.
                Here are known problems that must be fixed:
 
                COMMAND  KERNEL INTERFACE(s)
@@ -374,31 +359,24 @@ o Kernel Build
 
   Title:       TELNETD PARTITIONING.
   Description: Telnetd is implemented as a driver that resides in the apps/
-               directory.  In the kernel build, mode, the driver logic must
-               be moved into the kernel part of the build (nuttx/, although
-               the application level interfaces must stay in apps/).
+               directory.  In the kernel/protected build modes, the driver
+               logic must be moved into the kernel part of the build (nuttx/,
+               although the application level interfaces must stay in apps/).
   Status:      Open
   Priority:    Medium
 
-  Title:       NxCONSOLE PARTITIONING.
-  Description: NxConsole is implemented (correctly) as a driver that resides
+  Title:       NxTERM PARTITIONING.
+  Description: NxTerm is implemented (correctly) as a driver that resides
                in the nuttx/ directory.  However, the user interfaces must be
                moved into a NuttX library or into apps/.  Currently
-               applications calls to the NxConsole user interfaces are
+               applications calls to the NxTerm user interfaces are
                undefined.
   Status:      Open
   Priority:    Medium
 
-  Title:       LOAD-ABLE MODULE SUPPORT UNVERIFIED
-  Description: It has not been verified if NXFLAT and ELF modules work correctly
-               in the kernel build.  They should load into user-space memory.
-  Status:      Open
-  Priority:    Medium.  There is no configuration that uses NXFLAT or ELF with
-               a kernel build now.
-
-  Title:       C++ CONSTRUCTORS HAVE TOO MANY PRIVILEGES
+  Title:       C++ CONSTRUCTORS HAVE TOO MANY PRIVILEGES (PROTECTED MODE)
   Description: When a C++ ELF module is loaded, its C++ constructors are called
-               via sched/task_starthook.c logic.  This logic runs in kernel mode.
+               via sched/task_starthook.c logic.  This logic runs in protected mode.
                The is a security hole because the user code runs with kernel-
                privileges when the constructor executes.
 
@@ -445,24 +423,18 @@ o Kernel Build
                "This one would be easy: Just a change to include/nuttx/userspace.h,
                 configs/*/kernel/up_userspace.c, libc/, sched/sched_addreadytorun.c, and
                 sched/sched_removereadytorun.c. That would eliminate 59% of the syscalls."
+
+               Update:
+               This is probably also just a symptom of the OS test that does mostly
+               console output.  The requests for the pid() are part of the
+               implementation of the I/O's re-entrant semaphore implementation and
+               would not be an issue in the more general case.
   Status:      Open
   Priority:    Low-Medium.  Right now, I do not know if these syscalls are a
                real performance issue or not.  The above statistics were collected
                from a an atypical application (the OS test), and does an excessive
                amount of console output.  There is probably no issue with more typical
                embedded applications.
-
-  Title:       ARMv6/7-M SYSCALL PERFORMANCE IMPROVEMENT
-  Description: Currently the code issues an SVCall to go from user- to kernel-mode
-               and another go return to user-mode.  The second is unnecessary:
-               If there were a stub in user-space that just set the unprivileged
-               mode in the CONTROL register and returned, then the dispatch_syscall()
-               function could just jump to the stub instead of using second SVCall.
-               Hmmm... would this expose a security whole by executing in user-space
-               with privileges?  That already happens when the userspace memory
-               allocators are called.
-  Status:      Open
-  Priority:    Low (unless performance becomes an issue).
 
   Title:       SECURITY ISSUES
   Description: In the current designed, the kernel code calls into the user-space
@@ -654,7 +626,7 @@ o Binary loaders (binfmt/)
   Status:      Open
   Priority:    Medium-High
 
-  Title:       READ-ONLY DATA IN RAM
+  Title:       NXFLAT READ-ONLY DATA IN RAM
   Description: At present, all .rodata must be put into RAM.  There is a
                tentative design change that might allow .rodata to be placed
                in FLASH (see Documentation/NuttXNxFlat.html).
@@ -1125,12 +1097,6 @@ o File system / Generic drivers (fs/, drivers/)
   Status:      Open
   Priority:    Medium-Low
 
-  Title:       READ-AHEAD/WRITE BUFFER UNTESTED
-  Description: Block driver read-ahead buffer and write buffer support is
-               implemented but not yet tested.
-  Status:      Open
-  Priority:    Low
-
   Title:       SDIO-BASED SD READ-AHEAD/WRITE BUFFERING INCOMPLETE
   Description: The drivers/mmcsd/mmcsd_sdio.c driver has hooks in place to
                support read-ahead buffering and write buffering, but the logic
@@ -1150,14 +1116,6 @@ o File system / Generic drivers (fs/, drivers/)
                may be an assertion that is occurring before we have a console.
   Status:      Open
   Priority:    Medium
-
-  Title :      USE VFS TO MANAGE NAMED MESSAGE QUEUES AND NAMED SEMAPHORES
-  Description: Currently redundant namespace management logic is use for named
-               message queues and semaphores.  Named semaphore management should
-               be consolidated in the VFS.  Perhaps in /ipc/mqueue and /ipc/sem.
-  Status:      Open
-  Priority:    Low.  Nothing is broken.  This is an enhancement that would
-               improve the OS design and possibly reduce some FLASH usage
 
   Title:       UNIFIED DESCRIPTOR REPRESENTATION
   Descripton:  There are two separate ranges of descriptors for file and
@@ -1205,7 +1163,23 @@ o File system / Generic drivers (fs/, drivers/)
   Status:      Open
   Priority:    Medium
 
-o Graphics subystem (graphics/)
+  Title:       ASYNCHRONOUS I/O DOES NOT WORK WITH SOCKETS
+  Description: The current asynchronous I/O logic will only work with
+               file descriptions.  If given a socket descriptor, the
+               AIO interfaces will fail with EBADF.  The existing logic
+               should be extended to handle socket descriptors.
+
+               This should be an easy fix:  There could have to be a
+               tagged union of a struct file and struct socket in the
+               AIO container and the worker logic would have to select
+               the correct low-level, internal interface.  There would
+               be no lseek'ing on sockets.
+
+  Status:      Open
+  Priority:    Pretty high because this limits the usefulness of the
+               AIO implementation.
+
+o Graphics subsystem (graphics/)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   See also the NxWidgets TODO list file for related issues.
@@ -1248,20 +1222,20 @@ o Graphics subystem (graphics/)
   Status:      Open
   Priority:    Medium low
 
-  Title:       IMPROVED NXCONSOLE FONT CACHING
-  Description: Now each NxConsole instance has its own private font cache
-               whose size is determined by CONFIG_NXCONSOLE_MXCHARS.  If there
-               are multiple NxConsole instances using the same font, each will
+  Title:       IMPROVED NxTERM FONT CACHING
+  Description: Now each NxTerm instance has its own private font cache
+               whose size is determined by CONFIG_NXTERM_MXCHARS.  If there
+               are multiple NxTerm instances using the same font, each will
                have a separate font cache.  This is inefficient and wasteful
-               of memory:  Each NxConsole instance should share a common font
+               of memory:  Each NxTerm instance should share a common font
                cache.
   Status:      Open
   Priority:    Medium.  Not important for day-to-day testing but would be
-               a critical improvement if NxConsole were to be used in a
+               a critical improvement if NxTerm were to be used in a
                product.
 
-  Title:       NXCONSOLE VT100 SUPPORT
-  Description: If the NxConsole will be used with the Emacs-like command line
+  Title:       NxTERM VT100 SUPPORT
+  Description: If the NxTerm will be used with the Emacs-like command line
                editor (CLE), then it will need to support VT100 cursor control
                commands.
   Status:      Open
@@ -1281,6 +1255,12 @@ o Pascal Add-On (pcode/)
   Status:      Open
   Priority:    Medium
 
+  Title:       PDBG
+  Description: Move the the pascal p-code debugger into the NuttX apps/ tree
+               where it can be used from the NSH command line.
+  Status:      Open
+  Priority:    Low
+
 o Documentation (Documentation/)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1293,27 +1273,6 @@ o Documentation (Documentation/)
 o Build system
   ^^^^^^^^^^^^
 
-  Title:       NUTTX CONFIGURATION TOOL
-  Description: Need a NuttX configuration tool.  The number of configuration
-               settings has become quite large and difficult to manage manually.
-               Update:  This task is essentially completed.  But probably not for
-               all platforms and all features.  When do we know that the feature
-               is complete and that we can switch to exclusive use of the tool?
-  Status:      Open
-  Priority:    Medium-low
-
-  Title:       NATIVE WINDOWS BUILD
-  Description: This effort is underway using MinGW-GCC and GNUWin32 tools
-               for (coreutils+make+grep+sed+uname).  Current status:
-
-               1. configs/stm32f4discovery/winbuild - builds okay natively
-               2. configs/ez80f910200kitg - Can be reconfigured to build natively.
-                  Requires some manual intervention to get a clean build.
-                  See configs/ez80f910200kitg/README.txt.
-
-  Status:      Open
-  Priority:    Low
-
   Title:       WINDOWS DEPENDENCY GENERATION
   Description: Dependency generation is currently disabled when a Windows native
                toolchain is used in a POSIX-like environment (like Cygwin).  The
@@ -1323,29 +1282,6 @@ o Build system
                dependencies needed to be quoted in the Make.dep files.
   Status:      Open
   Priority:    Low -- unless some dependency-related build issues is discovered.
-
-  Title:       SETENV.H
-  Description: Logic in most setenv.sh files can create the following problem
-               on many platforms:
-
-                 $ . ./setenv.sh
-                 basename: invalid option -- 'b'
-                 Try `basename --help' for more information.
-
-               The problem is that $0 is the current running shell which may include
-               a dash in front:
-
-                 $ echo $0
-                 -bash
-
-               But often is just /bin/bash (and the problem does not occur.  The fix
-               is:
-
-                 -if [ "$(basename $0)" = "setenv.sh" ]; then
-                 +if [ "$_" = "$0" ] ; then
-  Status:      Open
-  Priority:    Low.  Use of setenv.sh is optional and most platforms do not have
-               this problem.  Scripts will be fixed one-at-a-time as is appropriate.
 
   Title:       MAKE EXPORT LIMITATIONS
   Description: The top-level Makefile 'export' target that will bundle up all of the
@@ -1363,15 +1299,6 @@ o Build system
 o Linux/Cywgin simulation (arch/sim)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  Title:       SIMULATED SERIAL DRIVER
-  Description: The simulated serial driver has some odd behavior.  It
-               will stall for a long time on reads when the C stdio buffers are
-               being refilled. This only effects the behavior of things like
-               fgetc().  Workaround: Set CONFIG_STDIO_BUFFER_SIZE=0, suppressing
-               all C buffered I/O.
-  Status:      Open
-  Priority:    Low (because the simulator is only a test/development platform)
-
   Title:       SIMULATOR NETWORKING SUPPORT
   Description: I never did get networking to work on the sim Linux target.  On Linux,
                it tries to use the tap device (/dev/net/tun) to emulate an Ethernet
@@ -1380,6 +1307,20 @@ o Linux/Cywgin simulation (arch/sim)
                least, partially functional (it has never been rigorously tested).
   Status:      Open
   Priority:    Low (unless you want to test networking features on the simulation).
+
+  Title:       SIMULATOR HAS NO INTERRUPTS (NON-PREMPTIBLE)
+  Description: The current simulator implementation is has no interrupts and, hence,
+               is non-preemptible.  Also, without simulated interrutps, there can
+               be no high-fidelity simulated device drivers.
+
+               Currently, all timing and serial input is simulated in the IDLE loop:
+               When nothing is going on in the simulation, the IDLE loop runs and
+               fakes timer and UART events.
+  Status:      Open
+  Priority:    Low, unless there is a need for developing a higher fidelity simulation
+               I have been thinking about how to implement simulated interrupts in
+               the simulation.  I think a solution would work like this:
+               http://www.nuttx.org/doku.php?id=wiki:nxinternal:simulator
 
   Title:       ROUND-ROBIN SCHEDULING IN THE SIMULATOR
   Description: Since the simulation is not pre-emptible, you can't use round-robin
@@ -1391,27 +1332,6 @@ o Linux/Cywgin simulation (arch/sim)
                irqrestore() to block and (conditionally) unblock the signal.
   Status:      Open
   Priority:    Low
-
-  Title:       NSH ISSUES ON THE SIMULATOR
-  Descripion:  The NSH example has some odd behaviors.  Mult-tasking -- for example,
-               execution of commands in background -- does not work normally.  This
-               is due to the fact that NSH uses the system standard input for the
-               console.  This means that the simulation is actually "frozen" all of
-               the time when NSH is waiting for input and background commands never
-               get the chance to run.
-  Status:      Open
-  Priority:    This will not be fixed.  This is the normal behavior in the current
-               design of the simulator.  "Real" platforms will behave correctly
-               because NSH will "sleep" when it waits for console inpu and other
-               tasks can run freely.
-
-  Title:       DOUBLE COMMAND ECHO
-  Description: In the NSH example, the host HOST echoes each command so after you
-               you enter a command, the command is repeated on the next line.  This
-               is an artifact of the simulator only.
-  Status:      Open
-  Priority:    This will not be fixed.  This is the normal behavior in the current
-               design of the simulator.  "Real" platforms will behave correctly.
 
 o ARM (arch/arm/)
   ^^^^^^^^^^^^^^^
@@ -1439,7 +1359,7 @@ o ARM (arch/arm/)
   Priority:    Low
 
   Title:       CORTEX-M3 STACK OVERFLOW
-  Description: There is bit bit logic inf up_fullcontextrestore() that executes on
+  Description: There is bit bit logic in up_fullcontextrestore() that executes on
                return from interrupts (and other context switches) that looks like:
 
                  ldr r1, [r0, #(4*REG_CPSR)] /* Fetch the stored CPSR value */
@@ -1687,24 +1607,13 @@ o ARM/STR71x (arch/arm/src/str71x/)
   Status:      Open
   Priority:    Medium
 
-  Title:       NO USB DRIVER
-  Description: Develop a USB driver and integrate with existing USB serial and storage
-               class drivers.
-  Status:      Open
-  Priority:    Medium
-
   Title:       SPI METHODS ARE NOT THREAD SAFE
   Description: SPI methods are not thread safe.  Needs a semaphore to protect from re-entrancy.
   Status:      Open
   Priority:    Medium -- Will be very high if you do SPI access from multiple threads.
 
-o ARM/LM3S6918 (arch/arm/src/lm/)
+o ARM/LM3S6918 (arch/arm/src/tiva/)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  Title:       I2C DRIVER
-  Description: Still need to implement I2C
-  Status:      Open
-  Priority:    Low
 
   Title:       SSI OVERRUNS
   Description: Should terminate SSI/SPI transfer if an Rx FIFO overrun occurs.
@@ -1720,7 +1629,7 @@ o ARM/LM3S6918 (arch/arm/src/lm/)
   Status:      Open.
                UPDATE: I have found that increasing the size of the CGI program stack
                from 1024 to 2048 (on the LM3S) eliminates the problem.  So the most
-               likely cause is probably a stack overflow, not a hard sofware bug.
+               likely cause is probably a stack overflow, not a hard software bug.
   Priority:    Probably Low
 
 o ARM/SAMA5D3 ((arch/arm/src/sama5/)
@@ -2241,15 +2150,6 @@ o Network Utilities (apps/netutils/)
 o NuttShell (NSH) (apps/nshlib)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  Title:       WGET UNTESTED
-  Description: The wget command has been incorporated into NSH, however
-               it is still untested as of this writing (only because I
-               have not had the correct network setup for the testing
-               yet).  Since wget depends on the also untest uIP resolv/
-               logic, it is like non-functional.
-  Status:      Open
-  Priority:    Med-High
-
   Title:       IFCONFIG AND MULTIPLE NETWORK INTERFACES
   Descripton:  The ifconfig command will not behave correctly if an interface
                is provided and there are multiple interfaces.  It should only
@@ -2286,12 +2186,6 @@ o Other Applications & Tests (apps/examples/)
                fine on the Linux-based simulation platform).
   Status:      Open
   Priority:    Low
-
-  Title:       EXAMPLES/WGET UNTESTED
-  Description: examples/wget is untested on the target (it has been tested
-               on the host, but not in the target using the uIP resolv logic).
-  Status:      Open
-  Priority:    Med
 
   Title:       EXAMPLES/SENDMAIL UNTESTED
   Description: examples/sendmail is untested on the target (it has been tested

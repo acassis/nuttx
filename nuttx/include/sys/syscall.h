@@ -80,33 +80,42 @@
 #define SYS_sched_setscheduler         (CONFIG_SYS_RESERVED+10)
 #define SYS_sched_unlock               (CONFIG_SYS_RESERVED+11)
 #define SYS_sched_yield                (CONFIG_SYS_RESERVED+12)
-#define SYS_sem_close                  (CONFIG_SYS_RESERVED+13)
+#define SYS_set_errno                  (CONFIG_SYS_RESERVED+13)
+
+/* Semaphores */
+
 #define SYS_sem_destroy                (CONFIG_SYS_RESERVED+14)
-#define SYS_sem_open                   (CONFIG_SYS_RESERVED+15)
-#define SYS_sem_post                   (CONFIG_SYS_RESERVED+16)
-#define SYS_sem_timedwait              (CONFIG_SYS_RESERVED+17)
-#define SYS_sem_trywait                (CONFIG_SYS_RESERVED+18)
-#define SYS_sem_unlink                 (CONFIG_SYS_RESERVED+19)
-#define SYS_sem_wait                   (CONFIG_SYS_RESERVED+20)
-#define SYS_set_errno                  (CONFIG_SYS_RESERVED+21)
+#define SYS_sem_post                   (CONFIG_SYS_RESERVED+15)
+#define SYS_sem_timedwait              (CONFIG_SYS_RESERVED+16)
+#define SYS_sem_trywait                (CONFIG_SYS_RESERVED+17)
+#define SYS_sem_wait                   (CONFIG_SYS_RESERVED+18)
+
+/* Named semaphores */
+
+#ifdef CONFIG_FS_NAMED_SEMAPHORES
+#  define SYS_sem_open                 (CONFIG_SYS_RESERVED+19)
+#  define SYS_sem_close                (CONFIG_SYS_RESERVED+20)
+#  define SYS_sem_unlink               (CONFIG_SYS_RESERVED+21)
+#  define __SYS_task_create            (CONFIG_SYS_RESERVED+22)
+#else
+#  define __SYS_task_create            (CONFIG_SYS_RESERVED+19)
+#endif
 
 /* Task creation APIs based on global entry points cannot be use with
  * address environments.
  */
 
-#ifndef CONFIG_ARCH_ADDRENV
-#  define SYS_task_create              (CONFIG_SYS_RESERVED+22)
-#  define __SYS_task_delete            (CONFIG_SYS_RESERVED+23)
+#ifndef CONFIG_BUILD_KERNEL
+#  define SYS_task_create              __SYS_task_create
+#  define __SYS_task_delete            (__SYS_task_create+1)
 
 /* pgalloc() is only available with address environments with the page
  * allocator selected.  MMU support from the CPU is also required.
  */
 
-#elif defined(CONFIG_MM_PGALLOC) && defined(CONFIG_ARCH_USE_MMU)
-#  define SYS_pgalloc                  (CONFIG_SYS_RESERVED+22)
-#  define __SYS_task_delete            (CONFIG_SYS_RESERVED+23)
 #else
-#  define __SYS_task_delete            (CONFIG_SYS_RESERVED+22)
+#  define SYS_pgalloc                  __SYS_task_create
+#  define __SYS_task_delete            (__SYS_task_create+1)
 #endif
 
 #  define SYS_task_delete              __SYS_task_delete
@@ -142,29 +151,28 @@
 #  ifdef CONFIG_SCHED_HAVE_PARENT
 #    define SYS_wait                   (__SYS_waitpid+1)
 #    define SYS_waitid                 (__SYS_waitpid+2)
-#    define __SYS_posixspawn           (__SYS_waitpid+3)
+#    define __SYS_posix_spawn          (__SYS_waitpid+3)
 #  else
-#    define __SYS_posixspawn           (__SYS_waitpid+1)
+#    define __SYS_posix_spawn          (__SYS_waitpid+1)
 #endif
 #else
-#  define __SYS_posixspawn             __SYS_waitpid
+#  define __SYS_posix_spawn            __SYS_waitpid
 #endif
 
 /* The following can only be defined if we are configured to execute
  * programs from a file system.
  */
 
-#if defined(CONFIG_BINFMT_DISABLE) && defined(CONFIG_LIBC_EXECFUNCS)
+#if !defined(CONFIG_BINFMT_DISABLE) && defined(CONFIG_LIBC_EXECFUNCS)
 #  ifdef CONFIG_BINFMT_EXEPATH
-#    define SYS_posixspawnp            __SYS_posixspawn
+#    define SYS_posix_spawnp           __SYS_posix_spawn
 #  else
-#    define SYS_posixspawn             __SYS_posixspawn
+#    define SYS_posix_spawn            __SYS_posix_spawn
 #  endif
-#  define SYS_execv                    (__SYS_posixspawn+1)
-#  define SYS_execl                    (__SYS_posixspawn+2)
-#  define __SYS_signals                (__SYS_posixspawn+3)
+#  define SYS_execv                    (__SYS_posix_spawn+1)
+#  define __SYS_signals                (__SYS_posix_spawn+2)
 #else
-#  define __SYS_signals                __SYS_posixspawn
+#  define __SYS_signals                __SYS_posix_spawn
 #endif
 
 /* The following are only defined is signals are supported in the NuttX
@@ -224,12 +232,23 @@
 #  define SYS_ioctl                    (__SYS_descriptors+1)
 #  define SYS_read                     (__SYS_descriptors+2)
 #  define SYS_write                    (__SYS_descriptors+3)
-#  ifndef CONFIG_DISABLE_POLL
-#    define SYS_poll                   (__SYS_descriptors+4)
-#    define SYS_select                 (__SYS_descriptors+5)
-#    define __SYS_filedesc             (__SYS_descriptors+6)
+#  define SYS_pread                    (__SYS_descriptors+4)
+#  define SYS_pwrite                   (__SYS_descriptors+5)
+#  ifdef CONFIG_FS_AIO
+#    define SYS_aio_read               (__SYS_descriptors+6)
+#    define SYS_aio_write              (__SYS_descriptors+7)
+#    define SYS_aio_fsync              (__SYS_descriptors+8)
+#    define SYS_aio_cancel             (__SYS_descriptors+9)
+#    define __SYS_poll                 (__SYS_descriptors+10)
 #  else
-#    define __SYS_filedesc             (__SYS_descriptors+4)
+#    define __SYS_poll                 (__SYS_descriptors+6)
+#  endif
+#  ifndef CONFIG_DISABLE_POLL
+#    define SYS_poll                   __SYS_poll
+#    define SYS_select                 (__SYS_poll+1)
+#    define __SYS_filedesc             (__SYS_poll+2)
+#  else
+#    define __SYS_filedesc             __SYS_poll
 #  endif
 #else
 #  define __SYS_filedesc               __SYS_descriptors
@@ -278,13 +297,25 @@
 #    define SYS_rmdir                  (__SYS_mountpoint+4)
 #    define SYS_umount                 (__SYS_mountpoint+5)
 #    define SYS_unlink                 (__SYS_mountpoint+6)
-#    define __SYS_pthread              (__SYS_mountpoint+7)
+#    define __SYS_shm                  (__SYS_mountpoint+7)
 #  else
-#    define __SYS_pthread              __SYS_mountpoint
+#    define __SYS_shm                  __SYS_mountpoint
 #  endif
 
 #else
-#  define __SYS_pthread                __SYS_filedesc
+#  define __SYS_shm                    __SYS_filedesc
+#endif
+
+/* Shared memory interfaces */
+
+#ifdef CONFIG_MM_SHM
+#    define SYS_shmget                 (__SYS_shm+0)
+#    define SYS_shmat                  (__SYS_shm+1)
+#    define SYS_shmctl                 (__SYS_shm+2)
+#    define SYS_shmdt                  (__SYS_shm+3)
+#    define __SYS_pthread              (__SYS_shm+4)
+#else
+#  define __SYS_pthread                __SYS_shm
 #endif
 
 /* The following are defined if pthreads are enabled */

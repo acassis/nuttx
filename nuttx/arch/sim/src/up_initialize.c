@@ -1,7 +1,7 @@
 /****************************************************************************
- * up_initialize.c
+ * arch/sim/src/up_initialize.c
  *
- *   Copyright (C) 2007-2009, 2011-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,12 +43,14 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/fs/fs.h>
+#include <nuttx/fs/ioctl.h>
+#include <nuttx/mtd/mtd.h>
 #include <nuttx/syslog/ramlog.h>
 
 #include "up_internal.h"
 
 /****************************************************************************
- * Private Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************
@@ -58,6 +60,32 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************
+ * Name: up_init_smartfs
+ *
+ * Description:
+ *   Initialize a simulated SPI FLASH block device m25p MTD driver and bind
+ *   it to a SMART Flash block device.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_FS_SMARTFS) && defined(CONFIG_SIM_SPIFLASH)
+static void up_init_smartfs(void)
+{
+  FAR struct mtd_dev_s *mtd;
+  FAR struct spi_dev_s *spi;
+
+  /* Initialize a simulated SPI FLASH block device m25p MTD driver */
+
+  spi = up_spiflashinitialize();
+  mtd = m25p_initialize(spi);
+
+  /* Now initialize a SMART Flash block device and bind it to the MTD device */
+
+  smart_initialize(0, mtd, NULL);
+}
+#endif
 
 /****************************************************************************
  * Public Functions
@@ -91,12 +119,11 @@ void up_initialize(void)
    */
 
 #ifdef CONFIG_NET
-  syslog("SIM: Initializing");
+  syslog(LOG_INFO, "SIM: Initializing");
 #endif
 
-  /* Register devices */
-
 #if CONFIG_NFILE_DESCRIPTORS > 0
+  /* Register devices */
 
 #if defined(CONFIG_DEV_NULL)
   devnull_register();   /* Standard /dev/null */
@@ -108,9 +135,13 @@ void up_initialize(void)
 
 #endif /* CONFIG_NFILE_DESCRIPTORS */
 
+#if defined(USE_DEVCONSOLE)
+  /* Start the sumulated UART device */
+
+  simuart_start();
+
   /* Register a console (or not) */
 
-#if defined(USE_DEVCONSOLE)
   up_devconsole();          /* Our private /dev/console */
 #elif defined(CONFIG_RAMLOG_CONSOLE)
   ramlog_consoleinit();
@@ -129,5 +160,9 @@ void up_initialize(void)
 
 #ifdef CONFIG_NET
   netdriver_init();         /* Our "real" network driver */
+#endif
+
+#if defined(CONFIG_FS_SMARTFS) && defined(CONFIG_SIM_SPIFLASH)
+  up_init_smartfs();
 #endif
 }

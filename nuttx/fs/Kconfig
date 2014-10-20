@@ -48,6 +48,10 @@ config FS_WRITABLE
 	bool
 	default n
 
+source fs/aio/Kconfig
+source fs/semaphore/Kconfig
+source fs/mqueue/Kconfig
+source fs/shm/Kconfig
 source fs/mmap/Kconfig
 source fs/fat/Kconfig
 source fs/nfs/Kconfig
@@ -58,13 +62,6 @@ source fs/binfs/Kconfig
 source fs/procfs/Kconfig
 
 comment "System Logging"
-
-config SYSLOG_ENABLE
-	bool "Enable SYSLOG Controls"
-	default n
-	---help---
-		Support an interface called syslog_enable to dynamically enable or
-		disable SYSLOG output.  Default:  SYSLOG output is always enabled.
 
 config SYSLOG
 	bool "Advanced SYSLOG features"

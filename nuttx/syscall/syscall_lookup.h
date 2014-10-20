@@ -56,18 +56,27 @@ SYSCALL_LOOKUP(sched_setparam,            2, STUB_sched_setparam)
 SYSCALL_LOOKUP(sched_setscheduler,        3, STUB_sched_setscheduler)
 SYSCALL_LOOKUP(sched_unlock,              0, STUB_sched_unlock)
 SYSCALL_LOOKUP(sched_yield,               0, STUB_sched_yield)
-SYSCALL_LOOKUP(sem_close,                 1, STUB_sem_close)
+SYSCALL_LOOKUP(set_errno,                 1, STUB_set_errno)
+
+/* Semaphores */
+
 SYSCALL_LOOKUP(sem_destroy,               2, STUB_sem_destroy)
-SYSCALL_LOOKUP(sem_open,                  6, STUB_sem_open)
 SYSCALL_LOOKUP(sem_post,                  1, STUB_sem_post)
 SYSCALL_LOOKUP(sem_timedwait,             2, STUB_sem_timedwait)
 SYSCALL_LOOKUP(sem_trywait,               1, STUB_sem_trywait)
-SYSCALL_LOOKUP(sem_unlink,                1, STUB_sem_unlink)
 SYSCALL_LOOKUP(sem_wait,                  1, STUB_sem_wait)
-SYSCALL_LOOKUP(set_errno,                 1, STUB_set_errno)
-#ifndef CONFIG_ARCH_ADDRENV
+
+/* Named semaphores */
+
+#ifdef CONFIG_FS_NAMED_SEMAPHORES
+SYSCALL_LOOKUP(sem_open,                  6, STUB_sem_open)
+SYSCALL_LOOKUP(sem_close,                 1, STUB_sem_close)
+SYSCALL_LOOKUP(sem_unlink,                1, STUB_sem_unlink)
+#endif
+
+#ifndef CONFIG_BUILD_KERNEL
 SYSCALL_LOOKUP(task_create,               5, STUB_task_create)
-#elif defined(CONFIG_MM_PGALLOC) && defined(CONFIG_ARCH_USE_MMU)
+#else
 SYSCALL_LOOKUP(pgalloc,                   2, STUB_pgalloc)
 #endif
 SYSCALL_LOOKUP(task_delete,               1, STUB_task_delete)
@@ -77,7 +86,7 @@ SYSCALL_LOOKUP(up_assert,                 2, STUB_up_assert)
 /* The following can be individually enabled */
 
 #ifdef CONFIG_ARCH_HAVE_VFORK
-  SYSCALL_LOOKUP(vfork,                   0, SYS_vfork)
+  SYSCALL_LOOKUP(vfork,                   0, STUB_vfork)
 #endif
 
 #ifdef CONFIG_SCHED_ATEXIT
@@ -100,14 +109,13 @@ SYSCALL_LOOKUP(up_assert,                 2, STUB_up_assert)
  * programs from a file system.
  */
 
-#if defined(CONFIG_BINFMT_DISABLE) && defined(CONFIG_LIBC_EXECFUNCS)
+#if !defined(CONFIG_BINFMT_DISABLE) && defined(CONFIG_LIBC_EXECFUNCS)
 #  ifdef CONFIG_BINFMT_EXEPATH
-  SYSCALL_LOOKUP(posix_spawnp,            6, SYS_posixspawnp)
+  SYSCALL_LOOKUP(posix_spawnp,            6, STUB_posix_spawnp)
 #  else
-  SYSCALL_LOOKUP(posix_spawn,             6, SYS_posixspawn)
+  SYSCALL_LOOKUP(posix_spawn,             6, STUB_posix_spawn)
 #  endif
-  SYSCALL_LOOKUP(execv,                   2, SYS_execv)
-  SYSCALL_LOOKUP(execl,                   6, SYS_execl)
+  SYSCALL_LOOKUP(execv,                   2, STUB_execv)
 #endif
 
 /* The following are only defined is signals are supported in the NuttX
@@ -155,6 +163,14 @@ SYSCALL_LOOKUP(up_assert,                 2, STUB_up_assert)
   SYSCALL_LOOKUP(ioctl,                   3, STUB_ioctl)
   SYSCALL_LOOKUP(read,                    3, STUB_read)
   SYSCALL_LOOKUP(write,                   3, STUB_write)
+  SYSCALL_LOOKUP(pread,                   4, STUB_pread)
+  SYSCALL_LOOKUP(pwrite,                  4, STUB_pwrite)
+#  ifdef CONFIG_FS_AIO
+  SYSCALL_LOOKUP(aio_read,                1, SYS_aio_read)
+  SYSCALL_LOOKUP(aio_write,               1, SYS_aio_write)
+  SYSCALL_LOOKUP(aio_fsync,               2, SYS_aio_fsync)
+  SYSCALL_LOOKUP(aio_cancel,              2, SYS_aio_cancel)
+#  endif
 #  ifndef CONFIG_DISABLE_POLL
   SYSCALL_LOOKUP(poll,                    3, STUB_poll)
   SYSCALL_LOOKUP(select,                  5, STUB_select)
@@ -199,6 +215,15 @@ SYSCALL_LOOKUP(up_assert,                 2, STUB_up_assert)
   SYSCALL_LOOKUP(umount,                  1, STUB_umount)
   SYSCALL_LOOKUP(unlink,                  1, STUB_unlink)
 #  endif
+#endif
+
+/* Shared memory interfaces */
+
+#ifdef CONFIG_MM_SHM
+  SYSCALL_LOOKUP(shmget,                  3, STUB_shmget)
+  SYSCALL_LOOKUP(shmat,                   3, STUB_shmat)
+  SYSCALL_LOOKUP(shmctl,                  3, STUB_shmctl)
+  SYSCALL_LOOKUP(shmdt,                   1, STUB_shmdt)
 #endif
 
 /* The following are defined if pthreads are enabled */
@@ -291,5 +316,3 @@ SYSCALL_LOOKUP(up_assert,                 2, STUB_up_assert)
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-
-

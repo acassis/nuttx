@@ -47,7 +47,7 @@ MAINSRC = cxxtest_main.cxx
 AOBJS = $(ASRCS:.S=$(OBJEXT))
 COBJS = $(CSRCS:.c=$(OBJEXT))
 CXXOBJS = $(CXXSRCS:.cxx=$(OBJEXT))
-MAINOBJS = $(MAINSRC:.cxx=$(OBJEXT))
+MAINOBJ = $(MAINSRC:.cxx=$(OBJEXT))
 
 SRCS = $(ASRCS) $(CSRCS) $(CXXSRCS)
 OBJS = $(AOBJS) $(COBJS) $(CXXOBJS)
@@ -104,7 +104,7 @@ $(AOBJS): %$(OBJEXT): %.S
 $(COBJS): %$(OBJEXT): %.c
 	$(call COMPILE, $<, $@)
 
-$(CXXOBJS): %$(OBJEXT): %.cxx
+$(CXXOBJS) $(MAINOBJ): %$(OBJEXT): %.cxx
 	$(call COMPILEXX, $<, $@)
 
 .built: chkcxx $(OBJS)

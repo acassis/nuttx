@@ -78,7 +78,7 @@
 #  elif !defined(CONFIG_NX_DISABLE_16BPP)
 #    define CONFIG_EXAMPLES_NXTEXT_BPP 16
 //#elif !defined(CONFIG_NX_DISABLE_24BPP)
-//#    define CONFIG_NXCONSOLE_BPP 24
+//#    define CONFIG_NXTERM_BPP 24
 #  elif !defined(CONFIG_NX_DISABLE_32BPP)
 #    define CONFIG_EXAMPLES_NXTEXT_BPP 32
 #  else
@@ -187,26 +187,6 @@
 #  endif
 #  ifndef CONFIG_EXAMPLES_NXTEXT_NOTIFYSIGNO
 #    define CONFIG_EXAMPLES_NXTEXT_NOTIFYSIGNO 4
-#  endif
-#endif
-
-/* Debug ********************************************************************/
-
-#ifdef CONFIG_CPP_HAVE_VARARGS
-#  ifdef CONFIG_DEBUG
-#    define message(...) lowsyslog(__VA_ARGS__)
-#    define msgflush()
-#  else
-#    define message(...) printf(__VA_ARGS__)
-#    define msgflush() fflush(stdout)
-#  endif
-#else
-#  ifdef CONFIG_DEBUG
-#    define message lowsyslog
-#    define msgflush()
-#  else
-#    define message printf
-#    define msgflush() fflush(stdout)
 #  endif
 #endif
 

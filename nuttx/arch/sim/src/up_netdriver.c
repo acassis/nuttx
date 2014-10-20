@@ -59,7 +59,7 @@
 #include "up_internal.h"
 
 /****************************************************************************
- * Private Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 #define BUF ((struct ether_header*)g_sim_dev.d_buf)

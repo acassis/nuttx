@@ -39,6 +39,17 @@
 
 #include <nuttx/config.h>
 
+/* Output debug info if stack dump is selected -- even if debug is not
+ * selected.
+ */
+
+#ifdef CONFIG_ARCH_STACKDUMP
+# undef  CONFIG_DEBUG
+# undef  CONFIG_DEBUG_VERBOSE
+# define CONFIG_DEBUG 1
+# define CONFIG_DEBUG_VERBOSE 1
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -67,15 +78,6 @@
 
 #ifndef CONFIG_DEBUG
 #  undef CONFIG_DEBUG_STACK
-#endif
-
-/* Output debug info if stack dump is selected -- even if debug is not
- * selected.
- */
-
-#ifdef CONFIG_ARCH_STACKDUMP
-# undef  lldbg
-# define lldbg lowsyslog
 #endif
 
 /* The following is just intended to keep some ugliness out of the mainline
@@ -172,9 +174,22 @@ static inline void up_registerdump(void)
  ****************************************************************************/
 
 #ifdef CONFIG_ARCH_USBDUMP
-static int assert_tracecallback(struct usbtrace_s *trace, void *arg)
+static int usbtrace_syslog(FAR const char *fmt, ...)
 {
-  usbtrace_trprintf((trprintf_t)lowsyslog, trace->event, trace->value);
+  va_list ap;
+  int ret;
+
+  /* Let vsyslog do the real work */
+
+  va_start(ap, fmt);
+  ret = lowvsyslog(LOG_INFO, fmt, ap);
+  va_end(ap);
+  return ret;
+}
+
+static int assert_tracecallback(FAR struct usbtrace_s *trace, FAR void *arg)
+{
+  usbtrace_trprintf(usbtrace_syslog, trace->event, trace->value);
   return 0;
 }
 #endif
@@ -194,6 +209,9 @@ static void up_dumpstate(void)
   uint32_t istackbase;
   uint32_t istacksize;
 #endif
+#ifdef CONFIG_ARCH_KERNEL_STACK
+  uint32_t kstackbase = 0;
+#endif
 
   /* Get the limits on the user stack memory */
 
@@ -208,47 +226,23 @@ static void up_dumpstate(void)
       ustacksize = (uint32_t)rtcb->adj_stack_size;
     }
 
-  /* Get the limits on the interrupt stack memory */
+  lldbg("Current sp: %08x\n", sp);
 
 #if CONFIG_ARCH_INTERRUPTSTACK > 3
+  /* Get the limits on the interrupt stack memory */
+
   istackbase = (uint32_t)&g_intstackbase;
   istacksize = (CONFIG_ARCH_INTERRUPTSTACK & ~3);
 
   /* Show interrupt stack info */
 
-  lldbg("sp:     %08x\n", sp);
-  lldbg("IRQ stack:\n");
+  lldbg("Interrupt stack:\n");
   lldbg("  base: %08x\n", istackbase);
   lldbg("  size: %08x\n", istacksize);
 #ifdef CONFIG_DEBUG_STACK
   lldbg("  used: %08x\n", up_check_intstack());
 #endif
-
-  /* Does the current stack pointer lie within the interrupt
-   * stack?
-   */
-
-  if (sp > istackbase || sp <= istackbase - istacksize)
-    {
-      if (up_interrupt_context())
-        {
-          lldbg("ERROR: Stack pointer is not within interrupt stack\n");
-        }
-    }
-
-  if (sp <= istackbase && sp > istackbase - istacksize)
-    {
-      /* Yes.. dump the interrupt stack */
-
-      up_stackdump(sp, istackbase);
-
-      /* Extract the user stack pointer which should lie
-       * at the base of the interrupt stack.
-       */
-
-      sp = g_intstackbase;
-      lldbg("sp:     %08x\n", sp);
-    }
+#endif
 
   /* Show user stack info */
 
@@ -259,32 +253,59 @@ static void up_dumpstate(void)
   lldbg("  used: %08x\n", up_check_tcbstack(rtcb));
 #endif
 
-#else
-  lldbg("sp:         %08x\n", sp);
-  lldbg("stack base: %08x\n", ustackbase);
-  lldbg("stack size: %08x\n", ustacksize);
-#ifdef CONFIG_DEBUG_STACK
-  lldbg("stack used: %08x\n", up_check_tcbstack(rtcb));
+#ifdef CONFIG_ARCH_KERNEL_STACK
+  /* This this thread have a kernel stack allocated? */
+
+  if (rtcb->xcp.kstack)
+    {
+      kstackbase = (uint32_t)rtcb->xcp.kstack + CONFIG_ARCH_KERNEL_STACKSIZE - 4;
+
+      lldbg("Kernel stack:\n");
+      lldbg("  base: %08x\n", kstackbase);
+      lldbg("  size: %08x\n", CONFIG_ARCH_KERNEL_STACKSIZE);
+    }
 #endif
+
+#if CONFIG_ARCH_INTERRUPTSTACK > 3
+  /* Does the current stack pointer lie within the interrupt stack? */
+
+  if (sp > istackbase - istacksize && sp < istackbase)
+    {
+      /* Yes.. dump the interrupt stack */
+
+      lldbg("Interrupt Stack\n", sp);
+      up_stackdump(sp, istackbase);
+
+      /* Extract the user stack pointer which should lie
+       * at the base of the interrupt stack.
+       */
+
+      sp = g_intstackbase;
+      lldbg("User sp: %08x\n", sp);
+    }
 #endif
 
   /* Dump the user stack if the stack pointer lies within the allocated user
    * stack memory.
    */
 
-  if (sp > ustackbase || sp <= ustackbase - ustacksize)
+  if (sp > ustackbase - ustacksize && sp < ustackbase)
     {
-#if defined(CONFIG_ARCH_INTERRUPTSTACK) && CONFIG_ARCH_INTERRUPTSTACK > 3
-      if (!up_interrupt_context())
-#endif
-        {
-          lldbg("ERROR: Stack pointer is not within allocated stack\n");
-        }
-    }
-  else
-    {
+      lldbg("User Stack\n", sp);
       up_stackdump(sp, ustackbase);
     }
+
+#ifdef CONFIG_ARCH_KERNEL_STACK
+  /* Dump the user stack if the stack pointer lies within the allocated
+   * kernel stack memory.
+   */
+
+  if (sp >= (uint32_t)rtcb->xcp.kstack && sp < kstackbase)
+    {
+      lldbg("Kernel Stack\n", sp);
+      up_stackdump(sp, kstackbase);
+    }
+#endif
 
   /* Then dump the registers (if available) */
 

@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/fs/ioctl.h
  *
- *   Copyright (C) 2008, 2009, 2011-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2009, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@
 #include <nuttx/config.h>
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 /* General ioctl definitions ************************************************/
 /* Each NuttX ioctl commands are uint16_t's consisting of an 8-bit type
@@ -194,6 +194,13 @@
                                            * IN:  Pointer to sector write data (the
                                            *      logical secor number and write
                                            *      buffer address
+                                           * OUT: None (ioctl return value provides
+                                           *      success/failure indication). */
+#define BIOC_GETPROCFSD _BIOC(0x000A)     /* Get ProcFS data specific to the
+                                           * block device.
+                                           * IN:  Pointer to a struct defined for
+                                           *      the block to load with it's
+                                           *      ProcFS data.
                                            * OUT: None (ioctl return value provides
                                            *      success/failure indication). */
 

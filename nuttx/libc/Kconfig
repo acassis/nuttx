@@ -38,8 +38,8 @@ config NOPRINTF_FIELDWIDTH
 	bool "Disable sprintf support fieldwidth"
 	default n
 	---help---
-	sprintf-related logic is a
-	little smaller if we do not support fieldwidthes
+		sprintf-related logic is a little smaller if we do not support field
+		widths.
 
 config LIBC_FLOATINGPOINT
 	bool "Enable floating point in printf"
@@ -107,6 +107,16 @@ config LIBC_EXECFUNCS
 
 if LIBC_EXECFUNCS
 
+config EXECFUNCS_HAVE_SYMTAB
+	bool "Have symbol table"
+	default n if BUILD_KERNEL
+	default y if !BUILD_KERNEL
+	---help---
+		If you have a system symbol table, then you must select this
+		option in order to use it.  Symbol tables are required in most
+		cases in order to like executable programs to the base code.
+
+if EXECFUNCS_HAVE_SYMTAB
 config EXECFUNCS_SYMTAB
 	string "Symbol table used by exec[l|v]"
 	default "g_symtab"
@@ -129,6 +139,7 @@ config EXECFUNCS_NSYMBOLS
 		symbols in that table.  This selection provides the number of
 		symbols in the symbol table.
 
+endif # EXECFUNCS_HAVE_SYMTAB
 endif # LIBC_EXECFUNCS
 
 config POSIX_SPAWN_PROXY_STACKSIZE
@@ -143,6 +154,7 @@ config POSIX_SPAWN_PROXY_STACKSIZE
 config TASK_SPAWN_DEFAULT_STACKSIZE
 	int "Default task_spawn Stack Size"
 	default 2048
+	depends on !ARCH_ADDRENV
 	---help---
 		The actual size to use for the child task's stack can be set with
 		task_spawnattr_setstacksize().  This value specifies the default
@@ -400,24 +412,42 @@ config SCHED_HPWORK
 	bool "High priority (kernel) worker thread"
 	default y
 	---help---
-		If SCHED_WORKQUEUE is defined, then a single, high priority work queue is
-		created by default.  This high priority worker thread is intended to serve
-		as the "bottom half" for driver interrupt handling.
+		If SCHED_WORKQUEUE is defined, then a single, high priority work
+		queue is created by default.  This high priority worker thread is
+		intended to serve as the "bottom half" for driver interrupt
+		handling.
 
 if SCHED_HPWORK
 
 config SCHED_WORKPRIORITY
 	int "High priority worker thread priority"
-	default 192
+	default 224
 	---help---
-		The execution priority of the worker thread.  Default: 192
+		The execution priority of the higher priority worker thread.
+
+		The higher priority worker thread is intended to serve as the
+		"bottom" half for device drivers.  As a consequence it must run at
+		a very high, fixed priority.  Typically, it should be the highest
+		priority thread in your system.  Default: 192
+
+		For lower priority, application oriented worker thread support,
+		please consider enabling the lower priority work queue.  The lower
+		priority work queue runs at a lower priority, of course, but has
+		the added advantage that it supports "priority inheritance" (if
+		PRIORITY_INHERITANCE is also selected):  The priority of the lower
+		priority worker thread can then be adjusted to match the highest
+		priority client.
 
 config SCHED_WORKPERIOD
 	int "High priority worker thread period"
-	default 50000
+	default 100000 if SCHED_LPWORK
+	default 50000 if !SCHED_LPWORK
 	---help---
 		How often the worker thread checks for work in units of microseconds.
-		Default: 50*1000 (50 MS).
+		Default:  If the high priority worker thread is performing garbage
+		collection, then the default is 50*1000 (50 MS).  Otherwise, if the
+		lower priority worker thread is performing garbage collection, the
+		default is 100*1000.
 
 config SCHED_WORKSTACKSIZE
 	int "High priority worker thread stack size"
@@ -426,6 +456,8 @@ config SCHED_WORKSTACKSIZE
 	---help---
 		The stack size allocated for the worker thread.  Default: 2K.
 
+endif # SCHED_HPWORK
+
 config SCHED_LPWORK
 	bool "Low priority (kernel) worker thread"
 	default n
@@ -433,16 +465,80 @@ config SCHED_LPWORK
 		If SCHED_WORKQUEUE is defined, then a single work queue is created by
 		default.  If SCHED_LPWORK is also defined then an additional, lower-
 		priority work queue will also be created.  This lower priority work
-		queue is better suited for more extended processing (such as file system
-		clean-up operations)
+		queue is better suited for more extended, application oriented
+		processing (such as file system clean-up operations or asynchronous
+		I/O)
 
 if SCHED_LPWORK
+
+config SCHED_LPNTHREADS
+	int "Number of low-priority worker threads"
+	default 1 if !FS_AIO
+	default 4 if FS_AIO
+	---help---
+		This options selectes multiple, low-priority threads.  This is
+		essentially a "thread pool" that provides multi-threaded service
+		of the low-priority work thread.  This breaks the serialization
+		of the "queue" (hence, it is no longer a queue at all).
+
+		This options is required to support, for example, I/O operations
+		that stall waiting for input.  If there is only a single thread,
+		then the entire low-priority queue processing stalls in such cases.
+		Such behvior must be support for asynchronous I/O, AIO (for example).
 
 config SCHED_LPWORKPRIORITY
 	int "Low priority worker thread priority"
 	default 50
 	---help---
-		The execution priority of the lopwer priority worker thread.  Default: 192
+		The minimum execution priority of the lower priority worker thread.
+
+		The lower priority worker thread is intended support application-
+		oriented functions.  The lower priority work queue runs at a lower
+		priority, of course, but has the added advantage that it supports
+		"priority inheritance" (if PRIORITY_INHERITANCE is also selected):
+		The priority of the lower priority worker thread can then be
+		adjusted to match the highest priority client.  Default: 50
+
+		NOTE: This priority inheritance feature is not automatic.  The
+		lower priority worker thread will always a fixed priority unless
+		you implement logic that calls lpwork_boostpriority() to raise the
+		priority of the lower priority worker thread (typically called
+		before scheduling the work) and then call the matching
+		lpwork_restorepriority() when the work is completed (typically
+		called within the work handler at the completion of the work).
+		Currently, only the NuttX asynchronous I/O logic uses this dynamic
+		prioritization feature.
+
+		The higher priority worker thread, on the other hand, is intended
+		to serve as the "bottom" half for device drivers.  As a consequence
+		it must run at a very high, fixed priority.  Typically, it should
+		be the highest priority thread in your system.
+
+config SCHED_LPWORKPRIOMAX
+	int "Low priority worker thread maximum priority"
+	default 176
+	depends on PRIORITY_INHERITANCE
+	---help---
+		The maximum execution priority of the lower priority worker thread.
+
+		The lower priority worker thread is intended support application-
+		oriented functions.  The lower priority work queue runs at a lower
+		priority, of course, but has the added advantage that it supports
+		"priority inheritance" (if PRIORITY_INHERITANCE is also selected):
+		The priority of the lower priority worker thread can then be
+		adjusted to match the highest priority client.
+
+		The higher priority worker thread, on the other hand, is intended
+		to serve as the "bottom" half for device drivers.  As a consequence
+		it must run at a very high, fixed priority.  Typically, it should
+		be the highest priority thread in your system.
+
+		This function provides an upper limit on the priority of the lower
+		priority worker thread.  This would be necessary, for example, if
+		the higher priority worker thread were to defer work to the lower
+		priority thread.  Clearly, in such a case, you would want to limit
+		the maximum priority of the lower priority work thread.  Default:
+		176
 
 config SCHED_LPWORKPERIOD
 	int "Low priority worker thread period"
@@ -458,9 +554,8 @@ config SCHED_LPWORKSTACKSIZE
 		The stack size allocated for the lower priority worker thread.  Default: 2K.
 
 endif # SCHED_LPWORK
-endif # SCHED_HPWORK
 
-if BUILD_PROTECTED
+if BUILD_PROTECTED || BUILD_KERNEL
 
 config SCHED_USRWORK
 	bool "User mode worker thread"
@@ -470,20 +565,20 @@ config SCHED_USRWORK
 
 if SCHED_USRWORK
 
-config SCHED_LPWORKPRIORITY
+config SCHED_USRWORKPRIORITY
 	int "User mode priority worker thread priority"
-	default 50
+	default 100
 	---help---
 		The execution priority of the lopwer priority worker thread.  Default: 192
 
-config SCHED_LPWORKPERIOD
+config SCHED_USRWORKPERIOD
 	int "User mode worker thread period"
-	default 50000
+	default 100000
 	---help---
 		How often the lower priority worker thread checks for work in units
-		of microseconds. Default: 50*1000 (50 MS).
+		of microseconds. Default: 100*1000 (100 MS).
 
-config SCHED_LPWORKSTACKSIZE
+config SCHED_USRWORKSTACKSIZE
 	int "User mode worker thread stack size"
 	default 2048
 	---help---
