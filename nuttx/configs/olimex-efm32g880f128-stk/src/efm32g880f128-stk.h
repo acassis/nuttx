@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/efm32-g8xx-stk/src/efm32-g8xx-stk.h
+ * configs/olimex-efm32g880f128-stk/src/efm32g880f128-stk.h
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-#define __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
+#ifndef __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
+#define __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
 
 /****************************************************************************
  * Included Files
@@ -74,13 +74,5 @@
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
-
-/****************************************************************************
- * Name: board_led_initialize
- ****************************************************************************/
-
-#ifdef CONFIG_ARCH_LEDS
-void board_led_initialize(void);
-#endif
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

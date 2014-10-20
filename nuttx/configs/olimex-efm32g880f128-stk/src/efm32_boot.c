@@ -1,5 +1,5 @@
-/****************************************************************************
- * configs/efm32-g8xx-stk/src/efm32-g8xx-stk.h
+/*****************************************************************************
+ * configs/olimex-efm32g880f128-stk/src/efm32_boot.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,54 +33,49 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-#define __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#include <nuttx/config.h>
 
- /* LEDs
-  *
-  * The EFM32 Gecko Start Kit has four yellow LEDs.  These LEDs are connected
-  * as follows:
-  *
-  *   ------------------------------------- --------------------
-  *   EFM32 PIN                             BOARD SIGNALS
-  *   ------------------------------------- --------------------
-  *   C0/USART1_TX#0/PCNT0_S0IN#2/ACMP0_CH0  MCU_PC0  UIF_LED0
-  *   C1/USART1_RX#0/PCNT0_S1IN#2/ACMP0_CH1  MCU_PC1  UIF_LED1
-  *   C2/USART2_TX#0/ACMP0_CH2               MCU_PC2  UIF_LED2
-  *   C3/USART2_RX#0/ACMP0_CH3               MCU_PC3  UIF_LED3
-  *   ------------------------------------- --------------------
-  *
-  * All LEDs are grounded and so are illuminated by outputting a high
-  * value to the LED.
-  */
+#include "efm32_start.h"
 
-#define GPIO_LED1       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN0)
-#define GPIO_LED2       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN1)
-#define GPIO_LED3       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN2)
-#define GPIO_LED4       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN3)
+#include "efm32g880f128-stk.h"
 
 /****************************************************************************
- * Public Function Prototypes
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_led_initialize
+ * Name: efm32_boardinitialize
+ *
+ * Description:
+ *   All EFM32 architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization before any devices
+ *   have been initialized.
+ *
  ****************************************************************************/
 
-#ifdef CONFIG_ARCH_LEDS
-void board_led_initialize(void);
+void efm32_boardinitialize(void)
+{
+}
+
+/****************************************************************************
+ * Name: board_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a
+ *   function called board_initialize().  board_initialize() will be
+ *   called immediately after up_initialize() is called and just before the
+ *   initial application is started.  This additional initialization phase
+ *   may be used, for example, to initialize board-specific device drivers.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_BOARD_INITIALIZE
+void board_initialize(void)
+{
+}
 #endif
-
-#endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

@@ -144,7 +144,7 @@
 static void efm32_setbaud(uintptr_t base,  uint32_t baud)
 {
   uint64_t clkdiv;
-  uint64_t minover;
+  uint64_t maxover;
   uint32_t oversample;
   uint32_t regval;
   uint32_t ovs;
@@ -159,60 +159,67 @@ static void efm32_setbaud(uintptr_t base,  uint32_t baud)
    *
    * Or, equivalently:
    *
-   *   CLKDIV = 256 * fHFPERCLK/(oversample * baud) - 1
+   *   CLKDIV     = 256 * (fHFPERCLK / (oversample * baud) - 1)
    *   oversample = 256 * fHFPERCLK / (baud * (CLKDIV + 256))
-   *
-   * Example: fHPERCLK = 32MHz, baud=115200
-   *   oversample = 8,192,000,000 / (115200 * (CLKDIV + 256))
-   *   CLKDIV     = 71111.1111 / oversample + 1
    *
    * Suppose we insist on a CLKDIV >= 24, then:
    *
-   *   MINoversample = 256 * fHFPERCLK / (280 * baud))
+   *   MAXoversample = 256 * fHFPERCLK / (280 * baud))
    *
-   * Example: fHPERCLK = 32MHz, baud=115200
-   *   MINoversample = 254.0 -> 16
-   *   CLKDIV        = 4445.4
-   *   baud          = 115,249.3
+   * Example 1: fHPERCLK = 32MHz, baud=115200
+   *   MAXoversample = 254.0, Use oversample = 16
+   *   CLKDIV        = 4188.4
+   *   baud          = 115200.0
+   * Example 2: fHPERCLK = 32.768KHz, baud=2400
+   *   MAXoversample = 12.5, Use oversample = 8
+   *   CLKDIV        = 180.90
+   *   baud          = 2400.0
    */
 
-  minover = ((BOARD_HFPERCLK_FREQUENCY << 8) / 280) / baud;
-  if (minover >= 16)
+  maxover = ((BOARD_HFPERCLK_FREQUENCY << 8) / 280) / baud;
+  if (maxover >= 16)
     {
       DEBUGASSERT(baud <= (BOARD_HFPERCLK_FREQUENCY / 16));
       oversample = 16;
       ovs        = USART_CTRL_OVS_X16;
     }
-  else if (minover >= 8)
+  else if (maxover >= 8)
     {
       DEBUGASSERT(baud <= (BOARD_HFPERCLK_FREQUENCY / 8));
       oversample = 8;
       ovs        = USART_CTRL_OVS_X8;
     }
-  else if (minover >= 6)
+  else if (maxover >= 6)
     {
       DEBUGASSERT(baud <= (BOARD_HFPERCLK_FREQUENCY / 6));
       oversample = 6;
       ovs        = USART_CTRL_OVS_X6;
     }
-  else /* if (minover >= 4) */
+  else /* if (maxover >= 4) */
     {
-      DEBUGASSERT(minover >= 4 && baud <= (BOARD_HFPERCLK_FREQUENCY / 4));
+      DEBUGASSERT(maxover >= 4 && baud <= (BOARD_HFPERCLK_FREQUENCY / 4));
       oversample = 4;
       ovs        = USART_CTRL_OVS_X4;
     }
 
   /* CLKDIV in asynchronous mode is given by:
    *
-   *   CLKDIV = 256 * (fHFPERCLK/(oversample * baud) - 1)
+   *   CLKDIV = 256 * (fHFPERCLK / (oversample * baud) - 1)
    *
    * or
    *
-   *   CLKDIV = (256 * fHFPERCLK)/(oversample * baud) - 256
+   *   CLKDIV = (256 * fHFPERCLK) / (oversample * baud) - 256
    */
 
-  clkdiv  = ((uint64_t)BOARD_HFPERCLK_FREQUENCY << 8) / ((uint64_t)baud * oversample);
-  clkdiv -= 256;
+  clkdiv = ((uint64_t)BOARD_HFPERCLK_FREQUENCY << 8) / ((uint64_t)baud * oversample);
+  if (clkdiv > 256)
+    {
+      clkdiv -= 256;
+    }
+  else
+    {
+      clkdiv = 0;
+    }
 
   DEBUGASSERT(clkdiv <= _USART_CLKDIV_MASK);
 
