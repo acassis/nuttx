@@ -1,10 +1,8 @@
 ############################################################################
 # arch/arm/src/efm32/Make.defs
 #
-#   Copyright (C) 2009, 2011-2014 Gregory Nutt. All rights reserved.
-#   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+#   Copyright (C) 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
-#           Pierre-noel Bouteville <pnb990@gmail.com>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -35,11 +33,7 @@
 #
 ############################################################################
 
-ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
 HEAD_ASRC =
-else
-HEAD_ASRC = efm32_vectors.S
-endif
 
 CMN_UASRCS =
 CMN_UCSRCS =
@@ -95,47 +89,18 @@ endif
 endif
 
 CHIP_ASRCS  =
-CHIP_CSRCS  =
-
-CHIP_CSRCS += cm3_ITM.c
-CHIP_CSRCS += em_system_efm32gg.c 
-CHIP_CSRCS += efm32_start.c
-CHIP_CSRCS += efm32_irq.c 
-CHIP_CSRCS += em_gpio.c 
-CHIP_CSRCS += em_cmu.c 
-CHIP_CSRCS += em_emu.c 
-
-CHIP_CSRCS += efm32_lowputc.c
-
-ifneq ($(CONFIG_SCHED_TICKLESS),y)
-CHIP_CSRCS += efm32_timerisr.c
-endif
 
 ifeq ($(CONFIG_ARMV7M_CMNVECTOR),y)
-CHIP_ASRCS  += efm32_vectors.S
+CHIP_ASRCS += efm32_vectors.S
 endif
+
+CHIP_CSRCS  = efm32_start.c efm32_clockconfig.c efm32_irq.c efm32_timerisr.c
+CHIP_CSRCS += efm32_gpio.c efm32_lowputc.c efm32_serial.c
 
 ifneq ($(CONFIG_ARCH_IDLE_CUSTOM),y)
 CHIP_CSRCS += efm32_idle.c
 endif
 
-ifeq ($(CONFIG_SERIAL),y)
-CHIP_CSRCS += efm32_serial.c
+ifeq ($(CONFIG_EFM32_GPIO_IRQ),y)
+CHIP_CSRCS += efm32_gpioirq.c
 endif
-
-ifeq ($(CONFIG_GPIO_IRQ_DISPATCHER),y)
-CHIP_CSRCS += efm32_gpio_irq.c
-endif
-
-ifeq ($(CONFIG_EFM32_GPIO_KEYPAD),y)
-CHIP_CSRCS += efm32_gpio_keypad.c
-endif
-
-ifneq ($(CONFIG_EFM32_SPI_NBR),'0')
-CHIP_CSRCS += efm32_spi.c
-CHIP_CSRCS += efm32_spi_dma.c
-endif
-
-
-
-

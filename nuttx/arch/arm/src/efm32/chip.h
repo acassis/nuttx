@@ -53,16 +53,14 @@
 #ifdef CONFIG_ARMV7M_CMNVECTOR
 #  if defined(CONFIG_EFM32_EFM32TG)
 #    include "chip/efm32tg_vectors.h"
+#  elif defined(CONFIG_EFM32_EFM32G)
+#    include "chip/efm32g_vectors.h"
 #  elif defined(CONFIG_EFM32_EFM32GG)
 #    include "chip/efm32gg_vectors.h"
 #  else
 #    error "No vector file for this EFM32 family"
 #  endif
 #endif
-
-/* Include the chip memory map. */
-
-//#include "chip/efm32_memorymap.h"
 
 /************************************************************************************
  * Pre-processor Definitions

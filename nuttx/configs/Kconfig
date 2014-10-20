@@ -128,20 +128,28 @@ config ARCH_BOARD_EAGLE100
 
 config ARCH_BOARD_EFM32TG_STK3300
 	bool "EFM32 Tiny Gecko Starter Kit"
-	depends on ARCH_CHIP_EFM32
 	depends on ARCH_CHIP_EFM32TG840F32
+	select ARCH_HAVE_BUTTONS
 	---help---
 		This is Energy Micro's development kit for the Tiny
 		Gecko MCU, which is an ARM Cortex-M3 device.
 
 config ARCH_BOARD_EFM32GG_PNBFANO
 	bool "Pnbfano with EFM32 Giant Gecko"
-	depends on ARCH_CHIP_EFM32
 	depends on ARCH_CHIP_EFM32GG332F1024
+	select ARCH_HAVE_BUTTONS
 	---help---
 		This is Energy Micro's Pnbfano for the Tiny
 		Gecko MCU, which is an ARM Cortex-M3 device.
 		If you are interested contact me to pnb990@gmail.com.
+
+config ARCH_BOARD_EFM32G8XXSTK
+	bool "EFM32 Gecko Starter Kit"
+	depends on ARCH_CHIP_EFM32G890F128
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	---help---
+		This options selects the EFM32 Gecko Starter Kit (EFM32-G8XX-STK).
 
 config ARCH_BOARD_EKKLM3S9B96
 	bool "TI/Stellaris EKK-LM3S9B96"
@@ -536,6 +544,16 @@ config ARCH_BOARD_NUCLEO_F401RE
 	---help---
 		This is a minimal configuration that supports low-level test of the
 		Nucleo F401RE in the NuttX source tree.
+
+config ARCH_BOARD_NUCLEO_F411RE
+	bool "STM32F411 Nucleo F411RE"
+	depends on ARCH_CHIP_STM32F411RE
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_IRQBUTTONS
+	---help---
+		This is a minimal configuration that supports low-level test of the
+		Nucleo F411RE in the NuttX source tree.
 
 config ARCH_BOARD_QEMU_I486
 	bool "Qemu i486 Mode"
@@ -978,6 +996,7 @@ config ARCH_BOARD
 	default "eagle100"            if ARCH_BOARD_EAGLE100
 	default "efm32tg-stk3300"     if ARCH_BOARD_EFM32TG_STK3300
 	default "efm32gg-pnbfano"     if ARCH_BOARD_EFM32GG_PNBFANO
+	default "efm32-g8xx-stk"      if ARCH_BOARD_EFM32G8XXSTK
 	default "ekk-lm3s9b96"        if ARCH_BOARD_EKKLM3S9B96
 	default "ez80f910200kitg"     if ARCH_BOARD_EZ80F910200KITG
 	default "ez80f910200zco"      if ARCH_BOARD_EZ80F910200ZCO
@@ -1017,7 +1036,7 @@ config ARCH_BOARD
 	default "pic32mx7mmb"         if ARCH_BOARD_PIC32MX7MMB
 	default "pirelli_dpl10"       if ARCH_BOARD_PIRELLI_DPL10
 	default "px4fmu-v2_upstream"  if ARCH_BOARD_PX4FMU_V2
-	default "nucleo-f401re"       if ARCH_BOARD_NUCLEO_F401RE
+	default "nucleo-f4x1re"       if ARCH_BOARD_NUCLEO_F401RE || ARCH_BOARD_NUCLEO_F411RE
 	default "qemu-i486"           if ARCH_BOARD_QEMU_I486
 	default "rgmp"                if ARCH_BOARD_RGMP
 	default "sama5d3x-ek"         if ARCH_BOARD_SAMA5D3X_EK
@@ -1154,6 +1173,8 @@ source "configs/efm32tg-stk3300/Kconfig"
 endif
 if ARCH_BOARD_EFM32GG_PNBFANO
 source "configs/efm32gg-pnbfano/Kconfig"
+if ARCH_BOARD_EFM32G8XXSTK
+source "configs/efm32-g8xx-stk/Kconfig"
 endif
 if ARCH_BOARD_EKKLM3S9B96
 source "configs/ekk-lm3s9b96/Kconfig"
@@ -1266,8 +1287,8 @@ endif
 if ARCH_BOARD_PIRELLI_DPL10
 source "configs/pirelli_dpl10/Kconfig"
 endif
-if ARCH_BOARD_NUCLEO_F401RE
-source "configs/nucleo-f401re/Kconfig"
+if ARCH_BOARD_NUCLEO_F401RE || ARCH_BOARD_NUCLEO_F411RE
+source "configs/nucleo-f4x1re/Kconfig"
 endif
 if ARCH_BOARD_PX4FMU_V2
 source "configs/px4fmu-v2_upstream/Kconfig"

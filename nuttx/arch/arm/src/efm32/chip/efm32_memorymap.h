@@ -1,7 +1,7 @@
 /************************************************************************************
  * arch/arm/src/efm32/chip/efm32_memorymap.h
  *
- *   Copyright (C) 2009, 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,11 +43,14 @@
 #include <nuttx/config.h>
 #include "chip.h"
 
-#if defined(CONFIG_EFM32_EFM32TG8XX)
+#if defined(CONFIG_EFM32_EFM32TG)
 #  include "chip/efm32tg_memorymap.h"
+#elif defined(CONFIG_EFM32_EFM32G)
+#  include "chip/efm32g_memorymap.h"
+#elif defined(CONFIG_EFM32_EFM32GG)
+#  include "chip/efm32gg_memorymap.h"
 #else
 #  error "Unsupported EFM32 memory map"
 #endif
 
 #endif /* __ARCH_ARM_SRC_EFM32_CHIP_EFM32_MEMORYMAP_H */
-

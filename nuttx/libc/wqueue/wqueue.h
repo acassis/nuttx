@@ -47,7 +47,7 @@
 
 #include <nuttx/wqueue.h>
 
-#ifdef CONFIG_SCHED_WORKQUEUE
+#if defined(CONFIG_LIB_USRWORK) && !defined(__KERNEL__)
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -70,7 +70,6 @@ struct usr_wqueue_s
  * Public Data
  ****************************************************************************/
 
-#if defined(CONFIG_SCHED_USRWORK) && !defined(__KERNEL__)
 /* The state of the user mode work queue */
 
 extern struct usr_wqueue_s g_usrwork;
@@ -81,7 +80,6 @@ extern struct usr_wqueue_s g_usrwork;
 extern sem_t g_usrsem;
 #else
 extern pthread_mutex_t g_usrmutex;
-#endif
 #endif
 
 /****************************************************************************
@@ -105,9 +103,7 @@ extern pthread_mutex_t g_usrmutex;
  *
  ****************************************************************************/
 
-#if defined(CONFIG_SCHED_USRWORK) && !defined(__KERNEL__)
 int work_lock(void);
-#endif
 
 /****************************************************************************
  * Name: work_unlock
@@ -123,9 +119,7 @@ int work_lock(void);
  *
  ****************************************************************************/
 
-#if defined(CONFIG_SCHED_USRWORK) && !defined(__KERNEL__)
 void work_unlock(void);
-#endif
 
-#endif /* CONFIG_SCHED_WORKQUEUE */
+#endif /* CONFIG_LIB_USRWORK && !__KERNEL__*/
 #endif /* __LIBC_WQUEUE_WQUEUE_H */

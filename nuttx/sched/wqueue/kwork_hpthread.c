@@ -50,7 +50,7 @@
 
 #include "wqueue/wqueue.h"
 
-#if defined(CONFIG_SCHED_WORKQUEUE) && defined(CONFIG_SCHED_HPWORK)
+#ifdef CONFIG_SCHED_HPWORK
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -108,22 +108,27 @@ static int work_hpthread(int argc, char *argv[])
 
   for (;;)
     {
-      /* First, perform garbage collection.  This cleans-up memory de-allocations
-       * that were queued because they could not be freed in that execution
-       * context (for example, if the memory was freed from an interrupt handler).
+#ifndef CONFIG_SCHED_LPWORK
+      /* First, perform garbage collection.  This cleans-up memory
+       * de-allocations that were queued because they could not be freed in
+       * that execution context (for example, if the memory was freed from
+       * an interrupt handler).
+       *
        * NOTE: If the work thread is disabled, this clean-up is performed by
-       * the IDLE thread (at a very, very low priority).
+       * the IDLE thread (at a very, very low priority).  If the low-priority
+       * work thread is enabled, then the garbage collection is done on that
+       * thread instead.
        */
 
-#ifndef CONFIG_SCHED_LPWORK
       sched_garbagecollection();
 #endif
 
-      /* Then process queued work.  We need to keep interrupts disabled while
-       * we process items in the work list.
+      /* Then process queued work.  work_process will not return until: (1)
+       * there is no further work in the work queue, and (2) the polling
+       * period provided by g_hpwork.delay expires.
        */
 
-      work_process((FAR struct kwork_wqueue_s *)&g_hpwork, 0);
+      work_process((FAR struct kwork_wqueue_s *)&g_hpwork, g_hpwork.delay, 0);
     }
 
   return OK; /* To keep some compilers happy */
@@ -154,15 +159,15 @@ int work_hpstart(void)
 
   /* Initialize work queue data structures */
 
-  g_hpwork.delay          = CONFIG_SCHED_WORKPERIOD / USEC_PER_TICK;
+  g_hpwork.delay          = CONFIG_SCHED_HPWORKPERIOD / USEC_PER_TICK;
   dq_init(&g_hpwork.q);
 
   /* Start the high-priority, kernel mode worker thread */
 
   svdbg("Starting high-priority kernel worker thread\n");
 
-  pid = kernel_thread(HPWORKNAME, CONFIG_SCHED_WORKPRIORITY,
-                      CONFIG_SCHED_WORKSTACKSIZE,
+  pid = kernel_thread(HPWORKNAME, CONFIG_SCHED_HPWORKPRIORITY,
+                      CONFIG_SCHED_HPWORKSTACKSIZE,
                       (main_t)work_hpthread,
                       (FAR char * const *)NULL);
 
@@ -181,4 +186,4 @@ int work_hpstart(void)
   return pid;
 }
 
-#endif /* CONFIG_SCHED_WORKQUEUE && CONFIG_SCHED_HPWORK*/
+#endif /* CONFIG_SCHED_HPWORK */

@@ -1,10 +1,8 @@
 /****************************************************************************
  * arch/arm/src/efm32/efm32_start.c
  *
- *   Copyright (C) 2009, 2011-2014 Gregory Nutt. All rights reserved.
- *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
- *           Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,9 +38,11 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+
 #include <stdint.h>
 #include <assert.h>
 #include <debug.h>
+
 #include <nuttx/init.h>
 #include <arch/board/board.h>
 #include <arch/efm32/chip.h>
@@ -50,10 +50,8 @@
 #include "up_arch.h"
 #include "up_internal.h"
 #include "efm32_lowputc.h"
-#include "efm32_gpio_irq.h"
-
-//#include "em_device.h"
-//#include "em_cmu.h"
+#include "efm32_clockconfig.h"
+#include "efm32_start.h"
 
 /****************************************************************************
  * Private Function prototypes
@@ -122,20 +120,6 @@ static void go_os_start(void *pv, unsigned int nbytes)
 }
 #endif
 
-static void efm32_clockconfig(void)
-{
-  /* Devices boots with 14 MHz HFRCO as the HFCLK source. */
-  /* Enable the GPIO clock. */
-  //CMU_ClockEnable(cmuClock_GPIO, true);
-}
-
-static void efm32_gpioinit(void)
-{
-#ifdef CONFIG_GPIO_IRQ_DISPATCHER
-    irq_gpio_init();
-#endif
-}
-
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -148,19 +132,15 @@ static void efm32_gpioinit(void)
  *
  ****************************************************************************/
 
-volatile bool lock = true;
-
 void __start(void)
 {
   const uint32_t *src;
   uint32_t *dest;
 
-  /* Configure the uart so that we can get debug outuput as soon as possible */
+  /* Configure the uart so that we can get debug output as soon as possible */
 
   efm32_clockconfig();
   efm32_lowsetup();
-  efm32_gpioinit();
-
   showprogress('A');
 
   /* Clear .bss.  We'll do this inline (vs. calling memset) just to be
@@ -218,7 +198,7 @@ void __start(void)
 
   os_start();
 
-  /* Shoulnd't get here */
+  /* Shouldn't get here */
 
   for(;;);
 #endif

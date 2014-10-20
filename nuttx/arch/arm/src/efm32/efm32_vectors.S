@@ -1,7 +1,7 @@
 /************************************************************************************
  * arch/arm/src/efm32/efm32_vectors.S
  *
- *   Copyright (C) 2009-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,10 +43,6 @@
 
 #include "chip.h"
 #include "exc_return.h"
-
-/************************************************************************************
- * Configuration
- ************************************************************************************/
 
 /************************************************************************************
  * Preprocessor Definitions
@@ -93,8 +89,7 @@
 	.thumb
 	.file		"efm32_vectors.S"
 
-/*
- * The efm32 chips all use the common ARMv7 interrupt vectoring.
+/* The EFM32 chips all use the common ARMv7 interrupt vectoring.
  * (see arch/arm/src/armv7-m/up_vectors.S)
  */
 

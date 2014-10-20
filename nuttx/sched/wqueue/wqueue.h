@@ -52,18 +52,10 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Customize kernel thread names */
+/* Kkernel thread names */
 
-#ifdef CONFIG_SCHED_HPWORK
-#  if defined(CONFIG_SCHED_LPWORK)
-#    define HPWORKNAME "hpwork"
-#    define LPWORKNAME "lpwork"
-#  elif defined(CONFIG_SCHED_USRWORK)
-#    define HPWORKNAME "kwork"
-#  else
-#    define HPWORKNAME "work"
-#  endif
-#endif
+#define HPWORKNAME "hpwork"
+#define LPWORKNAME "lpwork"
 
 /****************************************************************************
  * Public Type Definitions
@@ -76,7 +68,7 @@ struct kworker_s
   volatile bool     busy;   /* True: Worker is not available */
 };
 
-/* This structure defines the state of one high-priority work queue */
+/* This structure defines the state of one kernel-mode work queue */
 
 struct kwork_wqueue_s
 {
@@ -85,22 +77,24 @@ struct kwork_wqueue_s
   struct kworker_s  worker[1]; /* Describes a worker thread */
 };
 
-
 /* This structure defines the state of one high-priority work queue.  This
  * structure must be cast-compatible with kwork_wqueue_s.
  */
 
+#ifdef CONFIG_SCHED_HPWORK
 struct hp_wqueue_s
 {
   uint32_t          delay;     /* Delay between polling cycles (ticks) */
   struct dq_queue_s q;         /* The queue of pending work */
   struct kworker_s  worker[1]; /* Describes the single high priority worker */
 };
+#endif
 
 /* This structure defines the state of one high-priority work queue.  This
  * structure must be cast compatible with kwork_wqueue_s
  */
 
+#ifdef CONFIG_SCHED_LPWORK
 struct lp_wqueue_s
 {
   uint32_t          delay;  /* Delay between polling cycles (ticks) */
@@ -110,6 +104,7 @@ struct lp_wqueue_s
 
   struct kworker_s  worker[CONFIG_SCHED_LPNTHREADS];
 };
+#endif
 
 /****************************************************************************
  * Public Data
@@ -180,13 +175,15 @@ int work_lpstart(void);
  *
  * Input parameters:
  *   wqueue - Describes the work queue to be processed
+ *   period - The polling period in clock ticks
+ *   wndx   - The worker thread index
  *
  * Returned Value:
  *   None
  *
  ****************************************************************************/
 
-void work_process(FAR struct kwork_wqueue_s *wqueue, int wndx);
+void work_process(FAR struct kwork_wqueue_s *wqueue, uint32_t period, int wndx);
 
 #endif /* CONFIG_SCHED_WORKQUEUE */
 #endif /* __SCHED_WQUEUE_WQUEUE_H */

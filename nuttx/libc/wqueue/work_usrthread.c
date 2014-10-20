@@ -52,8 +52,7 @@
 
 #include "wqueue/wqueue.h"
 
-#if defined(CONFIG_SCHED_WORKQUEUE) && defined(CONFIG_SCHED_USRWORK) && \
-   !defined(__KERNEL__)
+#if defined(CONFIG_LIB_USRWORK) && !defined(__KERNEL__)
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -88,9 +87,9 @@ struct usr_wqueue_s g_usrwork;
 /* This semaphore supports exclusive access to the user-mode work queue */
 
 #ifdef CONFIG_BUILD_PROTECTED
-extern sem_t g_usrsem;
+sem_t g_usrsem;
 #else
-extern pthread_mutex_t g_usrmutex;
+pthread_mutex_t g_usrmutex;
 #endif
 
 /****************************************************************************
@@ -155,8 +154,6 @@ void work_process(FAR struct usr_wqueue_s *wqueue)
   work = (FAR struct work_s *)wqueue->q.head;
   while (work)
     {
-      DEBUGASSERT(wqueue->wq_sem.count > 0);
-
       /* Is this work ready?  It is ready if there is no delay or if
        * the delay has elapsed. qtime is the time that the work was added
        * to the work queue.  It will always be greater than or equal to
@@ -211,7 +208,7 @@ void work_process(FAR struct usr_wqueue_s *wqueue)
                   return;
                 }
 
-              work  = (FAR struct work_s *)wqueue->q.head;
+              work = (FAR struct work_s *)wqueue->q.head;
             }
           else
             {
@@ -249,8 +246,8 @@ void work_process(FAR struct usr_wqueue_s *wqueue)
 
   /* Get the delay (in clock ticks) since we started the sampling */
 
-  elapsed = clock_systimer() - work->qtime;
-  if (elapsed <= wqueue->delay)
+  elapsed = clock_systimer() - stick;
+  if (elapsed < wqueue->delay && next > 0)
     {
       /* How must time would we need to delay to get to the end of the 
        * sampling period?  The amount of time we delay should be the smaller
@@ -260,15 +257,13 @@ void work_process(FAR struct usr_wqueue_s *wqueue)
 
       remaining = wqueue->delay - elapsed;
       next      = MIN(next, remaining);
-      if (next > 0)
-        {
-          /* Wait awhile to check the work list.  We will wait here until
-           * either the time elapses or until we are awakened by a signal.
-           * Interrupts will be re-enabled while we wait.
-           */
 
-          usleep(next * USEC_PER_TICK);
-        }
+      /* Wait awhile to check the work list.  We will wait here until
+       * either the time elapses or until we are awakened by a signal.
+       * Interrupts will be re-enabled while we wait.
+       */
+
+      usleep(next * USEC_PER_TICK);
     }
 
   work_unlock();
@@ -340,7 +335,7 @@ int work_usrstart(void)
 {
   /* Initialize work queue data structures */
 
-  g_usrwork.delay = CONFIG_SCHED_USRWORKPERIOD / USEC_PER_TICK;
+  g_usrwork.delay = CONFIG_LIB_USRWORKPERIOD / USEC_PER_TICK;
   dq_init(&g_usrwork.q);
 
 #ifdef CONFIG_BUILD_PROTECTED
@@ -352,8 +347,8 @@ int work_usrstart(void)
     /* Start a user-mode worker thread for use by applications. */
 
     g_usrwork.pid = task_create("uwork",
-                                CONFIG_SCHED_USRWORKPRIORITY,
-                                CONFIG_SCHED_USRWORKSTACKSIZE,
+                                CONFIG_LIB_USRWORKPRIORITY,
+                                CONFIG_LIB_USRWORKSTACKSIZE,
                                 (main_t)work_usrthread,
                                 (FAR char * const *)NULL);
 
@@ -381,9 +376,9 @@ int work_usrstart(void)
     /* Start a user-mode worker thread for use by applications. */
 
     (void)pthread_attr_init(&attr);
-    (void)pthread_attr_setstacksize(&attr, CONFIG_SCHED_USRWORKSTACKSIZE);
+    (void)pthread_attr_setstacksize(&attr, CONFIG_LIB_USRWORKSTACKSIZE);
 
-    param.sched_priority = CONFIG_SCHED_USRWORKPRIORITY;
+    param.sched_priority = CONFIG_LIB_USRWORKPRIORITY;
     (void)pthread_attr_setschedparam(&attr, &param);
 
     status = pthread_create(&usrwork, &attr, work_usrthread, NULL);
@@ -404,4 +399,4 @@ int work_usrstart(void)
 #endif
 }
 
-#endif /* CONFIG_SCHED_WORKQUEUE && CONFIG_SCHED_USRWORK && !__KERNEL__*/
+#endif /* CONFIG_LIB_USRWORK && !__KERNEL__*/

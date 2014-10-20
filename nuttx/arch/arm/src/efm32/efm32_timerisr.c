@@ -52,26 +52,18 @@
 #include "up_arch.h"
 
 #include "chip.h"
-#include "efm32.h"
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* The desired timer interrupt frequency is provided by the definition
  * CLK_TCK (see include/time.h).  CLK_TCK defines the desired number of
  * system clock ticks per second.  That value is a user configurable setting
  * that defaults to 100 (100 ticks per second = 10 MS interval).
- *
- * The RCC feeds the Cortex System Timer (SysTick) with the AHB clock (HCLK)
- * divided by 8.  The SysTick can work either with this clock or with the
- * Cortex clock (HCLK), configurable in the SysTick Control and Status
- * register.
  */
 
-#define EFM32_HCLK_FREQUENCY 14000000
-
-#define SYSTICK_RELOAD ((EFM32_HCLK_FREQUENCY / CLK_TCK) - 1)
+#define SYSTICK_RELOAD ((BOARD_HFCORECLK_FREQUENCY / CLK_TCK) - 1)
 
 /* The size of the reload field is 24 bits.  Verify that the reload value
  * will fit in the reload register.
@@ -104,10 +96,10 @@
 
 int up_timerisr(int irq, uint32_t *regs)
 {
-   /* Process timer interrupt */
+  /* Process timer interrupt */
 
-   sched_process_timer();
-   return 0;
+  sched_process_timer();
+  return 0;
 }
 
 /****************************************************************************
@@ -125,13 +117,12 @@ void up_timer_initialize(void)
 
   /* Set the SysTick interrupt to the default priority */
 
-  regval = getreg32(NVIC_SYSH12_15_PRIORITY);
+  regval  = getreg32(NVIC_SYSH12_15_PRIORITY);
   regval &= ~NVIC_SYSH_PRIORITY_PR15_MASK;
   regval |= (NVIC_SYSH_PRIORITY_DEFAULT << NVIC_SYSH_PRIORITY_PR15_SHIFT);
   putreg32(regval, NVIC_SYSH12_15_PRIORITY);
 
   /* Make sure that the SYSTICK clock source is set correctly */
-
   /* Configure SysTick to interrupt at the requested rate */
 
   putreg32(SYSTICK_RELOAD, NVIC_SYSTICK_RELOAD);
@@ -148,5 +139,3 @@ void up_timer_initialize(void)
 
   up_enable_irq(EFM32_IRQ_SYSTICK);
 }
-
-

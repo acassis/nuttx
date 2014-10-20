@@ -1,8 +1,8 @@
 /****************************************************************************
  * arch/arm/src/efm32/efm32_lowputc.h
  *
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,23 +33,73 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_EFM32_STM32_LOWPUTC_H
-#define __ARCH_ARM_SRC_EFM32_STM32_LOWPUTC_H
+#ifndef __ARCH_ARM_SRC_EFM32_EFM32_LOWPUTC_H
+#define __ARCH_ARM_SRC_EFM32_EFM32_LOWPUTC_H
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+#include <nuttx/config.h>
+
+#include <stdint.h>
+
+#include "efm32_config.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-#if (defined CONFIG_DEV_LOWCONSOLE) || (defined CONFIG_DEBUG)  
+/****************************************************************************
+ * Name: efm32_lowsetup
+ *
+ * Description:
+ *   Called at the very beginning of _start.  Performs low level
+ *   initialization including setup of the console UART.  This UART done
+ *   early so that the serial console is available for debugging very early
+ *   in the boot sequence.
+ *
+ ****************************************************************************/
 
 void efm32_lowsetup(void);
 
-#else
+/*****************************************************************************
+ * Name: efm32_lowputc
+ *
+ * Description:
+ *   Output one character to the UART using a simple polling method.
+ *
+ *****************************************************************************/
 
-static inline void efm32_lowsetup(void)
-{
-}
-
+#ifdef HAVE_SERIAL_CONSOLE
+void efm32_lowputc(uint32_t ch);
 #endif
 
+/*****************************************************************************
+ * Name: efm32_uartconfigure
+ *
+ * Description:
+ *   Configure a UART as a RS-232 UART.
+ *
+ *****************************************************************************/
+
+#ifdef HAVE_UART_DEVICE
+void efm32_uartconfigure(uintptr_t base, uint32_t baud, unsigned int parity,
+                         unsigned int nbits, bool stop2);
 #endif
+
+/*****************************************************************************
+ * Name: efm32_uartreset
+ *
+ * Description:
+ *   Reset the USART/UART by disabling it and restoring all of the registers
+ *   to the initial, reset value.  Only the ROUTE data set by efm32_lowsetup
+ *   is preserved.
+ *
+ *****************************************************************************/
+
+#ifdef HAVE_UART_DEVICE
+void efm32_uartreset(uintptr_t base);
+#endif
+
+#endif /* __ARCH_ARM_SRC_EFM32_EFM32_LOWPUTC_H */

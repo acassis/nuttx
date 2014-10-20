@@ -459,6 +459,13 @@ config ARCH_CHIP_STM32F401RE
 	select STM32_STM32F401
 	select ARCH_HAVE_FPU
 
+config ARCH_CHIP_STM32F411RE
+	bool "STM32F411RE"
+	select ARCH_CORTEXM4
+	select STM32_STM32F40XX
+	select STM32_STM32F411
+	select ARCH_HAVE_FPU
+
 config ARCH_CHIP_STM32F405RG
 	bool "STM32F405RG"
 	select ARCH_CORTEXM4
@@ -584,6 +591,8 @@ endchoice
 config STM32_STM32L15XX
 	bool
 	default n
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
 
 config STM32_ENERGYLITE
 	bool
@@ -600,6 +609,8 @@ config STM32_ENERGYLITE
 config STM32_STM32F10XX
 	bool
 	default n
+	select STM32_HAVE_SPI2 if STM32_HIGHDENSITY || STM32_MEDIUMDENSITY
+	select STM32_HAVE_SPI3 if STM32_HIGHDENSITY || STM32_MEDIUMDENSITY
 
 config STM32_VALUELINE
 	bool
@@ -618,6 +629,8 @@ config STM32_VALUELINE
 	select STM32_HAVE_TIM16
 	select STM32_HAVE_TIM17
 	select STM32_HAVE_ADC2
+	select STM32_HAVE_SPI2 if STM32_HIGHDENSITY
+	select STM32_HAVE_SPI3 if STM32_HIGHDENSITY
 
 config STM32_CONNECTIVITYLINE
 	bool
@@ -635,6 +648,8 @@ config STM32_CONNECTIVITYLINE
 	select STM32_HAVE_CAN1
 	select STM32_HAVE_CAN2
 	select STM32_HAVE_ETHMAC
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
 
 config STM32_PERFORMANCELINE
 	bool
@@ -726,6 +741,8 @@ config STM32_STM32F207
 	select STM32_HAVE_CAN2
 	select STM32_HAVE_RNG
 	select STM32_HAVE_ETHMAC
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
 
 config STM32_STM32F30XX
 	bool
@@ -743,11 +760,14 @@ config STM32_STM32F30XX
 	select STM32_HAVE_ADC3
 	select STM32_HAVE_ADC4
 	select STM32_HAVE_CAN1
+	select STM32_HAVE_SPI2
 
 config STM32_STM32F40XX
 	bool
 	default n
 	select STM32_HAVE_OTGFS
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
 
 config STM32_STM32F401
 	bool
@@ -758,6 +778,22 @@ config STM32_STM32F401
 	select STM32_HAVE_TIM9
 	select STM32_HAVE_TIM10
 	select STM32_HAVE_TIM11
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
+
+config STM32_STM32F411
+	bool
+	default n
+	select STM32_HAVE_USART6
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM5
+	select STM32_HAVE_TIM9
+	select STM32_HAVE_TIM10
+	select STM32_HAVE_TIM11
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
+	select STM32_HAVE_SPI4
+	select STM32_HAVE_SPI5
 
 config STM32_STM32F405
 	bool
@@ -841,6 +877,10 @@ config STM32_STM32F427
 	select STM32_HAVE_CAN2
 	select STM32_HAVE_RNG
 	select STM32_HAVE_ETHMAC
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
+	select STM32_HAVE_SPI4
+	select STM32_HAVE_SPI5
 
 # This is really 429/439, but we treat the two the same.
 config STM32_STM32F429
@@ -870,6 +910,10 @@ config STM32_STM32F429
 	select STM32_HAVE_CAN2
 	select STM32_HAVE_RNG
 	select STM32_HAVE_ETHMAC
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
+	select STM32_HAVE_SPI4
+	select STM32_HAVE_SPI5
 
 config STM32_DFU
 	bool "DFU bootloader"
@@ -1005,6 +1049,22 @@ config STM32_HAVE_RNG
 	default n
 
 config STM32_HAVE_ETHMAC
+	bool
+	default n
+
+config STM32_HAVE_SPI2
+	bool
+	default n
+
+config STM32_HAVE_SPI3
+	bool
+	default n
+
+config STM32_HAVE_SPI4
+	bool
+	default n
+
+config STM32_HAVE_SPI5
 	bool
 	default n
 
@@ -1187,28 +1247,28 @@ config STM32_SPI1
 config STM32_SPI2
 	bool "SPI2"
 	default n
-	depends on STM32_CONNECTIVITYLINE || STM32_STM32F207 || STM32_STM32F40XX || (STM32_VALUELINE && STM32_HIGHDENSITY) || (STM32_STM32F10XX && (STM32_HIGHDENSITY || STM32_MEDIUMDENSITY)) || STM32_STM32F30XX
+	depends on STM32_HAVE_SPI2
 	select SPI
 	select STM32_SPI
 
 config STM32_SPI3
 	bool "SPI3"
 	default n
-	depends on STM32_CONNECTIVITYLINE || STM32_STM32L15XX || STM32_STM32F207 || STM32_STM32F40XX || (STM32_VALUELINE && STM32_HIGHDENSITY) || (STM32_STM32F10XX && STM32_HIGHDENSITY)
+	depends on STM32_HAVE_SPI3
 	select SPI
 	select STM32_SPI
 
 config STM32_SPI4
 	bool "SPI4"
 	default n
-	depends on STM32_STM32F427 || STM32_STM32F429
+	depends on STM32_HAVE_SPI4
 	select SPI
 	select STM32_SPI
 
 config STM32_SPI5
 	bool "SPI5"
 	default n
-	depends on STM32_STM32F427 || STM32_STM32F429
+	depends on STM32_HAVE_SPI5
 	select SPI
 	select STM32_SPI
 
