@@ -1,9 +1,10 @@
 /****************************************************************************
- * include/nuttx/syslog/syslog.h
- * The NuttX SYSLOGing interface
+ * arch/arm/src/armv7-m/itm_syslog.c
  *
- *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
+ *            Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,82 +35,83 @@
  *
  ****************************************************************************/
 
-#ifndef __INCLUDE_NUTTX_SYSLOG_SYSLOG_H
-#define __INCLUDE_NUTTX_SYSLOG_SYSLOG_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-/****************************************************************************
- * Pre-Processor Definitions
- ****************************************************************************/
-/* Configuration ************************************************************/
-/* CONFIG_SYSLOG - Enables generic system logging features.
- * CONFIG_SYSLOG_DEVPATH - The full path to the system logging device
- *
- * In addition, some SYSLOG device must also be enabled that will provide
- * the syslog_putc() function.  As of this writing, there are two SYSLOG
- * devices avaiable:
- *
- *   1. A RAM SYSLOGing device that will log data into a circular buffer
- *      that can be dumped using the NSH dmesg command.  This device is
- *      described in the include/nuttx/syslog/ramlog.h header file.
- *
- *   2. And a generic character device that may be used as the SYSLOG.  The
- *      generic device interfaces are described in this file.  A disadvantage
- *      of using the generic character device for the SYSLOG is that it
- *      cannot handle debug output generated from interrupt level handlers.
- *
- * CONFIG_SYSLOG_CHAR - Enable the generic character device for the SYSLOG.
- *   The full path to the SYSLOG device is provided by CONFIG_SYSLOG_DEVPATH.
- *   A valid character device must exist at this path.  It will by opened
- *   by syslog_initialize.
- *
- *   NOTE:  No more than one SYSLOG device should be configured.
- */
+#include <nuttx/syslog/syslog.h>
 
-#ifndef CONFIG_SYSLOG
-#  undef CONFIG_SYSLOG_CHAR
+#include "nvic.h"
+#include "up_arch.h"
+#include "itm_syslog.h"
+
+#if defined(CONFIG_SYSLOG) || defined(CONFIG_ARMV7M_ITMSYSLOG)
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#ifndef CONFIG_ARMV7M_ITMSYSLOG_SWODIV
+#  define CONFIG_ARMV7M_ITMSYSLOG_SWODIV 15
 #endif
 
-#if defined(CONFIG_SYSLOG_CHAR) && !defined(CONFIG_SYSLOG_DEVPATH)
-#  define CONFIG_SYSLOG_DEVPATH "/dev/ttyS1"
+#if CONFIG_ARMV7M_ITMSYSLOG_SWODIV < 0
+#  error CONFIG_ARMV7M_ITMSYSLOG_SWODIV should be at least equal to 1
+#endif
+
+/* Use Port #0 at default */
+
+#ifndef CONFIG_ARMV7M_ITMSYSLOG_PORT
+#  define CONFIG_ARMV7M_ITMSYSLOG_PORT 0
 #endif
 
 /****************************************************************************
- * Public Data
+ * Public Functions
  ****************************************************************************/
 
-#ifndef __ASSEMBLY__
-
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C" {
-#else
-#define EXTERN extern
-#endif
-
 /****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-/****************************************************************************
- * Name: syslog_initialize
+ * Name: itm_syslog_initialize
  *
  * Description:
- *   Initialize to use the character device (or file) at
- *   CONFIG_SYSLOG_DEVPATH as the SYSLOG sink.
+ *   Performs ARM-specific initialize for the ITM SYSLOG functions.
+ *   Additional, board specific logic may be required to:
  *
- *   NOTE that this implementation excludes using a network connection as
- *   SYSLOG device.  That would be a good extension.
+ *   - Enable/configured serial wire output pins
+ *   - Enable debug clocking.
+ *
+ *   Those operations must be performed by MCU-specific logic before this
+ *   function is called.
  *
  ****************************************************************************/
 
-#ifdef CONFIG_SYSLOG_CHAR
-EXTERN int syslog_initialize(void);
-#endif
+void itm_syslog_initialize(void)
+{
+  uint32_t regval;
+
+  /* Enable trace in core debug */
+
+  regval  = getreg32(NVIC_DEMCR);
+  regval |= NVIC_DEMCR_TRCENA;
+  putreg32(putreg, NVIC_DEMCR);
+
+  putreg32(0xc5acce55,ITM_LAR);
+  putreg32(0,         ITM_TER);
+  putreg32(0,         ITM_TCR);
+  putreg32(2,         TPI_SPPR); /* Pin protocol: 2=> Manchester (USART) */
+
+  /* Default 880kbps */
+
+  regval = CONFIG_ARMV7M_ITMSYSLOG_SWODIV - 1;
+  putreg32(regval,     TPI_ACPR); /* TRACECLKIN/(ACPR+1) SWO speed */
+
+  putreg32(0,          ITM_TPR);
+  putreg32(0x400003fe, DWT_CTRL);
+  putreg32(0x0001000d, ITM_TCR);
+  putreg32(0x00000100, TPI_FFCR);
+  putreg32(0xffffffff, ITM_TER); /* Enable 32 Ports */
+}
 
 /****************************************************************************
  * Name: syslog_putc
@@ -123,14 +125,24 @@ EXTERN int syslog_initialize(void);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_SYSLOG
-EXTERN int syslog_putc(int ch);
-#endif
+int syslog_putc(int ch);
+{
+  /* ITM enabled */
 
-#undef EXTERN
-#ifdef __cplusplus
+  if ((getreg32(ITM_TCR) & ITM_TCR_ITMENA_Msk) == 0)
+    {
+      return;
+    }
+
+  /* ITM Port "CONFIG_ARMV7M_ITMSYSLOG_PORT" enabled */
+
+  if (getreg32(ITM_TER) & (1 << CONFIG_ARMV7M_ITMSYSLOG_PORT))
+    {
+      while (getreg32(ITM_PORT(CONFIG_ARMV7M_ITMSYSLOG_PORT)) == 0);
+      putreg8((uint8_t)ch, ITM_PORT(CONFIG_ARMV7M_ITMSYSLOG_PORT));
+    }
+
+  return ch;
 }
-#endif
 
-#endif /* __ASSEMBLY__ */
-#endif /* __INCLUDE_NUTTX_SYSLOG_SYSLOG_H */
+#endif /* CONFIG_SYSLOG && CONFIG_ARMV7M_ITMSYSLOG */

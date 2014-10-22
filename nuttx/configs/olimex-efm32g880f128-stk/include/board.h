@@ -56,6 +56,7 @@
  *   - 4-32 MHz High Frequency Crystal Oscillator (HFXO)
  *   - 32.768 kHz Low Frequency RC Oscillator (LFRCO)
  *   - 32.768 kHz Low Frequency Crystal Oscillator (LFXO)
+ *   - 1KHz Ultra Low Frequency RC Oscillator (ULFRCO)
  *
  * The device boots with 14 MHz HFRCO as the HFCLK source.
  */
@@ -67,6 +68,7 @@
 #define BOARD_HFXO_FREQUENCY   32000000 /* 32MHz crystal on board */
 #define BOARD_LFRCO_FREQUENCY  32768    /* Low frequency oscillator */
 #define BOARD_LFXO_FREQUENCY   32768    /* 32MHz crystal on board */
+#define BOARD_ULFRCO_FREQUNCY  1000     /* Ultra low frequency oscillator */
 
 /* HFCLK - High Frequency Clock
  *
@@ -110,9 +112,13 @@
  * LFRCO is disabled from reset. The selection is configured using the LFA
  * field in CMU_LFCLKSEL. The HFCORECLK/2 setting allows the Low Energy A
  * Peripherals to be used as high-frequency peripherals.
+ *
+ * Use _CMU_LFCLKSEL_LFA_DISABLED to disable
+ * ULFRCO is a special case.
  */
 
 #define BOARD_LFACLKSEL           _CMU_LFCLKSEL_LFA_LFXO
+#undef  BOARD_LFACLK_ULFRCO
 #define BOARD_LFACLK_FREQUENCY    BOARD_LFXO_FREQUENCY
 
 /* LFBCLK - Low Frequency B Clock
@@ -123,9 +129,13 @@
  * LFRCO is disabled from reset. The selection is configured using the LFB
  * field in CMU_LFCLKSEL. The HFCORECLK/2 setting allows the Low Energy B
  * Peripherals to be used as high-frequency peripherals.
+ *
+ * Use _CMU_LFCLKSEL_LFB_DISABLED to disable
+ * ULFRCO is a special case.
  */
 
 #define BOARD_LFBCLKSEL           _CMU_LFCLKSEL_LFB_LFXO
+#undef  BOARD_LFBCLK_ULFRCO
 #define BOARD_LFBCLK_FREQUENCY    BOARD_LFXO_FREQUENCY
 
 /* PCNTnCLK - Pulse Counter n Clock
@@ -194,14 +204,48 @@
 #define LED_ASSERTION     6  /* LED1 + LED2 + LED3 */
 #define LED_PANIC         7  /* N/C  + N/C  + N/C + LED4 */
 
+/* Buttons ******************************************************************/
+/* The Olimex board has four buttons, BUT1-4.  Each is grounded and so should
+ * have a weak pull-up so that it will be sensed as "1" when open and "0"
+ * when closed.
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PE0/PCNT0_S0IN/U0_TX  BUT1, EXT-18
+ * PE1/PCNT0_S1IN/U0_RX  BUT2, EXT-19
+ * PE2/ACMP0_O           BUT3, EXT-20
+ * PE3/ACMP1_O           BUT4, EXT-21
+ * --------------------- ---------------------
+ */
+
+#define BUTTON_1          0
+#define BUTTON_2          1
+#define BUTTON_3          2
+#define BUTTON_4          3
+#define NUM_BUTTONS       4
+
+#define BUTTON_1_BIT  (1 << BUTTON_1)
+#define BUTTON_2_BIT  (1 << BUTTON_2)
+#define BUTTON_3_BIT  (1 << BUTTON_3)
+#define BUTTON_4_BIT  (1 << BUTTON_4)
+
 /* Pin routing **************************************************************/
 /* UART0:
  *
- *   U0_RX #1 PE1  **AVAILABLE at TP130**
- *   U0_TX #1 PE0  **AVAILABLE at TP129**
+ *   U0_RX #1 PE1  **AVAILABLE at EXT-19**
+ *   U0_TX #1 PE0  **AVAILABLE at EXT-18**
  */
 
 #define BOARD_UART0_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC1
+
+/* LEUART1:
+ *
+ *   LEU1_RX #0 PC7  LEU1_RX to DB-9 connector
+ *   LEU1_TX #0 PC6  LEU1_TX to DB-9 connector
+ */
+
+#define BOARD_LEUART1_ROUTE_LOCATION _LEUART_ROUTE_LOCATION_LOC0
 
 /****************************************************************************
  * Public Function Prototypes

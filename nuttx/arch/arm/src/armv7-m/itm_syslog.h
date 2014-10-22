@@ -1,8 +1,10 @@
-/*****************************************************************************
- * configs/efm32-g8xx-stk/src/efm32_boot.c
+/****************************************************************************
+ * arch/arm/src/armv7-m/itm_syslog.h
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
+ *            Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,65 +35,32 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-
-#include <nuttx/config.h>
-
-#include "efm32_gpio.h"
-#include "efm32_start.h"
-#include "efm32-g8xx-stk.h"
+#ifndef __ARCH_ARM_SRC_ARMV7_M_ITM_SYSLOG_H
+#define __ARCH_ARM_SRC_ARMV7_M_ITM_SYSLOG_H
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: efm32_boardinitialize
+ * Name: itm_syslog_initialize
  *
  * Description:
- *   All EFM32 architectures must provide the following entry point.  This
- *   entry point is called early in the initialization before any devices
- *   have been initialized.
+ *   Performs ARM-specific initialize for the ITM SYSLOG functions.
+ *   Additional, board specific logic may be required to:
+ *
+ *   - Enable/configured serial wire output pins
+ *   - Enable debug clocking.
+ *
+ *   Those operations must be performed by MCU-specific logic before this
+ *   function is called.
  *
  ****************************************************************************/
 
-void efm32_boardinitialize(void)
-{
-#ifdef CONFIG_EFM32_UART0
-  /*   The control MCU acts as a board controller (BC). There is a UART
-   *   connection between the EFM and the BC. The connection is made by
-   *   setting the EFM_BC_EN (PD13) line high. The EFM can then use the BSP to
-   *   send commands to the BC. When EFM_BC_EN is low, EFM_BC_TX and EFM_BC_RX
-   *   can be used by other applications.
-   */
-
-  efm32_configgpio(GPIO_BC_EN);
+#if defined(CONFIG_SYSLOG) || defined(CONFIG_ARMV7M_ITMSYSLOG)
+void itm_syslog_initialize(void);
+#else
+#  define itm_syslog_initialize()
 #endif
 
-#ifdef CONFIG_ARCH_LEDS
-  /* Configure on-board LEDs if LED support has been selected. */
-
-  board_led_initialize();
-#endif
-}
-
-/****************************************************************************
- * Name: board_initialize
- *
- * Description:
- *   If CONFIG_BOARD_INITIALIZE is selected, then an additional
- *   initialization call will be performed in the boot-up sequence to a
- *   function called board_initialize().  board_initialize() will be
- *   called immediately after up_initialize() is called and just before the
- *   initial application is started.  This additional initialization phase
- *   may be used, for example, to initialize board-specific device drivers.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_BOARD_INITIALIZE
-void board_initialize(void)
-{
-}
-#endif
+#endif /* __ARCH_ARM_SRC_ARMV7_M_ITM_SYSLOG_H */

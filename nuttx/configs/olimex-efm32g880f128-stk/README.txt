@@ -46,6 +46,22 @@ LEDs
 
   The EFM32G880F128-STK has no user controllable LEDs.
 
+Buttons
+=======
+
+  The Olimex board has four buttons, BUT1-4.  Each is grounded and so should
+  have a weak pull-up so that it will be sensed as "1" when open and "0"
+  when closed.
+
+  --------------------- ---------------------
+  PIN                   CONNECTIONS
+  --------------------- ---------------------
+  PE0/PCNT0_S0IN/U0_TX  BUT1, EXT-18
+  PE1/PCNT0_S1IN/U0_RX  BUT2, EXT-19
+  PE2/ACMP0_O           BUT3, EXT-20
+  E3/ACMP1_O            BUT4, EXT-21
+  --------------------- ---------------------
+
 Serial Console
 ==============
 
@@ -110,8 +126,8 @@ Serial Console
 
    Default Serial Console
    ----------------------
-   UART0 is configured as the default serial console at 115200 8N1
-   on pins PE0 and PE1.
+   LEUART1 is configured as the default serial console at 2400 8N1
+   on pins PC6 and PC7.
 
 Configurations
 ==============
@@ -133,7 +149,7 @@ Configurations
   nsh:
   ---
     Configures the NuttShell (nsh) located at apps/examples/nsh.  The
-    Configuration enables the serial interfaces on UART0.  Support for
+    Configuration enables the serial interfaces on LEUART1.  Support for
     builtin applications is enabled, but in the base configuration no
     builtin applications are selected (see NOTES below).
 
