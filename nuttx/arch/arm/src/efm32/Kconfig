@@ -157,11 +157,6 @@ config EFM32_GPIO_IRQ
 	bool "GPIO pin interrupts"
 	---help---
 		Enable support for interrupting GPIO pins
-		
-config EFM32_GPIO_KEYPAD
-	bool "Key pad on GPIO mapped to keyboard"
-	---help---
-		Enable keypad with GPIO pins
 
 choice
 	prompt "USART0 Mode"
@@ -330,4 +325,3 @@ config LEUART1_2STOP
 endmenu # LEUART1 Configuration
 
 endif # ARCH_CHIP_EFM32
-

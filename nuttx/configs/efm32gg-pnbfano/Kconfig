@@ -16,7 +16,7 @@ config EFM32_SWO_DIV
 
 config PNBFANO_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
-    select GPIO_IRQ_DISPATCHER
+    select EFM32_GPIO_IRQ
     select EFM32_GPIO_KEYPAD
     select LIB_KBDCODEC
     select BOARD_INITIALIZE

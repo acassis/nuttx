@@ -1,15 +1,8 @@
 /****************************************************************************
  * arch/arm/src/efm32/efm32_lowputc.c
  *
-<<<<<<< HEAD
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
- *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
- *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
-=======
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
->>>>>>> upstream/master
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

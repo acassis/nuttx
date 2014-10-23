@@ -1,8 +1,8 @@
-/************************************************************************************
- * arch/arm/src/efm32/chip/efm32_flash.h
+/*****************************************************************************
+ * configs/efm32gg-pnbfano/src/efm32_boot.c
  *
- *   Copyright (C) 2009, 2011 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Richard Cochran. All rights reserved.
+ *   Author: Richard Cochran <richardcochran@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,35 +31,61 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ************************************************************************************/
+ ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_EFM32_CHIP_EFM32_FLASH_H
-#define __ARCH_ARM_SRC_EFM32_CHIP_EFM32_FLASH_H
+#include <nuttx/config.h>
 
-/************************************************************************************
- * Pre-processor Definitions
- ************************************************************************************/
+#include "efm32_gpio.h"
+#include "efm32_spi.h"
+#include "stdio.h"
 
-#if defined(CONFIG_EFM32_EFM32XXXXXF32)
+#if 0
+/****************************************************************************
+ * Spi mapping Functions
+ ****************************************************************************/
+const efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR] = 
+{
+#ifdef CONFIG_PNBFANO_USE_MMCSD
+    {
+        .usart_idx  = 0,
+        .location   = 2,
+#ifdef CONFIG_EFM32_SPI_INTERRUPTS
+        .spiirq     = -1,     /* SPI IRQ number : -1 => No interrupts */
+#endif
+        .clk_port    = gpioPortC,
+        .clk_pin     =  9,
+        .mosi_port   = gpioPortC,
+        .mosi_pin    = 11,
+        .miso_port   = gpioPortC,
+        .miso_pin    = 10,
+        .cs_port     = gpioPortC,
+        .cs_pin      =  8
+    }
+#endif
+};
 
-#  define EFM32_FLASH_NPAGES        64
-#  define EFM32_FLASH_PAGESIZE      512
 
-#else
 
-#error "Unknown Flash mapping"
 
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+
+#ifdef CONFIG_BOARD_INITIALIZE
+void board_initialize(void)
+{
+
+#if defined(CONFIG_EFM32_GPIO_KEYPAD) 
+    keypad_kbdinit();
 #endif
 
-#define EFM32_FLASH_SIZE            (EFM32_FLASH_NPAGES * EFM32_FLASH_PAGESIZE)
+  /* Mount the SDIO-based MMC/SD block driver */
 
-/* Register Offsets *****************************************************************/
+  nsh_archinitialize();
 
+}
+#endif
+#endif
 
-/* Register Addresses ***************************************************************/
-
-
-/* Register Bitfield Definitions ****************************************************/
-
-#endif /* __ARCH_ARM_SRC_EFM32_CHIP_EFM32_FLASH_H */
 

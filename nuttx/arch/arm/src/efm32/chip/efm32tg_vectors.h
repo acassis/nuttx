@@ -86,4 +86,3 @@
 #else
 #  error "Unknown EFM32 Type"
 #endif
-

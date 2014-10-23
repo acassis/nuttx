@@ -1251,4 +1251,3 @@ int up_putc(int ch)
 #endif
 
 #endif /* USE_SERIALDRIVER */
-

@@ -2,12 +2,12 @@
 # Automatically generated file; DO NOT EDIT.
 # Nuttx/ Configuration
 #
-CONFIG_NUTTX_NEWCONFIG=y
 
 #
 # Build Setup
 #
 # CONFIG_EXPERIMENTAL is not set
+# CONFIG_DEFAULT_SMALL is not set
 CONFIG_HOST_LINUX=y
 # CONFIG_HOST_OSX is not set
 # CONFIG_HOST_WINDOWS is not set
@@ -49,7 +49,6 @@ CONFIG_ARCH_HAVE_CUSTOMOPT=y
 CONFIG_DEBUG_NOOPT=y
 # CONFIG_DEBUG_CUSTOMOPT is not set
 # CONFIG_DEBUG_FULLOPT is not set
-
 
 #
 # System Type

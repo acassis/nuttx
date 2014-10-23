@@ -44,9 +44,6 @@
 
 #include <stdbool.h>
 
-#include "chip/efm32_cmu.h"
-#include "chip/efm32_usart.h"
-
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
@@ -56,6 +53,7 @@
  *   - 4-32 MHz High Frequency Crystal Oscillator (HFXO)
  *   - 32.768 kHz Low Frequency RC Oscillator (LFRCO)
  *   - 32.768 kHz Low Frequency Crystal Oscillator (LFXO)
+ *   - 1KHz Ultra Low Frequency RC Oscillator (ULFRCO)
  *
  * The device boots with 14 MHz HFRCO as the HFCLK source.
  */
@@ -67,6 +65,7 @@
 #define BOARD_HFXO_FREQUENCY   32000000 /* 32MHz crystal on board */
 #define BOARD_LFRCO_FREQUENCY  32768    /* Low frequency oscillator */
 #define BOARD_LFXO_FREQUENCY   32768    /* 32MHz crystal on board */
+#define BOARD_ULFRCO_FREQUNCY  1000     /* Ultra low frequency oscillator */
 
 /* HFCLK - High Frequency Clock
  *
@@ -110,9 +109,13 @@
  * LFRCO is disabled from reset. The selection is configured using the LFA
  * field in CMU_LFCLKSEL. The HFCORECLK/2 setting allows the Low Energy A
  * Peripherals to be used as high-frequency peripherals.
+ *
+ * Use _CMU_LFCLKSEL_LFA_DISABLED to disable
+ * ULFRCO is a special case.
  */
 
 #define BOARD_LFACLKSEL           _CMU_LFCLKSEL_LFA_LFXO
+#undef  BOARD_LFACLK_ULFRCO
 #define BOARD_LFACLK_FREQUENCY    BOARD_LFXO_FREQUENCY
 
 /* LFBCLK - Low Frequency B Clock
@@ -123,9 +126,13 @@
  * LFRCO is disabled from reset. The selection is configured using the LFB
  * field in CMU_LFCLKSEL. The HFCORECLK/2 setting allows the Low Energy B
  * Peripherals to be used as high-frequency peripherals.
+ *
+ * Use _CMU_LFCLKSEL_LFB_DISABLED to disable
+ * ULFRCO is a special case.
  */
 
 #define BOARD_LFBCLKSEL           _CMU_LFCLKSEL_LFB_LFXO
+#undef  BOARD_LFBCLK_ULFRCO
 #define BOARD_LFBCLK_FREQUENCY    BOARD_LFXO_FREQUENCY
 
 /* PCNTnCLK - Pulse Counter n Clock
@@ -152,25 +159,86 @@
  * in CMU_OSCENCMD. This explicit enabling is required when SWO is used.
  */
 
+
 /* SWO Location - Where SWO goes out.
  *
  * On some board there is possible to use many location for swo output.
  */
-#define BOARD_SWO_LOCATION   0 
+#define BOARD_SWOPORT_LOCATION  0
 
 /* SWO Location - Where SWO goes out.
  *
  * On some board there is possible to different 2 pin in function of 
  * swo location output.
  */
-#define BOARD_SWO_PORT       gpioPortF
-#define BOARD_SWO_PIN        2
+#define BOARD_GPIO_SWOPORT   ( GPIO_OUTPUT_PUSHPULL | \
+                               GPIO_DRIVE_STANDARD  | \
+                               GPIO_PORTF           | \
+                               GPIO_PIN2                )
+
+
+/* LEDs *********************************************************************/
+/* The EFM32 Gecko Starter Kit supports 4 yellow LEDs.  One side is grounded
+ * so these LEDs are illuminated by outputting a high value.
+ *
+ * If CONFIG_ARCH_LEDS is not defined, then the user can control the LEDs in
+ * any way.  The following definitions are used to access individual LEDs.
+ */
+
+/* LED index values for use with efm32_setled() */
+
+#define BOARD_LED1        0
+#define BOARD_LED2        1
+#define BOARD_NLEDS       2
+
+#define BOARD_LED_SHIFT     BOARD_LED1
+#define BOARD_LED_SHIFT2    BOARD_LED2
+
+/* LED bits for use with efm32_setleds() */
+
+#define BOARD_LED1_BIT    (1 << BOARD_LED1)
+#define BOARD_LED2_BIT    (1 << BOARD_LED2)
+
+
+
+/* Pin routing **************************************************************/
+/* USART0 is SPI:
+ *
+ *   U0_CLK  #2 PC9 
+ *   U0_MISO #2 PC10  
+ *   U0_MOSI #2 PC11 
+ */
+
+#define BOARD_USART0_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC2
+
+/* Pin routing **************************************************************/
+/* UART2:
+ *
+ *   U0_RX #1 PC3  
+ *   U0_TX #1 PC2  
+ */
+
+#define BOARD_USART2_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC0
 
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-void nsh_archinitialize(void);
+/****************************************************************************
+ * Name:  efm32_ledinit, efm32_setled, and efm32_setleds
+ *
+ * Description:
+ *   If CONFIG_ARCH_LEDS is defined, then NuttX will control the on-board
+ *   LEDs.  If CONFIG_ARCH_LEDS is not defined, then the following interfaces
+ *   are available to control the LEDs from user applications.
+ *
+ ****************************************************************************/
 
-#endif 
+#ifndef CONFIG_ARCH_LEDS
+void efm32_ledinit(void);
+void efm32_setled(int led, bool ledon);
+void efm32_setleds(uint8_t ledset);
+#endif
+
+#endif /* __CONFIGS_EFM32_PNBFANO_INCLUDE_BOARD_H */

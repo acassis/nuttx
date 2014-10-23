@@ -35,14 +35,14 @@
 
 -include $(TOPDIR)/Make.defs
 
-CSRCS = up_boot.c
+CSRCS = efm32_boot.c
 
 ifeq ($(CONFIG_EFM32_GPIO_KEYPAD),y)
-CSRCS += up_keypad.c
+#CSRCS += efm32_keypad.c
 endif
 
 ifeq ($(CONFIG_PNBFANO_USE_MMCSD),y)
-CSRCS += up_nsh.c
+#CSRCS += efm32_sdcard.c
 endif
 
 COBJS = $(CSRCS:.c=$(OBJEXT))
