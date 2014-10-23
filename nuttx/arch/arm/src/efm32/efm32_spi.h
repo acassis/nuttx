@@ -36,6 +36,7 @@
 #ifndef __ARCH_ARM_EFM32_EFM32_SPI_H
 #define __ARCH_ARM_EFM32_EFM32_SPI_H
 
+#if 0
 #include "em_gpio.h"
 
 typedef const struct 
@@ -52,6 +53,7 @@ typedef const struct
     GPIO_Port_TypeDef   cs_port;            
     int                 cs_pin;             
 }efm32_spi_cfg_t ;
+#endif
 
 #endif
 
