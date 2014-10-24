@@ -71,6 +71,7 @@ const efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR] =
  * Public Functions
  ****************************************************************************/
 
+#endif
 
 #ifdef CONFIG_BOARD_INITIALIZE
 void board_initialize(void)
@@ -82,10 +83,9 @@ void board_initialize(void)
 
   /* Mount the SDIO-based MMC/SD block driver */
 
-  nsh_archinitialize();
+  //nsh_archinitialize();
 
 }
-#endif
 #endif
 
 
