@@ -36,13 +36,24 @@
 
 #include <nuttx/config.h>
 
+#include <stdint.h>
+
 #include <nuttx/arch.h>
+#include <nuttx/irq.h>
+
+#include <arch/irq.h>
+#include <arch/board/board.h>
+
+#include <string.h>
+//#include <stdbool.h>
+#include <errno.h>
+#include <nuttx/kmalloc.h>
+
+#include "up_arch.h"
+#include "efm32_gpio.h"
+#include "efm32gg-pnbfano.h"
 
 #include <efm32_gpio_keypad.h>
-
-#include <nuttx/kmalloc.h>
-#include <string.h>
-#include <errno.h>
 
 #define EFM32_GPIO_KBD_LOG(...)
 //#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
@@ -140,7 +151,7 @@ void efm32_gpio_kbd_putc(FAR struct lib_outstream_s *this, int ch)
 /****************************************************************************
  * irq handler
  ****************************************************************************/
-int efm32_gpio_kbd_irq(int pin, FAR void* context)
+int efm32_gpio_kbd_irq(int irq, FAR void* context)
 {
     (void)context;
     efm32_gpio_keypad_t* _key_map;
@@ -149,20 +160,19 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
 
     _key_map = key_mapping;
 
-    while ( _key_map->pin >= 0 )
+    while ( _key_map->gpio != EFM32_GPIO_KEYPAD_END )
     {
-        if ( _key_map->pin == pin )
+        if ( _key_map->irq == irq )
         {
             struct lib_outstream_s stream = {
                 .put  = efm32_gpio_kbd_putc,
                 .nput = 0
             };
 
-            if ( GPIO_PinInGet(_key_map->port,_key_map->pin) == 0 )
+            if ( efm32_gpioread(_key_map->gpio) == 0 )
             {
-                EFM32_GPIO_KBD_LOG("PB on %c,%2d pressed\n",
-                                   'A'+_key_map->port,
-                                   _key_map->pin
+                EFM32_GPIO_KBD_LOG("PB on 0x%2X pressed\n",
+                                   efm32_getport(_key_map->gpio)
                                   ); 
 
                 if ( _key_map->special_key != KEYCODE_NORMAL )
@@ -176,9 +186,8 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
             }
             else
             {
-                EFM32_GPIO_KBD_LOG("PB on %c,%2d Released\n",
-                                   'A'+_key_map->port,
-                                   _key_map->pin
+                EFM32_GPIO_KBD_LOG("PB on 0x%2X Released\n",
+                                   efm32_getport(_key_map->gpio)
                                   ); 
                 if ( _key_map->special_key != KEYCODE_NORMAL )
                 {
@@ -195,6 +204,49 @@ int efm32_gpio_kbd_irq(int pin, FAR void* context)
     }
 
     return 0;
+}
+
+
+/****************************************************************************
+ * Name: efm32_gpio_keypad_irq_init
+ *
+ * Description:
+ *  Initialize All GPIO for key pad.
+ * Input parameters:
+ *  _key_map    - first key mapping of mapping GPIO<=>Key list.
+ *                    to Finish list set Pin with negative value.
+ * Returned Value:
+ *   None (User allocated instance initialized).
+ ****************************************************************************/
+void efm32_gpio_keypad_irq_init(efm32_gpio_keypad_t *_key_map)
+{
+    irqstate_t flags;
+
+    /* Disable interrupts until we are done.  This guarantees that the
+     * following operations are atomic.
+     */
+
+    flags = irqsave();
+
+    while ( _key_map->gpio != EFM32_GPIO_KEYPAD_END )
+    {
+        /* Configure the pin */
+
+        efm32_configgpio(_key_map->gpio);
+
+        /* Configure the interrupt */
+
+        efm32_gpioirq(_key_map->irq);
+
+        /* Attach and enable the interrupt */
+
+        (void)irq_attach(_key_map->irq, efm32_gpio_kbd_irq);
+        efm32_gpioirqenable(_key_map->irq);
+
+        _key_map++;
+    }
+
+    irqrestore(flags);
 }
 
 
@@ -236,25 +288,7 @@ void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map,
 
     key_mapping = _key_map;
 
-    while ( _key_map->pin >= 0 )
-    {
-        irq_gpio_attach(_key_map->pin, efm32_gpio_kbd_irq);
-
-        GPIO_PinModeSet(_key_map->port,
-                        _key_map->pin,
-                        gpioModeInputPullFilter,
-                        1
-                       );
-
-        GPIO_IntConfig( _key_map->port,
-                        _key_map->pin,
-                        true,
-                        true,
-                        true
-                      );
-
-        _key_map++;
-    }
+    efm32_gpio_keypad_irq_init(_key_map);
 
     register_driver(devname, &keypad_ops, 0444, NULL);
 

@@ -39,25 +39,28 @@
 
 #include <nuttx/config.h>
 
+#include <stdint.h>
+
 #include <nuttx/arch.h>
+#include <nuttx/irq.h>
 
 #include <nuttx/input/kbd_codec.h>
 
 #include <debug.h>
-#include <efm32.h>
-#include <em_gpio.h>
-#include <efm32_gpio_irq.h>
+#include <efm32_gpio.h>
+
+#define EFM32_GPIO_KEYPAD_END (-1)
 
 typedef struct 
 {
 
-    /* pin of GPIO */
+    /* pin and port of GPIO */
 
-    int pin;
+    int gpio;
 
-    /* pin of GPIO */
+    /* IRQ id of GPIO */
 
-    int port;
+    int irq;
 
     /* in case of special key otherwise set to KEYCODE_NORMAL */
 

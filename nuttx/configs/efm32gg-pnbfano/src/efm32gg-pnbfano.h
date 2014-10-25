@@ -1,8 +1,8 @@
 /****************************************************************************
- * configs/efm32gg-pnbfano/src/efm32_gpio_keypad.c
+ * configs/olimex-efm32g880f128-stk/src/efm32g880f128-stk.h
  *
- *   Copyright (C) 2011 Stefan Richter. All rights reserved.
- *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,72 +33,49 @@
  *
  ****************************************************************************/
 
-#include <nuttx/config.h>
+#ifndef __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
+#define __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
 
-#include <stdint.h>
-
-#include <nuttx/arch.h>
-#include <nuttx/irq.h>
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
 #include <arch/irq.h>
-#include <arch/board/board.h>
-
-#include "efm32_gpio.h"
-#include <efm32_gpio_keypad.h>
-#include "efm32gg-pnbfano.h"
-
 
 /****************************************************************************
- * Keypad mapping for stk3300 board
+ * Pre-processor Definitions
  ****************************************************************************/
 
-efm32_gpio_keypad_t pnbfano_key_map[] = 
-{
-    {   /* BP1 */
-        .gpio = GPIO_BUTTON_1,
-        .irq  = GPIO_IRQ_BUTTON_1,
-        .special_key = KEYCODE_LEFT
-        //.special_key = KEYCODE_NORMAL,
-        //.key    = 'a'
-    },
-    {   /* BP2 */
-        .gpio = GPIO_BUTTON_2,
-        .irq  = GPIO_IRQ_BUTTON_2,
-        .special_key = KEYCODE_DOWN
-        //.special_key = KEYCODE_NORMAL,
-        //.key    = 'a'
-    },
-    {   /* BP3 */
-        .gpio = GPIO_BUTTON_3,
-        .irq  = GPIO_IRQ_BUTTON_3,
-        .special_key = KEYCODE_UP
-        //.special_key = KEYCODE_NORMAL,
-        //.key    = 'a'
-    },
-    {   /* BP4 */
-        .gpio = GPIO_BUTTON_4,
-        .irq  = GPIO_IRQ_BUTTON_4,
-        .special_key = KEYCODE_RIGHT
-        //.special_key = KEYCODE_NORMAL,
-        //.key    = 'b'
-    },
-    {
-        .gpio = EFM32_GPIO_KEYPAD_END
-    }
-};
+/* Buttons:
+ *
+ * The pnbfano board has four buttons, BUT1-4. Each is grounded and so should
+ * have a weak pull-up so that it will be sensed as "1" when open and "0"
+ * when closed.
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PE12                  BUT1
+ * PE13                  BUT2
+ * PE14                  BUT3
+ * PE15                  BUT4
+ * --------------------- ---------------------
+ */
 
+#ifdef CONFIG_EFM32_GPIO_IRQ
+#  define GPIO_BUTTON_1 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN12)
+#  define GPIO_BUTTON_2 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN13)
+#  define GPIO_BUTTON_3 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN14)
+#  define GPIO_BUTTON_4 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN15)
+
+#  define GPIO_IRQ_BUTTON_1 EFM32_IRQ_EXTI0
+#  define GPIO_IRQ_BUTTON_2 EFM32_IRQ_EXTI1
+#  define GPIO_IRQ_BUTTON_3 EFM32_IRQ_EXTI2
+#  define GPIO_IRQ_BUTTON_4 EFM32_IRQ_EXTI3
+#endif
 
 /****************************************************************************
- * Register all board drivers for key pad.
+ * Public Function Prototypes
  ****************************************************************************/
 
-int keypad_kbdinit(void)
-{
-
-    efm32_gpio_keypad_init(pnbfano_key_map,"/dev/keypad");
-
-    return 0;
-}
-
-
-
+#endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */
