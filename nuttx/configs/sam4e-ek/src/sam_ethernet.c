@@ -1,5 +1,5 @@
 /************************************************************************************
- * configs/sama5d4-ek/src/sam_ethernet.c
+ * configs/sam4e-ek/src/sam_ethernet.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -55,10 +55,10 @@
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
 
-#include "sam_pio.h"
-#include "sam_ethernet.h"
+#include "sam_gpio.h"
+#include "sam_emac.h"
 
-#include "sama5d4-ek.h"
+#include "sam4e-ek.h"
 
 #ifdef HAVE_NETWORK
 
@@ -66,17 +66,7 @@
  * Pre-processor Definitions
  ************************************************************************************/
 
-#ifndef CONFIG_SAMA5_EMAC0
-#  undef CONFIG_SAMA5_EMAC0_ISETH0
-#endif
-
-#ifdef CONFIG_SAMA5_EMAC0_ISETH0
-#  define SAMA5_EMAC0_DEVNAME "eth0"
-#  define SAMA5_EMAC1_DEVNAME "eth1"
-#else
-#  define SAMA5_EMAC0_DEVNAME "eth1"
-#  define SAMA5_EMAC1_DEVNAME "eth0"
-#endif
+#define SAM34_EMAC_DEVNAME "eth0"
 
 /* Debug ********************************************************************/
 /* Extra, in-depth debug output that is only available if
@@ -95,13 +85,8 @@
  * Private Data
  ************************************************************************************/
 
-#ifdef CONFIG_SAMA5_PIOE_IRQ
-#ifdef CONFIG_SAMA5_EMAC0
-static xcpt_t g_emac0_handler;
-#endif
-#ifdef CONFIG_SAMA5_EMAC1
-static xcpt_t g_emac1_handler;
-#endif
+#ifdef CONFIG_SAM34_GPIOD_IRQ
+static xcpt_t g_emac_handler;
 #endif
 
 /************************************************************************************
@@ -112,37 +97,19 @@ static xcpt_t g_emac1_handler;
  * Name: sam_emac_phy_enable and sam_gmac_enable
  ************************************************************************************/
 
-#ifdef CONFIG_SAMA5_PIOE_IRQ
-#ifdef CONFIG_SAMA5_EMAC0
-static void sam_emac0_phy_enable(bool enable)
+#ifdef CONFIG_SAM34_GPIOD_IRQ
+static void sam_emac_phy_enable(bool enable)
 {
-  phydbg("IRQ%d: enable=%d\n", IRQ_INT_ETH0, enable);
+  phydbg("IRQ%d: enable=%d\n", SAM_PHY_IRQ, enable);
   if (enable)
     {
-      sam_pioirqenable(IRQ_INT_ETH0);
+      sam_gpioirqenable(SAM_PHY_IRQ);
     }
   else
     {
-      sam_pioirqdisable(IRQ_INT_ETH0);
+      sam_gpioirqdisable(SAM_PHY_IRQ);
     }
 }
-
-#endif
-
-#ifdef CONFIG_SAMA5_EMAC1
-static void sam_emac1_phy_enable(bool enable)
-{
-  phydbg("IRQ%d: enable=%d\n", IRQ_INT_ETH1, enable);
-  if (enable)
-    {
-      sam_pioirqenable(IRQ_INT_ETH1);
-    }
-  else
-    {
-      sam_pioirqdisable(IRQ_INT_ETH1);
-    }
-}
-#endif
 #endif
 
 /************************************************************************************
@@ -159,15 +126,8 @@ static void sam_emac1_phy_enable(bool enable)
 
 void weak_function sam_netinitialize(void)
 {
-#ifdef CONFIG_SAMA5_EMAC0
-  phydbg("Configuring %08x\n", PIO_INT_ETH0);
-  sam_configpio(PIO_INT_ETH0);
-#endif
-
-#ifdef CONFIG_SAMA5_EMAC1
-  phydbg("Configuring %08x\n", PIO_INT_ETH1);
-  sam_configpio(PIO_INT_ETH1);
-#endif
+  phydbg("Configuring %08x\n", GPIO_PHY_IRQ);
+  sam_configgpio(GPIO_PHY_IRQ);
 }
 
 /****************************************************************************
@@ -233,48 +193,30 @@ void weak_function sam_netinitialize(void)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_SAMA5_PIOE_IRQ
+#ifdef CONFIG_SAM34_GPIOD_IRQ
 xcpt_t arch_phy_irq(FAR const char *intf, xcpt_t handler, phy_enable_t *enable)
 {
   irqstate_t flags;
   xcpt_t *phandler;
   xcpt_t oldhandler;
-  pio_pinset_t pinset;
+  gpio_pinset_t pinset;
   phy_enable_t enabler;
   int irq;
 
   DEBUGASSERT(intf);
 
   nvdbg("%s: handler=%p\n", intf, handler);
-#ifdef CONFIG_SAMA5_EMAC0
-  phydbg("EMAC0: devname=%s\n", SAMA5_EMAC0_DEVNAME);
-#endif
-#ifdef CONFIG_SAMA5_EMAC1
-  phydbg("EMAC1: devname=%s\n", SAMA5_EMAC1_DEVNAME);
-#endif
+  phydbg("EMAC: devname=%s\n", SAM34_EMAC_DEVNAME);
 
-#ifdef CONFIG_SAMA5_EMAC0
-  if (strcmp(intf, SAMA5_EMAC0_DEVNAME) == 0)
+  if (strcmp(intf, SAM34_EMAC_DEVNAME) == 0)
     {
-      phydbg("Select EMAC0\n");
-      phandler = &g_emac0_handler;
-      pinset   = PIO_INT_ETH0;
-      irq      = IRQ_INT_ETH0;
-      enabler  = sam_emac0_phy_enable;
+      phydbg("Select EMAC\n");
+      phandler = &g_emac_handler;
+      pinset   = GPIO_PHY_IRQ;
+      irq      = SAM_PHY_IRQ;
+      enabler  = sam_emac_phy_enable;
     }
   else
-#endif
-#ifdef CONFIG_SAMA5_EMAC1
-  if (strcmp(intf, SAMA5_EMAC1_DEVNAME) == 0)
-    {
-      phydbg("Select EMAC1\n");
-      phandler = &g_emac1_handler;
-      pinset   = PIO_INT_ETH1;
-      irq      = IRQ_INT_ETH1;
-      enabler  = sam_emac1_phy_enable;
-    }
-  else
-#endif
     {
       ndbg("Unsupported interface: %s\n", intf);
       return NULL;
@@ -296,7 +238,7 @@ xcpt_t arch_phy_irq(FAR const char *intf, xcpt_t handler, phy_enable_t *enable)
   if (handler)
     {
       phydbg("Configure pin: %08x\n", pinset);
-      sam_pioirq(pinset);
+      sam_gpioirq(pinset);
 
       phydbg("Attach IRQ%d\n", irq);
       (void)irq_attach(irq, handler);
@@ -310,7 +252,7 @@ xcpt_t arch_phy_irq(FAR const char *intf, xcpt_t handler, phy_enable_t *enable)
 
   /* Return with the interrupt disabled in either case */
 
-  sam_pioirqdisable(irq);
+  sam_gpioirqdisable(irq);
 
   /* Return the enabling function pointer */
 
@@ -324,6 +266,6 @@ xcpt_t arch_phy_irq(FAR const char *intf, xcpt_t handler, phy_enable_t *enable)
   irqrestore(flags);
   return oldhandler;
 }
-#endif /* CONFIG_SAMA5_PIOE_IRQ */
+#endif /* CONFIG_SAM34_GPIOD_IRQ */
 
 #endif /* HAVE_NETWORK */

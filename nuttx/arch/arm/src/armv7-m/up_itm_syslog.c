@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/armv7-m/itm_syslog.c
+ * arch/arm/src/armv7-m/up_itm_syslog.c
  *
  *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
@@ -41,15 +41,15 @@
 
 #include <nuttx/config.h>
 
+#include <stdio.h>
+
 #include <nuttx/syslog/syslog.h>
 
-#include "stdio.h"
-
 #include "nvic.h"
-#include "up_arch.h"
 #include "itm.h"
 #include "tpi.h"
 #include "dwt.h"
+#include "up_arch.h"
 #include "itm_syslog.h"
 
 #if defined(CONFIG_SYSLOG) || defined(CONFIG_ARMV7M_ITMSYSLOG)
