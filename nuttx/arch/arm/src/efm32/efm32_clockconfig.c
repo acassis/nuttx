@@ -166,7 +166,7 @@ static void efm32_enable_lfxo(void)
 {
   /* Enable the LFXO */
 
-  putreg32(CMU_OSCENCMD_LFRCOEN, EFM32_CMU_OSCENCMD);
+  putreg32(CMU_OSCENCMD_LFXOEN, EFM32_CMU_OSCENCMD);
   efm32_statuswait(CMU_STATUS_LFXORDY);
 }
 
@@ -550,8 +550,23 @@ static inline uint32_t efm32_hfcoreclk_config(uint32_t hfcoreclkdiv,
 static inline uint32_t efm32_hfperclk_config(uint32_t hfperclkdiv,
                                              uint32_t hfclk)
 {
-  /* REVISIT:  Divider not currently used */
-  return hfclk;
+  uint32_t regval;
+  unsigned int divider;
+
+  DEBUGASSERT(hfperclkdiv <= _CMU_HFPERCLKDIV_HFPERCLKDIV_HFCLK512);
+
+  /* Set the divider and enable the HFPERCLK */
+
+  regval = (hfperclkdiv << _CMU_HFPERCLKDIV_HFPERCLKDIV_SHIFT) |
+           CMU_HFPERCLKDIV_HFPERCLKEN;
+  putreg32(regval, EFM32_CMU_HFPERCLKDIV);
+
+  /* The value of hfperclkdiv is log2 of the arithmetic divisor:
+   * 0->1, 1->2, 2->4, 3->8, ... 9->512.
+   */
+
+  divider = 1 << hfperclkdiv;
+  return hfclk / divider;
 }
 
 /****************************************************************************
@@ -610,6 +625,7 @@ static inline uint32_t efm32_lfaclk_config(uint32_t lfaclksel, bool ulfrco,
           case CMU_LFCLKSEL_LFA_LFRCO:
             {
               efm32_enable_lfrco();
+              lfaclk = BOARD_LFRCO_FREQUENCY;
             }
             break;
 
@@ -642,11 +658,18 @@ static inline uint32_t efm32_lfaclk_config(uint32_t lfaclksel, bool ulfrco,
   /* Enable the LFA clock in the LFCLKSEL register */
 
   regval  = getreg32(EFM32_CMU_LFCLKSEL);
-  regval &= ~(_CMU_LFCLKSEL_LFA_MASK | _CMU_LFCLKSEL_LFAE_MASK);
+
+#ifdef CMU_LFCLKSEL_LFAE
+  regval &= ~_CMU_LFCLKSEL_LFAE_MASK;
+#endif
+
+  regval &= ~_CMU_LFCLKSEL_LFA_MASK;
   regval |= (lfaclksel << _CMU_LFCLKSEL_LFA_SHIFT);
+
 #ifdef CMU_LFCLKSEL_LFAE_ULFRCO
   regval |= ((uint32_t)ulfrco << _CMU_LFCLKSEL_LFAE_SHIFT);
 #endif
+
   putreg32(regval, EFM32_CMU_LFCLKSEL);
 
   return lfaclk;
@@ -736,11 +759,18 @@ static inline uint32_t efm32_lfbclk_config(uint32_t lfbclksel, bool ulfrco,
   /* Enable the LFB clock in the LFCLKSEL register */
 
   regval  = getreg32(EFM32_CMU_LFCLKSEL);
-  regval &= ~(_CMU_LFCLKSEL_LFB_MASK | _CMU_LFCLKSEL_LFBE_MASK);
+
+#ifdef CMU_LFCLKSEL_LFBE
+  regval &= ~_CMU_LFCLKSEL_LFBE_MASK;
+#endif
+
+  regval &= ~_CMU_LFCLKSEL_LFB_MASK;
   regval |= (lfbclksel << _CMU_LFCLKSEL_LFB_SHIFT);
+
 #ifdef CMU_LFCLKSEL_LFBE_ULFRCO
   regval |= ((uint32_t)ulfrco << _CMU_LFCLKSEL_LFBE_SHIFT);
 #endif
+
   putreg32(regval, EFM32_CMU_LFCLKSEL);
 
   return lfbclk;

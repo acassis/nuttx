@@ -8889,3 +8889,17 @@
 	  (2014-10-23).
 	* configs/sam4e-ek/src/sam_ethernet.c (and other files):SAM4E-EK: Add
 	  support for PHY insterrupt (2014-10-24).
+	* include/wchar.h:  Add a mostly bogus wchar.h header file.  This file
+	  is mostly bogus because noneo of the wide character operations are
+	  currently supported in the Nuttx C library (2014-10-27).
+	* include/termios.h, libc/termios/lib_isatty.c, and Make.defs: Add
+	  isatty() function. From  Alan Carvalho de Assis (2014-10-27).
+	* arch/arm/include/efm32, src/efm32, and configs/efm32-gxxx-stk:
+	  The EFM32 Gecko Starter Kit port is now functional.  At least
+	  NSH is running over LEUART0 on the board (2014-10-29).
+	* arch/arm/src/sm34/sam_serial.c and Kconfig:  Add support for SAM3/4
+	  basic TERMIOS and flow control.  There are issues with IFLOW control:
+	  PDC or DMAC support is required (2014-10-29).
+	* configs/sam4e-ek/src/sam4e-ek.h: Fix an error in a USART1 pin number
+	  (2014-10-29).
+

@@ -16,11 +16,45 @@ README
     • On-board SEGGER J-Link USB emulator
     • ARM 20 pin JTAG/SWD standard Debug in/out connector
 
+CONTENTS
+=======
+
+    • Status
+    • LEDs
+    • Serial Console
+    • Using the J-Link GDB Server
+    • Configurations
+
 STATUS
 ======
 
-  My board is on order and has not arrived as of this writing.  So no debug
-  has yet been done.  So the status is code-complete but untested.
+  2014-10-28.  Testing is still in progress.  At this point all basic boot
+    operations are successful:  The LEDs work and the application tasks appear
+    to be successfully started.  LED2 is on and LED0 is glowing (meaning that
+    interrupts are being processed).  However, I get no output on PE0.  Data
+    appears to be sent (at least by efm32_lowputc()).  However, no signal
+    activity is present on PE0.
+
+  2014-10-29:  The NuttX is running on the EFM32 Gecko Starter Kit.  There
+    are not many peripherals to test in that configuration, but the NuttShell
+    (NSH) is working over LEUART0 at 2400 baud (certainly that could go up
+    to 4800.  The documentation says that 9600 is also possible on the
+    LEUART, but I am not sure how).
+
+    I originally planned to use UART0 at 115200 baud, but I never could get
+    any output from the board.  I reviewd my pin configuration and clocking
+    carefully and the USART seems to think it is working correctly.  So I
+    am thinking that there is some board issue that prohibits that option
+    (probably because UART0 is used with the board controller???).  Pins
+    are not available for other U[S]ARTs on the board.
+
+  2014-10-29:  Calibrated the delays loops.
+
+  2014-10-29:  The start-up time is long -- about a second.  I have traced
+    this to the default delay in bringing up the LFCLK in efm32_clockconfig.
+    The default, reset setting of the LFXOTIMEOUT field of the CMU_CTRL
+    register is 3 which corresponds to a delay of 32768 cycles, or a full
+    second.  I have not experimented to see if this delay can be reduced.
 
 LEDs
 ====
@@ -45,7 +79,7 @@ LEDs
   include/board.h and src/efm32_autoleds.c.  The LEDs are used to
   encode OS-related events as follows:
 
-    SYMBOL             Meaning                 LED1*  LED2   LED3   LED4
+    SYMBOL             Meaning                 LED0*  LED1   LED2   LED3
     ----------------- -----------------------  ------ -----  -----  ------
     LED_STARTED       NuttX has been started   ON     OFF    OFF    OFF
     LED_HEAPALLOCATE  Heap has been allocated  OFF    ON     OFF    OFF
@@ -57,14 +91,14 @@ LEDs
     LED_PANIC         The system has crashed   N/C    N/C    N/C    ON
     LED_IDLE          STM32 is is sleep mode   (Optional, not used)
 
-  * If LED1, LED2, LED3 are statically on, then NuttX probably failed to boot
+  * If LED0, LED1, LED2 are statically on, then NuttX probably failed to boot
     and these LEDs will give you some indication of where the failure was
- ** The normal state is LED3 ON and LED1 faintly glowing.  This faint glow
+ ** The normal state is LED2 ON and LED3 faintly glowing.  This faint glow
     is because of timer interrupt that result in the LED being illuminated
     on a small proportion of the time.
-*** LED2 may also flicker normally if signals are processed.
+*** LED1 may also flicker normally if signals are processed.
 
-Serial Console
+SERIAL CONSOLE
 ==============
 
   Pin Availability
@@ -122,8 +156,15 @@ Serial Console
 
    Default Serial Console
    ----------------------
-   UART0 is configured as the default serial console at 115200 8N1
-   on pins PE0 and PE1.
+   LEUART0 is configured as the default serial console at 2400 8N1
+   on pins PD5 and PD4.  It certainly be possible to go to 4800 baud
+   and the documentation claims that 9600 baud is possible (although
+   I am not sure how).
+
+   It should also be possible to use UART0 is configured at 115200 8N1
+   on pins PE0 and PE1.  However, my attempts to use USART0 were
+   unsuccessful -- I see no activity on PE0 and PE1 and have not yet
+   figured out why that is.
 
    Communication through the Board Controller
    ------------------------------------------
@@ -133,8 +174,58 @@ Serial Console
    send commands to the BC. When EFM_BC_EN is low, EFM_BC_TX and EFM_BC_RX
    can be used by other applications.
 
-Configurations
+USING THE J-LINK GDB SERVER
+===========================
+
+   1. Star the J-Link GDB server.  You should see the start-up confiration
+      window.  SelectL
+
+      a. Target device = EFM32G880F128
+      b. Select Target interface = SWD
+
+   2. Press OK.  The GDB server should start and the last message in the Log
+      output should be "Waiting for GDB connection".
+
+   3. In a terminal window, start GDB:
+
+      arm-none-eabi-gdb
+
+   4. Connect to the J-Link GDB serer:
+
+     (gdb) target remote local host
+
+   5. Load and run nuttx
+
+     (gdb) mon halt
+     (gdb) load nuttx
+     (gdb) mon reset go
+
+   I had to tinker with the setup a few times repeating the same steps above
+   before things finally began to work.  Don't know why.
+
+   To debug code already burned into FLASH:
+
+   1. Start the GDB server as above.
+
+   2. In a terminal window, start GDB:
+
+      arm-none-eabi-gdb
+
+   3. Connect to the J-Link GDB serer:
+
+     (gdb) target remote local host
+
+   3. Load the nuttx symbol file, reset, and debug
+
+     (gdb) mon halt
+     (gdb) file nuttx
+     (gdb) mon reset
+     (gdb) s
+     ...
+
+CONFIGURATIONS
 ==============
+
   Each EFM32 Gecko Starter Kit configuration is maintained in a sub-directory
   and can be selected as follow:
 
@@ -153,9 +244,7 @@ Configurations
   nsh:
   ---
     Configures the NuttShell (nsh) located at apps/examples/nsh.  The
-    Configuration enables the serial interfaces on UART0.  Support for
-    built-in applications is enabled, but in the base configuration no
-    built-in applications are selected (see NOTES below).
+    Configuration enables the serial interfaces on LEUART0 at 2400 8N1.
 
     NOTES:
 

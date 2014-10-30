@@ -100,20 +100,20 @@
 #elif defined(CONFIG_UART0_SERIAL_CONSOLE)
 #    define CONSOLE_DEV         g_uart0port  /* UART0 is console */
 #    define TTYS0_DEV           g_uart0port  /* UART0 is ttyS0 */
-#    define UART1_ASSIGNED      1
+#    define UART0_ASSIGNED      1
 #elif defined(CONFIG_UART1_SERIAL_CONSOLE)
 #    define CONSOLE_DEV         g_uart1port  /* UART1 is console */
 #    define TTYS0_DEV           g_uart1port  /* UART1 is ttyS0 */
 #    define UART1_ASSIGNED      1
 #else
 #  undef CONSOLE_DEV                         /* No console */
-#  if defined(CONFIG_EFM32_USART0)
+#  if defined(CONFIG_EFM32_USART0_ISUART)
 #    define TTYS0_DEV           g_usart0port /* USART0 is ttyS0 */
 #    define USART0_ASSIGNED     1
-#  elif defined(CONFIG_EFM32_USART1)
+#  elif defined(CONFIG_EFM32_USART1_ISUART)
 #    define TTYS0_DEV           g_usart1port /* USART1 is ttyS0 */
 #    define USART1_ASSIGNED     1
-#  elif defined(CONFIG_EFM32_USART2)
+#  elif defined(CONFIG_EFM32_USART2_ISUART)
 #    define TTYS0_DEV           g_usart2port /* USART2 is ttyS0 */
 #    define USART2_ASSIGNED     1
 #  elif defined(CONFIG_EFM32_UART0)
@@ -129,13 +129,13 @@
  * console UART.  There are really only 4 unassigned.
  */
 
-#if defined(CONFIG_EFM32_USART0) && !defined(USART0_ASSIGNED)
+#if defined(CONFIG_EFM32_USART0_ISUART) && !defined(USART0_ASSIGNED)
 #  define TTYS1_DEV           g_usart0port /* USART0 is ttyS1 */
 #  define USART0_ASSIGNED     1
-#elif defined(CONFIG_EFM32_USART1) && !defined(USART1_ASSIGNED)
+#elif defined(CONFIG_EFM32_USART1_ISUART) && !defined(USART1_ASSIGNED)
 #  define TTYS1_DEV           g_usart1port /* USART1 is ttyS1 */
 #  define USART1_ASSIGNED     1
-#elif defined(CONFIG_EFM32_USART2) && !defined(USART2_ASSIGNED)
+#elif defined(CONFIG_EFM32_USART2_ISUART) && !defined(USART2_ASSIGNED)
 #  define TTYS1_DEV           g_usart2port /* USART2 is ttyS1 */
 #  define USART2_ASSIGNED     1
 #elif defined(CONFIG_EFM32_UART0) && !defined(UART0_ASSIGNED)
@@ -151,10 +151,10 @@
  * also be the console.  There are really only 3 unassigned.
  */
 
-#if defined(CONFIG_EFM32_USART1) && !defined(USART1_ASSIGNED)
+#if defined(CONFIG_EFM32_USART1_ISUART) && !defined(USART1_ASSIGNED)
 #  define TTYS2_DEV           g_usart1port /* USART1 is ttyS2 */
 #  define USART1_ASSIGNED     1
-#elif defined(CONFIG_EFM32_USART2) && !defined(USART2_ASSIGNED)
+#elif defined(CONFIG_EFM32_USART2_ISUART) && !defined(USART2_ASSIGNED)
 #  define TTYS2_DEV           g_usart2port /* USART2 is ttyS2 */
 #  define USART2_ASSIGNED     1
 #elif defined(CONFIG_EFM32_UART0) && !defined(UART0_ASSIGNED)
@@ -170,7 +170,7 @@
  * these could also be the console.  There are really only 2 unassigned.
  */
 
-#if defined(CONFIG_EFM32_USART2) && !defined(USART2_ASSIGNED)
+#if defined(CONFIG_EFM32_USART2_ISUART) && !defined(USART2_ASSIGNED)
 #  define TTYS3_DEV           g_usart2port /* USART2 is ttyS3 */
 #  define USART2_ASSIGNED     1
 #elif defined(CONFIG_EFM32_UART0) && !defined(UART0_ASSIGNED)
@@ -198,8 +198,7 @@
 
 #define EFM32_TXERR_INTS      (USART_IEN_TXOF)
 #define EFM32_RXERR_INTS      (USART_IEN_RXOF | USART_IEN_RXUF | \
-                               USART_IEN_TXUF | USART_IEN_PERR | \
-                               USART_IEN_FERR)
+                               USART_IEN_PERR | USART_IEN_FERR)
 #ifdef CONFIG_DEBUG
 #  define EFM32_TX_INTS       (USART_IEN_TXBL | EFM32_TXERR_INTS)
 #  define EFM32_RX_INTS       (USART_IEN_RXDATAV | EFM32_RXERR_INTS)
@@ -247,13 +246,13 @@ static void efm32_shutdown(struct uart_dev_s *dev);
 static int  efm32_attach(struct uart_dev_s *dev);
 static void efm32_detach(struct uart_dev_s *dev);
 static int  efm32_rxinterrupt(struct uart_dev_s *dev);
-#if defined(CONFIG_EFM32_USART0)
+#if defined(CONFIG_EFM32_USART0_ISUART)
 static int  efm32_usart0_rxinterrupt(int irq, void *context);
 #endif
-#if defined(CONFIG_EFM32_USART1)
+#if defined(CONFIG_EFM32_USART1_ISUART)
 static int  efm32_usart1_rxinterrupt(int irq, void *context);
 #endif
-#if defined(CONFIG_EFM32_USART2)
+#if defined(CONFIG_EFM32_USART2_ISUART)
 static int  efm32_usart2_rxinterrupt(int irq, void *context);
 #endif
 #if defined(CONFIG_EFM32_UART0)
@@ -263,13 +262,13 @@ static int  efm32_uart0_rxinterrupt(int irq, void *context);
 static int  efm32_uart1_rxinterrupt(int irq, void *context);
 #endif
 static int  efm32_txinterrupt(struct uart_dev_s *dev);
-#if defined(CONFIG_EFM32_USART0)
+#if defined(CONFIG_EFM32_USART0_ISUART)
 static int  efm32_usart0_txinterrupt(int irq, void *context);
 #endif
-#if defined(CONFIG_EFM32_USART1)
+#if defined(CONFIG_EFM32_USART1_ISUART)
 static int  efm32_usart1_txinterrupt(int irq, void *context);
 #endif
-#if defined(CONFIG_EFM32_USART2)
+#if defined(CONFIG_EFM32_USART2_ISUART)
 static int  efm32_usart2_txinterrupt(int irq, void *context);
 #endif
 #if defined(CONFIG_EFM32_UART0)
@@ -312,15 +311,15 @@ static const struct uart_ops_s g_uart_ops =
 
 /* I/O buffers */
 
-#ifdef CONFIG_EFM32_USART0
+#ifdef CONFIG_EFM32_USART0_ISUART
 static char g_usart0rxbuffer[CONFIG_USART0_RXBUFSIZE];
 static char g_usart0txbuffer[CONFIG_USART0_TXBUFSIZE];
 #endif
-#ifdef CONFIG_EFM32_USART1
+#ifdef CONFIG_EFM32_USART1_ISUART
 static char g_usart1rxbuffer[CONFIG_USART1_RXBUFSIZE];
 static char g_usart1txbuffer[CONFIG_USART1_TXBUFSIZE];
 #endif
-#ifdef CONFIG_EFM32_USART2
+#ifdef CONFIG_EFM32_USART2_ISUART
 static char g_usart2rxbuffer[CONFIG_USART2_RXBUFSIZE];
 static char g_usart2txbuffer[CONFIG_USART2_TXBUFSIZE];
 #endif
@@ -335,7 +334,7 @@ static char g_uart1txbuffer[CONFIG_UART1_TXBUFSIZE];
 
 /* This describes the state of the EFM32 USART0 port. */
 
-#ifdef CONFIG_EFM32_USART0
+#ifdef CONFIG_EFM32_USART0_ISUART
 static const struct efm32_usart_s g_usart0config =
 {
   .uartbase  = EFM32_USART0_BASE,
@@ -359,21 +358,21 @@ static struct uart_dev_s g_usart0port =
   .recv      =
   {
     .size    = CONFIG_USART0_RXBUFSIZE,
-    .buffer  = g_uart0rxbuffer,
+    .buffer  = g_usart0rxbuffer,
   },
   .xmit      =
   {
     .size    = CONFIG_USART0_TXBUFSIZE,
-    .buffer  = g_uart0txbuffer,
+    .buffer  = g_usart0txbuffer,
    },
   .ops       = &g_uart_ops,
-  .priv      = &g_uart0priv,
+  .priv      = &g_usart0priv,
 };
 #endif
 
 /* This describes the state of the EFM32 USART1 port. */
 
-#ifdef CONFIG_EFM32_USART1
+#ifdef CONFIG_EFM32_USART1_ISUART
 static struct efm32_config_s g_usart1config =
 {
   .uartbase  = EFM32_USART1_BASE,
@@ -397,21 +396,21 @@ static struct uart_dev_s g_usart1port =
   .recv      =
   {
     .size    = CONFIG_USART1_RXBUFSIZE,
-    .buffer  = g_uart1rxbuffer,
+    .buffer  = g_usart1rxbuffer,
   },
   .xmit      =
   {
     .size    = CONFIG_USART1_TXBUFSIZE,
-    .buffer  = g_uart1txbuffer,
+    .buffer  = g_usart1txbuffer,
    },
   .ops       = &g_uart_ops,
-  .priv      = &g_uart1priv,
+  .priv      = &g_usart1priv,
 };
 #endif
 
 /* This describes the state of the EFM32 USART2 port. */
 
-#ifdef CONFIG_EFM32_USART2
+#ifdef CONFIG_EFM32_USART2_ISUART
 static struct efm32_config_s g_usart2config =
 {
   .uartbase  = EFM32_USART2_BASE,
@@ -435,15 +434,15 @@ static struct uart_dev_s g_usart2port =
   .recv     =
   {
     .size   = CONFIG_USART2_RXBUFSIZE,
-    .buffer = g_uart2rxbuffer,
+    .buffer = g_usart2rxbuffer,
   },
   .xmit     =
   {
     .size   = CONFIG_USART2_TXBUFSIZE,
-    .buffer = g_uart2txbuffer,
+    .buffer = g_usart2txbuffer,
    },
   .ops      = &g_uart_ops,
-  .priv     = &g_uart2priv,
+  .priv     = &g_usart2priv,
 };
 #endif
 
@@ -774,21 +773,21 @@ static int  efm32_rxinterrupt(struct uart_dev_s *dev)
   return OK;
 }
 
-#if defined(CONFIG_EFM32_USART0)
+#if defined(CONFIG_EFM32_USART0_ISUART)
 static int efm32_usart0_rxinterrupt(int irq, void *context)
 {
   return efm32_rxinterrupt(&g_usart0port);
 }
 #endif
 
-#if defined(CONFIG_EFM32_USART1)
+#if defined(CONFIG_EFM32_USART1_ISUART)
 static int  efm32_usart1_rxinterrupt(int irq, void *context)
 {
   return efm32_rxinterrupt(&g_usart1port);
 }
 #endif
 
-#if defined(CONFIG_EFM32_USART2)
+#if defined(CONFIG_EFM32_USART2_ISUART)
 static int  efm32_usart2_rxinterrupt(int irq, void *context)
 {
   return efm32_rxinterrupt(&g_usart2port);
@@ -857,21 +856,21 @@ static int  efm32_txinterrupt(struct uart_dev_s *dev)
   return OK;
 }
 
-#if defined(CONFIG_EFM32_USART0)
+#if defined(CONFIG_EFM32_USART0_ISUART)
 static int efm32_usart0_txinterrupt(int irq, void *context)
 {
   return efm32_txinterrupt(&g_usart0port);
 }
 #endif
 
-#if defined(CONFIG_EFM32_USART1)
+#if defined(CONFIG_EFM32_USART1_ISUART)
 static int  efm32_usart1_txinterrupt(int irq, void *context)
 {
   return efm32_txinterrupt(&g_usart1port);
 }
 #endif
 
-#if defined(CONFIG_EFM32_USART2)
+#if defined(CONFIG_EFM32_USART2_ISUART)
 static int  efm32_usart2_txinterrupt(int irq, void *context)
 {
   return efm32_txinterrupt(&g_usart2port);

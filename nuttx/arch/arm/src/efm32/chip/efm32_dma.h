@@ -72,107 +72,107 @@
  *******************************************************************************************************************************/
 
  #if defined(CONFIG_EFM32_EFM32GG)
-#  define EFM_DMA_NCHANNELS            12
+#  define EFM32_DMA_NCHANNELS            12
 #elif defined(CONFIG_EFM32_EFM32G)
-#  define EFM_DMA_NCHANNELS            8
+#  define EFM32_DMA_NCHANNELS            8
 #endif
 
 /* DMA Register Offsets ********************************************************************************************************/
 
-#define EFM_DMA_STATUS_OFFSET          0x0000  /* DMA Status Registers */
-#define EFM_DMA_CONFIG_OFFSET          0x0004  /* DMA Configuration Register */
-#define EFM_DMA_CTRLBASE_OFFSET        0x0008  /* Channel Control Data Base Pointer Register */
-#define EFM_DMA_ALTCTRLBASE_OFFSET     0x000c  /* Channel Alternate Control Data Base Pointer Register */
-#define EFM_DMA_CHWAITSTATUS_OFFSET    0x0010  /* Channel Wait on Request Status Register */
-#define EFM_DMA_CHSWREQ_OFFSET         0x0014  /* Channel Software Request Register */
-#define EFM_DMA_CHUSEBURSTS_OFFSET     0x0018  /* Channel Useburst Set Register */
-#define EFM_DMA_CHUSEBURSTC_OFFSET     0x001c  /* Channel Useburst Clear Register */
-#define EFM_DMA_CHREQMASKS_OFFSET      0x0020  /* Channel Request Mask Set Register */
-#define EFM_DMA_CHREQMASKC_OFFSET      0x0024  /* Channel Request Mask Clear Register */
-#define EFM_DMA_CHENS_OFFSET           0x0028  /* Channel Enable Set Register */
-#define EFM_DMA_CHENC_OFFSET           0x002c  /* Channel Enable Clear Register */
-#define EFM_DMA_CHALTS_OFFSET          0x0030  /* Channel Alternate Set Register */
-#define EFM_DMA_CHALTC_OFFSET          0x0034  /* Channel Alternate Clear Register */
-#define EFM_DMA_CHPRIS_OFFSET          0x0038  /* Channel Priority Set Register */
-#define EFM_DMA_CHPRIC_OFFSET          0x003c  /* Channel Priority Clear Register */
-#define EFM_DMA_ERRORC_OFFSET          0x004c  /* Bus Error Clear Register */
-#define EFM_DMA_CHREQSTATUS_OFFSET     0x0e10  /* Channel Request Status */
-#define EFM_DMA_CHSREQSTATUS_OFFSET    0x0e18  /* Channel Single Request Status */
-#define EFM_DMA_IF_OFFSET              0x1000  /* Interrupt Flag Register */
-#define EFM_DMA_IFS_OFFSET             0x1004  /* Interrupt Flag Set Register */
-#define EFM_DMA_IFC_OFFSET             0x1008  /* Interrupt Flag Clear Register */
-#define EFM_DMA_IEN_OFFSET             0x100c  /* Interrupt Enable register */
+#define EFM32_DMA_STATUS_OFFSET          0x0000  /* DMA Status Registers */
+#define EFM32_DMA_CONFIG_OFFSET          0x0004  /* DMA Configuration Register */
+#define EFM32_DMA_CTRLBASE_OFFSET        0x0008  /* Channel Control Data Base Pointer Register */
+#define EFM32_DMA_ALTCTRLBASE_OFFSET     0x000c  /* Channel Alternate Control Data Base Pointer Register */
+#define EFM32_DMA_CHWAITSTATUS_OFFSET    0x0010  /* Channel Wait on Request Status Register */
+#define EFM32_DMA_CHSWREQ_OFFSET         0x0014  /* Channel Software Request Register */
+#define EFM32_DMA_CHUSEBURSTS_OFFSET     0x0018  /* Channel Useburst Set Register */
+#define EFM32_DMA_CHUSEBURSTC_OFFSET     0x001c  /* Channel Useburst Clear Register */
+#define EFM32_DMA_CHREQMASKS_OFFSET      0x0020  /* Channel Request Mask Set Register */
+#define EFM32_DMA_CHREQMASKC_OFFSET      0x0024  /* Channel Request Mask Clear Register */
+#define EFM32_DMA_CHENS_OFFSET           0x0028  /* Channel Enable Set Register */
+#define EFM32_DMA_CHENC_OFFSET           0x002c  /* Channel Enable Clear Register */
+#define EFM32_DMA_CHALTS_OFFSET          0x0030  /* Channel Alternate Set Register */
+#define EFM32_DMA_CHALTC_OFFSET          0x0034  /* Channel Alternate Clear Register */
+#define EFM32_DMA_CHPRIS_OFFSET          0x0038  /* Channel Priority Set Register */
+#define EFM32_DMA_CHPRIC_OFFSET          0x003c  /* Channel Priority Clear Register */
+#define EFM32_DMA_ERRORC_OFFSET          0x004c  /* Bus Error Clear Register */
+#define EFM32_DMA_CHREQSTATUS_OFFSET     0x0e10  /* Channel Request Status */
+#define EFM32_DMA_CHSREQSTATUS_OFFSET    0x0e18  /* Channel Single Request Status */
+#define EFM32_DMA_IF_OFFSET              0x1000  /* Interrupt Flag Register */
+#define EFM32_DMA_IFS_OFFSET             0x1004  /* Interrupt Flag Set Register */
+#define EFM32_DMA_IFC_OFFSET             0x1008  /* Interrupt Flag Clear Register */
+#define EFM32_DMA_IEN_OFFSET             0x100c  /* Interrupt Enable register */
 #if defined(CONFIG_EFM32_EFM32GG)
-#  define EFM_DMA_CTRL_OFFSET          0x1010  /* DMA Control Register */
-#  define EFM_DMA_RDS_OFFSET           0x1014  /* DMA Retain Descriptor State */
-#  define EFM_DMA_LOOP0_OFFSET         0x1020  /* Channel 0 Loop Register */
-#  define EFM_DMA_LOOP1_OFFSET         0x1024  /* Channel 1 Loop Register */
-#  define EFM_DMA_RECT0_OFFSET         0x1060  /* Channel 0 Rectangle Register */
+#  define EFM32_DMA_CTRL_OFFSET          0x1010  /* DMA Control Register */
+#  define EFM32_DMA_RDS_OFFSET           0x1014  /* DMA Retain Descriptor State */
+#  define EFM32_DMA_LOOP0_OFFSET         0x1020  /* Channel 0 Loop Register */
+#  define EFM32_DMA_LOOP1_OFFSET         0x1024  /* Channel 1 Loop Register */
+#  define EFM32_DMA_RECT0_OFFSET         0x1060  /* Channel 0 Rectangle Register */
 #endif
 
-#define EFM_DMA_CHn_CTRL_OFFSET(n)     (0x1100+((n)<<2))  /* Channel n Control Register */
-#define EFM_DMA_CH0_CTRL_OFFSET        0x1100  /* Channel 0 Control Register */
-#define EFM_DMA_CH1_CTRL_OFFSET        0x1104  /* Channel 1 Control Register */
-#define EFM_DMA_CH2_CTRL_OFFSET        0x1108  /* Channel 2 Control Register */
-#define EFM_DMA_CH3_CTRL_OFFSET        0x110c  /* Channel 3 Control Register */
-#define EFM_DMA_CH4_CTRL_OFFSET        0x1110  /* Channel 4 Control Register */
-#define EFM_DMA_CH5_CTRL_OFFSET        0x1114  /* Channel 5 Control Register */
-#define EFM_DMA_CH6_CTRL_OFFSET        0x1118  /* Channel 6 Control Register */
-#define EFM_DMA_CH7_CTRL_OFFSET        0x111c  /* Channel 7 Control Register */
+#define EFM32_DMA_CHn_CTRL_OFFSET(n)     (0x1100+((n)<<2))  /* Channel n Control Register */
+#define EFM32_DMA_CH0_CTRL_OFFSET        0x1100  /* Channel 0 Control Register */
+#define EFM32_DMA_CH1_CTRL_OFFSET        0x1104  /* Channel 1 Control Register */
+#define EFM32_DMA_CH2_CTRL_OFFSET        0x1108  /* Channel 2 Control Register */
+#define EFM32_DMA_CH3_CTRL_OFFSET        0x110c  /* Channel 3 Control Register */
+#define EFM32_DMA_CH4_CTRL_OFFSET        0x1110  /* Channel 4 Control Register */
+#define EFM32_DMA_CH5_CTRL_OFFSET        0x1114  /* Channel 5 Control Register */
+#define EFM32_DMA_CH6_CTRL_OFFSET        0x1118  /* Channel 6 Control Register */
+#define EFM32_DMA_CH7_CTRL_OFFSET        0x111c  /* Channel 7 Control Register */
 #if defined(CONFIG_EFM32_EFM32GG)
-#  define EFM_DMA_CH8_CTRL_OFFSET      0x1120  /* Channel 8 Control Register */
-#  define EFM_DMA_CH9_CTRL_OFFSET      0x1124  /* Channel 9 Control Register */
-#  define EFM_DMA_CH10_CTRL_OFFSET     0x1128  /* Channel 10 Control Register */
-#  define EFM_DMA_CH11_CTRL_OFFSET     0x112c  /* Channel 11 Control Register */
+#  define EFM32_DMA_CH8_CTRL_OFFSET      0x1120  /* Channel 8 Control Register */
+#  define EFM32_DMA_CH9_CTRL_OFFSET      0x1124  /* Channel 9 Control Register */
+#  define EFM32_DMA_CH10_CTRL_OFFSET     0x1128  /* Channel 10 Control Register */
+#  define EFM32_DMA_CH11_CTRL_OFFSET     0x112c  /* Channel 11 Control Register */
 #endif
 
 /* DMA Register Addresses ******************************************************************************************************/
 
-#define EFM_DMA_STATUS                 (EFM32_DMA_BASE+EFM_DMA_STATUS_OFFSET)
-#define EFM_DMA_CONFIG                 (EFM32_DMA_BASE+EFM_DMA_CONFIG_OFFSET)
-#define EFM_DMA_CTRLBASE               (EFM32_DMA_BASE+EFM_DMA_CTRLBASE_OFFSET)
-#define EFM_DMA_ALTCTRLBASE            (EFM32_DMA_BASE+EFM_DMA_ALTCTRLBASE_OFFSET)
-#define EFM_DMA_CHWAITSTATUS           (EFM32_DMA_BASE+EFM_DMA_CHWAITSTATUS_OFFSET)
-#define EFM_DMA_CHSWREQ                (EFM32_DMA_BASE+EFM_DMA_CHSWREQ_OFFSET)
-#define EFM_DMA_CHUSEBURSTS            (EFM32_DMA_BASE+EFM_DMA_CHUSEBURSTS_OFFSET)
-#define EFM_DMA_CHUSEBURSTC            (EFM32_DMA_BASE+EFM_DMA_CHUSEBURSTC_OFFSET)
-#define EFM_DMA_CHREQMASKS             (EFM32_DMA_BASE+EFM_DMA_CHREQMASKS_OFFSET)
-#define EFM_DMA_CHREQMASKC             (EFM32_DMA_BASE+EFM_DMA_CHREQMASKC_OFFSET)
-#define EFM_DMA_CHENS                  (EFM32_DMA_BASE+EFM_DMA_CHENS_OFFSET)
-#define EFM_DMA_CHENC                  (EFM32_DMA_BASE+EFM_DMA_CHENC_OFFSET)
-#define EFM_DMA_CHALTS                 (EFM32_DMA_BASE+EFM_DMA_CHALTS_OFFSET)
-#define EFM_DMA_CHALTC                 (EFM32_DMA_BASE+EFM_DMA_CHALTC_OFFSET)
-#define EFM_DMA_CHPRIS                 (EFM32_DMA_BASE+EFM_DMA_CHPRIS_OFFSET)
-#define EFM_DMA_CHPRIC                 (EFM32_DMA_BASE+EFM_DMA_CHPRIC_OFFSET)
-#define EFM_DMA_ERRORC                 (EFM32_DMA_BASE+EFM_DMA_ERRORC_OFFSET)
-#define EFM_DMA_CHREQSTATUS            (EFM32_DMA_BASE+EFM_DMA_CHREQSTATUS_OFFSET)
-#define EFM_DMA_CHSREQSTATUS           (EFM32_DMA_BASE+EFM_DMA_CHSREQSTATUS_OFFSET)
-#define EFM_DMA_IF                     (EFM32_DMA_BASE+EFM_DMA_IF_OFFSET)
-#define EFM_DMA_IFS                    (EFM32_DMA_BASE+EFM_DMA_IFS_OFFSET)
-#define EFM_DMA_IFC                    (EFM32_DMA_BASE+EFM_DMA_IFC_OFFSET)
-#define EFM_DMA_IEN                    (EFM32_DMA_BASE+EFM_DMA_IEN_OFFSET)
+#define EFM32_DMA_STATUS                 (EFM32_DMA_BASE+EFM32_DMA_STATUS_OFFSET)
+#define EFM32_DMA_CONFIG                 (EFM32_DMA_BASE+EFM32_DMA_CONFIG_OFFSET)
+#define EFM32_DMA_CTRLBASE               (EFM32_DMA_BASE+EFM32_DMA_CTRLBASE_OFFSET)
+#define EFM32_DMA_ALTCTRLBASE            (EFM32_DMA_BASE+EFM32_DMA_ALTCTRLBASE_OFFSET)
+#define EFM32_DMA_CHWAITSTATUS           (EFM32_DMA_BASE+EFM32_DMA_CHWAITSTATUS_OFFSET)
+#define EFM32_DMA_CHSWREQ                (EFM32_DMA_BASE+EFM32_DMA_CHSWREQ_OFFSET)
+#define EFM32_DMA_CHUSEBURSTS            (EFM32_DMA_BASE+EFM32_DMA_CHUSEBURSTS_OFFSET)
+#define EFM32_DMA_CHUSEBURSTC            (EFM32_DMA_BASE+EFM32_DMA_CHUSEBURSTC_OFFSET)
+#define EFM32_DMA_CHREQMASKS             (EFM32_DMA_BASE+EFM32_DMA_CHREQMASKS_OFFSET)
+#define EFM32_DMA_CHREQMASKC             (EFM32_DMA_BASE+EFM32_DMA_CHREQMASKC_OFFSET)
+#define EFM32_DMA_CHENS                  (EFM32_DMA_BASE+EFM32_DMA_CHENS_OFFSET)
+#define EFM32_DMA_CHENC                  (EFM32_DMA_BASE+EFM32_DMA_CHENC_OFFSET)
+#define EFM32_DMA_CHALTS                 (EFM32_DMA_BASE+EFM32_DMA_CHALTS_OFFSET)
+#define EFM32_DMA_CHALTC                 (EFM32_DMA_BASE+EFM32_DMA_CHALTC_OFFSET)
+#define EFM32_DMA_CHPRIS                 (EFM32_DMA_BASE+EFM32_DMA_CHPRIS_OFFSET)
+#define EFM32_DMA_CHPRIC                 (EFM32_DMA_BASE+EFM32_DMA_CHPRIC_OFFSET)
+#define EFM32_DMA_ERRORC                 (EFM32_DMA_BASE+EFM32_DMA_ERRORC_OFFSET)
+#define EFM32_DMA_CHREQSTATUS            (EFM32_DMA_BASE+EFM32_DMA_CHREQSTATUS_OFFSET)
+#define EFM32_DMA_CHSREQSTATUS           (EFM32_DMA_BASE+EFM32_DMA_CHSREQSTATUS_OFFSET)
+#define EFM32_DMA_IF                     (EFM32_DMA_BASE+EFM32_DMA_IF_OFFSET)
+#define EFM32_DMA_IFS                    (EFM32_DMA_BASE+EFM32_DMA_IFS_OFFSET)
+#define EFM32_DMA_IFC                    (EFM32_DMA_BASE+EFM32_DMA_IFC_OFFSET)
+#define EFM32_DMA_IEN                    (EFM32_DMA_BASE+EFM32_DMA_IEN_OFFSET)
 #if defined(CONFIG_EFM32_EFM32GG)
-#  define EFM_DMA_CTRL                 (EFM32_DMA_BASE+EFM_DMA_CTRL_OFFSET)
-#  define EFM_DMA_RDS                  (EFM32_DMA_BASE+EFM_DMA_RDS_OFFSET)
-#  define EFM_DMA_LOOP0                (EFM32_DMA_BASE+EFM_DMA_LOOP0_OFFSET)
-#  define EFM_DMA_LOOP1                (EFM32_DMA_BASE+EFM_DMA_LOOP1_OFFSET)
-#  define EFM_DMA_RECT0                (EFM32_DMA_BASE+EFM_DMA_RECT0_OFFSET)
+#  define EFM32_DMA_CTRL                 (EFM32_DMA_BASE+EFM32_DMA_CTRL_OFFSET)
+#  define EFM32_DMA_RDS                  (EFM32_DMA_BASE+EFM32_DMA_RDS_OFFSET)
+#  define EFM32_DMA_LOOP0                (EFM32_DMA_BASE+EFM32_DMA_LOOP0_OFFSET)
+#  define EFM32_DMA_LOOP1                (EFM32_DMA_BASE+EFM32_DMA_LOOP1_OFFSET)
+#  define EFM32_DMA_RECT0                (EFM32_DMA_BASE+EFM32_DMA_RECT0_OFFSET)
 #endif
 
-#define EFM_DMA_CHn_CTRL(n)            (EFM32_DMA_BASE+EFM_DMA_CHn_CTRL_OFFSET(n))
-#define EFM_DMA_CH0_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH0_CTRL_OFFSET)
-#define EFM_DMA_CH1_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH1_CTRL_OFFSET)
-#define EFM_DMA_CH2_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH2_CTRL_OFFSET)
-#define EFM_DMA_CH3_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH3_CTRL_OFFSET)
-#define EFM_DMA_CH4_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH4_CTRL_OFFSET)
-#define EFM_DMA_CH5_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH5_CTRL_OFFSET)
-#define EFM_DMA_CH6_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH6_CTRL_OFFSET)
-#define EFM_DMA_CH7_CTRL               (EFM32_DMA_BASE+EFM_DMA_CH7_CTRL_OFFSET)
+#define EFM32_DMA_CHn_CTRL(n)            (EFM32_DMA_BASE+EFM32_DMA_CHn_CTRL_OFFSET(n))
+#define EFM32_DMA_CH0_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH0_CTRL_OFFSET)
+#define EFM32_DMA_CH1_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH1_CTRL_OFFSET)
+#define EFM32_DMA_CH2_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH2_CTRL_OFFSET)
+#define EFM32_DMA_CH3_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH3_CTRL_OFFSET)
+#define EFM32_DMA_CH4_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH4_CTRL_OFFSET)
+#define EFM32_DMA_CH5_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH5_CTRL_OFFSET)
+#define EFM32_DMA_CH6_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH6_CTRL_OFFSET)
+#define EFM32_DMA_CH7_CTRL               (EFM32_DMA_BASE+EFM32_DMA_CH7_CTRL_OFFSET)
 #if defined(CONFIG_EFM32_EFM32GG)
-#  define EFM_DMA_CH8_CTRL             (EFM32_DMA_BASE+EFM_DMA_CH8_CTRL_OFFSET)
-#  define EFM_DMA_CH9_CTRL             (EFM32_DMA_BASE+EFM_DMA_CH9_CTRL_OFFSET)
-#  define EFM_DMA_CH10_CTRL            (EFM32_DMA_BASE+EFM_DMA_CH10_CTRL_OFFSET)
-#  define EFM_DMA_CH11_CTRL            (EFM32_DMA_BASE+EFM_DMA_CH11_CTRL_OFFSET)
+#  define EFM32_DMA_CH8_CTRL             (EFM32_DMA_BASE+EFM32_DMA_CH8_CTRL_OFFSET)
+#  define EFM32_DMA_CH9_CTRL             (EFM32_DMA_BASE+EFM32_DMA_CH9_CTRL_OFFSET)
+#  define EFM32_DMA_CH10_CTRL            (EFM32_DMA_BASE+EFM32_DMA_CH10_CTRL_OFFSET)
+#  define EFM32_DMA_CH11_CTRL            (EFM32_DMA_BASE+EFM32_DMA_CH11_CTRL_OFFSET)
 #endif
 
 /* DMA Register Bit Field Definitions ******************************************************************************************/
@@ -1768,166 +1768,299 @@
 
 #define _DMA_CH_CTRL_SIGSEL_SHIFT                       0                                             /* Shift value for DMA_SIGSEL */
 #define _DMA_CH_CTRL_SIGSEL_MASK                        0xFUL                                         /* Bit mask for DMA_SIGSEL */
-#define _DMA_CH_CTRL_SIGSEL_ADC0SINGLE                  0x00000000UL                                  /* Mode ADC0SINGLE for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_DAC0CH0                     0x00000000UL                                  /* Mode DAC0CH0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART0RXDATAV               0x00000000UL                                  /* Mode USART0RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART1RXDATAV               0x00000000UL                                  /* Mode USART1RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART2RXDATAV               0x00000000UL                                  /* Mode USART2RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV              0x00000000UL                                  /* Mode LEUART0RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV              0x00000000UL                                  /* Mode LEUART1RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_I2C0RXDATAV                 0x00000000UL                                  /* Mode I2C0RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_I2C1RXDATAV                 0x00000000UL                                  /* Mode I2C1RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER0UFOF                  0x00000000UL                                  /* Mode TIMER0UFOF for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER1UFOF                  0x00000000UL                                  /* Mode TIMER1UFOF for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER2UFOF                  0x00000000UL                                  /* Mode TIMER2UFOF for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER3UFOF                  0x00000000UL                                  /* Mode TIMER3UFOF for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART0RXDATAV                0x00000000UL                                  /* Mode UART0RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART1RXDATAV                0x00000000UL                                  /* Mode UART1RXDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_MSCWDATA                    0x00000000UL                                  /* Mode MSCWDATA for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_AESDATAWR                   0x00000000UL                                  /* Mode AESDATAWR for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV             0x00000000UL                                  /* Mode LESENSEBUFDATAV for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY                0x00000000UL                                  /* Mode EBIPXL0EMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_ADC0SCAN                    0x00000001UL                                  /* Mode ADC0SCAN for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_DAC0CH1                     0x00000001UL                                  /* Mode DAC0CH1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART0TXBL                  0x00000001UL                                  /* Mode USART0TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART1TXBL                  0x00000001UL                                  /* Mode USART1TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART2TXBL                  0x00000001UL                                  /* Mode USART2TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART0TXBL                 0x00000001UL                                  /* Mode LEUART0TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART1TXBL                 0x00000001UL                                  /* Mode LEUART1TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_I2C0TXBL                    0x00000001UL                                  /* Mode I2C0TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_I2C1TXBL                    0x00000001UL                                  /* Mode I2C1TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER0CC0                   0x00000001UL                                  /* Mode TIMER0CC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER1CC0                   0x00000001UL                                  /* Mode TIMER1CC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER2CC0                   0x00000001UL                                  /* Mode TIMER2CC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER3CC0                   0x00000001UL                                  /* Mode TIMER3CC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART0TXBL                   0x00000001UL                                  /* Mode UART0TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART1TXBL                   0x00000001UL                                  /* Mode UART1TXBL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_AESXORDATAWR                0x00000001UL                                  /* Mode AESXORDATAWR for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY                0x00000001UL                                  /* Mode EBIPXL1EMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART0TXEMPTY               0x00000002UL                                  /* Mode USART0TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART1TXEMPTY               0x00000002UL                                  /* Mode USART1TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART2TXEMPTY               0x00000002UL                                  /* Mode USART2TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY              0x00000002UL                                  /* Mode LEUART0TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY              0x00000002UL                                  /* Mode LEUART1TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER0CC1                   0x00000002UL                                  /* Mode TIMER0CC1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER1CC1                   0x00000002UL                                  /* Mode TIMER1CC1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER2CC1                   0x00000002UL                                  /* Mode TIMER2CC1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER3CC1                   0x00000002UL                                  /* Mode TIMER3CC1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART0TXEMPTY                0x00000002UL                                  /* Mode UART0TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_UART1TXEMPTY                0x00000002UL                                  /* Mode UART1TXEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_AESDATARD                   0x00000002UL                                  /* Mode AESDATARD for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_EBIPXLFULL                  0x00000002UL                                  /* Mode EBIPXLFULL for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT          0x00000003UL                                  /* Mode USART1RXDATAVRIGHT for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT          0x00000003UL                                  /* Mode USART2RXDATAVRIGHT for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER0CC2                   0x00000003UL                                  /* Mode TIMER0CC2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER1CC2                   0x00000003UL                                  /* Mode TIMER1CC2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER2CC2                   0x00000003UL                                  /* Mode TIMER2CC2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_TIMER3CC2                   0x00000003UL                                  /* Mode TIMER3CC2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_AESKEYWR                    0x00000003UL                                  /* Mode AESKEYWR for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_EBIDDEMPTY                  0x00000003UL                                  /* Mode EBIDDEMPTY for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT             0x00000004UL                                  /* Mode USART1TXBLRIGHT for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT             0x00000004UL                                  /* Mode USART2TXBLRIGHT for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_ADC0SINGLE                   (_DMA_CH_CTRL_SIGSEL_ADC0SINGLE << 0)         /* Shifted mode ADC0SINGLE for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_DAC0CH0                      (_DMA_CH_CTRL_SIGSEL_DAC0CH0 << 0)            /* Shifted mode DAC0CH0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART0RXDATAV                (_DMA_CH_CTRL_SIGSEL_USART0RXDATAV << 0)      /* Shifted mode USART0RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART1RXDATAV                (_DMA_CH_CTRL_SIGSEL_USART1RXDATAV << 0)      /* Shifted mode USART1RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART2RXDATAV                (_DMA_CH_CTRL_SIGSEL_USART2RXDATAV << 0)      /* Shifted mode USART2RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV               (_DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV << 0)     /* Shifted mode LEUART0RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV               (_DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV << 0)     /* Shifted mode LEUART1RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_I2C0RXDATAV                  (_DMA_CH_CTRL_SIGSEL_I2C0RXDATAV << 0)        /* Shifted mode I2C0RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_I2C1RXDATAV                  (_DMA_CH_CTRL_SIGSEL_I2C1RXDATAV << 0)        /* Shifted mode I2C1RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER0UFOF                   (_DMA_CH_CTRL_SIGSEL_TIMER0UFOF << 0)         /* Shifted mode TIMER0UFOF for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER1UFOF                   (_DMA_CH_CTRL_SIGSEL_TIMER1UFOF << 0)         /* Shifted mode TIMER1UFOF for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER2UFOF                   (_DMA_CH_CTRL_SIGSEL_TIMER2UFOF << 0)         /* Shifted mode TIMER2UFOF for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER3UFOF                   (_DMA_CH_CTRL_SIGSEL_TIMER3UFOF << 0)         /* Shifted mode TIMER3UFOF for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART0RXDATAV                 (_DMA_CH_CTRL_SIGSEL_UART0RXDATAV << 0)       /* Shifted mode UART0RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART1RXDATAV                 (_DMA_CH_CTRL_SIGSEL_UART1RXDATAV << 0)       /* Shifted mode UART1RXDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_MSCWDATA                     (_DMA_CH_CTRL_SIGSEL_MSCWDATA << 0)           /* Shifted mode MSCWDATA for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_AESDATAWR                    (_DMA_CH_CTRL_SIGSEL_AESDATAWR << 0)          /* Shifted mode AESDATAWR for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV              (_DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV << 0)    /* Shifted mode LESENSEBUFDATAV for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY                 (_DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY << 0)       /* Shifted mode EBIPXL0EMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_ADC0SCAN                     (_DMA_CH_CTRL_SIGSEL_ADC0SCAN << 0)           /* Shifted mode ADC0SCAN for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_DAC0CH1                      (_DMA_CH_CTRL_SIGSEL_DAC0CH1 << 0)            /* Shifted mode DAC0CH1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART0TXBL                   (_DMA_CH_CTRL_SIGSEL_USART0TXBL << 0)         /* Shifted mode USART0TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART1TXBL                   (_DMA_CH_CTRL_SIGSEL_USART1TXBL << 0)         /* Shifted mode USART1TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART2TXBL                   (_DMA_CH_CTRL_SIGSEL_USART2TXBL << 0)         /* Shifted mode USART2TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART0TXBL                  (_DMA_CH_CTRL_SIGSEL_LEUART0TXBL << 0)        /* Shifted mode LEUART0TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART1TXBL                  (_DMA_CH_CTRL_SIGSEL_LEUART1TXBL << 0)        /* Shifted mode LEUART1TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_I2C0TXBL                     (_DMA_CH_CTRL_SIGSEL_I2C0TXBL << 0)           /* Shifted mode I2C0TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_I2C1TXBL                     (_DMA_CH_CTRL_SIGSEL_I2C1TXBL << 0)           /* Shifted mode I2C1TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER0CC0                    (_DMA_CH_CTRL_SIGSEL_TIMER0CC0 << 0)          /* Shifted mode TIMER0CC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER1CC0                    (_DMA_CH_CTRL_SIGSEL_TIMER1CC0 << 0)          /* Shifted mode TIMER1CC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER2CC0                    (_DMA_CH_CTRL_SIGSEL_TIMER2CC0 << 0)          /* Shifted mode TIMER2CC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER3CC0                    (_DMA_CH_CTRL_SIGSEL_TIMER3CC0 << 0)          /* Shifted mode TIMER3CC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART0TXBL                    (_DMA_CH_CTRL_SIGSEL_UART0TXBL << 0)          /* Shifted mode UART0TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART1TXBL                    (_DMA_CH_CTRL_SIGSEL_UART1TXBL << 0)          /* Shifted mode UART1TXBL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_AESXORDATAWR                 (_DMA_CH_CTRL_SIGSEL_AESXORDATAWR << 0)       /* Shifted mode AESXORDATAWR for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY                 (_DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY << 0)       /* Shifted mode EBIPXL1EMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART0TXEMPTY                (_DMA_CH_CTRL_SIGSEL_USART0TXEMPTY << 0)      /* Shifted mode USART0TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART1TXEMPTY                (_DMA_CH_CTRL_SIGSEL_USART1TXEMPTY << 0)      /* Shifted mode USART1TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART2TXEMPTY                (_DMA_CH_CTRL_SIGSEL_USART2TXEMPTY << 0)      /* Shifted mode USART2TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY               (_DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY << 0)     /* Shifted mode LEUART0TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY               (_DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY << 0)     /* Shifted mode LEUART1TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER0CC1                    (_DMA_CH_CTRL_SIGSEL_TIMER0CC1 << 0)          /* Shifted mode TIMER0CC1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER1CC1                    (_DMA_CH_CTRL_SIGSEL_TIMER1CC1 << 0)          /* Shifted mode TIMER1CC1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER2CC1                    (_DMA_CH_CTRL_SIGSEL_TIMER2CC1 << 0)          /* Shifted mode TIMER2CC1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER3CC1                    (_DMA_CH_CTRL_SIGSEL_TIMER3CC1 << 0)          /* Shifted mode TIMER3CC1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART0TXEMPTY                 (_DMA_CH_CTRL_SIGSEL_UART0TXEMPTY << 0)       /* Shifted mode UART0TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_UART1TXEMPTY                 (_DMA_CH_CTRL_SIGSEL_UART1TXEMPTY << 0)       /* Shifted mode UART1TXEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_AESDATARD                    (_DMA_CH_CTRL_SIGSEL_AESDATARD << 0)          /* Shifted mode AESDATARD for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_EBIPXLFULL                   (_DMA_CH_CTRL_SIGSEL_EBIPXLFULL << 0)         /* Shifted mode EBIPXLFULL for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT           (_DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT << 0) /* Shifted mode USART1RXDATAVRIGHT for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT           (_DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT << 0) /* Shifted mode USART2RXDATAVRIGHT for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER0CC2                    (_DMA_CH_CTRL_SIGSEL_TIMER0CC2 << 0)          /* Shifted mode TIMER0CC2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER1CC2                    (_DMA_CH_CTRL_SIGSEL_TIMER1CC2 << 0)          /* Shifted mode TIMER1CC2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER2CC2                    (_DMA_CH_CTRL_SIGSEL_TIMER2CC2 << 0)          /* Shifted mode TIMER2CC2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_TIMER3CC2                    (_DMA_CH_CTRL_SIGSEL_TIMER3CC2 << 0)          /* Shifted mode TIMER3CC2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_AESKEYWR                     (_DMA_CH_CTRL_SIGSEL_AESKEYWR << 0)           /* Shifted mode AESKEYWR for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_EBIDDEMPTY                   (_DMA_CH_CTRL_SIGSEL_EBIDDEMPTY << 0)         /* Shifted mode EBIDDEMPTY for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT              (_DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT << 0)    /* Shifted mode USART1TXBLRIGHT for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT              (_DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT << 0)    /* Shifted mode USART2TXBLRIGHT for DMA_CH_CTRL */
+
+#if defined(CONFIG_EFM32_EFM32GG)
+
+#  define _DMA_CH_CTRL_SIGSEL_ADC0SINGLE                0x00000000UL                                  /* Mode ADC0SINGLE for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_DAC0CH0                   0x00000000UL                                  /* Mode DAC0CH0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0RXDATAV             0x00000000UL                                  /* Mode USART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1RXDATAV             0x00000000UL                                  /* Mode USART1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2RXDATAV             0x00000000UL                                  /* Mode USART2RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV            0x00000000UL                                  /* Mode LEUART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV            0x00000000UL                                  /* Mode LEUART1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C0RXDATAV               0x00000000UL                                  /* Mode I2C0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C1RXDATAV               0x00000000UL                                  /* Mode I2C1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0UFOF                0x00000000UL                                  /* Mode TIMER0UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1UFOF                0x00000000UL                                  /* Mode TIMER1UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2UFOF                0x00000000UL                                  /* Mode TIMER2UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER3UFOF                0x00000000UL                                  /* Mode TIMER3UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0RXDATAV              0x00000000UL                                  /* Mode UART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART1RXDATAV              0x00000000UL                                  /* Mode UART1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_MSCWDATA                  0x00000000UL                                  /* Mode MSCWDATA for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESDATAWR                 0x00000000UL                                  /* Mode AESDATAWR for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV           0x00000000UL                                  /* Mode LESENSEBUFDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY              0x00000000UL                                  /* Mode EBIPXL0EMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_ADC0SCAN                  0x00000001UL                                  /* Mode ADC0SCAN for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_DAC0CH1                   0x00000001UL                                  /* Mode DAC0CH1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0TXBL                0x00000001UL                                  /* Mode USART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1TXBL                0x00000001UL                                  /* Mode USART1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2TXBL                0x00000001UL                                  /* Mode USART2TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0TXBL               0x00000001UL                                  /* Mode LEUART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1TXBL               0x00000001UL                                  /* Mode LEUART1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C0TXBL                  0x00000001UL                                  /* Mode I2C0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C1TXBL                  0x00000001UL                                  /* Mode I2C1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC0                 0x00000001UL                                  /* Mode TIMER0CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC0                 0x00000001UL                                  /* Mode TIMER1CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC0                 0x00000001UL                                  /* Mode TIMER2CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER3CC0                 0x00000001UL                                  /* Mode TIMER3CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0TXBL                 0x00000001UL                                  /* Mode UART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART1TXBL                 0x00000001UL                                  /* Mode UART1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESXORDATAWR              0x00000001UL                                  /* Mode AESXORDATAWR for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY              0x00000001UL                                  /* Mode EBIPXL1EMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0TXEMPTY             0x00000002UL                                  /* Mode USART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1TXEMPTY             0x00000002UL                                  /* Mode USART1TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2TXEMPTY             0x00000002UL                                  /* Mode USART2TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY            0x00000002UL                                  /* Mode LEUART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY            0x00000002UL                                  /* Mode LEUART1TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC1                 0x00000002UL                                  /* Mode TIMER0CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC1                 0x00000002UL                                  /* Mode TIMER1CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC1                 0x00000002UL                                  /* Mode TIMER2CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER3CC1                 0x00000002UL                                  /* Mode TIMER3CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0TXEMPTY              0x00000002UL                                  /* Mode UART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART1TXEMPTY              0x00000002UL                                  /* Mode UART1TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESDATARD                 0x00000002UL                                  /* Mode AESDATARD for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_EBIPXLFULL                0x00000002UL                                  /* Mode EBIPXLFULL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT        0x00000003UL                                  /* Mode USART1RXDATAVRIGHT for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT        0x00000003UL                                  /* Mode USART2RXDATAVRIGHT for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC2                 0x00000003UL                                  /* Mode TIMER0CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC2                 0x00000003UL                                  /* Mode TIMER1CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC2                 0x00000003UL                                  /* Mode TIMER2CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER3CC2                 0x00000003UL                                  /* Mode TIMER3CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESKEYWR                  0x00000003UL                                  /* Mode AESKEYWR for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_EBIDDEMPTY                0x00000003UL                                  /* Mode EBIDDEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT           0x00000004UL                                  /* Mode USART1TXBLRIGHT for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT           0x00000004UL                                  /* Mode USART2TXBLRIGHT for DMA_CH_CTRL */
+
+#  define DMA_CH_CTRL_SIGSEL_ADC0SINGLE                 (_DMA_CH_CTRL_SIGSEL_ADC0SINGLE << 0)         /* Shifted mode ADC0SINGLE for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_DAC0CH0                    (_DMA_CH_CTRL_SIGSEL_DAC0CH0 << 0)            /* Shifted mode DAC0CH0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0RXDATAV              (_DMA_CH_CTRL_SIGSEL_USART0RXDATAV << 0)      /* Shifted mode USART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1RXDATAV              (_DMA_CH_CTRL_SIGSEL_USART1RXDATAV << 0)      /* Shifted mode USART1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2RXDATAV              (_DMA_CH_CTRL_SIGSEL_USART2RXDATAV << 0)      /* Shifted mode USART2RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV             (_DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV << 0)     /* Shifted mode LEUART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV             (_DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV << 0)     /* Shifted mode LEUART1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C0RXDATAV                (_DMA_CH_CTRL_SIGSEL_I2C0RXDATAV << 0)        /* Shifted mode I2C0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C1RXDATAV                (_DMA_CH_CTRL_SIGSEL_I2C1RXDATAV << 0)        /* Shifted mode I2C1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0UFOF                 (_DMA_CH_CTRL_SIGSEL_TIMER0UFOF << 0)         /* Shifted mode TIMER0UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1UFOF                 (_DMA_CH_CTRL_SIGSEL_TIMER1UFOF << 0)         /* Shifted mode TIMER1UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2UFOF                 (_DMA_CH_CTRL_SIGSEL_TIMER2UFOF << 0)         /* Shifted mode TIMER2UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER3UFOF                 (_DMA_CH_CTRL_SIGSEL_TIMER3UFOF << 0)         /* Shifted mode TIMER3UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0RXDATAV               (_DMA_CH_CTRL_SIGSEL_UART0RXDATAV << 0)       /* Shifted mode UART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART1RXDATAV               (_DMA_CH_CTRL_SIGSEL_UART1RXDATAV << 0)       /* Shifted mode UART1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_MSCWDATA                   (_DMA_CH_CTRL_SIGSEL_MSCWDATA << 0)           /* Shifted mode MSCWDATA for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESDATAWR                  (_DMA_CH_CTRL_SIGSEL_AESDATAWR << 0)          /* Shifted mode AESDATAWR for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV            (_DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV << 0)    /* Shifted mode LESENSEBUFDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY               (_DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY << 0)       /* Shifted mode EBIPXL0EMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_ADC0SCAN                   (_DMA_CH_CTRL_SIGSEL_ADC0SCAN << 0)           /* Shifted mode ADC0SCAN for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_DAC0CH1                    (_DMA_CH_CTRL_SIGSEL_DAC0CH1 << 0)            /* Shifted mode DAC0CH1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0TXBL                 (_DMA_CH_CTRL_SIGSEL_USART0TXBL << 0)         /* Shifted mode USART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1TXBL                 (_DMA_CH_CTRL_SIGSEL_USART1TXBL << 0)         /* Shifted mode USART1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2TXBL                 (_DMA_CH_CTRL_SIGSEL_USART2TXBL << 0)         /* Shifted mode USART2TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0TXBL                (_DMA_CH_CTRL_SIGSEL_LEUART0TXBL << 0)        /* Shifted mode LEUART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1TXBL                (_DMA_CH_CTRL_SIGSEL_LEUART1TXBL << 0)        /* Shifted mode LEUART1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C0TXBL                   (_DMA_CH_CTRL_SIGSEL_I2C0TXBL << 0)           /* Shifted mode I2C0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C1TXBL                   (_DMA_CH_CTRL_SIGSEL_I2C1TXBL << 0)           /* Shifted mode I2C1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC0                  (_DMA_CH_CTRL_SIGSEL_TIMER0CC0 << 0)          /* Shifted mode TIMER0CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC0                  (_DMA_CH_CTRL_SIGSEL_TIMER1CC0 << 0)          /* Shifted mode TIMER1CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC0                  (_DMA_CH_CTRL_SIGSEL_TIMER2CC0 << 0)          /* Shifted mode TIMER2CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER3CC0                  (_DMA_CH_CTRL_SIGSEL_TIMER3CC0 << 0)          /* Shifted mode TIMER3CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0TXBL                  (_DMA_CH_CTRL_SIGSEL_UART0TXBL << 0)          /* Shifted mode UART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART1TXBL                  (_DMA_CH_CTRL_SIGSEL_UART1TXBL << 0)          /* Shifted mode UART1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESXORDATAWR               (_DMA_CH_CTRL_SIGSEL_AESXORDATAWR << 0)       /* Shifted mode AESXORDATAWR for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY               (_DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY << 0)       /* Shifted mode EBIPXL1EMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0TXEMPTY              (_DMA_CH_CTRL_SIGSEL_USART0TXEMPTY << 0)      /* Shifted mode USART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1TXEMPTY              (_DMA_CH_CTRL_SIGSEL_USART1TXEMPTY << 0)      /* Shifted mode USART1TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2TXEMPTY              (_DMA_CH_CTRL_SIGSEL_USART2TXEMPTY << 0)      /* Shifted mode USART2TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY             (_DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY << 0)     /* Shifted mode LEUART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY             (_DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY << 0)     /* Shifted mode LEUART1TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC1                  (_DMA_CH_CTRL_SIGSEL_TIMER0CC1 << 0)          /* Shifted mode TIMER0CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC1                  (_DMA_CH_CTRL_SIGSEL_TIMER1CC1 << 0)          /* Shifted mode TIMER1CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC1                  (_DMA_CH_CTRL_SIGSEL_TIMER2CC1 << 0)          /* Shifted mode TIMER2CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER3CC1                  (_DMA_CH_CTRL_SIGSEL_TIMER3CC1 << 0)          /* Shifted mode TIMER3CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0TXEMPTY               (_DMA_CH_CTRL_SIGSEL_UART0TXEMPTY << 0)       /* Shifted mode UART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART1TXEMPTY               (_DMA_CH_CTRL_SIGSEL_UART1TXEMPTY << 0)       /* Shifted mode UART1TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESDATARD                  (_DMA_CH_CTRL_SIGSEL_AESDATARD << 0)          /* Shifted mode AESDATARD for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_EBIPXLFULL                 (_DMA_CH_CTRL_SIGSEL_EBIPXLFULL << 0)         /* Shifted mode EBIPXLFULL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT         (_DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT << 0) /* Shifted mode USART1RXDATAVRIGHT for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT         (_DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT << 0) /* Shifted mode USART2RXDATAVRIGHT for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC2                  (_DMA_CH_CTRL_SIGSEL_TIMER0CC2 << 0)          /* Shifted mode TIMER0CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC2                  (_DMA_CH_CTRL_SIGSEL_TIMER1CC2 << 0)          /* Shifted mode TIMER1CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC2                  (_DMA_CH_CTRL_SIGSEL_TIMER2CC2 << 0)          /* Shifted mode TIMER2CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER3CC2                  (_DMA_CH_CTRL_SIGSEL_TIMER3CC2 << 0)          /* Shifted mode TIMER3CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESKEYWR                   (_DMA_CH_CTRL_SIGSEL_AESKEYWR << 0)           /* Shifted mode AESKEYWR for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_EBIDDEMPTY                 (_DMA_CH_CTRL_SIGSEL_EBIDDEMPTY << 0)         /* Shifted mode EBIDDEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT            (_DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT << 0)    /* Shifted mode USART1TXBLRIGHT for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT            (_DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT << 0)    /* Shifted mode USART2TXBLRIGHT for DMA_CH_CTRL */
+
+#elif defined(CONFIG_EFM32_EFM32G)
+
+#  define _DMA_CH_CTRL_SIGSEL_ADC0SINGLE                 0x00000000UL                                 /* Mode ADC0SINGLE for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_DAC0CH0                    0x00000000UL                                 /* Mode DAC0CH0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0RXDATAV              0x00000000UL                                 /* Mode USART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1RXDATAV              0x00000000UL                                 /* Mode USART1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2RXDATAV              0x00000000UL                                 /* Mode USART2RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV             0x00000000UL                                 /* Mode LEUART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV             0x00000000UL                                 /* Mode LEUART1RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C0RXDATAV                0x00000000UL                                 /* Mode I2C0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0UFOF                 0x00000000UL                                 /* Mode TIMER0UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1UFOF                 0x00000000UL                                 /* Mode TIMER1UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2UFOF                 0x00000000UL                                 /* Mode TIMER2UFOF for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0RXDATAV               0x00000000UL                                 /* Mode UART0RXDATAV for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_MSCWDATA                   0x00000000UL                                 /* Mode MSCWDATA for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESDATAWR                  0x00000000UL                                 /* Mode AESDATAWR for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_ADC0SCAN                   0x00000001UL                                 /* Mode ADC0SCAN for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_DAC0CH1                    0x00000001UL                                 /* Mode DAC0CH1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0TXBL                 0x00000001UL                                 /* Mode USART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1TXBL                 0x00000001UL                                 /* Mode USART1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2TXBL                 0x00000001UL                                 /* Mode USART2TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0TXBL                0x00000001UL                                 /* Mode LEUART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1TXBL                0x00000001UL                                 /* Mode LEUART1TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_I2C0TXBL                   0x00000001UL                                 /* Mode I2C0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC0                  0x00000001UL                                 /* Mode TIMER0CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC0                  0x00000001UL                                 /* Mode TIMER1CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC0                  0x00000001UL                                 /* Mode TIMER2CC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0TXBL                  0x00000001UL                                 /* Mode UART0TXBL for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESXORDATAWR               0x00000001UL                                 /* Mode AESXORDATAWR for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART0TXEMPTY              0x00000002UL                                 /* Mode USART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART1TXEMPTY              0x00000002UL                                 /* Mode USART1TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_USART2TXEMPTY              0x00000002UL                                 /* Mode USART2TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY             0x00000002UL                                 /* Mode LEUART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY             0x00000002UL                                 /* Mode LEUART1TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC1                  0x00000002UL                                 /* Mode TIMER0CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC1                  0x00000002UL                                 /* Mode TIMER1CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC1                  0x00000002UL                                 /* Mode TIMER2CC1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_UART0TXEMPTY               0x00000002UL                                 /* Mode UART0TXEMPTY for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESDATARD                  0x00000002UL                                 /* Mode AESDATARD for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER0CC2                  0x00000003UL                                 /* Mode TIMER0CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER1CC2                  0x00000003UL                                 /* Mode TIMER1CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_TIMER2CC2                  0x00000003UL                                 /* Mode TIMER2CC2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SIGSEL_AESKEYWR                   0x00000003UL                                 /* Mode AESKEYWR for DMA_CH_CTRL */
+
+#  define DMA_CH_CTRL_SIGSEL_ADC0SINGLE                  (0x00000000UL << 0)                          /* Shifted mode ADC0SINGLE for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_DAC0CH0                     (0x00000000UL << 0)                          /* Shifted mode DAC0CH0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0RXDATAV               (0x00000000UL << 0)                          /* Shifted mode USART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1RXDATAV               (0x00000000UL << 0)                          /* Shifted mode USART1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2RXDATAV               (0x00000000UL << 0)                          /* Shifted mode USART2RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV              (0x00000000UL << 0)                          /* Shifted mode LEUART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV              (0x00000000UL << 0)                          /* Shifted mode LEUART1RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C0RXDATAV                 (0x00000000UL << 0)                          /* Shifted mode I2C0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0UFOF                  (0x00000000UL << 0)                          /* Shifted mode TIMER0UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1UFOF                  (0x00000000UL << 0)                          /* Shifted mode TIMER1UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2UFOF                  (0x00000000UL << 0)                          /* Shifted mode TIMER2UFOF for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0RXDATAV                (0x00000000UL << 0)                          /* Shifted mode UART0RXDATAV for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_MSCWDATA                    (0x00000000UL << 0)                          /* Shifted mode MSCWDATA for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESDATAWR                   (0x00000000UL << 0)                          /* Shifted mode AESDATAWR for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_ADC0SCAN                    (0x00000001UL << 0)                          /* Shifted mode ADC0SCAN for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_DAC0CH1                     (0x00000001UL << 0)                          /* Shifted mode DAC0CH1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0TXBL                  (0x00000001UL << 0)                          /* Shifted mode USART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1TXBL                  (0x00000001UL << 0)                          /* Shifted mode USART1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2TXBL                  (0x00000001UL << 0)                          /* Shifted mode USART2TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0TXBL                 (0x00000001UL << 0)                          /* Shifted mode LEUART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1TXBL                 (0x00000001UL << 0)                          /* Shifted mode LEUART1TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_I2C0TXBL                    (0x00000001UL << 0)                          /* Shifted mode I2C0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC0                   (0x00000001UL << 0)                          /* Shifted mode TIMER0CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC0                   (0x00000001UL << 0)                          /* Shifted mode TIMER1CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC0                   (0x00000001UL << 0)                          /* Shifted mode TIMER2CC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0TXBL                   (0x00000001UL << 0)                          /* Shifted mode UART0TXBL for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESXORDATAWR                (0x00000001UL << 0)                          /* Shifted mode AESXORDATAWR for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART0TXEMPTY               (0x00000002UL << 0)                          /* Shifted mode USART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART1TXEMPTY               (0x00000002UL << 0)                          /* Shifted mode USART1TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_USART2TXEMPTY               (0x00000002UL << 0)                          /* Shifted mode USART2TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY              (0x00000002UL << 0)                          /* Shifted mode LEUART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY              (0x00000002UL << 0)                          /* Shifted mode LEUART1TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC1                   (0x00000002UL << 0)                          /* Shifted mode TIMER0CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC1                   (0x00000002UL << 0)                          /* Shifted mode TIMER1CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC1                   (0x00000002UL << 0)                          /* Shifted mode TIMER2CC1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_UART0TXEMPTY                (0x00000002UL << 0)                          /* Shifted mode UART0TXEMPTY for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESDATARD                   (0x00000002UL << 0)                          /* Shifted mode AESDATARD for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER0CC2                   (0x00000003UL << 0)                          /* Shifted mode TIMER0CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER1CC2                   (0x00000003UL << 0)                          /* Shifted mode TIMER1CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_TIMER2CC2                   (0x00000003UL << 0)                          /* Shifted mode TIMER2CC2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SIGSEL_AESKEYWR                    (0x00000003UL << 0)                          /* Shifted mode AESKEYWR for DMA_CH_CTRL */
+
+#endif
+
 #define _DMA_CH_CTRL_SOURCESEL_SHIFT                    16                                            /* Shift value for DMA_SOURCESEL */
 #define _DMA_CH_CTRL_SOURCESEL_MASK                     0x3F0000UL                                    /* Bit mask for DMA_SOURCESEL */
-#define _DMA_CH_CTRL_SOURCESEL_NONE                     0x00000000UL                                  /* Mode NONE for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_ADC0                     0x00000008UL                                  /* Mode ADC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_DAC0                     0x0000000AUL                                  /* Mode DAC0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_USART0                   0x0000000CUL                                  /* Mode USART0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_USART1                   0x0000000DUL                                  /* Mode USART1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_USART2                   0x0000000EUL                                  /* Mode USART2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_LEUART0                  0x00000010UL                                  /* Mode LEUART0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_LEUART1                  0x00000011UL                                  /* Mode LEUART1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_I2C0                     0x00000014UL                                  /* Mode I2C0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_I2C1                     0x00000015UL                                  /* Mode I2C1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_TIMER0                   0x00000018UL                                  /* Mode TIMER0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_TIMER1                   0x00000019UL                                  /* Mode TIMER1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_TIMER2                   0x0000001AUL                                  /* Mode TIMER2 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_TIMER3                   0x0000001BUL                                  /* Mode TIMER3 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_UART0                    0x0000002CUL                                  /* Mode UART0 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_UART1                    0x0000002DUL                                  /* Mode UART1 for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_MSC                      0x00000030UL                                  /* Mode MSC for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_AES                      0x00000031UL                                  /* Mode AES for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_LESENSE                  0x00000032UL                                  /* Mode LESENSE for DMA_CH_CTRL */
-#define _DMA_CH_CTRL_SOURCESEL_EBI                      0x00000033UL                                  /* Mode EBI for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_NONE                      (_DMA_CH_CTRL_SOURCESEL_NONE << 16)           /* Shifted mode NONE for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_ADC0                      (_DMA_CH_CTRL_SOURCESEL_ADC0 << 16)           /* Shifted mode ADC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_DAC0                      (_DMA_CH_CTRL_SOURCESEL_DAC0 << 16)           /* Shifted mode DAC0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_USART0                    (_DMA_CH_CTRL_SOURCESEL_USART0 << 16)         /* Shifted mode USART0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_USART1                    (_DMA_CH_CTRL_SOURCESEL_USART1 << 16)         /* Shifted mode USART1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_USART2                    (_DMA_CH_CTRL_SOURCESEL_USART2 << 16)         /* Shifted mode USART2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_LEUART0                   (_DMA_CH_CTRL_SOURCESEL_LEUART0 << 16)        /* Shifted mode LEUART0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_LEUART1                   (_DMA_CH_CTRL_SOURCESEL_LEUART1 << 16)        /* Shifted mode LEUART1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_I2C0                      (_DMA_CH_CTRL_SOURCESEL_I2C0 << 16)           /* Shifted mode I2C0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_I2C1                      (_DMA_CH_CTRL_SOURCESEL_I2C1 << 16)           /* Shifted mode I2C1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_TIMER0                    (_DMA_CH_CTRL_SOURCESEL_TIMER0 << 16)         /* Shifted mode TIMER0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_TIMER1                    (_DMA_CH_CTRL_SOURCESEL_TIMER1 << 16)         /* Shifted mode TIMER1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_TIMER2                    (_DMA_CH_CTRL_SOURCESEL_TIMER2 << 16)         /* Shifted mode TIMER2 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_TIMER3                    (_DMA_CH_CTRL_SOURCESEL_TIMER3 << 16)         /* Shifted mode TIMER3 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_UART0                     (_DMA_CH_CTRL_SOURCESEL_UART0 << 16)          /* Shifted mode UART0 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_UART1                     (_DMA_CH_CTRL_SOURCESEL_UART1 << 16)          /* Shifted mode UART1 for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_MSC                       (_DMA_CH_CTRL_SOURCESEL_MSC << 16)            /* Shifted mode MSC for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_AES                       (_DMA_CH_CTRL_SOURCESEL_AES << 16)            /* Shifted mode AES for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_LESENSE                   (_DMA_CH_CTRL_SOURCESEL_LESENSE << 16)        /* Shifted mode LESENSE for DMA_CH_CTRL */
-#define DMA_CH_CTRL_SOURCESEL_EBI                       (_DMA_CH_CTRL_SOURCESEL_EBI << 16)            /* Shifted mode EBI for DMA_CH_CTRL */
+
+#if defined(CONFIG_EFM32_EFM32GG)
+
+#  define _DMA_CH_CTRL_SOURCESEL_NONE                   0x00000000UL                                  /* Mode NONE for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_ADC0                   0x00000008UL                                  /* Mode ADC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_DAC0                   0x0000000AUL                                  /* Mode DAC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART0                 0x0000000CUL                                  /* Mode USART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART1                 0x0000000DUL                                  /* Mode USART1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART2                 0x0000000EUL                                  /* Mode USART2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_LEUART0                0x00000010UL                                  /* Mode LEUART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_LEUART1                0x00000011UL                                  /* Mode LEUART1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_I2C0                   0x00000014UL                                  /* Mode I2C0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_I2C1                   0x00000015UL                                  /* Mode I2C1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER0                 0x00000018UL                                  /* Mode TIMER0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER1                 0x00000019UL                                  /* Mode TIMER1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER2                 0x0000001AUL                                  /* Mode TIMER2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER3                 0x0000001BUL                                  /* Mode TIMER3 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_UART0                  0x0000002CUL                                  /* Mode UART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_UART1                  0x0000002DUL                                  /* Mode UART1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_MSC                    0x00000030UL                                  /* Mode MSC for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_AES                    0x00000031UL                                  /* Mode AES for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_LESENSE                0x00000032UL                                  /* Mode LESENSE for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_EBI                    0x00000033UL                                  /* Mode EBI for DMA_CH_CTRL */
+
+#  define DMA_CH_CTRL_SOURCESEL_NONE                    (_DMA_CH_CTRL_SOURCESEL_NONE << 16)           /* Shifted mode NONE for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_ADC0                    (_DMA_CH_CTRL_SOURCESEL_ADC0 << 16)           /* Shifted mode ADC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_DAC0                    (_DMA_CH_CTRL_SOURCESEL_DAC0 << 16)           /* Shifted mode DAC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART0                  (_DMA_CH_CTRL_SOURCESEL_USART0 << 16)         /* Shifted mode USART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART1                  (_DMA_CH_CTRL_SOURCESEL_USART1 << 16)         /* Shifted mode USART1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART2                  (_DMA_CH_CTRL_SOURCESEL_USART2 << 16)         /* Shifted mode USART2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_LEUART0                 (_DMA_CH_CTRL_SOURCESEL_LEUART0 << 16)        /* Shifted mode LEUART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_LEUART1                 (_DMA_CH_CTRL_SOURCESEL_LEUART1 << 16)        /* Shifted mode LEUART1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_I2C0                    (_DMA_CH_CTRL_SOURCESEL_I2C0 << 16)           /* Shifted mode I2C0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_I2C1                    (_DMA_CH_CTRL_SOURCESEL_I2C1 << 16)           /* Shifted mode I2C1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER0                  (_DMA_CH_CTRL_SOURCESEL_TIMER0 << 16)         /* Shifted mode TIMER0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER1                  (_DMA_CH_CTRL_SOURCESEL_TIMER1 << 16)         /* Shifted mode TIMER1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER2                  (_DMA_CH_CTRL_SOURCESEL_TIMER2 << 16)         /* Shifted mode TIMER2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER3                  (_DMA_CH_CTRL_SOURCESEL_TIMER3 << 16)         /* Shifted mode TIMER3 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_UART0                   (_DMA_CH_CTRL_SOURCESEL_UART0 << 16)          /* Shifted mode UART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_UART1                   (_DMA_CH_CTRL_SOURCESEL_UART1 << 16)          /* Shifted mode UART1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_MSC                     (_DMA_CH_CTRL_SOURCESEL_MSC << 16)            /* Shifted mode MSC for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_AES                     (_DMA_CH_CTRL_SOURCESEL_AES << 16)            /* Shifted mode AES for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_LESENSE                 (_DMA_CH_CTRL_SOURCESEL_LESENSE << 16)        /* Shifted mode LESENSE for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_EBI                     (_DMA_CH_CTRL_SOURCESEL_EBI << 16)            /* Shifted mode EBI for DMA_CH_CTRL */
+
+#elif defined(CONFIG_EFM32_EFM32G)
+
+#  define _DMA_CH_CTRL_SOURCESEL_NONE                   0x00000000UL                                 /* Mode NONE for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_ADC0                   0x00000008UL                                 /* Mode ADC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_DAC0                   0x0000000AUL                                 /* Mode DAC0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART0                 0x0000000CUL                                 /* Mode USART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART1                 0x0000000DUL                                 /* Mode USART1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_USART2                 0x0000000EUL                                 /* Mode USART2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_LEUART0                0x00000010UL                                 /* Mode LEUART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_LEUART1                0x00000011UL                                 /* Mode LEUART1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_I2C0                   0x00000014UL                                 /* Mode I2C0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER0                 0x00000018UL                                 /* Mode TIMER0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER1                 0x00000019UL                                 /* Mode TIMER1 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_TIMER2                 0x0000001AUL                                 /* Mode TIMER2 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_UART0                  0x0000002CUL                                 /* Mode UART0 for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_MSC                    0x00000030UL                                 /* Mode MSC for DMA_CH_CTRL */
+#  define _DMA_CH_CTRL_SOURCESEL_AES                    0x00000031UL                                 /* Mode AES for DMA_CH_CTRL */
+
+#  define DMA_CH_CTRL_SOURCESEL_NONE                    (0x00000000UL << 16)                         /* Shifted mode NONE for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_ADC0                    (0x00000008UL << 16)                         /* Shifted mode ADC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_DAC0                    (0x0000000AUL << 16)                         /* Shifted mode DAC0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART0                  (0x0000000CUL << 16)                         /* Shifted mode USART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART1                  (0x0000000DUL << 16)                         /* Shifted mode USART1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_USART2                  (0x0000000EUL << 16)                         /* Shifted mode USART2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_LEUART0                 (0x00000010UL << 16)                         /* Shifted mode LEUART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_LEUART1                 (0x00000011UL << 16)                         /* Shifted mode LEUART1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_I2C0                    (0x00000014UL << 16)                         /* Shifted mode I2C0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER0                  (0x00000018UL << 16)                         /* Shifted mode TIMER0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER1                  (0x00000019UL << 16)                         /* Shifted mode TIMER1 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_TIMER2                  (0x0000001AUL << 16)                         /* Shifted mode TIMER2 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_UART0                   (0x0000002CUL << 16)                         /* Shifted mode UART0 for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_MSC                     (0x00000030UL << 16)                         /* Shifted mode MSC for DMA_CH_CTRL */
+#  define DMA_CH_CTRL_SOURCESEL_AES                     (0x00000031UL << 16)                         /* Shifted mode AES for DMA_CH_CTRL */
+
+#endif
 
 /* DMA Descriptor Bit Field Definitions ****************************************************************************************/
 
@@ -2091,59 +2224,59 @@
 #  define DMAREQ_EBI_PXLFULL            ((51 << 16) + 2) /* DMA channel select for EBI_PXLFULL */
 #  define DMAREQ_EBI_DDEMPTY            ((51 << 16) + 3) /* DMA channel select for EBI_DDEMPTY */
 #elif defined(CONFIG_EFM32_EFM32G)
-#  define DMAREQ_ADC0_SINGLE            ((8 << 16) + 0)  /**< DMA channel select for ADC0_SINGLE */
-#  define DMAREQ_ADC0_SCAN              ((8 << 16) + 1)  /**< DMA channel select for ADC0_SCAN */
-#  define DMAREQ_DAC0_CH0               ((10 << 16) + 0) /**< DMA channel select for DAC0_CH0 */
-#  define DMAREQ_DAC0_CH1               ((10 << 16) + 1) /**< DMA channel select for DAC0_CH1 */
-#  define DMAREQ_USART0_RXDATAV         ((12 << 16) + 0) /**< DMA channel select for USART0_RXDATAV */
-#  define DMAREQ_USART0_TXBL            ((12 << 16) + 1) /**< DMA channel select for USART0_TXBL */
-#  define DMAREQ_USART0_TXEMPTY         ((12 << 16) + 2) /**< DMA channel select for USART0_TXEMPTY */
-#  define DMAREQ_USART1_RXDATAV         ((13 << 16) + 0) /**< DMA channel select for USART1_RXDATAV */
-#  define DMAREQ_USART1_TXBL            ((13 << 16) + 1) /**< DMA channel select for USART1_TXBL */
-#  define DMAREQ_USART1_TXEMPTY         ((13 << 16) + 2) /**< DMA channel select for USART1_TXEMPTY */
-#  define DMAREQ_USART2_RXDATAV         ((14 << 16) + 0) /**< DMA channel select for USART2_RXDATAV */
-#  define DMAREQ_USART2_TXBL            ((14 << 16) + 1) /**< DMA channel select for USART2_TXBL */
-#  define DMAREQ_USART2_TXEMPTY         ((14 << 16) + 2) /**< DMA channel select for USART2_TXEMPTY */
-#  define DMAREQ_LEUART0_RXDATAV        ((16 << 16) + 0) /**< DMA channel select for LEUART0_RXDATAV */
-#  define DMAREQ_LEUART0_TXBL           ((16 << 16) + 1) /**< DMA channel select for LEUART0_TXBL */
-#  define DMAREQ_LEUART0_TXEMPTY        ((16 << 16) + 2) /**< DMA channel select for LEUART0_TXEMPTY */
-#  define DMAREQ_LEUART1_RXDATAV        ((17 << 16) + 0) /**< DMA channel select for LEUART1_RXDATAV */
-#  define DMAREQ_LEUART1_TXBL           ((17 << 16) + 1) /**< DMA channel select for LEUART1_TXBL */
-#  define DMAREQ_LEUART1_TXEMPTY        ((17 << 16) + 2) /**< DMA channel select for LEUART1_TXEMPTY */
-#  define DMAREQ_I2C0_RXDATAV           ((20 << 16) + 0) /**< DMA channel select for I2C0_RXDATAV */
-#  define DMAREQ_I2C0_TXBL              ((20 << 16) + 1) /**< DMA channel select for I2C0_TXBL */
-#  define DMAREQ_TIMER0_UFOF            ((24 << 16) + 0) /**< DMA channel select for TIMER0_UFOF */
-#  define DMAREQ_TIMER0_CC0             ((24 << 16) + 1) /**< DMA channel select for TIMER0_CC0 */
-#  define DMAREQ_TIMER0_CC1             ((24 << 16) + 2) /**< DMA channel select for TIMER0_CC1 */
-#  define DMAREQ_TIMER0_CC2             ((24 << 16) + 3) /**< DMA channel select for TIMER0_CC2 */
-#  define DMAREQ_TIMER1_UFOF            ((25 << 16) + 0) /**< DMA channel select for TIMER1_UFOF */
-#  define DMAREQ_TIMER1_CC0             ((25 << 16) + 1) /**< DMA channel select for TIMER1_CC0 */
-#  define DMAREQ_TIMER1_CC1             ((25 << 16) + 2) /**< DMA channel select for TIMER1_CC1 */
-#  define DMAREQ_TIMER1_CC2             ((25 << 16) + 3) /**< DMA channel select for TIMER1_CC2 */
-#  define DMAREQ_TIMER2_UFOF            ((26 << 16) + 0) /**< DMA channel select for TIMER2_UFOF */
-#  define DMAREQ_TIMER2_CC0             ((26 << 16) + 1) /**< DMA channel select for TIMER2_CC0 */
-#  define DMAREQ_TIMER2_CC1             ((26 << 16) + 2) /**< DMA channel select for TIMER2_CC1 */
-#  define DMAREQ_TIMER2_CC2             ((26 << 16) + 3) /**< DMA channel select for TIMER2_CC2 */
-#  define DMAREQ_UART0_RXDATAV          ((44 << 16) + 0) /**< DMA channel select for UART0_RXDATAV */
-#  define DMAREQ_UART0_TXBL             ((44 << 16) + 1) /**< DMA channel select for UART0_TXBL */
-#  define DMAREQ_UART0_TXEMPTY          ((44 << 16) + 2) /**< DMA channel select for UART0_TXEMPTY */
-#  define DMAREQ_MSC_WDATA              ((48 << 16) + 0) /**< DMA channel select for MSC_WDATA */
-#  define DMAREQ_AES_DATAWR             ((49 << 16) + 0) /**< DMA channel select for AES_DATAWR */
-#  define DMAREQ_AES_XORDATAWR          ((49 << 16) + 1) /**< DMA channel select for AES_XORDATAWR */
-#  define DMAREQ_AES_DATARD             ((49 << 16) + 2) /**< DMA channel select for AES_DATARD */
-#  define DMAREQ_AES_KEYWR              ((49 << 16) + 3) /**< DMA channel select for AES_KEYWR */
+#  define DMAREQ_ADC0_SINGLE            ((8 << 16) + 0)  /* DMA channel select for ADC0_SINGLE */
+#  define DMAREQ_ADC0_SCAN              ((8 << 16) + 1)  /* DMA channel select for ADC0_SCAN */
+#  define DMAREQ_DAC0_CH0               ((10 << 16) + 0) /* DMA channel select for DAC0_CH0 */
+#  define DMAREQ_DAC0_CH1               ((10 << 16) + 1) /* DMA channel select for DAC0_CH1 */
+#  define DMAREQ_USART0_RXDATAV         ((12 << 16) + 0) /* DMA channel select for USART0_RXDATAV */
+#  define DMAREQ_USART0_TXBL            ((12 << 16) + 1) /* DMA channel select for USART0_TXBL */
+#  define DMAREQ_USART0_TXEMPTY         ((12 << 16) + 2) /* DMA channel select for USART0_TXEMPTY */
+#  define DMAREQ_USART1_RXDATAV         ((13 << 16) + 0) /* DMA channel select for USART1_RXDATAV */
+#  define DMAREQ_USART1_TXBL            ((13 << 16) + 1) /* DMA channel select for USART1_TXBL */
+#  define DMAREQ_USART1_TXEMPTY         ((13 << 16) + 2) /* DMA channel select for USART1_TXEMPTY */
+#  define DMAREQ_USART2_RXDATAV         ((14 << 16) + 0) /* DMA channel select for USART2_RXDATAV */
+#  define DMAREQ_USART2_TXBL            ((14 << 16) + 1) /* DMA channel select for USART2_TXBL */
+#  define DMAREQ_USART2_TXEMPTY         ((14 << 16) + 2) /* DMA channel select for USART2_TXEMPTY */
+#  define DMAREQ_LEUART0_RXDATAV        ((16 << 16) + 0) /* DMA channel select for LEUART0_RXDATAV */
+#  define DMAREQ_LEUART0_TXBL           ((16 << 16) + 1) /* DMA channel select for LEUART0_TXBL */
+#  define DMAREQ_LEUART0_TXEMPTY        ((16 << 16) + 2) /* DMA channel select for LEUART0_TXEMPTY */
+#  define DMAREQ_LEUART1_RXDATAV        ((17 << 16) + 0) /* DMA channel select for LEUART1_RXDATAV */
+#  define DMAREQ_LEUART1_TXBL           ((17 << 16) + 1) /* DMA channel select for LEUART1_TXBL */
+#  define DMAREQ_LEUART1_TXEMPTY        ((17 << 16) + 2) /* DMA channel select for LEUART1_TXEMPTY */
+#  define DMAREQ_I2C0_RXDATAV           ((20 << 16) + 0) /* DMA channel select for I2C0_RXDATAV */
+#  define DMAREQ_I2C0_TXBL              ((20 << 16) + 1) /* DMA channel select for I2C0_TXBL */
+#  define DMAREQ_TIMER0_UFOF            ((24 << 16) + 0) /* DMA channel select for TIMER0_UFOF */
+#  define DMAREQ_TIMER0_CC0             ((24 << 16) + 1) /* DMA channel select for TIMER0_CC0 */
+#  define DMAREQ_TIMER0_CC1             ((24 << 16) + 2) /* DMA channel select for TIMER0_CC1 */
+#  define DMAREQ_TIMER0_CC2             ((24 << 16) + 3) /* DMA channel select for TIMER0_CC2 */
+#  define DMAREQ_TIMER1_UFOF            ((25 << 16) + 0) /* DMA channel select for TIMER1_UFOF */
+#  define DMAREQ_TIMER1_CC0             ((25 << 16) + 1) /* DMA channel select for TIMER1_CC0 */
+#  define DMAREQ_TIMER1_CC1             ((25 << 16) + 2) /* DMA channel select for TIMER1_CC1 */
+#  define DMAREQ_TIMER1_CC2             ((25 << 16) + 3) /* DMA channel select for TIMER1_CC2 */
+#  define DMAREQ_TIMER2_UFOF            ((26 << 16) + 0) /* DMA channel select for TIMER2_UFOF */
+#  define DMAREQ_TIMER2_CC0             ((26 << 16) + 1) /* DMA channel select for TIMER2_CC0 */
+#  define DMAREQ_TIMER2_CC1             ((26 << 16) + 2) /* DMA channel select for TIMER2_CC1 */
+#  define DMAREQ_TIMER2_CC2             ((26 << 16) + 3) /* DMA channel select for TIMER2_CC2 */
+#  define DMAREQ_UART0_RXDATAV          ((44 << 16) + 0) /* DMA channel select for UART0_RXDATAV */
+#  define DMAREQ_UART0_TXBL             ((44 << 16) + 1) /* DMA channel select for UART0_TXBL */
+#  define DMAREQ_UART0_TXEMPTY          ((44 << 16) + 2) /* DMA channel select for UART0_TXEMPTY */
+#  define DMAREQ_MSC_WDATA              ((48 << 16) + 0) /* DMA channel select for MSC_WDATA */
+#  define DMAREQ_AES_DATAWR             ((49 << 16) + 0) /* DMA channel select for AES_DATAWR */
+#  define DMAREQ_AES_XORDATAWR          ((49 << 16) + 1) /* DMA channel select for AES_XORDATAWR */
+#  define DMAREQ_AES_DATARD             ((49 << 16) + 2) /* DMA channel select for AES_DATARD */
+#  define DMAREQ_AES_KEYWR              ((49 << 16) + 3) /* DMA channel select for AES_KEYWR */
 #endif
 
 /*******************************************************************************************************************************
  * Public Types
  *******************************************************************************************************************************/
 
-struct dma_desriptor_s
+struct dma_descriptor_s
 {
   volatile void * volatile srcend; /* DMA source address end */
   volatile void * volatile dstend; /* DMA destination address end */
   volatile uint32_t        ctrl;   /* DMA control register */
   volatile uint32_t        user;   /* DMA padding register, available for user */
-};      
+};
 
 #endif /* __ARCH_ARM_SRC_EFM32_CHIP_EFM32_DMA_H */

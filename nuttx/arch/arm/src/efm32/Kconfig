@@ -163,6 +163,17 @@ config EFM32_GPIO_IRQ
 	---help---
 		Enable support for interrupting GPIO pins
 
+if EFM32_DMA
+
+config EFM32_DMA_ALTDSEC
+	int "Enable alternate descriptors"
+	default 8
+	depends on EXPERIMENTAL
+	---help---
+		Enable support for alternate descriptors.  Not fully implemented.
+
+endif
+
 choice
 	prompt "USART0 Mode"
 	default EFM32_USART0_ISUART
@@ -328,5 +339,39 @@ config LEUART1_2STOP
 		1=Two stop bits
 
 endmenu # LEUART1 Configuration
+
+if EFM32_USART_ISSPI
+menu "SPI Configuration"
+
+config EFM32_SPI_DMA
+	bool "SPI DMA support"
+	default n
+	depends on EFM32_DMA
+	---help---
+		Select to enable DMA SPI transfers
+
+if EFM32_SPI_DMA
+
+config EFM32_SPI_DMA_TIMEO_NSEC
+	int "Per word timeout (nsec)"
+	default 500
+	---help---
+		A timeout will be be used to detect hung DMA transfers.  The timeout
+		will vary as a function of the number of words transferred.  This
+		value provides the per-word timeout value in nanoseconds.
+
+config EFM32_SPI_DMA_MINSIZE
+	int "Minimum DMA size"
+	default 16
+	---help---
+		DMA is particularly helpful for the case of large SPI transfers.
+		Smaller SPI transfer may be more efficiently performed without DMA.
+		This option determines a threshold:  For transfers of this size and
+		below, DMA will not be used.  A value of zero will force all DMA-
+		based transfers.
+
+endif # EFM32_SPI_DMA
+endmenu # SPI Configuration
+endif # EFM32_USART_ISSPI
 
 endif # ARCH_CHIP_EFM32
