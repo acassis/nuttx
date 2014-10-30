@@ -59,7 +59,7 @@
  */
 
 #define BOARD_HAVE_HFXO        1        /* Have High frequency crystal oscillator */
-#define BOARD_HAVE_LFXO        1        /* Have Loq frequency crystal oscillator */
+#define BOARD_HAVE_LFXO        0        /* Have Low frequency crystal oscillator */
 
 #define BOARD_HFRCO_FREQUENCY  14000000 /* 14MHz on reset */
 #define BOARD_HFXO_FREQUENCY   32000000 /* 32MHz crystal on board */
@@ -114,9 +114,15 @@
  * ULFRCO is a special case.
  */
 
-#define BOARD_LFACLKSEL           _CMU_LFCLKSEL_LFA_LFXO
-#undef  BOARD_LFACLK_ULFRCO
-#define BOARD_LFACLK_FREQUENCY    BOARD_LFXO_FREQUENCY
+#if BOARD_HAVE_LFXO
+#   define BOARD_LFACLKSEL           _CMU_LFCLKSEL_LFA_LFXO
+#   undef  BOARD_LFACLK_ULFRCO
+#   define BOARD_LFACLK_FREQUENCY    BOARD_LFXO_FREQUENCY
+#else
+#   define BOARD_LFACLKSEL           _CMU_LFCLKSEL_LFA_LFRCO
+#   undef  BOARD_LFACLK_ULFRCO
+#   define BOARD_LFACLK_FREQUENCY    BOARD_LFRCO_FREQUENCY
+#endif
 
 /* LFBCLK - Low Frequency B Clock
  *
@@ -131,9 +137,15 @@
  * ULFRCO is a special case.
  */
 
-#define BOARD_LFBCLKSEL           _CMU_LFCLKSEL_LFB_LFXO
-#undef  BOARD_LFBCLK_ULFRCO
-#define BOARD_LFBCLK_FREQUENCY    BOARD_LFXO_FREQUENCY
+#if BOARD_HAVE_LFXO
+#   define BOARD_LFBCLKSEL           _CMU_LFCLKSEL_LFB_LFXO
+#   undef  BOARD_LFBCLK_ULFRCO
+#   define BOARD_LFBCLK_FREQUENCY    BOARD_LFXO_FREQUENCY
+#else
+#   define BOARD_LFBCLKSEL           _CMU_LFCLKSEL_LFB_LFRCO
+#   undef  BOARD_LFBCLK_ULFRCO
+#   define BOARD_LFBCLK_FREQUENCY    BOARD_LFRCO_FREQUENCY
+#endif
 
 /* PCNTnCLK - Pulse Counter n Clock
  *
@@ -172,7 +184,6 @@
  * swo location output.
  */
 #define BOARD_GPIO_SWOPORT   ( GPIO_OUTPUT_PUSHPULL | \
-                               GPIO_DRIVE_STANDARD  | \
                                GPIO_PORTF           | \
                                GPIO_PIN2                )
 
