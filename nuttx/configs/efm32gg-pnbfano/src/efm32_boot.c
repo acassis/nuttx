@@ -33,45 +33,46 @@
  *
  ****************************************************************************/
 
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
 #include <nuttx/config.h>
 
-#include "efm32_gpio.h"
-#include "efm32_spi.h"
-#include "stdio.h"
-
-#if 0
-/****************************************************************************
- * Spi mapping Functions
- ****************************************************************************/
-const efm32_spi_cfg_t efm32_spi_cfg_tb[CONFIG_EFM32_SPI_NBR] = 
-{
-#ifdef CONFIG_PNBFANO_USE_MMCSD
-    {
-        .usart_idx  = 0,
-        .location   = 2,
-#ifdef CONFIG_EFM32_SPI_INTERRUPTS
-        .spiirq     = -1,     /* SPI IRQ number : -1 => No interrupts */
-#endif
-        .clk_port    = gpioPortC,
-        .clk_pin     =  9,
-        .mosi_port   = gpioPortC,
-        .mosi_pin    = 11,
-        .miso_port   = gpioPortC,
-        .miso_pin    = 10,
-        .cs_port     = gpioPortC,
-        .cs_pin      =  8
-    }
-#endif
-};
-
-
-
+//#include "efm32_gpio.h"
+//#include "efm32_spi.h"
+//#include "stdio.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-#endif
+/****************************************************************************
+ * Name: efm32_boardinitialize
+ *
+ * Description:
+ *   All EFM32 architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization before any devices
+ *   have been initialized.
+ *
+ ****************************************************************************/
+
+void efm32_boardinitialize(void)
+{
+}
+
+/****************************************************************************
+ * Name: board_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a
+ *   function called board_initialize().  board_initialize() will be
+ *   called immediately after up_initialize() is called and just before the
+ *   initial application is started.  This additional initialization phase
+ *   may be used, for example, to initialize board-specific device drivers.
+ *
+ ****************************************************************************/
 
 #ifdef CONFIG_BOARD_INITIALIZE
 void board_initialize(void)
@@ -87,5 +88,3 @@ void board_initialize(void)
 
 }
 #endif
-
-

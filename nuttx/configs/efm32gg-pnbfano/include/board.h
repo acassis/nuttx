@@ -220,6 +220,9 @@
  *   U0_MOSI #2 PC11 
  */
 
+#define BOARD_USART0_CLK_GPIO       (GPIO_PORTC|GPIO_PIN9 )
+#define BOARD_USART0_RX_GPIO        (GPIO_PORTC|GPIO_PIN10)
+#define BOARD_USART0_TX_GPIO        (GPIO_PORTC|GPIO_PIN11)
 #define BOARD_USART0_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC2
 
 /* Pin routing **************************************************************/
@@ -229,6 +232,8 @@
  *   U0_TX #1 PC2  
  */
 
+#define BOARD_USART2_RX_GPIO        (GPIO_PORTC|GPIO_PIN3)
+#define BOARD_USART2_TX_GPIO        (GPIO_PORTC|GPIO_PIN2)
 #define BOARD_USART2_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC0
 
 
