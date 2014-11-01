@@ -1128,6 +1128,7 @@ static bool efm32_txempty(struct uart_dev_s *dev)
  *   performed in efm32_clkinitialize().
  *
  ****************************************************************************/
+
 #ifdef USE_EARLYSERIALINIT
 void up_earlyserialinit(void)
 {
