@@ -41,7 +41,6 @@
 
 #include <stdio.h>
 #include <syslog.h>
-#include <time.h>
 
 #include <nuttx/clock.h>
 #include <nuttx/streams.h>
@@ -134,6 +133,18 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
    */
 
   lib_rawoutstream(&rawoutstream, 1);
+
+#if defined(CONFIG_SYSLOG_HEADER)
+  if (ret == OK)
+    {
+        (void)lib_sprintf((FAR struct lib_outstream_s *)&stream, 
+                          "[%6d.%06d]",
+                          ts.tv_sec,
+                          ts.tv_nsec/1000 
+                         );
+    }
+#endif
+
   return lib_vsprintf(&rawoutstream.public, fmt, ap);
 
 #elif defined(CONFIG_ARCH_LOWPUTC)
@@ -145,6 +156,18 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
    */
 
   lib_lowoutstream((FAR struct lib_outstream_s *)&stream);
+
+#if defined(CONFIG_SYSLOG_HEADER)
+  if (ret == OK)
+    {
+        (void)lib_sprintf((FAR struct lib_outstream_s *)&stream, 
+                          "[%6d.%06d]",
+                          ts.tv_sec,
+                          ts.tv_nsec/1000 
+                         );
+    }
+#endif
+
   return lib_vsprintf((FAR struct lib_outstream_s *)&stream, fmt, ap);
 
 #else
