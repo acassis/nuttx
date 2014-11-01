@@ -55,8 +55,8 @@
 
 #include <efm32_gpio_keypad.h>
 
-#define EFM32_GPIO_KBD_LOG(...)
-//#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
+//#define EFM32_GPIO_KBD_LOG(...)
+#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
 
 #ifndef CONFIG_EFM32_GPIO_KBD_BUFSIZE
 #  define CONFIG_EFM32_GPIO_KBD_BUFSIZE 64

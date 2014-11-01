@@ -7,17 +7,10 @@ if ARCH_BOARD_EFM32GG_PNBFANO
 
 comment "EFM32 PNBFANO Hardware Configuration"
 
-config EFM32_SWO_DIV
-	int "Swo divider output (=14Mhz/x)"
-	default 16
-	---help---
-		Choose SWO speed by set divider.
-		SWO speed is 14Mhz/(swo_divider).
-
 config PNBFANO_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
+    select ARCH_BUTTONS
     select EFM32_GPIO_IRQ
-    select EFM32_GPIO_KEYPAD
     select LIB_KBDCODEC
     select BOARD_INITIALIZE
 	depends on ARCH_CHIP_EFM32

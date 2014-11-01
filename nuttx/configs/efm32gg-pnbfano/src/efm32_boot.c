@@ -39,9 +39,14 @@
 
 #include <nuttx/config.h>
 
+#include "efm32_start.h"
+#include "efm32gg-pnbfano.h"
+
 //#include "efm32_gpio.h"
 //#include "efm32_spi.h"
-//#include "stdio.h"
+
+#include <nuttx/input/keypad.h>
+#include <syslog.h>
 
 /****************************************************************************
  * Public Functions
@@ -59,6 +64,7 @@
 
 void efm32_boardinitialize(void)
 {
+	syslog(LOG_DEBUG,"EFM32 Board initialization.\n");
 }
 
 /****************************************************************************
@@ -78,13 +84,17 @@ void efm32_boardinitialize(void)
 void board_initialize(void)
 {
 
-#if defined(CONFIG_EFM32_GPIO_KEYPAD) 
+#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) 
+	syslog(LOG_DEBUG,"keypad initialization.\n");
     keypad_kbdinit();
 #endif
 
   /* Mount the SDIO-based MMC/SD block driver */
 
+#if defined(CONFIG_PNBFANO_USE_MMCSD) 
+	syslog(LOG_DEBUG,"SDHC initialization.\n");
   //nsh_archinitialize();
+#endif
 
 }
 #endif

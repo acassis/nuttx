@@ -41,7 +41,9 @@
 
 #include <stdio.h>
 #include <syslog.h>
+#include <time.h>
 
+#include <nuttx/clock.h>
 #include <nuttx/streams.h>
 
 #include "syslog/syslog.h"
@@ -93,6 +95,13 @@
 
 static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
 {
+
+#if defined(CONFIG_SYSLOG_HEADER)
+  struct timespec ts;
+  int ret;
+  ret = clock_systimespec(&ts);
+#endif
+
 #if defined(CONFIG_SYSLOG)
 
   struct lib_outstream_s stream;
@@ -102,6 +111,18 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
    */
 
   lib_syslogstream((FAR struct lib_outstream_s *)&stream);
+
+#if defined(CONFIG_SYSLOG_HEADER)
+  if (ret == OK)
+    {
+        (void)lib_sprintf((FAR struct lib_outstream_s *)&stream, 
+                          "[%6d.%06d]",
+                          ts.tv_sec,
+                          ts.tv_nsec/1000 
+                         );
+    }
+#endif
+
   return lib_vsprintf((FAR struct lib_outstream_s *)&stream, fmt, ap);
 
 #elif CONFIG_NFILE_DESCRIPTORS > 0
