@@ -74,6 +74,20 @@
 /****************************************************************************
  * Private Constant Data
  ****************************************************************************/
+#if defined(CONFIG_SYSLOG_PRIORITY)
+#define PRIORITY_NBR 8
+static const char const * priority_str_tb[PRIORITY_NBR] =
+  {
+    "EME",
+    "ALE",
+    "CRI",
+    "ERR",
+    "WAR",
+    "NOT",
+    "INF",
+    "DEB"
+  };
+#endif
 
 /****************************************************************************
  * Private Data
@@ -92,7 +106,7 @@
  *
  ****************************************************************************/
 
-static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
+static inline int vsyslog_internal(int priority, FAR const char *fmt, va_list ap)
 {
 #if defined(CONFIG_SYSLOG)
   struct lib_outstream_s stream;
@@ -100,6 +114,9 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
   struct lib_rawoutstream_s stream;
 #elif defined(CONFIG_ARCH_LOWPUTC)
   struct lib_outstream_s stream;
+#endif
+#if defined(CONFIG_SYSLOG_PRIORITY)
+  const char const *priority_str = "UNK";
 #endif
 
 #if defined(CONFIG_SYSLOG_TIMESTAMP)
@@ -111,12 +128,23 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
   ret = clock_systimespec(&ts);
 #endif
 
+#if defined(CONFIG_SYSLOG_PRIORITY)
+  if ( ( priority >= 0 ) && ( priority < PRIORITY_NBR ) )
+      priority_str = priority_str_tb[priority];
+#endif
+
 #if defined(CONFIG_SYSLOG)
   /* Wrap the low-level output in a stream object and let lib_vsprintf
    * do the work.
    */
 
   lib_syslogstream((FAR struct lib_outstream_s *)&stream);
+
+#if defined(CONFIG_SYSLOG_PRIORITY)
+  /* Pre-pend the message with the current time */
+
+  (void)lib_sprintf((FAR struct lib_outstream_s *)&stream,priority_str);
+#endif
 
 #if defined(CONFIG_SYSLOG_TIMESTAMP)
   /* Pre-pend the message with the current time */
@@ -138,6 +166,12 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
 
   lib_rawoutstream(&stream, 1);
 
+#if defined(CONFIG_SYSLOG_PRIORITY)
+  /* Pre-pend the message with the current time */
+
+  (void)lib_sprintf((FAR struct lib_outstream_s *)&stream,priority_str);
+#endif
+  
 #if defined(CONFIG_SYSLOG_TIMESTAMP)
   /* Pre-pend the message with the current time */
 
@@ -157,6 +191,12 @@ static inline int vsyslog_internal(FAR const char *fmt, va_list ap)
    */
 
   lib_lowoutstream((FAR struct lib_outstream_s *)&stream);
+
+#if defined(CONFIG_SYSLOG_PRIORITY)
+  /* Pre-pend the message with the current time */
+
+  (void)lib_sprintf((FAR struct lib_outstream_s *)&stream,priority_str);
+#endif
 
 #if defined(CONFIG_SYSLOG_TIMESTAMP)
   /* Pre-pend the message with the current time */
@@ -200,7 +240,7 @@ int vsyslog(int priority, FAR const char *fmt, va_list ap)
     {
       /* Yes.. let vsylog_internal to the deed */
 
-      ret = vsyslog_internal(fmt, ap);
+      ret = vsyslog_internal(priority, fmt, ap);
     }
 
   return ret;

@@ -81,6 +81,18 @@ config SYSLOG_TIMESTAMP
 	---help---
 		Prepend timestamp to syslog message.
 
+config SYSLOG_PRIORITY
+	bool "Prepend log priority level to syslog message"
+	default y
+	---help---
+		Prepend log priority level to syslog message.
+
+config SYSLOG_COLOR
+	bool "Add color in syslog message."
+	default y
+	---help---
+		Use ANSI ESC sequence to color log message.
+
 config SYSLOG_CHAR
 	bool "System log character device support"
 	default y
