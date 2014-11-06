@@ -64,6 +64,20 @@
 
 void efm32_boardinitialize(void)
 {
+
+    /* test log Message */
+
+#if 1
+	syslog(LOG_DEBUG    ,   "LOG_DEBUG    \n");
+	syslog(LOG_INFO     ,   "LOG_INFO     \n");
+	syslog(LOG_NOTICE   ,   "LOG_NOTICE   \n");
+	syslog(LOG_WARNING  ,   "LOG_WARNING  \n");
+	syslog(LOG_ERR      ,   "LOG_ERR      \n");
+	syslog(LOG_CRIT     ,   "LOG_CRIT     \n");
+	syslog(LOG_ALERT    ,   "LOG_ALERT    \n");
+	syslog(LOG_EMERG    ,   "LOG_EMERG    \n");
+#endif
+
 	syslog(LOG_DEBUG,"EFM32 Board initialization.\n");
 }
 

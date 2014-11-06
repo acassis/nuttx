@@ -73,6 +73,8 @@ config SYSLOG
 		console (like printf()).  This setting is required to enable
 		customization of the basic system loggin capability.
 
+if SYSLOG
+
 config SYSLOG_TIMESTAMP
 	bool "Prepend timestamp to syslog message"
 	default n
@@ -91,7 +93,537 @@ config SYSLOG_COLOR
 	---help---
 		Use ANSI ESC sequence to color log message.
 
-if SYSLOG
+if SYSLOG_COLOR
+
+choice
+	prompt "EMERG text color"
+	default SYSLOG_COLOR_EMERG_TEXT_WHITE
+
+config SYSLOG_COLOR_EMERG_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_EMERG_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_EMERG_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_EMERG_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_EMERG_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_EMERG_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_EMERG_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_EMERG_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_EMERG_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # EMERG Text Color
+
+choice
+	prompt "EMERG background color"
+	default SYSLOG_COLOR_EMERG_BACK_RED
+
+config SYSLOG_COLOR_EMERG_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_EMERG_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_EMERG_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_EMERG_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_EMERG_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_EMERG_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_EMERG_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_EMERG_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_EMERG_BACK_DEFAULT
+	bool "Default"
+
+endchoice # EMERG Background Color
+
+choice
+	prompt "ALERT text color"
+	default SYSLOG_COLOR_ALERT_TEXT_YELLOW
+
+config SYSLOG_COLOR_ALERT_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_ALERT_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_ALERT_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_ALERT_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_ALERT_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_ALERT_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_ALERT_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_ALERT_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_ALERT_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # ALERT Text Color
+
+choice
+	prompt "ALERT background color"
+	default SYSLOG_COLOR_ALERT_BACK_RED
+
+config SYSLOG_COLOR_ALERT_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_ALERT_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_ALERT_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_ALERT_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_ALERT_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_ALERT_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_ALERT_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_ALERT_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_ALERT_BACK_DEFAULT
+	bool "Default"
+
+endchoice # ALERT Background Color
+
+choice
+	prompt "CRITICAL text color"
+	default SYSLOG_COLOR_CRITICAL_TEXT_BLACK
+
+config SYSLOG_COLOR_CRITICAL_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_CRITICAL_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # CRITICAL Text Color
+
+choice
+	prompt "CRITICAL background color"
+	default SYSLOG_COLOR_CRITICAL_BACK_RED
+
+config SYSLOG_COLOR_CRITICAL_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_CRITICAL_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_CRITICAL_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_CRITICAL_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_CRITICAL_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_CRITICAL_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_CRITICAL_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_CRITICAL_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_CRITICAL_BACK_DEFAULT
+	bool "Default"
+
+endchoice # CRITICAL Background Color
+
+choice
+	prompt "ERROR text color"
+	default SYSLOG_COLOR_ERROR_TEXT_RED
+
+config SYSLOG_COLOR_ERROR_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_ERROR_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_ERROR_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_ERROR_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_ERROR_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_ERROR_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_ERROR_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_ERROR_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_ERROR_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # ERROR Text Color
+
+choice
+	prompt "ERROR background color"
+	default SYSLOG_COLOR_ERROR_BACK_BLACK
+
+config SYSLOG_COLOR_ERROR_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_ERROR_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_ERROR_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_ERROR_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_ERROR_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_ERROR_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_ERROR_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_ERROR_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_ERROR_BACK_DEFAULT
+	bool "Default"
+
+endchoice # ERROR Background Color
+
+choice
+	prompt "WARNING text color"
+	default SYSLOG_COLOR_WARNING_TEXT_YELLOW
+
+config SYSLOG_COLOR_WARNING_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_WARNING_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_WARNING_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_WARNING_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_WARNING_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_WARNING_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_WARNING_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_WARNING_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_WARNING_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # WARNING Text Color
+
+choice
+	prompt "WARNING background color"
+	default SYSLOG_COLOR_WARNING_BACK_BLACK
+
+config SYSLOG_COLOR_WARNING_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_WARNING_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_WARNING_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_WARNING_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_WARNING_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_WARNING_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_WARNING_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_WARNING_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_WARNING_BACK_DEFAULT
+	bool "Default"
+
+endchoice # WARNING Background Color
+
+choice
+	prompt "NOTICE text color"
+	default SYSLOG_COLOR_NOTICE_TEXT_GREEN
+
+config SYSLOG_COLOR_NOTICE_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_NOTICE_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_NOTICE_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_NOTICE_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_NOTICE_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_NOTICE_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_NOTICE_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_NOTICE_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_NOTICE_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # NOTICE Text Color
+
+choice
+	prompt "NOTICE background color"
+	default SYSLOG_COLOR_NOTICE_BACK_BLACK
+
+config SYSLOG_COLOR_NOTICE_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_NOTICE_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_NOTICE_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_NOTICE_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_NOTICE_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_NOTICE_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_NOTICE_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_NOTICE_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_NOTICE_BACK_DEFAULT
+	bool "Default"
+
+endchoice # NOTICE Background Color
+
+choice
+	prompt "INFO text color"
+	default SYSLOG_COLOR_INFO_TEXT_CYAN
+
+config SYSLOG_COLOR_INFO_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_INFO_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_INFO_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_INFO_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_INFO_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_INFO_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_INFO_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_INFO_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_INFO_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # INFO Text Color
+
+choice
+	prompt "INFO background color"
+	default SYSLOG_COLOR_INFO_BACK_BLACK
+
+config SYSLOG_COLOR_INFO_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_INFO_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_INFO_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_INFO_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_INFO_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_INFO_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_INFO_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_INFO_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_INFO_BACK_DEFAULT
+	bool "Default"
+
+endchoice # INFO Background Color
+
+choice
+	prompt "DEBUG text color"
+	default SYSLOG_COLOR_DEBUG_TEXT_WHITE
+
+config SYSLOG_COLOR_DEBUG_TEXT_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_DEBUG_TEXT_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_DEBUG_TEXT_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_DEBUG_TEXT_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_DEBUG_TEXT_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_DEBUG_TEXT_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_DEBUG_TEXT_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_DEBUG_TEXT_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_DEBUG_TEXT_DEFAULT
+	bool "Default"
+
+endchoice # DEBUG Text Color
+
+choice
+	prompt "DEBUG background color"
+	default SYSLOG_COLOR_DEBUG_BACK_BLACK
+
+config SYSLOG_COLOR_DEBUG_BACK_BLACK  
+	bool "Black"
+
+config SYSLOG_COLOR_DEBUG_BACK_RED    
+	bool "Red"
+
+config SYSLOG_COLOR_DEBUG_BACK_GREEN  
+	bool "Green"
+
+config SYSLOG_COLOR_DEBUG_BACK_YELLOW 
+	bool "Yellow"
+
+config SYSLOG_COLOR_DEBUG_BACK_BLUE   
+	bool "Blue"
+
+config SYSLOG_COLOR_DEBUG_BACK_MAGENTA
+	bool "Magenta"
+
+config SYSLOG_COLOR_DEBUG_BACK_CYAN   
+	bool "Cyan"
+
+config SYSLOG_COLOR_DEBUG_BACK_WHITE  
+	bool "White"
+
+config SYSLOG_COLOR_DEBUG_BACK_DEFAULT
+	bool "Default"
+
+endchoice # DEBUG Background Color
+
+endif
 
 config SYSLOG_CHAR
 	bool "System log character device support"
