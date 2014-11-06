@@ -222,6 +222,16 @@ configs/efm32tg-stk3300/
   This is Energy Micro's development kit for the Tiny Gecko MCU, which
   is an ARM Cortex-M3 device.
 
+configs/efm32-g8xx-stk
+  The port of NuttX to the the EFM32 Gecko Starter Kit (EFM32-G8XX-STK).
+
+configs/efm32gg-stk3700
+  The port of NuttX to the the EFM32 Giant Gecko Starter Kit
+  (EFM32GG-STK3700).
+
+configs/efm32gg-pnbfano
+  The port of NuttX to the the EFM32 Giant Gecko PnbFano.
+
 configs/ekk-lm3s9b96
   TI/Stellaris EKK-LM3S9B96 board.  This board is based on the
   an EKK-LM3S9B96 which is a Cortex-M3.

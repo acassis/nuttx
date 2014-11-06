@@ -1,5 +1,5 @@
 /****************************************************************************
- *  arch/arm/src/efm32/efm32_idle.c
+ * configs/efm32gg-stk3700/include/efm32_userleds.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,40 +32,63 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+/* The EFM32 Giant Gecko Start Kit has two yellow LEDs marked LED0 and LED1.
+ * These LEDs are controlled by GPIO pins on the EFM32.  The LEDs are
+ * connected to pins PE2 and PE3 in an active high configuration:
+ *
+ * ------------------------------------- --------------------
+ * EFM32 PIN                             BOARD SIGNALS
+ * ------------------------------------- --------------------
+ * E2/BCK_VOUT/EBI_A09 #0/               MCU_PE2 UIF_LED0
+ *   TIM3_CC2 #1/U1_TX #3/ACMP0_O #1
+ * E3/BCK_STAT/EBI_A10 #0/U1_RX #3/      MCU_PE3 UIF_LED1
+ *   ACMP1_O #1
+ * ------------------------------------- --------------------
+ *
+ * All LEDs are grounded and so are illuminated by outputting a high
+ * value to the LED.
+ */
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <arch/board/board.h>
 #include <nuttx/config.h>
 
+#include <stdint.h>
+#include <stdbool.h>
 #include <debug.h>
 
-#include <nuttx/arch.h>
-#include <nuttx/power/pm.h>
+#include <arch/board/board.h>
 
-#include <arch/irq.h>
+#include "efm32_gpio.h"
+#include "efm32gg-stk3700.h"
 
-#include "chip.h"
-#include "up_internal.h"
-#include "efm32_pm.h"
+#ifndef CONFIG_ARCH_LEDS
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Definitions
  ****************************************************************************/
 
-/* Does the board support an IDLE LED to indicate that the board is in the
- * IDLE state?
+/* CONFIG_DEBUG_LEDS enables debug output from this file (needs CONFIG_DEBUG
+ * with CONFIG_DEBUG_VERBOSE too)
  */
 
-#if defined(CONFIG_ARCH_LEDS) && defined(LED_IDLE)
-#  define BEGIN_IDLE() board_led_on(LED_IDLE)
-#  define END_IDLE()   board_led_off(LED_IDLE)
+#ifdef CONFIG_DEBUG_LEDS
+#  define leddbg  lldbg
+#  define ledvdbg llvdbg
 #else
-#  define BEGIN_IDLE()
-#  define END_IDLE()
+#  define leddbg(x...)
+#  define ledvdbg(x...)
 #endif
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
 
 /****************************************************************************
  * Private Data
@@ -76,110 +99,55 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_idlepm
- *
- * Description:
- *   Perform IDLE state power management.
- *
- *   REVISIT: These power management hooks were taken with no modification
- *   from the EFM32 implementation and need review against EFM32 reduced
- *   power modes.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_PM
-static void up_idlepm(void)
-{
-  static enum pm_state_e oldstate = PM_NORMAL;
-  enum pm_state_e newstate;
-  irqstate_t flags;
-  int ret;
-
-  /* Decide, which power saving level can be obtained */
-
-  newstate = pm_checkstate();
-
-  /* Check for state changes */
-
-  if (newstate != oldstate)
-    {
-      flags = irqsave();
-
-      /* Perform board-specific, state-dependent logic here */
-
-      llvdbg("newstate= %d oldstate=%d\n", newstate, oldstate);
-
-      /* Then force the global state change */
-
-      ret = pm_changestate(newstate);
-      if (ret < 0)
-        {
-          /* The new state change failed, revert to the preceding state */
-
-          (void)pm_changestate(oldstate);
-        }
-      else
-        {
-          /* Save the new state */
-
-          oldstate = newstate;
-        }
-
-      /* MCU-specific power management logic */
-
-      switch (newstate)
-        {
-        case PM_NORMAL:
-          break;
-
-        case PM_IDLE:
-          break;
-
-        case PM_STANDBY:
-          efm32_pmstop(true);
-          break;
-
-        case PM_SLEEP:
-          (void)efm32_pmstandby();
-          break;
-
-        default:
-          break;
-        }
-
-      irqrestore(flags);
-    }
-}
-#else
-#  define up_idlepm()
-#endif
-
-/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_idle
- *
- * Description:
- *   up_idle() is the logic that will be executed when their is no other
- *   ready-to-run task.  This is processor idle time and will continue until
- *   some interrupt occurs to cause a context switch from the idle task.
- *
- *   Processing in this state may be processor-specific. e.g., this is where
- *   power management operations might be performed.
- *
+ * Name: sam_ledinit
  ****************************************************************************/
 
-void up_idle(void)
+void sam_ledinit(void)
 {
-  /* Perform IDLE mode power management */
+  /* Configure LED PIOs for output */
 
-  up_idlepm();
-
-  /* Sleep until an interrupt occurs to save power. */
-
-  BEGIN_IDLE();
-  asm("WFI");
-  END_IDLE();
+  efm32_configgpio(GPIO_LED0);
+  efm32_configgpio(GPIO_LED1);
 }
+
+/****************************************************************************
+ * Name: sam_setled
+ ****************************************************************************/
+
+void sam_setled(int led, bool ledon)
+{
+  uint32_t ledcfg;
+
+  if (led == BOARD_LED0)
+    {
+      ledcfg = GPIO_LED0;
+    }
+  else if (led == BOARD_LED1)
+    {
+      ledcfg = GPIO_LED1;
+    }
+  else
+    {
+      return;
+    }
+
+  efm32_gpiowrite(ledcfg, ledon); /* High illuminates */
+}
+
+/****************************************************************************
+ * Name: sam_setleds
+ ****************************************************************************/
+
+void sam_setleds(uint8_t ledset)
+{
+  /* Hight illuminates */
+
+  efm32_gpiowrite(GPIO_LED0, (ledset & BOARD_LED0_BIT) != 0);
+  efm32_gpiowrite(GPIO_LED1, (ledset & BOARD_LED1_BIT) != 0);
+}
+
+#endif /* !CONFIG_ARCH_LEDS */

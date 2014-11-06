@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/efm32-g8xx-stk/src/efm32-g8xx-stk.h
+ * libc/stdio/lib_tmpnam.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,70 +33,63 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-#define __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <nuttx/config.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-/* UART0
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: tmpnam
  *
- *   The control MCU acts as a board controller (BC). There is a UART
- *   connection between the EFM and the BC. The connection is made by
- *   setting the EFM_BC_EN (PD13) line high. The EFM can then use the BSP to
- *   send commands to the BC. When EFM_BC_EN is low, EFM_BC_TX and EFM_BC_RX
- *   can be used by other applications.
- */
-
-#ifdef CONFIG_EFM32G8STK_BCEN
-#  define GPIO_BC_EN  (GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET|\
-                       GPIO_PORTD|GPIO_PIN13)
-#else
-#  define GPIO_BC_EN  (GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_CLEAR|\
-                       GPIO_PORTD|GPIO_PIN13)
-#endif
-
- /* LEDs
-  *
-  * The EFM32 Gecko Start Kit has four yellow LEDs.  These LEDs are connected
-  * as follows:
-  *
-  *   ------------------------------------- --------------------
-  *   EFM32 PIN                             BOARD SIGNALS
-  *   ------------------------------------- --------------------
-  *   C0/USART1_TX#0/PCNT0_S0IN#2/ACMP0_CH0  MCU_PC0  UIF_LED0
-  *   C1/USART1_RX#0/PCNT0_S1IN#2/ACMP0_CH1  MCU_PC1  UIF_LED1
-  *   C2/USART2_TX#0/ACMP0_CH2               MCU_PC2  UIF_LED2
-  *   C3/USART2_RX#0/ACMP0_CH3               MCU_PC3  UIF_LED3
-  *   ------------------------------------- --------------------
-  *
-  * All LEDs are grounded and so are illuminated by outputting a high
-  * value to the LED.
-  */
-
-#define GPIO_LED0       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN0)
-#define GPIO_LED1       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN1)
-#define GPIO_LED2       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN2)
-#define GPIO_LED3       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN3)
-
-/****************************************************************************
- * Public Function Prototypes
+ * Description:
+ *   The tmpnam() function generates a string that is a valid filename and
+ *   that is not the same as the name of an existing file. The function is
+ *   potentially capable of generating TMP_MAX different strings, but any or
+ *   all of them may already be in use by existing files and thus not be
+ *   suitable return values.
+ *
+ *   The tmpnam() function generates a different string each time it is
+ *   called from the same process, up to {TMP_MAX} times. If it is called
+ *   more than {TMP_MAX} times, the behavior is implementation-defined.
+ *
+ * Returned Value:
+ *   Upon successful completion, tmpnam() returns a pointer to a string. I
+ *   no suitable string can be generated, the tmpnam() function will
+ *   return a null pointer.
+ *
+ *   If the argument s is a null pointer, tmpnam() will leave its result
+ *   in an internal static object and return a pointer to that object.
+ *   Subsequent calls to tmpnam() may modify the same object. If the
+ *   argument s is not a null pointer, it is presumed to point to an
+ *   array of at least L_tmpnam chars; tmpnam() will write its result in
+ *   that array and will return the argument as its value.
+ *
  ****************************************************************************/
 
-/****************************************************************************
- * Name: board_led_initialize
- ****************************************************************************/
+FAR char *tmpnam(FAR char *s)
+{
+  static char path[L_tmpnam];
+  int ret;
 
-#ifdef CONFIG_ARCH_LEDS
-void board_led_initialize(void);
-#endif
+  if (s == NULL)
+    {
+      s = path;
+    }
 
-#endif /* __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H */
+  (void)snprintf(s, L_tmpnam, "%s/XXXXXX.tmp", P_tmpdir);
+  ret = mktemp(s);
+  return (ret == OK) ? s : NULL;
+}

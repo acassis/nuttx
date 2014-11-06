@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/efm32-g8xx-stk/src/efm32-g8xx-stk.h
+ * libc/stdio/lib_tempnam.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,70 +33,73 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-#define __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <nuttx/config.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-/* UART0
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: tempnam
  *
- *   The control MCU acts as a board controller (BC). There is a UART
- *   connection between the EFM and the BC. The connection is made by
- *   setting the EFM_BC_EN (PD13) line high. The EFM can then use the BSP to
- *   send commands to the BC. When EFM_BC_EN is low, EFM_BC_TX and EFM_BC_RX
- *   can be used by other applications.
- */
-
-#ifdef CONFIG_EFM32G8STK_BCEN
-#  define GPIO_BC_EN  (GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET|\
-                       GPIO_PORTD|GPIO_PIN13)
-#else
-#  define GPIO_BC_EN  (GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_CLEAR|\
-                       GPIO_PORTD|GPIO_PIN13)
-#endif
-
- /* LEDs
-  *
-  * The EFM32 Gecko Start Kit has four yellow LEDs.  These LEDs are connected
-  * as follows:
-  *
-  *   ------------------------------------- --------------------
-  *   EFM32 PIN                             BOARD SIGNALS
-  *   ------------------------------------- --------------------
-  *   C0/USART1_TX#0/PCNT0_S0IN#2/ACMP0_CH0  MCU_PC0  UIF_LED0
-  *   C1/USART1_RX#0/PCNT0_S1IN#2/ACMP0_CH1  MCU_PC1  UIF_LED1
-  *   C2/USART2_TX#0/ACMP0_CH2               MCU_PC2  UIF_LED2
-  *   C3/USART2_RX#0/ACMP0_CH3               MCU_PC3  UIF_LED3
-  *   ------------------------------------- --------------------
-  *
-  * All LEDs are grounded and so are illuminated by outputting a high
-  * value to the LED.
-  */
-
-#define GPIO_LED0       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN0)
-#define GPIO_LED1       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN1)
-#define GPIO_LED2       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN2)
-#define GPIO_LED3       (GPIO_OUTPUT_WIREDOR_PULLDOWN|\
-                         GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN3)
-
-/****************************************************************************
- * Public Function Prototypes
+ * Description:
+ *   The tempnam() function generates a pathname that may be used for a
+ *   temporary file.
+ *
+ *   The tempnam() function allows the user to control the choice of a
+ *   directory. The dir argument points to the name of the directory in which
+ *   the file is to be created. If dir is a null pointer or points to a
+ *   string which is not a name for an appropriate directory, the path prefix
+ *   defined as P_tmpdir in the <stdio.h> header will be used. If that
+ *   directory is not accessible, an implementation-defined directory may be
+ *   used.
+ *
+ *   Many applications prefer their temporary files to have certain initial
+ *   letter sequences in their names. The pfx argument should be used for
+ *   this. This argument may be a null pointer or point to a string of up
+ *   to five bytes to be used as the beginning of the filename.
+ *
+ * Returned Value:
+ *   Upon successful completion, tempnam() will allocate space for a string
+ *   put the generated pathname in that space, and return a pointer to it.
+ *   The pointer will be suitable for use in a subsequent call to free().
+ *   Otherwise, it will return a null pointer and set errno to indicate the
+ *   error.
+ *
+ *   The tempnam() function will fail if:
+ *     ENOMEM - Insufficient storage space is available.
+ *
  ****************************************************************************/
 
-/****************************************************************************
- * Name: board_led_initialize
- ****************************************************************************/
+FAR char *tempnam(FAR const char *dir, FAR const char *pfx)
+{
+  FAR char *path;
+  int ret;
 
-#ifdef CONFIG_ARCH_LEDS
-void board_led_initialize(void);
-#endif
+  (void)asprintf(&path, "%s/%s-XXXXXX.tmp", dir, pfx);
+  if (path)
+    {
+      ret = mktemp(path);
+      if (ret == OK)
+        {
+          return path;
+        }
 
-#endif /* __CONFIGS_EFM32_G8XX_STK_SRC_EFM32_G8XX_STK_H */
+      free(path);
+    }
+
+  set_errno(ENOMEM);
+  return NULL;
+}

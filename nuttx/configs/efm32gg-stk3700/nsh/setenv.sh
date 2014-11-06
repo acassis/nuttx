@@ -1,7 +1,7 @@
-############################################################################
-# libc/stdlib/Make.defs
+#!/bin/bash
+# configs/efm32-g8xx-stk/nsh/setenv.sh
 #
-#   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,20 +31,33 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
 
-# Add the stdlib C files to the build
+if [ "$_" = "$0" ] ; then
+  echo "You must source this script, not run it!" 1>&2
+  exit 1
+fi
 
-CSRCS += lib_abs.c lib_abort.c lib_imaxabs.c lib_itoa.c lib_labs.c
-CSRCS += lib_llabs.c lib_rand.c lib_qsort.c
-CSRCS += lib_strtol.c lib_strtoll.c lib_strtoul.c lib_strtoull.c
-CSRCS += lib_strtod.c lib_checkbase.c
+WD=`pwd`
+if [ ! -x "setenv.sh" ]; then
+  echo "This script must be executed from the top-level NuttX build directory"
+  exit 1
+fi
 
-ifeq ($(CONFIG_FS_WRITABLE),y)
-CSRCS += lib_mktemp.c lib_mkstemp.c
-endif
+if [ -z "${PATH_ORIG}" ]; then
+  export PATH_ORIG="${PATH}"
+fi
 
-# Add the stdlib directory to the build
+# This is the Cygwin path to the location where I installed the CodeSourcery
+# toolchain under windows.  You will also have to edit this if you install
+# the CodeSourcery toolchain in any other location
+export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/CodeSourcery/Sourcery G++ Lite/bin"
+#export TOOLCHAIN_BIN="/cygdrive/c/Users/MyName/MentorGraphics/Sourcery_CodeBench_Lite_for_ARM_EABI/bin"
 
-DEPPATH += --dep-path stdlib
-VPATH += :stdlib
+# This is the Cygwin path to the location where I build the buildroot
+# toolchain.
+#export TOOLCHAIN_BIN="${WD}/../misc/buildroot/build_arm_nofpu/staging_dir/bin"
+
+# Add the path to the toolchain to the PATH varialble
+export PATH="${TOOLCHAIN_BIN}:/sbin:/usr/sbin:${PATH_ORIG}"
+
+echo "PATH : ${PATH}"

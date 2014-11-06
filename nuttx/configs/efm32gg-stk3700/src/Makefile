@@ -1,7 +1,7 @@
 ############################################################################
-# libc/stdlib/Make.defs
+# configs/efm32gg-stk3700/src/Makefile
 #
-#   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,18 +33,51 @@
 #
 ############################################################################
 
-# Add the stdlib C files to the build
+-include $(TOPDIR)/Make.defs
 
-CSRCS += lib_abs.c lib_abort.c lib_imaxabs.c lib_itoa.c lib_labs.c
-CSRCS += lib_llabs.c lib_rand.c lib_qsort.c
-CSRCS += lib_strtol.c lib_strtoll.c lib_strtoul.c lib_strtoull.c
-CSRCS += lib_strtod.c lib_checkbase.c
+CSRCS = efm32_boot.c
 
-ifeq ($(CONFIG_FS_WRITABLE),y)
-CSRCS += lib_mktemp.c lib_mkstemp.c
+ifeq ($(CONFIG_ARCH_LEDS),y)
+CSRCS += efm32_autoleds.c
+else
+CSRCS += efm32_userleds.c
 endif
 
-# Add the stdlib directory to the build
+COBJS = $(CSRCS:.c=$(OBJEXT))
+SRCS = $(ASRCS) $(CSRCS)
+OBJS = $(AOBJS) $(COBJS)
 
-DEPPATH += --dep-path stdlib
-VPATH += :stdlib
+ARCH_SRCDIR = $(TOPDIR)/arch/$(CONFIG_ARCH)/src
+ifeq ($(CONFIG_WINDOWS_NATIVE),y)
+  CFLAGS += -I$(ARCH_SRCDIR)\chip -I$(ARCH_SRCDIR)\common -I$(ARCH_SRCDIR)\armv7-m
+else
+ifeq ($(WINTOOL),y)
+  CFLAGS += -I "${shell cygpath -w $(ARCH_SRCDIR)/chip}" \
+			-I "${shell cygpath -w $(ARCH_SRCDIR)/common}" \
+			-I "${shell cygpath -w $(ARCH_SRCDIR)/armv7-m}"
+else
+  CFLAGS += -I$(ARCH_SRCDIR)/chip -I$(ARCH_SRCDIR)/common -I$(ARCH_SRCDIR)/armv7-m
+endif
+endif
+
+$(COBJS) $(LINKOBJS): %$(OBJEXT): %.c
+	$(call COMPILE, $<, $@)
+
+libboard$(LIBEXT): $(OBJS)
+	$(call ARCHIVE, $@, $(OBJS))
+
+.depend: Makefile $(SRCS)
+	$(Q) $(MKDEP) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
+	$(Q) touch $@
+
+depend: .depend
+
+clean:
+	$(call DELFILE, libboard$(LIBEXT))
+	$(call CLEAN)
+
+distclean: clean
+	$(call DELFILE, Make.dep)
+	$(call DELFILE, .depend)
+
+-include Make.dep
