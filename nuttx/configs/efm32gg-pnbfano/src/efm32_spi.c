@@ -187,7 +187,7 @@ int sdcard_initialize(FAR struct spi_dev_s *spi)
     /* Bind the SPI port to the slot */
 
     syslog(LOG_DEBUG,"Binding SPI port %d to MMC/SD slot %d\n",
-           PNBFANO_SDCARD_EXT_SPI, PNBFANO_SDCARD_SLOTNO
+           PNBFANO_SDCARD_EXT_SPINO, PNBFANO_SDCARD_SLOTNO
           );
 
     ret = mmcsd_spislotinitialize(PNBFANO_SDCARD_MINOR, 
@@ -197,13 +197,13 @@ int sdcard_initialize(FAR struct spi_dev_s *spi)
     if (ret < 0)
     {
         syslog(LOG_ERR,"Failed to bind SPI port %d to MMC/SD slot %d: %d\n",
-               PNBFANO_SDCARD_EXT_SPI, PNBFANO_SDCARD_MINOR, ret
+               PNBFANO_SDCARD_EXT_SPINO, PNBFANO_SDCARD_MINOR, ret
               );
         return ret;
     }
 
     syslog(LOG_INFO,"Successfuly bound SPI port %d to MMC/SD slot %d\n",
-           PNBFANO_SDCARD_EXT_SPI, PNBFANO_SDCARD_MINOR
+           PNBFANO_SDCARD_EXT_SPINO, PNBFANO_SDCARD_MINOR
           );
     return OK;
 }
@@ -217,18 +217,18 @@ int efm32_initialize_spi_devices(void)
     /* Get the SPI port */
 
     syslog(LOG_DEBUG,"Initializing SPI port %d\n",
-           PNBFANO_SDCARD_EXT_SPI);
+           PNBFANO_SDCARD_EXT_SPINO);
 
-    spi = efm32_spi_initialize(PNBFANO_SDCARD_EXT_SPI);
+    spi = efm32_spi_initialize(PNBFANO_SDCARD_EXT_SPINO);
     if (!spi)
     {
         syslog(LOG_ERR,"Failed to initialize SPI port %d\n",
-               PNBFANO_SDCARD_EXT_SPI);
+               PNBFANO_SDCARD_EXT_SPINO);
         return -ENODEV;
     }
 
     syslog(LOG_INFO,"Successfully initialized SPI port %d\n",
-           PNBFANO_SDCARD_EXT_SPI);
+           PNBFANO_SDCARD_EXT_SPINO);
 
     if ( sdcard_initialize(spi) < 0 )
     {
