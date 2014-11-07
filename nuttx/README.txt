@@ -1259,12 +1259,15 @@ nuttx
 
 apps
  |- examples/
+ |   |- bastest/README.txt
  |   |- json/README.txt
  |   |- pashello/README.txt
  |   `- README.txt
  |- graphics/
  |   `- tiff/README.txt
  |- interpreters/
+ |   |- bas
+ |   |  `- README.txt
  |   |- ficl
  |   |  `- README.txt
  |   `- README.txt
