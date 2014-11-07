@@ -56,7 +56,8 @@
 #include <efm32_gpio_keypad.h>
 
 //#define EFM32_GPIO_KBD_LOG(...)
-#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
+//#define EFM32_GPIO_KBD_LOG(...) lldbg(__VA_ARGS__)
+#define EFM32_GPIO_KBD_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
 
 #ifndef CONFIG_EFM32_GPIO_KBD_BUFSIZE
 #  define CONFIG_EFM32_GPIO_KBD_BUFSIZE 64
@@ -171,10 +172,6 @@ int efm32_gpio_kbd_irq(int irq, FAR void* context)
 
             if ( efm32_gpioread(_key_map->gpio) == 0 )
             {
-                EFM32_GPIO_KBD_LOG("PB on 0x%2X pressed\n",
-                                   efm32_getport(_key_map->gpio)
-                                  ); 
-
                 if ( _key_map->special_key != KEYCODE_NORMAL )
                 {
                     kbd_specpress(_key_map->special_key, &stream);
@@ -186,9 +183,6 @@ int efm32_gpio_kbd_irq(int irq, FAR void* context)
             }
             else
             {
-                EFM32_GPIO_KBD_LOG("PB on 0x%2X Released\n",
-                                   efm32_getport(_key_map->gpio)
-                                  ); 
                 if ( _key_map->special_key != KEYCODE_NORMAL )
                 {
                     kbd_specrel(_key_map->special_key, &stream);

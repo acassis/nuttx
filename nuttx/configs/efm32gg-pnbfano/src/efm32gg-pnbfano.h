@@ -1,8 +1,8 @@
 /****************************************************************************
- * configs/olimex-efm32g880f128-stk/src/efm32g880f128-stk.h
+ * configs/olimex-efm32g880f128-stk/src/efm32gg-pnbfano.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
-#define __CONFIGS_OLIMEX_EFM32G880F128_STK_SRC_EFM32G880F128_STK_H
+#ifndef __CONFIGS_EFM32GG_PNBFANO_SRC_EFM32GG_PNBFANO_H
+#define __CONFIGS_EFM32GG_PNBFANO_SRC_EFM32GG_PNBFANO_H
 
 /****************************************************************************
  * Included Files
@@ -74,8 +74,34 @@
 #  define GPIO_IRQ_BUTTON_4 EFM32_IRQ_EXTI3
 #endif
 
+/* SPI:
+ *
+ * The pnbfano board one SPI with two CS SDCARD SPI_SDCARD and WIFI (EXT_SPI). 
+ * both use USART0 as SPI device
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PC7                   For external spi (WIFI)
+ * PC8                   for SDCARD
+ * --------------------- ---------------------
+ */
+
+#define GPIO_EXT_SPI_CS     (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTC|GPIO_PIN7)
+#define GPIO_SDCARD_SPI_CS  (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTC|GPIO_PIN8)
+
+#define PNBFANO_SDCARD_EXT_SPI  2
+
+/* SDHC Slot: */
+#define PNBFANO_SDCARD_SLOTNO 0
+
+/* SDHC Slot: */
+#define PNBFANO_SDCARD_MINOR 0
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
+
+int efm32_initialize_spi_devices(void);
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

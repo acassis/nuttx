@@ -1,8 +1,8 @@
 /*****************************************************************************
  * configs/efm32gg-pnbfano/src/efm32_boot.c
  *
- *   Copyright (C) 2014 Richard Cochran. All rights reserved.
- *   Author: Richard Cochran <richardcochran@gmail.com>
+ *   Copyright (C) 2014 Pierre-Noel Bouteville. All rights reserved.
+ *   Author: Pierre-Noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,7 +67,7 @@ void efm32_boardinitialize(void)
 
     /* test log Message */
 
-#if 1
+#if 0
 	syslog(LOG_DEBUG    ,   "LOG_DEBUG    \n");
 	syslog(LOG_INFO     ,   "LOG_INFO     \n");
 	syslog(LOG_NOTICE   ,   "LOG_NOTICE   \n");
@@ -101,14 +101,12 @@ void board_initialize(void)
 #if defined(CONFIG_PNBFANO_GPIO_KEYPAD) 
 	syslog(LOG_DEBUG,"keypad initialization.\n");
     keypad_kbdinit();
+	syslog(LOG_INFO,"keypad initialized.\n");
 #endif
 
   /* Mount the SDIO-based MMC/SD block driver */
 
-#if defined(CONFIG_PNBFANO_USE_MMCSD) 
-	syslog(LOG_DEBUG,"SDHC initialization.\n");
-  //nsh_archinitialize();
-#endif
+    efm32_initialize_spi_devices();
 
 }
 #endif

@@ -107,7 +107,7 @@ int efm32_spi0_cmddata(struct spi_dev_s *dev, enum spi_dev_e devid,
 #endif
 
 #ifdef CONFIG_EFM32_USART1_ISSPI
-void efm32_spi1_select(struct spi_dev_s *dev, enum spi_dev_e devid,
+void efm31_spi1_select(struct spi_dev_s *dev, enum spi_dev_e devid,
                        bool selected);
 uint8_t efm32_spi1_status(struct spi_dev_s *dev, enum spi_dev_e devid);
 int efm32_spi1_cmddata(struct spi_dev_s *dev, enum spi_dev_e devid,

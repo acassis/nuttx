@@ -21,6 +21,8 @@ config PNBFANO_GPIO_KEYPAD
 config PNBFANO_USE_MMCSD
 	bool "Enable MMCSD support Driver"
     select BOARD_INITIALIZE
+    select MMCSD
+    select MMCSD_SPI
 	depends on ARCH_CHIP_EFM32
 	default y
 	---help---
