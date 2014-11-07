@@ -89,7 +89,7 @@ config SYSLOG_PRIORITY
 
 config SYSLOG_COLOR
 	bool "Add color in syslog message."
-	default y
+	default n
 	---help---
 		Use ANSI ESC sequence to color log message.
 
