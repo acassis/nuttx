@@ -70,6 +70,8 @@
 #  define CONFIG_EXAMPLES_KEYPAD_DEVNAME "/dev/keypad"
 #endif
 
+#define printf(...) syslog(LOG_NOTICE,__VA_ARGS__)
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/

@@ -125,7 +125,7 @@ void efm32_gpio_kbd_putc(FAR struct lib_outstream_s *this, int ch)
 {
     if ( efm32_gpio_kbd == NULL )
     {
-        lldbg("driver not initialized!\n");
+        EFM32_GPIO_KBD_LOG("driver not initialized!\n");
         return; 
     }
 
@@ -136,7 +136,7 @@ void efm32_gpio_kbd_putc(FAR struct lib_outstream_s *this, int ch)
 
     if (level >= CONFIG_EFM32_GPIO_KBD_BUFSIZE)
     {
-        lldbg("Buffer overflow\n");
+        EFM32_GPIO_KBD_LOG("Buffer overflow\n");
         return; 
     }
 
@@ -230,7 +230,7 @@ void efm32_gpio_keypad_irq_init(efm32_gpio_keypad_t *_key_map)
 
         /* Configure the interrupt */
 
-        efm32_gpioirq(_key_map->irq);
+        efm32_gpioirq(_key_map->gpio);
 
         /* Attach and enable the interrupt */
 
@@ -264,14 +264,14 @@ void efm32_gpio_keypad_init( efm32_gpio_keypad_t *_key_map,
 
     if ( key_mapping != NULL)
     {
-        lldbg("Already initialized !\n");
+        EFM32_GPIO_KBD_LOG("Already initialized !\n");
         return;
     }
 
     efm32_gpio_kbd = (efm32_gpio_kbd_t*)kmm_malloc(sizeof(efm32_gpio_kbd_t));
     if ( efm32_gpio_kbd == NULL )
     {
-        lldbg("Cannot allocate it!\n");
+        EFM32_GPIO_KBD_LOG("Cannot allocate it!\n");
         return;
     }
 
@@ -298,7 +298,7 @@ static int efm32_gpio_kbd_open(file_t * filep)
 {
     if ( efm32_gpio_kbd == NULL )
     {
-        lldbg("Not initialized!\n");
+        EFM32_GPIO_KBD_LOG("Not initialized!\n");
         return -EINVAL;
     }
 
@@ -327,7 +327,7 @@ static ssize_t efm32_gpio_kbd_read(file_t * filep, FAR char *buf, size_t buflen)
 
     if ( efm32_gpio_kbd == NULL )
     {
-        lldbg("Not initialized!\n");
+        EFM32_GPIO_KBD_LOG("Not initialized!\n");
         return -EINVAL;
     }
 
