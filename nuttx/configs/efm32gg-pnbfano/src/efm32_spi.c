@@ -143,7 +143,8 @@ void efm32_spi0_select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool sel
 
 uint8_t efm32_spi0_status(FAR struct spi_dev_s *dev, enum spi_dev_e devid)
 {
-  return 0;
+    /* TODO check presense */
+    return SPI_STATUS_PRESENT;
 }
 #endif
 
@@ -213,6 +214,11 @@ int efm32_initialize_spi_devices(void)
 {
 #ifdef  CONFIG_PNBFANO_USE_MMCSD
     FAR struct spi_dev_s* spi = NULL;
+
+    /* configure SDCARD chip select */
+
+    efm32_configgpio(GPIO_SDCARD_SPI_CS );
+    efm32_configgpio(GPIO_EXT_SPI_CS    );
 
     /* Get the SPI port */
 

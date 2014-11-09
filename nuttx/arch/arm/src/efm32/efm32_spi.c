@@ -1030,7 +1030,7 @@ static void spi_setbits(struct spi_dev_s *dev, int nbits)
           truebits = nbits;
         }
 
-      spi_putreg(config, EFM32_USART_CLKDIV_OFFSET, regval);
+      spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
 
       switch (truebits)
         {
@@ -1556,16 +1556,11 @@ static int spi_portinitialize(struct efm32_spidev_s *priv)
             USART_CTRL_CLKPHA_SAMPLELEADING;
   spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
 
-  /* LSB First */
-
-  regval &= ~USART_CTRL_MSBF;
-  spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
-
 #ifndef CONFIG_SPI_OWNBUS
   priv->frequency = 0;
   priv->mode      = SPIDEV_MODE0;
 #endif
-  priv->nbits     = 8;
+  priv->nbits     = -8; /* lsb first */
 
   /* 8 bits */
 

@@ -98,11 +98,7 @@ void efm32_boardinitialize(void)
 void board_initialize(void)
 {
 
-#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) 
-	syslog(LOG_DEBUG,"keypad initialization.\n");
     keypad_kbdinit();
-	syslog(LOG_INFO,"keypad initialized.\n");
-#endif
 
   /* Mount the SDIO-based MMC/SD block driver */
 

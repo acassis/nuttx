@@ -95,7 +95,9 @@ efm32_gpio_keypad_t pnbfano_key_map[] =
 int keypad_kbdinit(void)
 {
 
+#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) 
     efm32_gpio_keypad_init(pnbfano_key_map,"/dev/keypad");
+#endif
 
     return 0;
 }
