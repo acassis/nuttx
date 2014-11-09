@@ -1556,7 +1556,7 @@ static void spi_recvblock(struct spi_dev_s *dev, void *rxbuffer,
 static int spi_portinitialize(struct efm32_spidev_s *priv)
 {
   const struct efm32_spiconfig_s *config = priv->config;
-  uint32_t regval;
+  uint32_t ctrl_regval;
 
   /* Initialize USART registers to HW reset state. */
 
@@ -1572,14 +1572,12 @@ static int spi_portinitialize(struct efm32_spidev_s *priv)
 
   /* Set bits for synchronous mode */
 
-  regval = _USART_CTRL_RESETVALUE | USART_CTRL_SYNC | USART_CTRL_CLKPOL_IDLELOW |
+  ctrl_regval = _USART_CTRL_RESETVALUE | USART_CTRL_SYNC | USART_CTRL_CLKPOL_IDLELOW |
             USART_CTRL_CLKPHA_SAMPLELEADING;
-  spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
 
   /* MSB First */
 
-  regval |= USART_CTRL_MSBF;
-  spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
+  ctrl_regval |= USART_CTRL_MSBF;
 
 #ifndef CONFIG_SPI_OWNBUS
   priv->frequency = 0;
@@ -1590,9 +1588,12 @@ static int spi_portinitialize(struct efm32_spidev_s *priv)
 
   /* 8 bits */
 
-  regval = USART_FRAME_DATABITS_EIGHT | USART_FRAME_STOPBITS_DEFAULT |
-           USART_FRAME_PARITY_DEFAULT;
-  spi_putreg(config, EFM32_USART_CTRL_OFFSET, regval);
+  ctrl_regval &= ~_USART_FRAME_DATABITS_MASK;
+  ctrl_regval |= USART_FRAME_DATABITS_EIGHT;
+
+  /* apply ctrl reagister */
+
+  spi_putreg(config, EFM32_USART_CTRL_OFFSET, ctrl_regval);
 
   /* Select a default frequency of approx. 400KHz */
 
