@@ -692,7 +692,7 @@ int vsyslog(int priority, FAR const char *fmt, va_list ap)
 
   if ((g_syslog_mask & LOG_MASK(priority)) != 0)
     {
-      /* Yes.. let vsylog_internal to the deed */
+      /* Yes.. let vsylog_internal do the deed */
 
       ret = vsyslog_internal(priority, fmt, ap);
     }
