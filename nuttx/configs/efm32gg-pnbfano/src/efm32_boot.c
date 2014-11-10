@@ -39,6 +39,8 @@
 
 #include <nuttx/config.h>
 
+#include <sys/mount.h>
+
 #include "efm32_start.h"
 #include "efm32gg-pnbfano.h"
 
@@ -47,6 +49,16 @@
 
 #include <nuttx/input/keypad.h>
 #include <syslog.h>
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <string.h>
+#include <errno.h>
+
 
 /****************************************************************************
  * Public Functions
@@ -102,7 +114,19 @@ void board_initialize(void)
 
   /* Mount the SDIO-based MMC/SD block driver */
 
-    efm32_initialize_spi_devices();
+    if ( efm32_initialize_spi_devices() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize SDcard\n");
+        return;
+    }
+
+    if ( mount("/dev/mmcsd0","/mnt","vfat",0,NULL) < 0 )
+    {
+        syslog(LOG_ERR,"Cannot Mount SDcard\n");
+        return;
+    }
+
+    syslog(LOG_NOTICE,"Board Ready !\n");
 
 }
 #endif

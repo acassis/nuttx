@@ -239,7 +239,11 @@ int efm32_initialize_spi_devices(void)
     if ( sdcard_initialize(spi) < 0 )
     {
         syslog(LOG_ERR,"SDCARD initialization Failed\n");
+        return -ENODEV;
     }
+
+    syslog(LOG_INFO,"Successfully initialized SDCARD port %d\n",
+           PNBFANO_SDCARD_EXT_SPINO);
 
     return OK;
 #else
