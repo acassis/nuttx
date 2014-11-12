@@ -79,14 +79,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "auto.h"
+#include "bas_auto.h"
 #include "bas.h"
-#include "error.h"
-#include "fs.h"
-#include "global.h"
-#include "program.h"
-#include "value.h"
-#include "var.h"
+#include "bas_error.h"
+#include "bas_fs.h"
+#include "bas_global.h"
+#include "bas_program.h"
+#include "bas_value.h"
+#include "bas_var.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -2256,7 +2256,7 @@ static struct Value *dataread(struct Value *value, struct Value *l)
 }
 
 static struct Value more_statements;
-#include "statement.c"
+#include "bas_statement.c"
 static struct Value *statements(struct Value *value)
 {
 more:
@@ -2468,6 +2468,8 @@ void bas_interpreter(void)
 
 void bas_exit(void)
 {
+  /* Release resources */
+
   Auto_destroy(&g_stack);
   Global_destroy(&g_globals);
   Program_destroy(&g_program);
@@ -2476,6 +2478,10 @@ void bas_exit(void)
       free(g_labelstack);
       g_labelstack = (struct labelstack_s *)0;
     }
+
+  /* Close files and devices.  NOTE that STDCHANNEL is also close here and
+   * can no longer be use
+   */
 
   FS_closefiles();
   FS_close(LPCHANNEL);

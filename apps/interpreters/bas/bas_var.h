@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/interpreters/bas/autotypes.h
+ * apps/interpreters/bas/bas_var.h
  *
  *   Copyright (c) 1999-2014 Michael Haardt
  *
@@ -56,52 +56,60 @@
  *
  ****************************************************************************/
 
-/* REVISIT:  Why is this?  If the following is __APPS_EXAMPLES_BAS_AUTOTYPES_H
- * then there are compile errors!  Those compile errors occur because this
- * function defines some of the same structures as does auto.h.  BUT, the
- * definitions ARE NOT THE SAME.  What is up with this?
- */
-
-#ifndef __APPS_EXAMPLES_BAS_AUTO_H
-#define __APPS_EXAMPLES_BAS_AUTO_H
+#ifndef __APPS_EXAMPLES_BAS_BAS_VAR_H
+#define __APPS_EXAMPLES_BAS_BAS_VAR_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "program.h"
-#include "var.h"
-#include "token.h"
+#include "bas_value.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define VAR_SCALAR_VALUE(this) ((this)->value)
 
 /****************************************************************************
  * Public Types
  ****************************************************************************/
 
-struct Auto
+struct Var
 {
-  long int stackPointer;
-  long int stackCapacity;
-  long int framePointer;
-  long int frameSize;
-  struct Pc onerror;
-  union AutoSlot *slot;
-  long int erl;
-  struct Pc erpc;
-  struct Value err;
-  int resumeable;
-
-  struct Symbol *cur,*all;
+  unsigned int dim;
+  unsigned int *geometry;
+  struct Value *value;
+  unsigned int size;
+  enum ValueType type;
+  char base;
 };
 
-union AutoSlot
-{
-  struct
-  {
-    long int framePointer;
-    long int frameSize;
-    struct Pc pc;
-  } ret;
-  struct Var var;
-};
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
 
-#endif /* __APPS_EXAMPLES_BAS_AUTO_H */
+struct Var *Var_new(struct Var *this, enum ValueType type, unsigned int dim,
+                    const unsigned int *geometry, int base);
+struct Var *Var_new_scalar(struct Var *this);
+void Var_destroy(struct Var *this);
+void Var_retype(struct Var *this, enum ValueType type);
+struct Value *Var_value(struct Var *this, unsigned int dim, int idx[],
+                        struct Value *value);
+void Var_clear(struct Var *this);
+struct Value *Var_mat_assign(struct Var *this, struct Var *x,
+                             struct Value *err, int work);
+struct Value *Var_mat_addsub(struct Var *this, struct Var *x, struct Var *y,
+                             int add, struct Value *err, int work);
+struct Value *Var_mat_mult(struct Var *this, struct Var *x, struct Var *y,
+                           struct Value *err, int work);
+struct Value *Var_mat_scalarMult(struct Var *this, struct Value *factor,
+                                 struct Var *x, int work);
+void Var_mat_transpose(struct Var *this, struct Var *x);
+struct Value *Var_mat_invert(struct Var *this, struct Var *x,
+                             struct Value *det, struct Value *err);
+struct Value *Var_mat_redim(struct Var *this, unsigned int dim,
+                            const unsigned int *geometry,
+                            struct Value *err);
+
+#endif /* __APPS_EXAMPLES_BAS_BAS_VAR_H */

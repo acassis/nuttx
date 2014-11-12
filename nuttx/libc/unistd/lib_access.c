@@ -1,31 +1,8 @@
 /****************************************************************************
- * apps/interpreters/bas/programtypes.h
- *
- *   Copyright (c) 1999-2014 Michael Haardt
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- * Adapted to NuttX and re-released under a 3-clause BSD license:
+ * lib/unistd/lib_access.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Authors: Alan Carvalho de Assis <Alan Carvalho de Assis>
- *            Gregory Nutt <gnutt@nuttx.org>
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,44 +33,60 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_BAS_PROGRAMTYPES_H
-#define __APPS_EXAMPLES_BAS_PROGRAMTYPES_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "str.h"
+#include <nuttx/config.h>
+
+#include <unistd.h>
 
 /****************************************************************************
- * Public Types
+ * Preprocessor Definitions
  ****************************************************************************/
 
-struct Pc
-{
-  int line;
-  struct Token *token;
-};
+/****************************************************************************
+ * Private Type Definitions
+ ****************************************************************************/
 
-struct Scope
-{
-  struct Pc start;
-  struct Pc begin;
-  struct Pc end;
-  struct Scope *next;
-};
+/****************************************************************************
+ * Global Variables
+ ****************************************************************************/
 
-struct Program
-{
-  int trace;
-  int numbered;
-  int size;
-  int capacity;
-  int runnable;
-  int unsaved;
-  struct String name;
-  struct Token **code;
-  struct Scope *scope;
-};
+/****************************************************************************
+ * Private Variables
+ ****************************************************************************/
 
-#endif /* __APPS_EXAMPLES_BAS_PROGRAMTYPES_H */
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: access
+ *
+ * Description:
+ *   The access() function shall check the file named by the pathname pointed
+ *   to by the path argument for accessibility according to the bit pattern
+ *   contained in amode, using the real user ID in place of the effective user
+ *   ID and the real group ID in place of the effective group ID.
+ *   As there are no users in NuttX, the function always succeeds.
+ *
+ * Parameters:
+ *   path - a pointer to the path
+ *   amode - the access mode
+ *
+ * Returned Value:
+ *   Always OK (zero)
+ *
+ * Assumptions:
+ *
+ ****************************************************************************/
+
+int access(FAR const char *path, int amode)
+{
+  return 0;
+}

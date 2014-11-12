@@ -8913,3 +8913,41 @@
 	* drivers/rwbuffer.c: Fix typo that can cause compiler error (2014-11-05).
 	* drivers/mtd/m25px.c: Extend MTD support to M25P16. From Sébastien
 	  Lorquet (2014-11-07).
+	* arch/arm/src/stm32/Kconfig, chip.h, and include/stm32/chip.h: Support
+	  for the STM32F103RG.  From Murilo Ponte (2014-11-10).
+	* configs/stm32f100rc_generic:  Removed this generic board configuration.
+	  I have decided to stop support of generic board configurations.  Generic
+	  board configurations do not provide support for any specific hardware
+	  but can be useful only if there are not other examples for the setup
+	  for a particular architecture. Not the case here (2014-11-10).
+	* include/nuttx/vt100.h: Add foreground and background color commands
+	  (2014-11-10).
+	* sched/wdog/wd_create.c: Fix an important bug in the watchdog creation
+	  logic (2014-11-10).
+	* include/unistd.h, libc/unistd/lib_access.c and Make.defs: From Lorenz
+	  Meier: The implementation of access() as vararg macro has the issue that
+	  any function call with the same name (even in a C++ class) will match
+	  with it and result in a compile error. I have replaced it with a small
+	  function, and tried to have decent documentation as well. This resolves
+	  the compile issue, and shouldn’t have negative side effects for users
+	  of the function (2014-11-11).
+	* mm/mm_gran/mm_granrelease.c:  If the INTR granule allocator mode is
+	  enabled, there is no semaphore to destroy.  From Lorenz Meier (2014-11-12).
+	* fs/nxffs/nxffs_dump.c: Fix problems with redefinitions of fdb macro.
+	  With the fix to the syslog prototype, a LOG priority must now be the
+	  first parameter.  Fixed by replacing all occurrences of fdbg with
+	  syslog(LOG_DEBUG, and eliminating the macro redefinitions.  Noted by
+	  Sebastien Lorquet (2014-11-12).
+	* arch/arm/src/common/up_internal.h: Add protection from C++ name
+	  mangling in the ARM up_internal.h.  From Lorenz Meier (2014-11-12).
+	* include/nuttx/compiler.h:  Defines inline functions as not
+	  instrumented - this is relevant for anyone using instrumentation.  From
+	  Lorenz Meier (2014-11-12).
+	* libc/string/lib_strncpy.c:  The definition of strncpy() is that empty
+	  space should be zero-filled, the patch adds the zero filling (I didn’t
+	  know this, see e.g. the POSIX spec here:
+	 http://pubs.opengroup.org/onlinepubs/7908799/xsh/strncpy.html). From
+	  Lorenz Meier (2014-11-12).
+	* arch/arm/include/limits.h:  Remove the definition of INT_FAST32_MIN
+	  which is already defined in stdint.h (the correct location).  From
+	  Lorenz Meier (2014-11-12).

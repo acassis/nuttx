@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/interpreters/bas/global.h
+ * apps/interpreters/bas/bas_auto.h
  *
  *   Copyright (c) 1999-2014 Michael Haardt
  *
@@ -56,56 +56,78 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_BAS_GLOBAL_H
-#define __APPS_EXAMPLES_BAS_GLOBAL_H
+#ifndef __APPS_EXAMPLES_BAS_BAS_AUTO_H
+#define __APPS_EXAMPLES_BAS_BAS_AUTO_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "token.h"
-#include "value.h"
-#include "var.h"
+#include "bas_programtypes.h"
+#include "bas_var.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Public Types
  ****************************************************************************/
 
-#define GLOBAL_HASHSIZE 31
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-struct GlobalFunctionChain
+struct Auto
 {
-  struct Pc begin,end;
-  struct GlobalFunctionChain *next;
+  long int stackPointer;
+  long int stackCapacity;
+  long int framePointer;
+  long int frameSize;
+  struct Pc onerror;
+  union AutoSlot *slot;
+  long int erl;
+  struct Pc erpc;
+  struct Value err;
+  struct Value lastdet;
+  struct Pc begindata;
+  int resumeable;
+  struct Symbol *cur,*all; /* should be hung off the funcs/procs */
 };
 
-struct Global
+struct AutoFrameSlot
 {
-  struct String command;
-  struct Symbol *table[GLOBAL_HASHSIZE];
-  struct GlobalFunctionChain *chain;
+  long int framePointer;
+  long int frameSize;
+  struct Pc pc;
 };
+
+struct AutoExceptionSlot
+{
+  struct Pc onerror;
+  int resumeable;
+};
+
+union AutoSlot
+{
+  struct AutoFrameSlot retFrame;
+  struct AutoExceptionSlot retException;
+  struct Var var;
+};
+
+#include "bas_token.h"
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-struct Global *Global_new(struct Global *this);
-void Global_destroy(struct Global *this);
-void Global_clear(struct Global *this);
-void Global_clearFunctions(struct Global *this);
-int Global_find(struct Global *this, struct Identifier *ident, int oparen);
-int Global_function(struct Global *this, struct Identifier *ident,
-                    enum ValueType type, struct Pc *deffn, struct Pc *begin,
-                    int argTypesLength, enum ValueType *argTypes);
-void Global_endfunction(struct Global *this, struct Identifier *ident,
-                        struct Pc *end);
-int Global_variable(struct Global *this, struct Identifier *ident,
-                    enum ValueType type, enum SymbolType symbolType,
-                    int redeclare);
+struct Auto *Auto_new(struct Auto *this);
+void Auto_destroy(struct Auto *this);
+struct Var *Auto_pushArg(struct Auto *this);
+void Auto_pushFuncRet(struct Auto *this, int firstarg, struct Pc *pc);
+void Auto_pushGosubRet(struct Auto *this, struct Pc *pc);
+struct Var *Auto_local(struct Auto *this, int l);
+int Auto_funcReturn(struct Auto *this, struct Pc *pc);
+int Auto_gosubReturn(struct Auto *this, struct Pc *pc);
+void Auto_frameToError(struct Auto *this, struct Program *program, struct Value *v);
+void Auto_setError(struct Auto *this, long int line, struct Pc *pc, struct Value *v);
 
-#endif /* __APPS_EXAMPLES_BAS_GLOBAL_H */
+int Auto_find(struct Auto *this, struct Identifier *ident);
+int Auto_variable(struct Auto *this, const struct Identifier *ident);
+enum ValueType Auto_argType(const struct Auto *this, int l);
+enum ValueType Auto_varType(const struct Auto *this, struct Symbol *sym);
+void Auto_funcEnd(struct Auto *this);
+
+#endif /* __APPS_EXAMPLES_BAS_BAS_AUTO_H */
