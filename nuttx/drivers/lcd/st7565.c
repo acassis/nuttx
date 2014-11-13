@@ -66,7 +66,7 @@
 #include <nuttx/lcd/lcd.h>
 #include <nuttx/lcd/st7565.h>
 
-//#include "st7565.h"
+#include "st7565.h"
 
 /**************************************************************************************
  * Pre-processor Definitions
@@ -342,7 +342,7 @@ static struct st7565_dev_s g_st7565dev =
  **************************************************************************************/
 static inline void st7565_reset( FAR struct st7565_dev_s *priv, bool on)
 {
-    if (priv->lcd->reset)
+    if ( priv->lcd->reset != NULL )
         priv->lcd->reset(priv->lcd,on); 
 }
 
@@ -389,7 +389,7 @@ static inline void st7565_deselect( FAR struct st7565_dev_s *priv)
 
 static inline int st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
 {
-    return priv->lcd->cmddata(priv->lcd,cmd)
+    return priv->lcd->cmddata(priv->lcd,cmd);
 }
 
 /**************************************************************************************
@@ -403,7 +403,7 @@ static inline int st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
  *
  **************************************************************************************/
 
-static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, uint8_t data);
+static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, uint8_t data)
 {   
     return priv->lcd->senddata(priv->lcd,&data,1); 
 }
@@ -420,10 +420,10 @@ static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, uint8_t d
  *
  **************************************************************************************/
 
-static inline st7565_send_data_buf( FAR struct st7565_dev_s *priv, 
-                                 const uint8_t *buf, 
-                                 int size
-                               )
+static inline int st7565_send_data_buf( FAR struct st7565_dev_s *priv, 
+                                        const uint8_t *buf, 
+                                        int size
+                                      )
 {   
     return priv->lcd->senddata(priv->lcd,buf,size); 
 }
@@ -796,7 +796,7 @@ static int st7565_setpower(struct lcd_dev_s *dev, int power)
 
   st7565_cmddata(priv,true);
 
-  if (power <= ST7565_POWER_OFF)
+  if (power <= 0)
     {
       /* Turn the display off */
 
@@ -810,7 +810,7 @@ static int st7565_setpower(struct lcd_dev_s *dev, int power)
     {
       (void)st7565_send_one_data(priv, ST7565_DISPON);
 
-      (void)st7565_send_one_data(priv->spi, ST7565_DISPRAM); 
+      (void)st7565_send_one_data(priv, ST7565_DISPRAM); 
 
       /* don't use value 1 of baclight to allow low power mode */
 
@@ -907,7 +907,7 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
 
   /* Select and lock the device */
 
-  st7565_select(priv->lcd);
+  st7565_select(priv);
 
   /* Go throw all 8 pages */
 
@@ -915,21 +915,21 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
     {
       /* Select command transfer */
 
-      st7565_cmddata(priv->lcd, true);
+      st7565_cmddata(priv, true);
 
       /* Set the starting position for the run */
 
-      (void)st7565_send_one_data(priv->lcd, ST7565_SETPAGESTART+i);
-      (void)st7565_send_one_data(priv->lcd, ST7565_SETCOLL);
-      (void)st7565_send_one_data(priv->lcd, ST7565_SETCOLH);
+      (void)st7565_send_one_data(priv, ST7565_SETPAGESTART+i);
+      (void)st7565_send_one_data(priv, ST7565_SETCOLL);
+      (void)st7565_send_one_data(priv, ST7565_SETCOLH);
 
       /* Select data transfer */
 
-      st7565_cmddata(priv->lcd, false);
+      st7565_cmddata(priv, false);
 
        /* Then transfer all 96 columns of data */
 
-      (void)st7565_send_data_buf(priv->lcd, 
+      (void)st7565_send_data_buf(priv, 
                                  &priv->fb[page * ST7565_XRES], 
                                  ST7565_XRES
                                 );
@@ -937,7 +937,7 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
 
   /* Unlock and de-select the device */
 
-  st7565_deselect(priv->lcd);
+  st7565_deselect(priv);
 }
 
 /**************************************************************************************
@@ -960,19 +960,22 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
  *
  * Returned Value:
  *
- *   On success, this function returns a reference to the LCD object for the specified
+ *   On success, this function returns a reference to the LCD object 
+ *   for the specified
  *   OLED.  NULL is returned on any failure.
  *
  **************************************************************************************/
 
-FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_dev_s *lcd, unsigned int devno)
+FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd, 
+                                        unsigned int devno
+                                       )
 {
   /* Configure and enable LCD */
 
   FAR struct st7565_dev_s  *priv = &g_st7565dev;
 
   gvdbg("Initializing\n");
-  DEBUGASSERT(dev && devno == 0);
+  DEBUGASSERT(lcd && devno == 0);
 
   /* Save the reference to the SPI device */
 
@@ -980,11 +983,11 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_dev_s *lcd, unsigned i
 
   /* Select and lock the device */
 
-  st7565_select(priv->lcd);
+  st7565_select(priv);
 
   /* Reset device */
 
-  st7565_reset(priv->lcd,true);
+  st7565_reset(priv,true);
 
   /* it seems too long but written in 
    * NHD‐C12864KGZ DISPLAY INITIALIZATION... 
@@ -992,7 +995,7 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_dev_s *lcd, unsigned i
 
   up_mdelay(150); 
 
-  st7565_reset(priv->lcd,false);
+  st7565_reset(priv,false);
 
   /* it seems too long but written in 
    * NHD‐C12864KGZ DISPLAY INITIALIZATION... 
@@ -1002,46 +1005,50 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_dev_s *lcd, unsigned i
 
   /* Make sure that LCD backlight is off */
 
-  st7565_backlight(priv->lcd, 0);
+  st7565_backlight(priv, 0);
 
   /* Select command transfer */
 
-  st7565_cmddata(priv->lcd, true);
+  st7565_cmddata(priv, true);
 
 
   /* reset by command in case of st7565_reset not implemeted */
 
-  (void)st7565_send_one_data(priv->lcd, ST7565_EXIT_SOFTRST);
+  (void)st7565_send_one_data(priv, ST7565_EXIT_SOFTRST);
 
   /* Follow NHD‐C12864KGZ DISPLAY INITIALIZATION...  */
 
-  (void)st7565_send_one_data(priv->lcd, ST7565_BIAS_1_9);
-  (void)st7565_send_one_data(priv->lcd, ST7565_ADCNORMAL);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETCOMNORMAL);
-  (void)st7565_send_one_data(priv->lcd, ST7565_REG_RES_5_5); 
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETEVMODE);   
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETEVREG(15));   
-  (void)st7565_send_one_data(priv->lcd, ST7565_POWERCTRL_INT);   
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETSTARTLINE);   
+#ifdef CONFIG_NHD_C12864KGZ
+  (void)st7565_send_one_data(priv, ST7565_BIAS_1_9);
+  (void)st7565_send_one_data(priv, ST7565_ADCNORMAL);
+  (void)st7565_send_one_data(priv, ST7565_SETCOMNORMAL);
+  (void)st7565_send_one_data(priv, ST7565_REG_RES_5_5); 
+  (void)st7565_send_one_data(priv, ST7565_SETEVMODE);   
+  (void)st7565_send_one_data(priv, ST7565_SETEVREG(15));   
+  (void)st7565_send_one_data(priv, ST7565_POWERCTRL_INT);   
+  (void)st7565_send_one_data(priv, ST7565_SETSTARTLINE);   
+#else
+#   error "No initialization sequence selected"
+#endif
 
 #if 0
-  (void)st7565_send_one_data(priv->lcd, ST7565_DISPON);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETCOMREVERSE);
-  (void)st7565_send_one_data(priv->lcd, ST7565_REG_RES_RR1);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETEV);
-  (void)st7565_send_one_data(priv->lcd, 0x32);
-  (void)st7565_send_one_data(priv->lcd, ST7565_POWERCTRL);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETSTARTLINE);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETPAGESTART);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETCOLH);
-  (void)st7565_send_one_data(priv->lcd, ST7565_SETCOLL);
-  (void)st7565_send_one_data(priv->lcd, ST7565_DISPON);
-  (void)st7565_send_one_data(priv->lcd, ST7565_DISPRAM);
+  (void)st7565_send_one_data(priv, ST7565_DISPON);
+  (void)st7565_send_one_data(priv, ST7565_SETCOMREVERSE);
+  (void)st7565_send_one_data(priv, ST7565_REG_RES_RR1);
+  (void)st7565_send_one_data(priv, ST7565_SETEV);
+  (void)st7565_send_one_data(priv, 0x32);
+  (void)st7565_send_one_data(priv, ST7565_POWERCTRL);
+  (void)st7565_send_one_data(priv, ST7565_SETSTARTLINE);
+  (void)st7565_send_one_data(priv, ST7565_SETPAGESTART);
+  (void)st7565_send_one_data(priv, ST7565_SETCOLH);
+  (void)st7565_send_one_data(priv, ST7565_SETCOLL);
+  (void)st7565_send_one_data(priv, ST7565_DISPON);
+  (void)st7565_send_one_data(priv, ST7565_DISPRAM);
 #endif 
 
   /* Let go of the SPI lock and de-select the device */
 
-  st7565_deselect(priv->lcd);
+  st7565_deselect(priv);
 
   up_mdelay(10);
 

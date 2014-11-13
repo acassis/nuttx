@@ -117,7 +117,7 @@
 /* Set Ev value register
  * ratio Vev = (1-a/162)*Vreg, Vreg = 2.1V 
  */
-#define ST7565_SETEVREG(x)        (0x0 | (x) & 0x3F) 
+#define ST7565_SETEVREG(x)        (0x0 | ((x) & 0x3F))
 
 /* Set booster ratio */
 #define ST7565_MODE_NORMAL         0xac /* Set Normal Mode */
@@ -167,46 +167,5 @@ struct st7565_lcd_s
  * Public Data
  **************************************************************************************/
 
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
-
-/**************************************************************************************
- * Public Function Prototypes
- **************************************************************************************/
-
-/**************************************************************************************
- * Name:  st7565_initialize
- *
- * Description:
- *   Initialize the LCD video driver internal sturcture. Also initialize the
- *   lcd hardware if not done. The control of the LCD driver is depend on the
- *   selected MCU interface and part of the platform specific subdriver (see
- *   config/efm32gg-pnbfano/src/efm32_st7565_8080bus.c)
- *
- * Input Parameters:
- *
- *   lcd - A reference to the platform specific driver instance to control the
- *     st7565 display driver.
- *   devno - A value in the range of 0 through CONFIG_ST7565_NINTERFACES-1.
- *     This allows support for multiple LCD devices.
- *
- * Returned Value:
- *
- *   On success, this function returns a reference to the LCD driver object for
- *   the specified LCD driver. NULL is returned on any failure.
- *
- **************************************************************************************/
-
-FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd, int devno);
-
-#undef EXTERN
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __DRIVERS_LCD_ST7565_H */

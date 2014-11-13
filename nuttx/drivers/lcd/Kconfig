@@ -341,6 +341,15 @@ config LCD_ST7565
 
 if LCD_ST7565
 
+choice
+	prompt "LCD Display Module initialization sequence"
+	default NHD_C12864KGZ
+
+config NHD_C12864KGZ
+	bool "like NHD C12864KGZ"
+
+endchoice
+
 config ST7565_NINTERFACES
 	int "Number of ST7565 Devices"
 	default 1
