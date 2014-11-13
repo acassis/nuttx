@@ -46,6 +46,40 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+/* LCD:
+ *
+ * The PnbFano board has NHD‐C12864KGZ wired by 8080 bus.
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PA0                   /LCD_CS
+ * PA1                   /LCD_RST
+ * PA2                   LCD_A0
+ * PA3                   /LCD_WR
+ * PA4                   /LCD_RD
+ * --------------------- ---------------------
+ */
+
+#define GPIO_LCD_CS       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTA|GPIO_PIN0|GPIO_OUTPUT_SET)
+#define GPIO_LCD_RST      (GPIO_OUTPUT_PUSHPULL|GPIO_PORTA|GPIO_PIN1|GPIO_OUTPUT_SET)
+#define GPIO_LCD_A0       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTA|GPIO_PIN2|GPIO_OUTPUT_SET)
+#define GPIO_LCD_WR       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTA|GPIO_PIN3|GPIO_OUTPUT_SET)
+#define GPIO_LCD_RD       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTA|GPIO_PIN4|GPIO_OUTPUT_SET)
+
+#define GPIO_LCD_D0       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN8 |GPIO_OUTPUT_SET)
+#define GPIO_LCD_D1       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN9 |GPIO_OUTPUT_SET)
+#define GPIO_LCD_D2       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN10|GPIO_OUTPUT_SET)
+#define GPIO_LCD_D3       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN11|GPIO_OUTPUT_SET)
+#define GPIO_LCD_D4       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN12|GPIO_OUTPUT_SET)
+#define GPIO_LCD_D5       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN13|GPIO_OUTPUT_SET)
+#define GPIO_LCD_D6       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN14|GPIO_OUTPUT_SET)
+#define GPIO_LCD_D7       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN15|GPIO_OUTPUT_SET)
+
+#define GPIO_LCD_PORT       GPIO_PORTE
+#define GPIO_LCD_PORT_SHIFT 8
+
+
 /* Buttons:
  *
  * The pnbfano board has four buttons, BUT1-4. Each is grounded and so should
@@ -103,5 +137,7 @@
  ****************************************************************************/
 
 int efm32_initialize_spi_devices(void);
+
+int up_lcdinitialize(void);
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

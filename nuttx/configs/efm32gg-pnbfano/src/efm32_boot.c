@@ -112,6 +112,12 @@ void board_initialize(void)
 
     keypad_kbdinit();
 
+    syslog(LOG_NOTICE,"initialize LCD !\n");
+    if ( up_lcdinitialize() != OK )
+    {
+        syslog(LOG_ERR,"Cannot initialize LCD !\n");
+    }
+
   /* Mount the SDIO-based MMC/SD block driver */
 
     if ( efm32_initialize_spi_devices() < 0 )

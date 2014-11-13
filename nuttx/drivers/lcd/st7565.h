@@ -131,37 +131,6 @@
 
 #define ST7565_NOP                 0xe3 /* 0xe3: NOP Command for no operation */
 
-/**************************************************************************************
- * Public Types
- **************************************************************************************/
-
-struct st7565_lcd_s
-{
-  /* Interface to control the st7565 like lcd driver
-   *
-   *  - reset       Switch reset pin of LCD (optional but as your risk).
-   *  - select      Select the device (as neccessary) before performing any operations.
-   *  - deselect    Deselect the device (as necessary).
-   *  - cmddata     Select command (A0 = 0) or data (A0 = 1) mode .
-   *  - senddata    Send data to the LCD driver.
-   *  - backlight   Change the backlight level of the connected display.
-   *                In the context of the ili9341 that means change the
-   *                backlight level of the connected LED driver.
-   *                The implementation in detail is part of the platform
-   *                specific sub driver.
-   *
-   */
-
-  void (*reset)     (FAR struct st7565_lcd_s *lcd, bool on);
-  void (*select)    (FAR struct st7565_lcd_s *lcd);
-  void (*deselect)  (FAR struct st7565_lcd_s *lcd);
-  int  (*cmddata)   (FAR struct st7565_lcd_s *lcd, const uint8_t cmd);
-  int  (*senddata)  (FAR struct st7565_lcd_s *lcd, const uint8_t *data, int size);
-  int  (*backlight) (FAR struct st7565_lcd_s *lcd, int level);
-
-  /* mcu interface specific data following */
-};
-
 
 /**************************************************************************************
  * Public Data

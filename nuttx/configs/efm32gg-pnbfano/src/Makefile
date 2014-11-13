@@ -37,6 +37,7 @@
 
 CSRCS = efm32_boot.c
 CSRCS += efm32_spi.c
+CSRCS += efm32_lcd.c
 
 ifeq ($(CONFIG_PNBFANO_GPIO_KEYPAD),y)
 CSRCS += efm32_keypad.c

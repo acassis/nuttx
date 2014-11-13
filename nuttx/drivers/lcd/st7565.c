@@ -220,7 +220,7 @@ static inline void st7565_reset( FAR struct st7565_dev_s *priv, bool on);
 static inline void st7565_select( FAR struct st7565_dev_s *priv);
 static inline void st7565_deselect( FAR struct st7565_dev_s *priv);
 
-static inline int st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd);
+static inline void st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd);
 static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, 
                                  uint8_t data
                                );
@@ -370,7 +370,6 @@ static inline void st7565_select( FAR struct st7565_dev_s *priv)
  *   priv    - A reference to the driver specific structure
  *
  **************************************************************************************/
-
 static inline void st7565_deselect( FAR struct st7565_dev_s *priv)
 {
     priv->lcd->deselect(priv->lcd); 
@@ -386,10 +385,9 @@ static inline void st7565_deselect( FAR struct st7565_dev_s *priv)
  *   cmd    - If true command mode will be seleted.
  *
  **************************************************************************************/
-
-static inline int st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
+static inline void st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
 {
-    return priv->lcd->cmddata(priv->lcd,cmd);
+    priv->lcd->cmddata(priv->lcd,cmd);
 }
 
 /**************************************************************************************
@@ -903,7 +901,7 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
 
   /* Clear the framebuffer */
 
-  memset(priv->fb, 0, ST7565_FBSIZE);
+  memset(priv->fb, 0x00, ST7565_FBSIZE);
 
   /* Select and lock the device */
 
