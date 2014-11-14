@@ -58,6 +58,17 @@
  * PA2                   LCD_A0
  * PA3                   /LCD_WR
  * PA4                   /LCD_RD
+ *
+ * PA8                   LCD_D0
+ * PA9                   LCD_D1
+ * PA10                  LCD_D2
+ * PA11                  LCD_D3
+ * PA12                  LCD_D4
+ * PA13                  LCD_D5
+ * PA14                  LCD_D6
+ * PA15                  LCD_D7
+ * 
+ * PA15                  LCD_PWM (Back light)
  * --------------------- ---------------------
  */
 
@@ -78,6 +89,8 @@
 
 #define GPIO_LCD_PORT       GPIO_PORTE
 #define GPIO_LCD_PORT_SHIFT 8
+
+#define GPIO_LCD_PWM      (GPIO_OUTPUT_PUSHPULL|GPIO_PORTC|GPIO_PIN0|GPIO_OUTPUT_CLEAR)
 
 
 /* Buttons:

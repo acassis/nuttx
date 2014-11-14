@@ -238,9 +238,10 @@ static int  st7565_senddata  (FAR struct st7565_lcd_s *lcd, const uint8_t *data,
 
 static int  st7565_backlight (FAR struct st7565_lcd_s *lcd, int level)
 {
-    /* TODO */
+    /* TODO use PWM */
     UNUSED(lcd);
-    UNUSED(level);
+
+    efm32_gpiowrite(GPIO_LCD_PWM,level);
 
     return OK;
 
@@ -295,6 +296,7 @@ int up_lcdinitialize(void)
   efm32_configgpio(GPIO_LCD_D5 );
   efm32_configgpio(GPIO_LCD_D6 );
   efm32_configgpio(GPIO_LCD_D7 );
+  efm32_configgpio(GPIO_LCD_PWM);
 
   /* Configure and enable LCD */
 
@@ -308,7 +310,7 @@ int up_lcdinitialize(void)
   }
 
   g_lcd->setpower(      g_lcd,CONFIG_LCD_MAXPOWER);
-  g_lcd->setcontrast(   g_lcd,CONFIG_LCD_MAXCONTRAST);
+  g_lcd->setcontrast(   g_lcd,25);
 
   return OK;
 }
