@@ -8946,8 +8946,25 @@
 	* libc/string/lib_strncpy.c:  The definition of strncpy() is that empty
 	  space should be zero-filled, the patch adds the zero filling (I didn’t
 	  know this, see e.g. the POSIX spec here:
-	 http://pubs.opengroup.org/onlinepubs/7908799/xsh/strncpy.html). From
+	  http://pubs.opengroup.org/onlinepubs/7908799/xsh/strncpy.html). From
 	  Lorenz Meier (2014-11-12).
 	* arch/arm/include/limits.h:  Remove the definition of INT_FAST32_MIN
 	  which is already defined in stdint.h (the correct location).  From
 	  Lorenz Meier (2014-11-12).
+	* arch/arm/src/efm32/efm32_clockconfig.c, configs/efm32gg-stk3700/README.txt
+	  and include/board.h:  Fixes to get the EFM32GG-STK3700 basic NSH
+	  configuration running.  It works! (2014-11-12).
+	* drivers/bch/bchdev_driver.c: Add support for seeking in BCH.  From
+	  Sébastien Lorquet. (2014-11-13).
+	* sched/Kconfigs and configs/*/*/defconfig:  Remove CONFIG_MAX_TASK_ARGS
+	  (2014-11-13).
+	* binfmt/: Remove use of CONFIG_MAX_TASK_ARGS in exec() and unload_module()
+	  (2014-11-13).
+	* libc/unistd:  Remove use of CONFIG_MAX_TASK_ARGS in execl() (2014-11-13).
+	* sched/: Remove some misc. usage of CONFIG_MAX_TASK_ARGS in task_start(),
+	  task_setup(), and vfork() (2014-11-13).
+	* arch/arm/src/stm32/chip/stm32_otgfs.h: Correct a typo in the STM32 OTGFS
+	  register bit definitions (2014-11-13).
+	* drivers/lcd/st7565.c/.h and include/nuttx/lcd/st7565.h: Add driver for
+	  ST7565 that works with NHD‐C12864KGZ display.  From Pierre-noel
+	  Bouteville (2014-11-13).

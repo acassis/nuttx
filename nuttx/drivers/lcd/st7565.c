@@ -1,8 +1,7 @@
 /**************************************************************************************
  * drivers/lcd/st7565.c
  *
- * Definitions for the ST7565 128x64 Dot Matrix LCD
- * Driver with C
+ * Definitions for the ST7565 128x64 Dot Matrix LCD Driver with C
  *
  *   Copyright (C) 2014 Pierre-noel Bouteville. All rights reserved.
  *   Author: Pierre-noel Boutevlle <pnb990@gmail.com>
@@ -73,6 +72,7 @@
  **************************************************************************************/
 
 /* Configuration **********************************************************************/
+
 /* ST7565 Configuration Settings:
  *
  * CONFIG_ST7565_NINTERFACES - Specifies the number of physical
@@ -137,20 +137,22 @@
 #endif
 
 /* Color Properties *******************************************************************/
+
 /* The ST7565 display controller can handle a resolution of 128x64.
  */
+
 /* Display Resolution */
 
 #ifdef CONFIG_ST7565_XRES
-#define ST7565_XRES         CONFIG_ST7565_XRES
+#  define ST7565_XRES         CONFIG_ST7565_XRES
 #else
-#define ST7565_XRES         128
+#  define ST7565_XRES         128
 #endif
 
 #ifdef CONFIG_ST7565_YRES
-#define ST7565_YRES         CONFIG_ST7565_YRES
+#  define ST7565_YRES         CONFIG_ST7565_YRES
 #else
-#define ST7565_YRES         64
+#  define ST7565_YRES         64
 #endif
 
 /* Color depth and format */
@@ -160,8 +162,10 @@
 
 /* Bytes per logical row andactual device row */
 
-#define ST7565_XSTRIDE      (ST7565_XRES >> 3) /* Pixels arrange "horizontally for user" */
-#define ST7565_YSTRIDE      (ST7565_YRES >> 3) /* But actual device arrangement is "vertical" */
+#define ST7565_XSTRIDE      (ST7565_XRES >> 3)  /* Pixels arrange "horizontally
+                                                 * for user" */
+#define ST7565_YSTRIDE      (ST7565_YRES >> 3)  /* But actual device
+                                                 * arrangement is "vertical" */
 
 /* The size of the shadow frame buffer */
 
@@ -175,9 +179,9 @@
 /* Debst7565 ******************************************************************************/
 
 #ifdef CONFIG_LCD_ST7565DEBUG
-# define st7565dbg(format, ...)  vdbg(format, ##__VA_ARGS__)
+#  define st7565dbg(format, ...)  vdbg(format, ##__VA_ARGS__)
 #else
-# define st7565dbg(x...)
+#  define st7565dbg(x...)
 #endif
 
 /**************************************************************************************
@@ -188,7 +192,7 @@
 
 struct st7565_dev_s
 {
-  /* Publically visible device structure */
+  /* Publicly visible device structure */
 
   struct lcd_dev_s dev;
 
@@ -198,51 +202,46 @@ struct st7565_dev_s
   uint8_t contrast;
   uint8_t power_level;
 
- /* TODO implement READ mode, possible in 8080bus interface */
+  /* TODO implement READ mode, possible in 8080bus interface */
 
- /* The ST7565 does not support reading from the display memory in SPI mode.
-  * Since there is 1 BPP and access is byte-by-byte, it is necessary to keep
-  * a shadow copy of the framebuffer memory.
-  */
+  /* The ST7565 does not support reading from the display memory in SPI mode.
+   * Since there is 1 BPP and access is byte-by-byte, it is necessary to keep
+   * a shadow copy of the framebuffer memory. */
 
   uint8_t fb[ST7565_FBSIZE];
-
 };
 
 /**************************************************************************************
- * Private Function Protototypes
+ * Private Function Prototypes
  **************************************************************************************/
 
 /* Drivers helpers */
 
-static inline void st7565_reset( FAR struct st7565_dev_s *priv, bool on);
+static inline void st7565_reset(FAR struct st7565_dev_s *priv, bool on);
 
-static inline void st7565_select( FAR struct st7565_dev_s *priv);
-static inline void st7565_deselect( FAR struct st7565_dev_s *priv);
+static inline void st7565_select(FAR struct st7565_dev_s *priv);
+static inline void st7565_deselect(FAR struct st7565_dev_s *priv);
 
-static inline void st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd);
-static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, 
-                                 uint8_t data
-                               );
-static inline int st7565_send_data_buf( FAR struct st7565_dev_s *priv, 
-                                 const uint8_t *buf, 
-                                 int size
-                               );
-static inline int st7565_backlight( FAR struct st7565_dev_s *priv, int level );
+static inline void st7565_cmddata(FAR struct st7565_dev_s *priv, bool cmd);
+static inline int st7565_send_one_data(FAR struct st7565_dev_s *priv,
+                                       uint8_t data);
+static inline int st7565_send_data_buf(FAR struct st7565_dev_s *priv,
+                                       FAR const uint8_t * buf, int size);
+static inline int st7565_backlight(FAR struct st7565_dev_s *priv, int level);
 
 /* LCD Data Transfer Methods */
 
-static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buffer,
-                     size_t npixels);
-static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
-                     size_t npixels);
+static int st7565_putrun(fb_coord_t row, fb_coord_t col,
+                         FAR const uint8_t * buffer, size_t npixels);
+static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t * buffer,
+                         size_t npixels);
 
 /* LCD Configuration */
 
 static int st7565_getvideoinfo(FAR struct lcd_dev_s *dev,
-                           FAR struct fb_videoinfo_s *vinfo);
+                               FAR struct fb_videoinfo_s *vinfo);
 static int st7565_getplaneinfo(FAR struct lcd_dev_s *dev, unsigned int planeno,
-                           FAR struct lcd_planeinfo_s *pinfo);
+                               FAR struct lcd_planeinfo_s *pinfo);
 
 /* LCD RGB Mapping */
 
@@ -265,7 +264,7 @@ static int st7565_setcontrast(struct lcd_dev_s *dev, unsigned int contrast);
 
 /* Initialization */
 
-static inline void up_clear(FAR struct st7565_dev_s  *priv);
+static inline void up_clear(FAR struct st7565_dev_s *priv);
 
 /**************************************************************************************
  * Private Data
@@ -282,26 +281,26 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv);
  * if there are multiple LCD devices, they must each have unique run buffers.
  */
 
-static uint8_t g_runbuffer[ST7565_XSTRIDE+1];
+static uint8_t g_runbuffer[ST7565_XSTRIDE + 1];
 
 /* This structure describes the overall LCD video controller */
 
 static const struct fb_videoinfo_s g_videoinfo =
 {
-  .fmt     = ST7565_COLORFMT,    /* Color format: RGB16-565: RRRR RGGG GGGB BBBB */
-  .xres    = ST7565_XRES,        /* Horizontal resolution in pixel columns */
-  .yres    = ST7565_YRES,        /* Vertical resolution in pixel rows */
-  .nplanes = 1,              /* Number of color planes supported */
+  .fmt     = ST7565_COLORFMT,         /* Color format: RGB16-565: RRRR RGGG GGGB BBBB */
+  .xres    = ST7565_XRES,             /* Horizontal resolution in pixel columns */
+  .yres    = ST7565_YRES,             /* Vertical resolution in pixel rows */
+  .nplanes = 1,                       /* Number of color planes supported */
 };
 
 /* This is the standard, NuttX Plane information object */
 
 static const struct lcd_planeinfo_s g_planeinfo =
 {
-  .putrun = st7565_putrun,             /* Put a run into LCD memory */
-  .getrun = st7565_getrun,             /* Get a run from LCD memory */
-  .buffer = (uint8_t*)g_runbuffer, /* Run scratch buffer */
-  .bpp    = ST7565_BPP,                /* Bits-per-pixel */
+  .putrun  = st7565_putrun,           /* Put a run into LCD memory */
+  .getrun  = st7565_getrun,           /* Get a run from LCD memory */
+  .buffer  = (uint8_t *) g_runbuffer, /* Run scratch buffer */
+  .bpp     = ST7565_BPP,              /* Bits-per-pixel */
 };
 
 /* This is the standard, NuttX LCD driver object */
@@ -332,34 +331,37 @@ static struct st7565_dev_s g_st7565dev =
  **************************************************************************************/
 
 /**************************************************************************************
- * Name:  st7565_reset
+ * Name: st7565_reset
  *
  * Description:
- *   Enable/Disable reset pinn of LCD the device.
+ *   Enable/Disable reset pin of LCD the device.
  *
- *   priv    - A reference to the driver specific structure
+ *   priv - A reference to the driver specific structure
  *
  **************************************************************************************/
-static inline void st7565_reset( FAR struct st7565_dev_s *priv, bool on)
+
+static inline void st7565_reset(FAR struct st7565_dev_s *priv, bool on)
 {
-    if ( priv->lcd->reset != NULL )
-        priv->lcd->reset(priv->lcd,on); 
+  if (priv->lcd->reset != NULL)
+    {
+      priv->lcd->reset(priv->lcd, on);
+    }
 }
 
 /**************************************************************************************
- * Name:  st7565_select
+ * Name: st7565_select
  *
  * Description:
- *   Select the device (as neccessary) before performing any operations.
+ *   Select the device (as necessary) before performing any operations.
  *
- *   priv    - A reference to the driver specific structure
+ *   priv - A reference to the driver specific structure
  *
  **************************************************************************************/
-static inline void st7565_select( FAR struct st7565_dev_s *priv)
-{
-    priv->lcd->select(priv->lcd); 
-}
 
+static inline void st7565_select(FAR struct st7565_dev_s *priv)
+{
+  priv->lcd->select(priv->lcd);
+}
 
 /**************************************************************************************
  * Name:  st7565_deselect
@@ -367,12 +369,13 @@ static inline void st7565_select( FAR struct st7565_dev_s *priv)
  * Description:
  *   Deselect the device (as necessary).
  *
- *   priv    - A reference to the driver specific structure
+ *   priv - A reference to the driver specific structure
  *
  **************************************************************************************/
-static inline void st7565_deselect( FAR struct st7565_dev_s *priv)
+
+static inline void st7565_deselect(FAR struct st7565_dev_s *priv)
 {
-    priv->lcd->deselect(priv->lcd); 
+  priv->lcd->deselect(priv->lcd);
 }
 
 /**************************************************************************************
@@ -381,13 +384,14 @@ static inline void st7565_deselect( FAR struct st7565_dev_s *priv)
  * Description:
  *   Select command (A0 = 0) or data (A0 = 1) mode.
  *
- *   priv    - A reference to the driver specific structure.
- *   cmd    - If true command mode will be seleted.
+ *   priv - A reference to the driver specific structure.
+ *   cmd  - If true command mode will be selected.
  *
  **************************************************************************************/
-static inline void st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
+
+static inline void st7565_cmddata(FAR struct st7565_dev_s *priv, bool cmd)
 {
-    priv->lcd->cmddata(priv->lcd,cmd);
+  priv->lcd->cmddata(priv->lcd, cmd);
 }
 
 /**************************************************************************************
@@ -396,14 +400,15 @@ static inline void st7565_cmddata( FAR struct st7565_dev_s *priv, bool cmd)
  * Description:
  *   Send one data to the LCD driver (A0 = 1).
  *
- *   priv    - A reference to the driver specific structure.
- *   data   - byte to send as data to LCD driver.
+ *   priv - A reference to the driver specific structure.
+ *   data - Byte to send as data to LCD driver.
  *
  **************************************************************************************/
 
-static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, uint8_t data)
-{   
-    return priv->lcd->senddata(priv->lcd,&data,1); 
+static inline int st7565_send_one_data(FAR struct st7565_dev_s *priv,
+                                       uint8_t data)
+{
+  return priv->lcd->senddata(priv->lcd, &data, 1);
 }
 
 /**************************************************************************************
@@ -412,18 +417,16 @@ static inline int st7565_send_one_data( FAR struct st7565_dev_s *priv, uint8_t d
  * Description:
  *   Send a data buffer to the LCD driver (A0 = 1).
  *
- *   priv    - A reference to the driver specific structure.
- *   buf    - buffer sent as data to LCD driver.
- *   size   - size of buffer in bytes.
+ *   priv   - A reference to the driver specific structure.
+ *   buf    - Buffer sent as data to LCD driver.
+ *   size   - Size of buffer in bytes.
  *
  **************************************************************************************/
 
-static inline int st7565_send_data_buf( FAR struct st7565_dev_s *priv, 
-                                        const uint8_t *buf, 
-                                        int size
-                                      )
-{   
-    return priv->lcd->senddata(priv->lcd,buf,size); 
+static inline int st7565_send_data_buf(FAR struct st7565_dev_s *priv,
+                                       FAR const uint8_t * buf, int size)
+{
+  return priv->lcd->senddata(priv->lcd, buf, size);
 }
 
 /**************************************************************************************
@@ -432,14 +435,14 @@ static inline int st7565_send_data_buf( FAR struct st7565_dev_s *priv,
  * Description:
  *   Change backlight level of display.
  *
- *   priv    - A reference to the driver specific structure.
- *   level  - set backlight pwm from 0 CONFIG_LCD_MAXPOWER-1.
+ *   priv  - A reference to the driver specific structure.
+ *   level - Set backlight pwm from 0 CONFIG_LCD_MAXPOWER-1.
  *
  **************************************************************************************/
 
-static inline int st7565_backlight( FAR struct st7565_dev_s *priv, int level )
-{   
-    return priv->lcd->backlight(priv->lcd,level); 
+static inline int st7565_backlight(FAR struct st7565_dev_s *priv, int level)
+{
+  return priv->lcd->backlight(priv->lcd, level);
 }
 
 /**************************************************************************************
@@ -456,10 +459,12 @@ static inline int st7565_backlight( FAR struct st7565_dev_s *priv, int level )
  *
  **************************************************************************************/
 
-static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buffer,
-                       size_t npixels)
+static int st7565_putrun(fb_coord_t row, fb_coord_t col,
+                         FAR const uint8_t * buffer, size_t npixels)
 {
-  /* Because of this line of code, we will only be able to support a single ST7565 device */
+  /* Because of this line of code, we will only be able to support a single
+   * ST7565 device.
+   */
 
   FAR struct st7565_dev_s *priv = &g_st7565dev;
   FAR uint8_t *fbptr;
@@ -488,15 +493,14 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buff
       return OK;
     }
 
-  /* Get the page number.  The range of 64 lines is divided up into eight
-   * pages of 8 lines each.
+  /* Get the page number.  The range of 64 lines is divided up into eight pages
+   * of 8 lines each.
    */
 
   page = row >> 3;
 
-  /* Update the shadow frame buffer memory. First determine the pixel
-   * position in the frame buffer memory.  Pixels are organized like
-   * this:
+  /* Update the shadow frame buffer memory. First determine the pixel position
+   * in the frame buffer memory.  Pixels are organized like this:
    *
    *  --------+---+---+---+---+-...-+-----+
    *  Segment | 0 | 1 | 2 | 3 | ... | 131 |
@@ -511,14 +515,14 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buff
    *  Bit 7   |   | X |   |   |     |     |
    *  --------+---+---+---+---+-...-+-----+
    *
-   * So, in order to draw a white, horizontal line, at row 45. we
-   * would have to modify all of the bytes in page 45/8 = 5.  We
-   * would have to set bit 45%8 = 5 in every byte in the page.
+   * So, in order to draw a white, horizontal line, at row 45. we would have
+   * to modify all of the bytes in* page 45/8 = 5.  We would have to set bit
+   * 45%8 = 5 in every byte in the page.
    */
 
-  fbmask  = 1 << (row & 7);
-  fbptr   = &priv->fb[page * ST7565_XRES + col];
-  ptr     = fbptr;
+  fbmask = 1 << (row & 7);
+  fbptr = &priv->fb[page * ST7565_XRES + col];
+  ptr = fbptr;
 #ifdef CONFIG_NX_PACKEDMSFIRST
   usrmask = MS_BIT;
 #else
@@ -573,9 +577,9 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buff
 
   /* Set the starting position for the run */
 
-  (void)st7565_send_one_data(priv, ST7565_SETPAGESTART+page);
+  (void)st7565_send_one_data(priv, ST7565_SETPAGESTART + page);
   (void)st7565_send_one_data(priv, ST7565_SETCOLL + (col & 0x0f));
-  (void)st7565_send_one_data(priv, ST7565_SETCOLH + (col >> 4));  
+  (void)st7565_send_one_data(priv, ST7565_SETCOLH + (col >> 4));
 
   /* Select data transfer */
 
@@ -583,7 +587,7 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buff
 
   /* Then transfer all of the data */
 
-  (void)st7565_send_data_buf(priv, fbptr, pixlen);  
+  (void)st7565_send_data_buf(priv, fbptr, pixlen);
 
   /* Unlock and de-select the device */
 
@@ -608,10 +612,12 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col, FAR const uint8_t *buff
  *
  **************************************************************************************/
 
-static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
-                     size_t npixels)
+static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t * buffer,
+                         size_t npixels)
 {
-  /* Because of this line of code, we will only be able to support a single ST7565 device */
+  /* Because of this line of code, we will only be able to support a single
+   * ST7565 device.
+   */
 
   FAR struct st7565_dev_s *priv = &g_st7565dev;
   FAR uint8_t *fbptr;
@@ -619,7 +625,7 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
   uint8_t fbmask;
   uint8_t usrmask;
   uint8_t i;
-  int     pixlen;
+  int pixlen;
 
   gvdbg("row: %d col: %d npixels: %d\n", row, col, npixels);
   DEBUGASSERT(buffer);
@@ -640,15 +646,14 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
     }
 
   /* Then transfer the display data from the shadow frame buffer memory */
-  /* Get the page number.  The range of 64 lines is divided up into eight
-   * pages of 8 lines each.
+  /* Get the page number.  The range of 64 lines is divided up into eight pages
+   * of 8 lines each.
    */
 
   page = row >> 3;
 
-  /* Update the shadow frame buffer memory. First determine the pixel
-   * position in the frame buffer memory.  Pixels are organized like
-   * this:
+  /* Update the shadow frame buffer memory. First determine the pixel position
+   * in the frame buffer memory.  Pixels are organized like this:
    *
    *  --------+---+---+---+---+-...-+-----+
    *  Segment | 0 | 1 | 2 | 3 | ... | 131 |
@@ -663,13 +668,13 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
    *  Bit 7   |   | X |   |   |     |     |
    *  --------+---+---+---+---+-...-+-----+
    *
-   * So, in order to draw a white, horizontal line, at row 45. we
-   * would have to modify all of the bytes in page 45/8 = 5.  We
-   * would have to set bit 45%8 = 5 in every byte in the page.
+   * So, in order to draw a white, horizontal line, at row 45. we would have
+   * to modify all of the bytes in page 45/8 = 5.  We would have to set bit
+   * 45%8 = 5 in every byte in the page.
    */
 
-  fbmask  = 1 << (row & 7);
-  fbptr   = &priv->fb[page * ST7565_XRES + col];
+  fbmask = 1 << (row & 7);
+  fbptr = &priv->fb[page * ST7565_XRES + col];
 #ifdef CONFIG_NX_PACKEDMSFIRST
   usrmask = MS_BIT;
 #else
@@ -687,16 +692,15 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
           *buffer |= usrmask;
         }
 
-      /* Inc/Decrement to the next destination pixel. Hmmmm. It looks like
-       * this logic could write past the end of the user buffer.  Revisit
-       * this!
+      /* Inc/Decrement to the next destination pixel. Hmmmm. It looks like this
+       * logic could write past the end of the user buffer.  Revisit this!
        */
 
 #ifdef CONFIG_NX_PACKEDMSFIRST
       if (usrmask == LS_BIT)
         {
           buffer++;
-         *buffer = 0;
+          *buffer = 0;
           usrmask = MS_BIT;
         }
       else
@@ -707,7 +711,7 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
       if (usrmask == MS_BIT)
         {
           buffer++;
-         *buffer = 0;
+          *buffer = 0;
           usrmask = LS_BIT;
         }
       else
@@ -729,11 +733,12 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t *buffer,
  **************************************************************************************/
 
 static int st7565_getvideoinfo(FAR struct lcd_dev_s *dev,
-                              FAR struct fb_videoinfo_s *vinfo)
+                               FAR struct fb_videoinfo_s *vinfo)
 {
   DEBUGASSERT(dev && vinfo);
   gvdbg("fmt: %d xres: %d yres: %d nplanes: %d\n",
-         g_videoinfo.fmt, g_videoinfo.xres, g_videoinfo.yres, g_videoinfo.nplanes);
+        g_videoinfo.fmt, g_videoinfo.xres, g_videoinfo.yres,
+        g_videoinfo.nplanes);
   memcpy(vinfo, &g_videoinfo, sizeof(struct fb_videoinfo_s));
   return OK;
 }
@@ -747,7 +752,7 @@ static int st7565_getvideoinfo(FAR struct lcd_dev_s *dev,
  **************************************************************************************/
 
 static int st7565_getplaneinfo(FAR struct lcd_dev_s *dev, unsigned int planeno,
-                              FAR struct lcd_planeinfo_s *pinfo)
+                               FAR struct lcd_planeinfo_s *pinfo)
 {
   DEBUGASSERT(dev && pinfo && planeno == 0);
   gvdbg("planeno: %d bpp: %d\n", planeno, g_planeinfo.bpp);
@@ -792,36 +797,36 @@ static int st7565_setpower(struct lcd_dev_s *dev, int power)
 
   st7565_select(priv);
 
-  st7565_cmddata(priv,true);
+  st7565_cmddata(priv, true);
 
   if (power <= 0)
     {
       /* Turn the display off */
 
       (void)st7565_send_one_data(priv, ST7565_DISPOFF);
-
       (void)st7565_backlight(priv, 0);
-      
       priv->power_level = 0;
     }
-  else 
+  else
     {
       (void)st7565_send_one_data(priv, ST7565_DISPON);
+      (void)st7565_send_one_data(priv, ST7565_DISPRAM);
 
-      (void)st7565_send_one_data(priv, ST7565_DISPRAM); 
-
-      /* don't use value 1 of baclight to allow low power mode */
+      /* Don't use value 1 of backlight to allow low power mode */
 
       if (power == 1)
+        {
           (void)st7565_backlight(priv, 0);
+        }
       else
+        {
           (void)st7565_backlight(priv, power);
+        }
 
       priv->power_level = 1;
     }
 
-  st7565_cmddata(priv,false);
-
+  st7565_cmddata(priv, false);
   st7565_deselect(priv);
 
   return OK;
@@ -868,17 +873,17 @@ static int st7565_setcontrast(struct lcd_dev_s *dev, unsigned int contrast)
 
   /* Select command transfer */
 
-  st7565_cmddata(priv,true);
+  st7565_cmddata(priv, true);
 
   /* Set the contrast */
 
   (void)st7565_send_one_data(priv, ST7565_SETEVMODE);
-  (void)st7565_send_one_data(priv, ST7565_SETEVREG(contrast)); 
+  (void)st7565_send_one_data(priv, ST7565_SETEVREG(contrast));
   priv->contrast = contrast;
 
   /* Deselect command transfer */
 
-  st7565_cmddata(priv,false);
+  st7565_cmddata(priv, false);
 
   /* Unlock and de-select the device */
 
@@ -894,7 +899,7 @@ static int st7565_setcontrast(struct lcd_dev_s *dev, unsigned int contrast)
  *
  **************************************************************************************/
 
-static inline void up_clear(FAR struct st7565_dev_s  *priv)
+static inline void up_clear(FAR struct st7565_dev_s *priv)
 {
   int page;
   int i;
@@ -917,7 +922,7 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
 
       /* Set the starting position for the run */
 
-      (void)st7565_send_one_data(priv, ST7565_SETPAGESTART+i);
+      (void)st7565_send_one_data(priv, ST7565_SETPAGESTART + i);
       (void)st7565_send_one_data(priv, ST7565_SETCOLL);
       (void)st7565_send_one_data(priv, ST7565_SETCOLH);
 
@@ -925,12 +930,10 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
 
       st7565_cmddata(priv, false);
 
-       /* Then transfer all 96 columns of data */
+      /* Then transfer all 96 columns of data */
 
-      (void)st7565_send_data_buf(priv, 
-                                 &priv->fb[page * ST7565_XRES], 
-                                 ST7565_XRES
-                                );
+      (void)st7565_send_data_buf(priv, &priv->fb[page * ST7565_XRES],
+                                 ST7565_XRES);
     }
 
   /* Unlock and de-select the device */
@@ -958,19 +961,18 @@ static inline void up_clear(FAR struct st7565_dev_s  *priv)
  *
  * Returned Value:
  *
- *   On success, this function returns a reference to the LCD object 
+ *   On success, this function returns a reference to the LCD object
  *   for the specified
  *   OLED.  NULL is returned on any failure.
  *
  **************************************************************************************/
 
-FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd, 
-                                        unsigned int devno
-                                       )
+FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
+                                        unsigned int devno)
 {
   /* Configure and enable LCD */
 
-  FAR struct st7565_dev_s  *priv = &g_st7565dev;
+  FAR struct st7565_dev_s *priv = &g_st7565dev;
 
   gvdbg("Initializing\n");
   DEBUGASSERT(lcd && devno == 0);
@@ -985,19 +987,17 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
 
   /* Reset device */
 
-  st7565_reset(priv,true);
+  st7565_reset(priv, true);
 
-  /* it seems too long but written in 
-   * NHD‐C12864KGZ DISPLAY INITIALIZATION... 
-   */
+  /* it seems too long but written in NHD‐C12864KGZ DISPLAY
+   * INITIALIZATION... */
 
-  up_mdelay(150); 
+  up_mdelay(150);
 
-  st7565_reset(priv,false);
+  st7565_reset(priv, false);
 
-  /* it seems too long but written in 
-   * NHD‐C12864KGZ DISPLAY INITIALIZATION... 
-   */
+  /* it seems too long but written in NHD‐C12864KGZ DISPLAY
+   * INITIALIZATION... */
 
   up_mdelay(150);
 
@@ -1009,7 +1009,6 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
 
   st7565_cmddata(priv, true);
 
-
   /* reset by command in case of st7565_reset not implemeted */
 
   (void)st7565_send_one_data(priv, ST7565_EXIT_SOFTRST);
@@ -1020,13 +1019,13 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
   (void)st7565_send_one_data(priv, ST7565_BIAS_1_9);
   (void)st7565_send_one_data(priv, ST7565_ADCNORMAL);
   (void)st7565_send_one_data(priv, ST7565_SETCOMNORMAL);
-  (void)st7565_send_one_data(priv, ST7565_REG_RES_5_5); 
-  (void)st7565_send_one_data(priv, ST7565_SETEVMODE);   
-  (void)st7565_send_one_data(priv, ST7565_SETEVREG(15));   
-  (void)st7565_send_one_data(priv, ST7565_POWERCTRL_INT);   
-  (void)st7565_send_one_data(priv, ST7565_SETSTARTLINE);   
+  (void)st7565_send_one_data(priv, ST7565_REG_RES_5_5);
+  (void)st7565_send_one_data(priv, ST7565_SETEVMODE);
+  (void)st7565_send_one_data(priv, ST7565_SETEVREG(15));
+  (void)st7565_send_one_data(priv, ST7565_POWERCTRL_INT);
+  (void)st7565_send_one_data(priv, ST7565_SETSTARTLINE);
 #else
-#   error "No initialization sequence selected"
+#  error "No initialization sequence selected"
 #endif
 
 #if 0
@@ -1042,7 +1041,7 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
   (void)st7565_send_one_data(priv, ST7565_SETCOLL);
   (void)st7565_send_one_data(priv, ST7565_DISPON);
   (void)st7565_send_one_data(priv, ST7565_DISPRAM);
-#endif 
+#endif
 
   /* Let go of the SPI lock and de-select the device */
 
@@ -1056,4 +1055,3 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
 
   return &priv->dev;
 }
-

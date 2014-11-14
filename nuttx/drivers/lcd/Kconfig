@@ -369,8 +369,7 @@ config ST7565_YRES
 	---help---
 		Specifies the Y resolution of the LCD.
 
-endif
-
+endif # LCD_ST7565
 
 config LCD_ST7567
 	bool "ST7567 LCD Display Module"
@@ -428,7 +427,7 @@ config ST7567_YRES
 	---help---
 		Specifies the Y resolution of the LCD.
 
-endif
+endif # LCD_ST7567
 
 config LCD_UG2864AMBAG01
 	bool "UG-2864AMBAG01 OLED Display Module"

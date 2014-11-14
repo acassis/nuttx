@@ -54,6 +54,7 @@
 #include "efm32gg-pnbfano.h"
 #include "chip/efm32_gpio.h"
 #include "efm32_gpio.h"
+#include "nuttx/lcd/lcd.h"
 #include "nuttx/lcd/st7565.h"
 
 /************************************************************************************
@@ -305,6 +306,9 @@ int up_lcdinitialize(void)
       ldbg("Initializing\n");
       return -ENODEV;
   }
+
+  g_lcd->setpower(      g_lcd,CONFIG_LCD_MAXPOWER);
+  g_lcd->setcontrast(   g_lcd,CONFIG_LCD_MAXCONTRAST);
 
   return OK;
 }

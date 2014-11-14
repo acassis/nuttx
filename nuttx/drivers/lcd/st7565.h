@@ -60,7 +60,7 @@
  * Pre-processor Definitions
  **************************************************************************************/
 
-/* Fundamental Commands *****************************************************/
+/* Fundamental Commands ***************************************************************/
 
 #define ST7565_DISPOFF             0xae /* 0xae: Display OFF (sleep mode) */
 #define ST7565_DISPON              0xaf /* 0xaf: Display ON in normal mode */
@@ -97,44 +97,48 @@
 
 #define ST7565_POWERCTRL_EXT       0x28 /* 0x28: Only the external power supply is used */
 #define ST7565_POWERCTRL_VF        0x29 /* 0x29: Only the V/F circuit is used */
-#define ST7565_POWERCTRL_VR        0x2b /* 0x2b: Only the voltage regulator circuit and the 
-                                         * voltage follower circuit are used 
+#define ST7565_POWERCTRL_VR        0x2b /* 0x2b: Only the voltage regulator circuit and the
+                                         * voltage follower circuit are used
                                          */
 #define ST7565_POWERCTRL_INT       0x2f /* 0x2f: Only the internal power supply is used */
 
 /* Regulation Resistior ratio V0 = (1+Rb/Ra)*Vev */
-#define ST7565_REG_RES_3_0         0x20 /* (Ra/Rb=3.0) */
-#define ST7565_REG_RES_3_5         0x21 /* (Ra/Rb=5.5) */
-#define ST7565_REG_RES_4_0         0x22 /* (Ra/Rb=4.0) */
-#define ST7565_REG_RES_4_5         0x23 /* (Ra/Rb=4.5) */
-#define ST7565_REG_RES_5_0         0x24 /* (Ra/Rb=5.0) */
-#define ST7565_REG_RES_5_5         0x25 /* (Ra/Rb=5.5) */
-#define ST7565_REG_RES_6_0         0x26 /* (Ra/Rb=6.0) */
-#define ST7565_REG_RES_6_5         0x27 /* (Ra/Rb=6.5) */
+
+#define ST7565_REG_RES_3_0         0x20 /* (Ra/Rb = 3.0) */
+#define ST7565_REG_RES_3_5         0x21 /* (Ra/Rb = 5.5) */
+#define ST7565_REG_RES_4_0         0x22 /* (Ra/Rb = 4.0) */
+#define ST7565_REG_RES_4_5         0x23 /* (Ra/Rb = 4.5) */
+#define ST7565_REG_RES_5_0         0x24 /* (Ra/Rb = 5.0) */
+#define ST7565_REG_RES_5_5         0x25 /* (Ra/Rb = 5.5) */
+#define ST7565_REG_RES_6_0         0x26 /* (Ra/Rb = 6.0) */
+#define ST7565_REG_RES_6_5         0x27 /* (Ra/Rb = 6.5) */
 
 /* Set Electronic volume mode */
+
 #define ST7565_SETEVMODE           0x81 /* 0x81: Set contrast control */
+
 /* Set Ev value register
- * ratio Vev = (1-a/162)*Vreg, Vreg = 2.1V 
+ * ratio Vev = (1-a/162)*Vreg, Vreg = 2.1V
  */
+
 #define ST7565_SETEVREG(x)        (0x0 | ((x) & 0x3F))
 
 /* Set booster ratio */
+
 #define ST7565_MODE_NORMAL         0xac /* Set Normal Mode */
 #define ST7565_MODE_SLEEP          0xad /* Set Sleep Mode */
 
 /* Set booster ratio */
-#define ST7565_SETBOOSTER          0xf8 
-#define ST7565_SETBOOSTER4X        0x00 /* x2,x3,x4 */
+
+#define ST7565_SETBOOSTER          0xf8
+#define ST7565_SETBOOSTER4X        0x00 /* x2, x3, x4 */
 #define ST7565_SETBOOSTER5X        0x01 /* x5 */
 #define ST7565_SETBOOSTER6X        0x02 /* x6 */
 
 #define ST7565_NOP                 0xe3 /* 0xe3: NOP Command for no operation */
 
-
 /**************************************************************************************
  * Public Data
  **************************************************************************************/
-
 
 #endif /* __DRIVERS_LCD_ST7565_H */
