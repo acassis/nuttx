@@ -86,20 +86,6 @@
  * Public Functions
  ************************************************************************************/
 
-/************************************************************************************
- * Name: stm32_spiinitialize
- *
- * Description:
- *   Called to configure SPI chip select GPIO pins for the stm32f4discovery board.
- *
- ************************************************************************************/
-
-void stm32_spiinitialize(void)
-{
-#ifdef CONFIG_PNBFANO_USE_MMCSD
-  (void)efm32_configgpio(GPIO_SDCARD_SPI_CS);    /* SDCARD chip select */
-#endif
-}
 
 /****************************************************************************
  * Name:  stm32_spi1/2/3select and stm32_spi1/2/3status
@@ -134,11 +120,15 @@ void efm32_spi0_select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool sel
       efm32_gpiowrite(GPIO_SDCARD_SPI_CS, !selected);
     }
 #if defined(CONFIG_PNBFANO_USE_EXT_SPI)
-  else
+  else if (devid == SPIDEV_WIRELESS)
     {
       efm32_gpiowrite(GPIO_EXT_SPI_CS, !selected);
     }
 #endif
+  else
+    {
+        ASSERT(false);
+    }
 }
 
 uint8_t efm32_spi0_status(FAR struct spi_dev_s *dev, enum spi_dev_e devid)
