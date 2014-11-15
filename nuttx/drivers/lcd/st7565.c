@@ -1013,7 +1013,7 @@ FAR struct lcd_dev_s *st7565_initialize(FAR struct st7565_lcd_s *lcd,
 
   (void)st7565_send_one_data(priv, ST7565_EXIT_SOFTRST);
 
-  /* Follow NHD‐C12864KGZ DISPLAY INITIALIZATION...  */
+  /* Follow NHD-C12864KGZ DISPLAY INITIALIZATION...  */
 
 #ifdef CONFIG_NHD_C12864KGZ
 
