@@ -62,10 +62,16 @@
 #define BOARD_HAVE_LFXO        0        /* Have Low frequency crystal oscillator */
 
 #define BOARD_HFRCO_FREQUENCY  14000000 /* 14MHz on reset */
-#define BOARD_HFXO_FREQUENCY   32000000 /* 32MHz crystal on board */
+#define BOARD_HFXO_FREQUENCY   48000000 /* 32MHz crystal on board */
 #define BOARD_LFRCO_FREQUENCY  32768    /* Low frequency oscillator */
-#define BOARD_LFXO_FREQUENCY   32768    /* 32MHz crystal on board */
+#define BOARD_LFXO_FREQUENCY   32768    /* 32KHz crystal on board */
 #define BOARD_ULFRCO_FREQUNCY  1000     /* Ultra low frequency oscillator */
+
+#if BOARD_HAVE_HFXO
+#   define BOARD_SYSTEM_FREQUENCY  BOARD_HFXO_FREQUENCY
+#else
+#   define BOARD_SYSTEM_FREQUENCY  BOARD_HFRCO_FREQUENCY
+#endif
 
 /* HFCLK - High Frequency Clock
  *
@@ -78,7 +84,7 @@
 
 #define BOARD_HFCLKSEL            _CMU_CMD_HFCLKSEL_HFXO
 #define BOARD_HFCLKDIV            0     /* Does not apply to EFM32G */
-#define BOARD_HFCLK_FREQUENCY     BOARD_HFXO_FREQUENCY
+#define BOARD_HFCLK_FREQUENCY     BOARD_SYSTEM_FREQUENCY
 
 /* HFCORECLK - High Frequency Core Clock
  *
@@ -89,7 +95,7 @@
  */
 
 #define BOARD_HFCORECLKDIV        _CMU_HFCORECLKDIV_HFCORECLKDIV_DEFAULT
-#define BOARD_HFCORECLK_FREQUENCY BOARD_HFXO_FREQUENCY
+#define BOARD_HFCORECLK_FREQUENCY BOARD_SYSTEM_FREQUENCY
 
 /* HFPERCLK - High Frequency Peripheral Clock
  *
@@ -99,7 +105,7 @@
  */
 
 #define BOARD_HFPERCLKDIV        _CMU_HFPERCLKDIV_HFPERCLKDIV_DEFAULT
-#define BOARD_HFPERCLK_FREQUENCY BOARD_HFXO_FREQUENCY
+#define BOARD_HFPERCLK_FREQUENCY BOARD_SYSTEM_FREQUENCY
 
 /* LFACLK - Low Frequency A Clock
  *
@@ -226,10 +232,21 @@
 #define BOARD_USART0_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC2
 
 /* Pin routing **************************************************************/
-/* UART2:
+/* UART1 for KLINE:
  *
- *   U0_RX #1 PC3  
- *   U0_TX #1 PC2  
+ *   U1_RX #1 PD1  
+ *   U1_TX #1 PD0  
+ */
+
+#define BOARD_USART1_RX_GPIO        (GPIO_PORTD|GPIO_PIN1)
+#define BOARD_USART1_TX_GPIO        (GPIO_PORTD|GPIO_PIN0)
+#define BOARD_USART1_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC1
+
+/* Pin routing **************************************************************/
+/* UART2 for GPS:
+ *
+ *   U2_RX #1 PC3  
+ *   U2_TX #1 PC2  
  */
 
 #define BOARD_USART2_RX_GPIO        (GPIO_PORTC|GPIO_PIN3)

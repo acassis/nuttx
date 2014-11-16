@@ -44,9 +44,6 @@
 #include "efm32_start.h"
 #include "efm32gg-pnbfano.h"
 
-//#include "efm32_gpio.h"
-//#include "efm32_spi.h"
-
 #include <nuttx/input/keypad.h>
 #include <syslog.h>
 
