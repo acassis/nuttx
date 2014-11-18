@@ -47,6 +47,34 @@
 #include <efm32_gpio_keypad.h>
 #include "efm32gg-pnbfano.h"
 
+/* Buttons:
+ *
+ * The pnbfano board has four buttons, BUT1-4. Each is grounded and so should
+ * have a weak pull-up so that it will be sensed as "1" when open and "0"
+ * when closed.
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PE12                  BUT1
+ * PE13                  BUT2
+ * PE14                  BUT3
+ * PE15                  BUT4
+ * --------------------- ---------------------
+ */
+
+#ifdef CONFIG_EFM32_GPIO_IRQ
+#  define GPIO_BUTTON_1 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN12)
+#  define GPIO_BUTTON_2 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN13)
+#  define GPIO_BUTTON_3 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN14)
+#  define GPIO_BUTTON_4 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN15)
+
+#  define GPIO_IRQ_BUTTON_1 EFM32_IRQ_EXTI12
+#  define GPIO_IRQ_BUTTON_2 EFM32_IRQ_EXTI13
+#  define GPIO_IRQ_BUTTON_3 EFM32_IRQ_EXTI14
+#  define GPIO_IRQ_BUTTON_4 EFM32_IRQ_EXTI15
+#endif
+
 
 /****************************************************************************
  * Keypad mapping for stk3300 board
@@ -95,9 +123,7 @@ efm32_gpio_keypad_t pnbfano_key_map[] =
 int keypad_kbdinit(void)
 {
 
-#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) 
     efm32_gpio_keypad_init(pnbfano_key_map,"/dev/keypad");
-#endif
 
     return 0;
 }

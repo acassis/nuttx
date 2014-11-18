@@ -43,6 +43,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <debug.h>
+#include <semaphore.h>
 
 //#include <nuttx/spi/spi.h>
 //#include <nuttx/mmcsd.h>
@@ -57,11 +58,16 @@
 #include "nuttx/lcd/lcd.h"
 #include "nuttx/lcd/st7565.h"
 
+/* TODO: put all bus 8080 access in separate file (driver) */
+
+#ifndef GPIO_LCD_PORT_BUS_WIDTH
+#       error "Should declare also GPIO_LCD_PORT_BUS_WIDTH (bus width)"
+#endif
+
 /************************************************************************************
  * Constant Private Data
  ************************************************************************************/
-#if defined(GPIO_LCD_PORT_PIN_NBR) 
-static const uint32_t g_lcd_port_pins[GPIO_LCD_PORT_PIN_NBR] = 
+static const uint32_t g_lcd_port_pins[GPIO_LCD_PORT_BUS_WIDTH] = 
 {
     GPIO_LCD_D0,
     GPIO_LCD_D1,
@@ -72,13 +78,17 @@ static const uint32_t g_lcd_port_pins[GPIO_LCD_PORT_PIN_NBR] =
     GPIO_LCD_D6,
     GPIO_LCD_D7
 };
-#elif (defined(GPIO_LCD_PORT) )
+
+#if (defined(GPIO_LCD_PORT) )
 #   ifndef GPIO_LCD_PORT_SHIFT
-#       error "Should declare also GPIO_LCD_PORT_SHIFT"
+#       error "Should declare also GPIO_LCD_PORT_SHIFT if GPIO_LCD_PORT declared"
+#   endif
+#   ifndef GPIO_LCD_PORT_MASK
+#       error "Should declare also GPIO_LCD_PORT_MASK if GPIO_LCD_PORT declared"
 #   endif
 #   define __LCD_OPTIMISATION
 #else
-#   error "neither GPIO_LCD_PORT neither GPIO_LCD_PORT_PIN_NBR"
+#   error "neither GPIO_LCD_PORT neither GPIO_LCD_PORT_BUS_WIDTH"
 #endif
 
 /******************************************************************************
@@ -86,6 +96,7 @@ static const uint32_t g_lcd_port_pins[GPIO_LCD_PORT_PIN_NBR] =
  ******************************************************************************/
 
 FAR struct lcd_dev_s *g_lcd = NULL;
+
 
 /****************************************************************************
  * Fileops Prototypes and Structures
@@ -97,6 +108,10 @@ static void st7565_deselect  (FAR struct st7565_lcd_s *lcd);
 static void st7565_cmddata   (FAR struct st7565_lcd_s *lcd, const uint8_t cmd);
 static int  st7565_senddata  (FAR struct st7565_lcd_s *lcd, const uint8_t *data, int size);
 static int  st7565_backlight (FAR struct st7565_lcd_s *lcd, int level);
+
+#if CONFIG_PNBFANO_LCD_KEYPAD
+static sem_t st7565_lock_sem;
+#endif
 
 struct st7565_lcd_s efm32_st7565_lcd =
 {
@@ -112,6 +127,112 @@ struct st7565_lcd_s efm32_st7565_lcd =
     .backlight  = &st7565_backlight
 };
 
+/**************************************************************************************
+ * Name:  st7565_set_bus_output
+ *
+ * Description:
+ *   set bus in output mode
+ *
+ **************************************************************************************/
+
+static void st7565_set_bus_output(void)
+{
+    int i;
+
+    /* TODO: May be optimized */
+
+    for (i = 0; i < GPIO_LCD_PORT_BUS_WIDTH; i++)
+    {
+        int cfg = g_lcd_port_pins[i];
+        cfg &= ~(GPIO_MODE_MASK | GPIO_MODE_DOUT_MASK);
+        cfg |= GPIO_OUTPUT_PUSHPULL;
+        efm32_configgpio(cfg);
+    }
+}
+
+/**************************************************************************************
+ * Name:  st7565_set_bus_output
+ *
+ * Description:
+ *   set bus in output mode
+ *
+ **************************************************************************************/
+
+static void st7565_set_bus_input_pullup(void)
+{
+    int i;
+
+    /* TODO: May be optimized */
+
+    for (i = 0; i < GPIO_LCD_PORT_BUS_WIDTH; i++)
+    {
+        int cfg = g_lcd_port_pins[i];
+        cfg &= ~(GPIO_MODE_MASK | GPIO_MODE_DOUT_MASK);
+        cfg |= GPIO_PULLUP;
+        efm32_configgpio(cfg);
+    }
+}
+
+/**************************************************************************************
+ * Name:  st7565_write_bus
+ *
+ * Description:
+ *   restore configuration of shared gpio
+ *
+ **************************************************************************************/
+
+static void st7565_write_bus( int data )
+{
+
+#ifdef __LCD_OPTIMISATION
+    /* optimisation */
+    int base   = EFM32_GPIO_Pn_BASE(GPIO_LCD_PORT>>GPIO_PORT_SHIFT);
+
+    int regval = ( data << GPIO_LCD_PORT_SHIFT ) & GPIO_LCD_PORT_MASK ;
+
+    putreg32(regval, base + EFM32_GPIO_Pn_DOUTSET_OFFSET);
+    regval ^= _GPIO_P_DOUT_MASK;
+    putreg32(regval, base + EFM32_GPIO_Pn_DOUTCLR_OFFSET);
+#else
+    int i;
+    for (i = 0; i < GPIO_LCD_PORT_BUS_WIDTH; i++)
+    {
+        efm32_gpiowrite(g_lcd_port_pins[i],*data & (1<<i));
+    }
+#endif
+}
+
+/**************************************************************************************
+ * Name:  st7565_read_bus
+ *
+ * Description:
+ *   Return bus value
+ *
+ **************************************************************************************/
+
+static int st7565_read_bus( void )
+{
+    int res = 0;
+#ifdef __LCD_OPTIMISATION
+    {
+        /* optimisation */
+        int base   = EFM32_GPIO_Pn_BASE(GPIO_LCD_PORT>>GPIO_PORT_SHIFT);
+
+        res = ( getreg32( base + EFM32_GPIO_Pn_DIN_OFFSET) 
+                & GPIO_LCD_PORT_MASK 
+              ) >> GPIO_LCD_PORT_SHIFT;
+    }
+#else
+    {
+        int i;
+        if ( efm32_gpioread(g_lcd_port_pins[i]) == 0 )
+        {
+            res |= 1 << i;
+        }
+    }
+#endif
+    return res;
+}
 
 /**************************************************************************************
  * Name:  st7565_reset
@@ -130,6 +251,52 @@ static void st7565_reset     (FAR struct st7565_lcd_s *lcd, bool on)
 }
 
 /**************************************************************************************
+ * Name:  st7565_lock
+ *
+ * Description:
+ *   lock lcd access to leave D0-7 RD,WR,A0 free to allow access to key pad or other.
+ *
+ *   return OK if it well locked, -1 value otherwise.
+ *
+ **************************************************************************************/
+
+#if CONFIG_PNBFANO_LCD_KEYPAD
+int lcd_read_bus_keypad(void)
+{
+    int res = -1;
+
+    if ( g_lcd != NULL )
+    {
+
+        ASSERT( sem_wait(&st7565_lock_sem) == OK );
+
+        /* set all IO to 1 for quick response */
+
+        st7565_write_bus(GPIO_LCD_PORT_MASK>>GPIO_LCD_PORT_SHIFT);
+
+        up_mdelay(1);
+
+        /* set all IO in input with pull-up */
+
+        st7565_set_bus_input_pullup();
+
+        up_mdelay(5);
+
+        res = st7565_read_bus();
+
+        /* restore all gpio */
+
+        st7565_set_bus_output();
+
+        ASSERT( sem_post(&st7565_lock_sem) == OK );
+
+    }
+
+    return res;
+}
+#endif
+
+/**************************************************************************************
  * Name:  st7565_select
  *
  * Description:
@@ -142,6 +309,9 @@ static void st7565_reset     (FAR struct st7565_lcd_s *lcd, bool on)
 static void st7565_select    (FAR struct st7565_lcd_s *lcd)
 {
     UNUSED(lcd);
+#if CONFIG_PNBFANO_LCD_KEYPAD
+    ASSERT( sem_wait(&st7565_lock_sem) == OK );
+#endif
     efm32_gpiowrite(GPIO_LCD_CS,false);
 }
 
@@ -159,6 +329,9 @@ static void st7565_deselect  (FAR struct st7565_lcd_s *lcd)
 {
     UNUSED(lcd);
     efm32_gpiowrite(GPIO_LCD_CS,true);
+#if CONFIG_PNBFANO_LCD_KEYPAD
+    ASSERT( sem_post(&st7565_lock_sem) == OK );
+#endif
 }
 
 /**************************************************************************************
@@ -192,27 +365,12 @@ static void st7565_cmddata   (FAR struct st7565_lcd_s *lcd, const uint8_t cmd)
 
 static int  st7565_senddata  (FAR struct st7565_lcd_s *lcd, const uint8_t *data, int size)
 {
-#ifdef __LCD_OPTIMISATION
-    int base   = EFM32_GPIO_Pn_BASE(GPIO_LCD_PORT>>GPIO_PORT_SHIFT);
-#endif
 
     UNUSED(lcd);
 
     while(size--)
     {
-#ifdef __LCD_OPTIMISATION
-        /* optimisation */
-        int regval = *data << GPIO_LCD_PORT_SHIFT;
-
-        putreg32(regval, base + EFM32_GPIO_Pn_DOUTSET_OFFSET);
-        regval ^= _GPIO_P_DOUT_MASK;
-        putreg32(regval, base + EFM32_GPIO_Pn_DOUTCLR_OFFSET);
-#else
-        for (i = 0; i < GPIO_LCD_PORT_PIN_NBR; i++)
-        {
-            efm32_gpiowrite(g_lcd_port_pins[i],*data & (1<<i));
-        }
-#endif
+        st7565_write_bus(*data);
 
         efm32_gpiowrite(GPIO_LCD_WR,false);
         data++;
@@ -275,6 +433,10 @@ int up_lcdinitialize(void)
 
   ldbg("Initializing\n");
 
+#if CONFIG_PNBFANO_LCD_KEYPAD
+  sem_init(&st7565_lock_sem,1,1);
+#endif
+
   /* Configure GPIO pins.  The initial state of priv->output is false, so
    * we need to configure pins for output initially.
    */
@@ -288,14 +450,8 @@ int up_lcdinitialize(void)
   efm32_configgpio(GPIO_LCD_WR );
   efm32_configgpio(GPIO_LCD_RD );
 
-  efm32_configgpio(GPIO_LCD_D0 );
-  efm32_configgpio(GPIO_LCD_D1 );
-  efm32_configgpio(GPIO_LCD_D2 );
-  efm32_configgpio(GPIO_LCD_D3 );
-  efm32_configgpio(GPIO_LCD_D4 );
-  efm32_configgpio(GPIO_LCD_D5 );
-  efm32_configgpio(GPIO_LCD_D6 );
-  efm32_configgpio(GPIO_LCD_D7 );
+  st7565_set_bus_output();
+
   efm32_configgpio(GPIO_LCD_PWM);
 
   /* Configure and enable LCD */

@@ -106,7 +106,9 @@ void efm32_boardinitialize(void)
 void board_initialize(void)
 {
 
+#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || defined(CONFIG_PNBFANO_LCD_KEYPAD) 
     keypad_kbdinit();
+#endif
 
     syslog(LOG_NOTICE,"initialize LCD !\n");
     if ( up_lcdinitialize() != OK )

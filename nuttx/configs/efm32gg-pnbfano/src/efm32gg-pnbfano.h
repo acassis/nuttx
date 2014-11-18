@@ -87,13 +87,15 @@
 #define GPIO_LCD_D6       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN14|GPIO_OUTPUT_SET)
 #define GPIO_LCD_D7       (GPIO_OUTPUT_PUSHPULL|GPIO_PORTE|GPIO_PIN15|GPIO_OUTPUT_SET)
 
-#define GPIO_LCD_PORT       GPIO_PORTE
-#define GPIO_LCD_PORT_SHIFT 8
+#define GPIO_LCD_PORT           GPIO_PORTE
+#define GPIO_LCD_PORT_SHIFT     8
+#define GPIO_LCD_PORT_BUS_WIDTH 8
+#define GPIO_LCD_PORT_MASK      (0xFF << GPIO_LCD_PORT_SHIFT)
 
 #define GPIO_LCD_PWM      (GPIO_OUTPUT_PUSHPULL|GPIO_PORTC|GPIO_PIN0|GPIO_OUTPUT_CLEAR)
 
 
-/* Buttons:
+/* Lcd Buttons:
  *
  * The pnbfano board has four buttons, BUT1-4. Each is grounded and so should
  * have a weak pull-up so that it will be sensed as "1" when open and "0"
@@ -102,24 +104,26 @@
  * --------------------- ---------------------
  * PIN                   CONNECTIONS
  * --------------------- ---------------------
- * PE12                  BUT1
- * PE13                  BUT2
- * PE14                  BUT3
- * PE15                  BUT4
+ * LCD_D4(PE8)           KEYCODE_NONE
+ * LCD_D5(PE9)           KEYCODE_NONE
+ * LCD_D6(PE10)          KEYCODE_NONE
+ * LCD_D7(PE11)          KEYCODE_NONE
+ * LCD_D4(PE12)          KEYCODE_LEFT
+ * LCD_D5(PE13)          KEYCODE_DOWN
+ * LCD_D6(PE14)          KEYCODE_UP
+ * LCD_D7(PE15)          KEYCODE_RIGHT
  * --------------------- ---------------------
  */
 
-#ifdef CONFIG_EFM32_GPIO_IRQ
-#  define GPIO_BUTTON_1 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN12)
-#  define GPIO_BUTTON_2 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN13)
-#  define GPIO_BUTTON_3 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN14)
-#  define GPIO_BUTTON_4 (GPIO_INPUT_PULLUP|GPIO_INT_BOTH|GPIO_PORTE|GPIO_PIN15)
+#  define GPIO_LCD_KEY_D0 (EFM32_LCD_KEY_NONE)
+#  define GPIO_LCD_KEY_D1 (EFM32_LCD_KEY_NONE)
+#  define GPIO_LCD_KEY_D2 (EFM32_LCD_KEY_NONE)
+#  define GPIO_LCD_KEY_D3 (EFM32_LCD_KEY_NONE)
+#  define GPIO_LCD_KEY_D4 (EFM32_LCD_KEY_SPECIAL(KEYCODE_LEFT   ))
+#  define GPIO_LCD_KEY_D5 (EFM32_LCD_KEY_SPECIAL(KEYCODE_DOWN   ))
+#  define GPIO_LCD_KEY_D6 (EFM32_LCD_KEY_SPECIAL(KEYCODE_UP     ))
+#  define GPIO_LCD_KEY_D7 (EFM32_LCD_KEY_SPECIAL(KEYCODE_RIGHT  ))
 
-#  define GPIO_IRQ_BUTTON_1 EFM32_IRQ_EXTI12
-#  define GPIO_IRQ_BUTTON_2 EFM32_IRQ_EXTI13
-#  define GPIO_IRQ_BUTTON_3 EFM32_IRQ_EXTI14
-#  define GPIO_IRQ_BUTTON_4 EFM32_IRQ_EXTI15
-#endif
 
 /* SPI:
  *
@@ -152,5 +156,9 @@
 int efm32_initialize_spi_devices(void);
 
 int up_lcdinitialize(void);
+
+int st7565_lock(void);
+
+void st7565_unlock(void);
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

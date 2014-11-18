@@ -14,9 +14,19 @@ config PNBFANO_GPIO_KEYPAD
     select LIB_KBDCODEC
     select BOARD_INITIALIZE
 	depends on ARCH_CHIP_EFM32
-	default y
+	default n
 	---help---
 		Enables support for keypad on gpio.
+
+config PNBFANO_LCD_KEYPAD
+	bool "EFM32 keypad using LCD bus Driver"
+    select ARCH_BUTTONS
+    select LIB_KBDCODEC
+    select BOARD_INITIALIZE
+	depends on ARCH_CHIP_EFM32
+	default y
+	---help---
+		Enables support for keypad on LCD bus.
 
 config PNBFANO_USE_MMCSD
 	bool "Enable MMCSD support Driver"
