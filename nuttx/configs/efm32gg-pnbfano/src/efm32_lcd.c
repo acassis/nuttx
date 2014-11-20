@@ -60,6 +60,11 @@
 
 /* TODO: put all bus 8080 access in separate file (driver) */
 
+#ifndef CONFIG_SCHED_HPWORK
+#       error "This module need CONFIG_SCHED_WORKQUEUE"
+#endif
+
+
 #ifndef GPIO_LCD_PORT_BUS_WIDTH
 #       error "Should declare also GPIO_LCD_PORT_BUS_WIDTH (bus width)"
 #endif
@@ -158,6 +163,7 @@ static void st7565_set_bus_output(void)
  *
  **************************************************************************************/
 
+#if CONFIG_PNBFANO_LCD_KEYPAD
 static void st7565_set_bus_input_pullup(void)
 {
     int i;
@@ -168,10 +174,11 @@ static void st7565_set_bus_input_pullup(void)
     {
         int cfg = g_lcd_port_pins[i];
         cfg &= ~(GPIO_MODE_MASK | GPIO_MODE_DOUT_MASK);
-        cfg |= GPIO_PULLUP;
+        cfg |= GPIO_INPUT_PULLUP;
         efm32_configgpio(cfg);
     }
 }
+#endif
 
 /**************************************************************************************
  * Name:  st7565_write_bus
@@ -270,19 +277,13 @@ int lcd_read_bus_keypad(void)
 
         ASSERT( sem_wait(&st7565_lock_sem) == OK );
 
-        /* set all IO to 1 for quick response */
-
-        st7565_write_bus(GPIO_LCD_PORT_MASK>>GPIO_LCD_PORT_SHIFT);
-
-        up_mdelay(1);
-
         /* set all IO in input with pull-up */
 
         st7565_set_bus_input_pullup();
 
-        up_mdelay(5);
+        /* don't need to wait code delay is enougth */
 
-        res = st7565_read_bus();
+        res = st7565_read_bus() ^ (GPIO_LCD_PORT_MASK>>GPIO_LCD_PORT_SHIFT);
 
         /* restore all gpio */
 

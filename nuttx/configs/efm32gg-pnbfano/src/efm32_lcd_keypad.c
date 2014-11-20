@@ -47,6 +47,8 @@
 #include <string.h>
 #include <errno.h>
 #include <nuttx/kmalloc.h>
+#include <nuttx/wqueue.h>
+#include <nuttx/clock.h>
 
 #include "up_arch.h"
 #include "efm32_gpio.h"
@@ -61,6 +63,10 @@
 
 #ifndef CONFIG_EFM32_LCD_KBD_BUFSIZE
 #  define CONFIG_EFM32_LCD_KBD_BUFSIZE 64
+#endif
+
+#ifndef CONFIG_LCD_KBD_POLL_MS
+#   define CONFIG_LCD_KBD_POLL_MS 100
 #endif
 
 /****************************************************************************
@@ -103,6 +109,8 @@ typedef struct
     int     rd_idx;
     int     wr_idx;
     uint8_t kbdbuffer[CONFIG_EFM32_LCD_KBD_BUFSIZE];
+
+    struct work_s work;
 }efm32_lcd_kbd_t;
 
 /****************************************************************************
@@ -110,7 +118,7 @@ typedef struct
  * Description:
  *  variable of keypad instance.
  ****************************************************************************/
-efm32_lcd_kbd_t* efm32_lcd_kbd;
+efm32_lcd_kbd_t* efm32_lcd_kbd = NULL;
 
 /****************************************************************************
  * Name: key_mapping
@@ -127,6 +135,8 @@ static const int key_mapping[GPIO_LCD_PORT_BUS_WIDTH] =
     GPIO_LCD_KEY_D6,
     GPIO_LCD_KEY_D7
 };
+
+static void efm32_lcd_kbd_worker(FAR void *arg);
 
 /****************************************************************************
  * Name: efm32_lcd_kbd_open
@@ -160,69 +170,88 @@ static void efm32_lcd_kbd_putc(FAR struct lib_outstream_s *this, int ch)
 }
 
 /****************************************************************************
+ * Name: efm32_lcd_kbd_open
+ ****************************************************************************/
+static void efm32_lcd_kbd_set_next_poll(void)
+{
+    if ( work_queue(HPWORK, 
+                    &(efm32_lcd_kbd->work), 
+                    efm32_lcd_kbd_worker,
+                    &efm32_lcd_kbd, 
+                    MSEC2TICK(CONFIG_LCD_KBD_POLL_MS)
+                    ) != OK )
+    {
+        EFM32_LCD_KBD_LOG("Cannot register work !\n");
+        return;
+    }
+}
+
+/****************************************************************************
  * irq handler
  ****************************************************************************/
-void efm32_lcd_idle(void)
+static void efm32_lcd_kbd_worker(FAR void *arg)
 {
     int res ;
     int i;
     static int last_res = 0;
+
+    /* TODO: use arg
+     * efm32_lcd_kbd_t *p = (efm32_lcd_kbd_t*)arg, 
+     */
+    UNUSED(arg);
 
     res = lcd_read_bus_keypad();
 
     if ( res == -1 )
     {
         EFM32_LCD_KBD_LOG("Cannot read keypad !\n");
-        return;
     }
-
-    /* something happen ? */
-
-    if ( last_res == res )
+    else if ( last_res != res )
     {
-        return;
-    }
-
-    for (i = 0; i < GPIO_LCD_PORT_BUS_WIDTH; i++)
-    {
-        int mask = 1 << i;
-        if ( ( key_mapping[i] != EFM32_LCD_KEY_NONE )
-             && ( res & mask ) != ( last_res & mask ) 
-           )
+        for (i = 0; i < GPIO_LCD_PORT_BUS_WIDTH; i++)
         {
-            struct lib_outstream_s stream = {
-                .put  = efm32_lcd_kbd_putc,
-                .nput = 0
-            };
+            int mask = 1 << i;
+            if ( ( key_mapping[i] != EFM32_LCD_KEY_NONE )
+                 && ( res & mask ) != ( last_res & mask ) 
+               )
+            {
+                struct lib_outstream_s stream = {
+                    .put  = efm32_lcd_kbd_putc,
+                    .nput = 0
+                };
 
-            if ( res & mask )
-            {
-                if ( EFM32_LCD_KEY_IS_SPECIAL(key_mapping[i]) )
+                if ( res & mask )
                 {
-                    kbd_specpress(EFM32_LCD_KEY_SPECIAL(key_mapping[i]), 
-                                &stream
-                               );
+                    if ( EFM32_LCD_KEY_IS_SPECIAL(key_mapping[i]) )
+                    {
+                        kbd_specpress(EFM32_LCD_KEY_SPECIAL(key_mapping[i]), 
+                                      &stream
+                                     );
+                    }
+                    else
+                    {
+                        kbd_press(key_mapping[i], &stream);
+                    }
                 }
                 else
                 {
-                    kbd_press(key_mapping[i], &stream);
-                }
-            }
-            else
-            {
-                if ( EFM32_LCD_KEY_IS_SPECIAL(key_mapping[i]) )
-                {
-                    kbd_specrel(EFM32_LCD_KEY_SPECIAL(key_mapping[i]), 
-                                &stream
-                               );
-                }
-                else
-                {
-                    kbd_release(key_mapping[i], &stream);
+                    if ( EFM32_LCD_KEY_IS_SPECIAL(key_mapping[i]) )
+                    {
+                        kbd_specrel(EFM32_LCD_KEY_SPECIAL(key_mapping[i]), 
+                                    &stream
+                                   );
+                    }
+                    else
+                    {
+                        kbd_release(key_mapping[i], &stream);
+                    }
                 }
             }
         }
     }
+    last_res = res;
+
+    efm32_lcd_kbd_set_next_poll();
 
     return;
 }
@@ -240,22 +269,22 @@ void efm32_lcd_idle(void)
  * Returned Value:
  *   None (User allocated instance initialized).
  ****************************************************************************/
-void keypad_kbdinit( void )
+int keypad_kbdinit( void )
 {
 
     /* can be called only once */
 
-    if ( key_mapping != NULL)
+    if ( efm32_lcd_kbd != NULL)
     {
         EFM32_LCD_KBD_LOG("Already initialized !\n");
-        return;
+        return OK;
     }
 
     efm32_lcd_kbd = (efm32_lcd_kbd_t*)kmm_malloc(sizeof(efm32_lcd_kbd_t));
     if ( efm32_lcd_kbd == NULL )
     {
         EFM32_LCD_KBD_LOG("Cannot allocate it!\n");
-        return;
+        return -ENODEV;
     }
 
     memset(efm32_lcd_kbd,0,sizeof(*efm32_lcd_kbd));
@@ -263,8 +292,11 @@ void keypad_kbdinit( void )
     sem_init(&efm32_lcd_kbd->rd_sem,    1, 0);
     sem_init(&efm32_lcd_kbd->mutex,     1, 1);
 
+    efm32_lcd_kbd_set_next_poll();
+
     register_driver("/dev/keypad", &keypad_ops, 0444, NULL);
 
+    return OK;
 }
 
 
