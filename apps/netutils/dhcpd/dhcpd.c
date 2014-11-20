@@ -86,6 +86,9 @@
 /*                              Code    Data   Description                  */
 /*                                      Length                              */
 #define DHCP_OPTION_PAD           0  /*  1     Pad                          */
+#define DHCP_OPTION_SUBNET_MASK   1  /*  1     Subnet Mask                  */
+#define DHCP_OPTION_ROUTER        3  /*  4     Router                       */
+#define DHCP_OPTION_DNS_SERVER    6  /*  4N    DNS                          */
 #define DHCP_OPTION_REQ_IPADDR   50  /*  4     Requested IP Address         */
 #define DHCP_OPTION_LEASE_TIME   51  /*  4     IP address lease time        */
 #define DHCP_OPTION_OVERLOAD     52  /*  1     Option overload              */
@@ -179,6 +182,21 @@
 
 #ifndef CONFIG_NETUTILS_DHCPD_DECLINETIME
 #  define CONFIG_NETUTILS_DHCPD_DECLINETIME (60*60) /* 1 hour */
+#endif
+
+#undef HAVE_ROUTERIP
+#if defined(CONFIG_NETUTILS_DHCPD_ROUTERIP) && CONFIG_NETUTILS_DHCPD_ROUTERIP
+#  define HAVE_ROUTERIP 1
+#endif
+
+#undef HAVE_NETMASK
+#if defined(CONFIG_NETUTILS_DHCPD_NETMASK) && CONFIG_NETUTILS_DHCPD_NETMASK
+#  define HAVE_NETMASK 1
+#endif
+
+#undef HAVE_DNSIP
+#if defined(CONFIG_NETUTILS_DHCPD_DNSIP) && CONFIG_NETUTILS_DHCPD_DNSIP
+#  define HAVE_DNSIP 1
 #endif
 
 #undef HAVE_LEASE_TIME
@@ -737,6 +755,27 @@ static int dhcpd_addoption32(uint8_t code, uint32_t value)
 }
 
 /****************************************************************************
+ * Name: dhcp_addoption32p
+ ****************************************************************************/
+
+#if HAVE_DNSIP
+static int dhcp_addoption32p(uint8_t code, FAR uint8_t *value)
+{
+  uint8_t option[6];
+
+  /* Construct the option sequence */
+
+  option[DHCPD_OPTION_CODE]   = code;
+  option[DHCPD_OPTION_LENGTH] = 4;
+  memcpy(&option[DHCPD_OPTION_DATA], value, 4);
+
+  /* Add the option sequence to the response */
+
+  return dhcpd_addoption(option);
+}
+#endif
+
+/****************************************************************************
  * Name: dhcpd_soclet
  ****************************************************************************/
 
@@ -953,7 +992,10 @@ static int dhcpd_sendpacket(int bbroadcast)
 static inline int dhcpd_sendoffer(in_addr_t ipaddr, uint32_t leasetime)
 {
   in_addr_t netaddr;
-
+#if HAVE_DNSIP
+  uint32_t dnsaddr;
+  dnsaddr = htonl(CONFIG_NETUTILS_DHCPD_DNSIP);
+#endif
   /* IP address is in host order */
 
   nvdbg("Sending offer: %08lx\n", (long)ipaddr);
@@ -970,6 +1012,15 @@ static inline int dhcpd_sendoffer(in_addr_t ipaddr, uint32_t leasetime)
   /* Add the leasetime to the response options */
 
   dhcpd_addoption32(DHCP_OPTION_LEASE_TIME, htonl(leasetime));
+#if HAVE_NETMASK
+  dhcpd_addoption32(DHCP_OPTION_SUBNET_MASK, htonl(CONFIG_NETUTILS_DHCPD_NETMASK));
+#endif
+#if HAVE_ROUTERIP
+  dhcpd_addoption32(DHCP_OPTION_ROUTER, htonl(CONFIG_NETUTILS_DHCPD_ROUTERIP));
+#endif
+#if HAVE_DNSIP
+  dhcp_addoption32p(DHCP_OPTION_DNS_SERVER, (FAR uint8_t*)&dnsaddr);
+#endif
 
   /* Send the offer response */
 
@@ -1001,6 +1052,10 @@ int dhcpd_sendack(in_addr_t ipaddr)
 {
   uint32_t leasetime = CONFIG_NETUTILS_DHCPD_LEASETIME;
   in_addr_t netaddr;
+#if HAVE_DNSIP
+  uint32_t dnsaddr;
+  dnsaddr = htonl(CONFIG_NETUTILS_DHCPD_DNSIP);
+#endif
 
   /* Initialize the ACK response */
 
@@ -1019,6 +1074,15 @@ int dhcpd_sendack(in_addr_t ipaddr)
   /* Add the lease time to the response */
 
   dhcpd_addoption32(DHCP_OPTION_LEASE_TIME, htonl(leasetime));
+#if HAVE_NETMASK
+  dhcpd_addoption32(DHCP_OPTION_SUBNET_MASK, htonl(CONFIG_NETUTILS_DHCPD_NETMASK));
+#endif
+#if HAVE_ROUTERIP
+  dhcpd_addoption32(DHCP_OPTION_ROUTER, htonl(CONFIG_NETUTILS_DHCPD_ROUTERIP));
+#endif
+#if HAVE_DNSIP
+  dhcp_addoption32p(DHCP_OPTION_DNS_SERVER, (FAR uint8_t*)&dnsaddr);
+#endif
 
 #ifdef CONFIG_NETUTILS_DHCPD_IGNOREBROADCAST
   if (dhcpd_sendpacket(true) < 0)

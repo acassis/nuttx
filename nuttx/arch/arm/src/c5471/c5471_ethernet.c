@@ -1161,7 +1161,7 @@ static void c5471_receive(struct c5471_driver_s *c5471)
 
       /* Check if the received packet will fit within the uIP packet buffer */
 
-      if (packetlen < (CONFIG_NET_BUFSIZE + 4))
+      if (packetlen < (CONFIG_NET_ETH_MTU + 4))
         {
           /* Get the packet memory from words #2 and #3 of descriptor */
 
@@ -1222,7 +1222,7 @@ static void c5471_receive(struct c5471_driver_s *c5471)
    * to uIP for processing.
    */
 
-  if (packetlen > 0 && packetlen < CONFIG_NET_BUFSIZE)
+  if (packetlen > 0 && packetlen < CONFIG_NET_ETH_MTU)
     {
       /* Set amount of data in c5471->c_dev.d_len. */
 
@@ -2156,7 +2156,7 @@ void up_netinitialize(void)
 
   /* Register the device with the OS so that socket IOCTLs can be performed */
 
-  (void)netdev_register(&g_c5471[0].c_dev);
+  (void)netdev_register(&g_c5471[0].c_dev, NET_LL_ETHERNET);
 }
 
 #endif /* CONFIG_NET */

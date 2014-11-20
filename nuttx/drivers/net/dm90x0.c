@@ -963,7 +963,7 @@ static void dm9x_receive(struct dm9x_driver_s *dm9x)
 
       /* Also check if the packet is a valid size for the uIP configuration */
 
-      else if (rx.desc.rx_len < NET_LL_HDRLEN || rx.desc.rx_len > (CONFIG_NET_BUFSIZE + 2))
+      else if (rx.desc.rx_len < ETH_HDRLEN || rx.desc.rx_len > (CONFIG_NET_ETH_MTU + 2))
         {
 #if defined(CONFIG_DM9X_STATS)
           dm9x->dm_nrxlengtherrors++;
@@ -1803,7 +1803,7 @@ int dm9x_initialize(void)
 
   /* Register the device with the OS so that socket IOCTLs can be performed */
 
-  (void)netdev_register(&g_dm9x[0].dm_dev);
+  (void)netdev_register(&g_dm9x[0].dm_dev, NET_LL_ETHERNET);
   return OK;
 }
 

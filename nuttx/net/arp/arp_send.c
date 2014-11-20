@@ -40,6 +40,7 @@
 #include <nuttx/config.h>
 
 #include <unistd.h>
+#include <string.h>
 #include <semaphore.h>
 #include <time.h>
 #include <debug.h>
@@ -97,7 +98,7 @@ static uint16_t arp_send_interrupt(FAR struct net_driver_s *dev,
 #ifdef CONFIG_NETDEV_MULTINIC
       /* Is this the device that we need to route this request? */
 
-      if (strncmp(dev->d_ifname, state->snd_ifname, IFNAMSIZ) != 0)
+      if (strncmp((FAR const char *)dev->d_ifname, (FAR const char *)state->snd_ifname, IFNAMSIZ) != 0)
         {
           /* No... pass on this one and wait for the device that we want */
 
@@ -229,17 +230,15 @@ int arp_send(in_addr_t ipaddr)
       goto errout;
     }
 
-#ifdef CONFIG_NET_SLIP
-  /* If this device does not require ARP bail out.  ARP is only built of
-   * CONFIG_NET_ETHERNET is enabled which always requires ARP support.  The
-   * following can happening only there multiple network interfaces enabled
-   * (CONFIG_NET_MULTINIC) and one of the interfaces is not Ethernet.  At
-   * present, this is possible only if one of the interfaces is SLIP.
-   *
-   * REVISIT:  This will need to be extended if PPP is ever incorporated.
+#ifdef CONFIG_NET_MULTILINK
+  /* ARP support is only built if the Ethernet data link is supported.
+   * However, if we are supporting multiple network devices and using
+   * different link level protocols then we can get here for other
+   * link protocals as well.  Continue and send the ARP request only
+   * if this device uses the Ethernet data link protocol.
    */
 
-  if (dev->d_flags & IFF_NOARP)
+  if (dev->d_lltype != NET_LL_ETHERNET)
     {
       return OK;
     }
@@ -297,7 +296,7 @@ int arp_send(in_addr_t ipaddr)
 #ifdef CONFIG_NETDEV_MULTINIC
   /* Remember the routing device name */
 
-  strncpy(state->snd_ifname, dev->d_ifname, IFNAMSIZ);
+  strncpy((FAR char *)state.snd_ifname, (FAR const char *)dev->d_ifname, IFNAMSIZ);
 #endif
 
   /* Now loop, testing if the address mapping is in the ARP table and re-sending the ARP request if it is not.

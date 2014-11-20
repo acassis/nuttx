@@ -74,10 +74,6 @@
 
 /* Configuration ************************************************************/
 
-#if NET_LL_HDRLEN > 0
-#  error "NET_LL_HDRLEN must be set to zero"
-#endif
-
 #ifndef CONFIG_NET_NOINTS
 #  warning "CONFIG_NET_NOINTS must be set"
 #endif
@@ -96,7 +92,7 @@
 
 /* The Linux slip module hard-codes its MTU size to 296 (40 bytes for the
  * IP+TPC headers plus 256 bytes of data).  So you might as well set
- * CONFIG_NET_BUFSIZE to 296 as well.
+ * CONFIG_NET_SLIP_MTU to 296 as well.
  *
  * There may be an issue with this setting, however.  I see that Linux uses
  * a MTU of 296 and window of 256, but actually only sends 168 bytes of data:
@@ -105,10 +101,10 @@
  * uIP to 128 bytes (possibly by modifying the tcp_mss() macro).
  */
 
-#if CONFIG_NET_BUFSIZE < 296
-#  error "CONFIG_NET_BUFSIZE >= 296 is required"
-#elif CONFIG_NET_BUFSIZE > 296
-#  warning "CONFIG_NET_BUFSIZE == 296 is optimal"
+#if CONFIG_NET_SLIP_MTU < 296
+#  error "CONFIG_NET_SLIP_MTU >= 296 is required"
+#elif CONFIG_NET_SLIP_MTU > 296
+#  warning "CONFIG_NET_SLIP_MTU == 296 is optimal"
 #endif
 
 /* CONFIG_SLIP_NINTERFACES determines the number of physical interfaces
@@ -177,8 +173,8 @@ struct slip_driver_s
   /* This holds the information visible to uIP/NuttX */
 
   struct net_driver_s dev;  /* Interface understood by uIP */
-  uint8_t rxbuf[CONFIG_NET_BUFSIZE + 2];
-  uint8_t txbuf[CONFIG_NET_BUFSIZE + 2];
+  uint8_t rxbuf[CONFIG_NET_SLIP_MTU + 2];
+  uint8_t txbuf[CONFIG_NET_SLIP_MTU + 2];
 };
 
 /****************************************************************************
@@ -616,7 +612,7 @@ static inline void slip_receive(FAR struct slip_driver_s *priv)
            */
 
         default:
-          if (priv->rxlen < CONFIG_NET_BUFSIZE+2)
+          if (priv->rxlen < CONFIG_NET_SLIP_MTU+2)
             {
               priv->rxbuf[priv->rxlen++] = ch;
             }
@@ -935,17 +931,6 @@ int slip_initialize(int intf, FAR const char *devname)
 #endif
   priv->dev.d_private = priv;          /* Used to recover private state from dev */
 
-#ifdef CONFIG_NET_ETHERNET
-  /* If ARP is supported, indicate that it is not required for this interface.
-   * ARP is only built of CONFIG_NET_ETHERNET is enabled which always
-   * requires ARP support.  The following can happening only there multiple
-   * network interfaces enabled (CONFIG_NET_MULTINIC) and one of the
-   * interfaces is Ethernet and another is SLIP.
-   */
-
-  priv->dev.d_flags   = IFF_NOARP;
-#endif
-
   /* Open the device */
 
   priv->fd            = open(devname, O_RDWR, 0666);
@@ -972,7 +957,8 @@ int slip_initialize(int intf, FAR const char *devname)
   argv[1] = NULL;
 
   priv->rxpid = task_create("rxslip", CONFIG_SLIP_DEFPRIO,
-                          CONFIG_SLIP_STACKSIZE, (main_t)slip_rxtask, argv);
+                          CONFIG_SLIP_STACKSIZE, (main_t)slip_rxtask,
+                          (FAR char * const *)argv);
   if (priv->rxpid < 0)
     {
       ndbg("ERROR: Failed to start receiver task\n");
@@ -986,7 +972,8 @@ int slip_initialize(int intf, FAR const char *devname)
   /* Start the SLIP transmitter task */
 
   priv->txpid = task_create("txslip", CONFIG_SLIP_DEFPRIO,
-                            CONFIG_SLIP_STACKSIZE, (main_t)slip_txtask, argv);
+                            CONFIG_SLIP_STACKSIZE, (main_t)slip_txtask,
+                            (FAR char * const *)argv);
   if (priv->txpid < 0)
     {
       ndbg("ERROR: Failed to start receiver task\n");
@@ -1003,7 +990,7 @@ int slip_initialize(int intf, FAR const char *devname)
 
   /* Register the device with the OS so that socket IOCTLs can be performed */
 
-  (void)netdev_register(&priv->dev);
+  (void)netdev_register(&priv->dev, NET_LL_SLIP);
 
   /* When the RX and TX tasks were created, the TTY file descriptor was
    * dup'ed for each task.  This task no longer needs the file descriptor

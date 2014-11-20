@@ -8974,3 +8974,55 @@
 	* net/Kconfig arp/Make.defs, arp_send.c, and drivers/net/slip.c: ARP:
 	  Add support for the case where there are multiple networks:  One being
 	  Ethernet and the other not.  Suggested by Brennan Ashton (2014-11-14).
+	* net/Kconfig, netdev/netdev_register.c, arp/arp_send.c,
+	  include/nuttx/net/net.h, netdev.h and several network drivers in arch/
+	  and drivers/: Add a parameter to netdev_register() to indicate the
+	  link protocol supported by the driver.  Use this value to replace some
+	  logic commited yesterday (2014-11-15).
+	* configs/stm32f4discovery/netnsh/defconfig:  Needs to set MAC address
+	  (2014-11-15).
+	* arch/ and drivers/: Remove use of NET_LL_HDRLEN from Ethernet drivers.
+	  Use ETH_HDRLEN instead (2014-11-15).
+	* net/arp/: Remove use of NET_LL_HDRLEN from net/arp logic.  Use
+	  ETH_HDRLEN instead (2014-11-15).
+	* net/ and include/nuttx/net:  All network logic will now handle
+	  variable length link layer protocol headers within incoming packets.
+	  This permits use of multiple network interfaces with differing data
+	  links.  For example, ETHERNET + SLIP (2014-11-15).
+	* arch/arm/src/sam34/sam4s_periphclks.h: Add missing SPI0 clock
+	  configuration macro for the SAM4S" sam4s_periphclks.h.  From
+	  spasbyspas (2014-11-16).
+	* arch/arm/src/efm32/efm32_lowputc.c: EFM32 USART setup: Computation of
+	  BAUD includes shift; Eliminate additional shift.  From  Pierre-noel
+	  Bouteville (2014-11-16).
+	* net/, include/, drivers/, arch/, various files:  Rename
+	  CONFIG_NET_BUFSIZE to CONFIG_NET_ETH_MTU; Add CONFIG_NET_SLIP_MTU.
+	  Add data structures and logic to handle different MTUs when both
+	  Ethernet and SLIP are enabled (2014-11-16).
+	* net/, include/, various files:  Rename CONFIG_NET_RECEIVE_WINDOW to
+	  CONFIG_NET_ETH_TCP_RECVWNDO and CONFIG_NET_SLIP_TCP_RECVWNDO.  Add
+	  data structures and logic to handler different TCP receive windows
+	  when both Ethernet and SLIP are enabled (2014-11-16).
+	* configs/sama5d4-ek/bridge: Add a simple test for the dual EMACs on
+	  the SAMA5D4 (2014-11-17).
+	* arch/arm/src/sama5/sam_emacb.c:  Fix several typos that will prevent
+	  EMAC1 from initializing properly (2014-11-17).
+	* include/nuttx/net/ip.h and tcp.h, net/icmp/icmp_send.c and
+	  igmp/igmp_send.c: Move IP header flags from tcp.h to ip.h and rename
+	  IP_FLAGS vs TCPFLAGS.  The problem fixed here is that there IP flags
+	  were not available when TCP was disabled.  The IP flags are used in
+	  ICMP and IGMP (2014-11-17).
+	* sched/clock/clock_abstime2ticks.c: Calling mq_timedreceived() with
+	  immediate timeout was getting stuck and not timing out. Immediate
+	  timeout is achieved by setting absolute timeout value to past time,
+	  for example abstime={ .tv_sec=0, .tv_nsec=0 }. However absolute
+	  time was converted to relative time using unsigned integer arithmetic
+	  and resulted large ticks count by clock_abstime2ticks, instead of
+	  expected negative ticks value.  Change corrects clock_abstime2ticks()
+	  to return negative ticks, if absolute time is in the past.  From
+	  Jussi Kivilinna (2014-11-19).
+	* fs/vfs/fs_poll.c: poll() was not waking up from signals (for example
+	  mq_notify() events).  From Jussi Kivilinna (2014-11-19).
+	* arch/arm/src/stm32/stm32_otghs.c, Make.defs,
+	  configs/stm32f429i-disco/src/stm32_usb.c and Makefile: STM32 F4 OTGHS
+	  device controller driver from Brennan Ashton (2014-11-20).
