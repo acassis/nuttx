@@ -1,8 +1,8 @@
 /****************************************************************************
  * configs/efm32-pnbfano/include/board.h
  *
- *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
- *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *   Copyright (C) 2014 Pierre-Noel Bouteville. All rights reserved.
+ *   Author: Pierre-Noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -273,5 +273,7 @@ void efm32_ledinit(void);
 void efm32_setled(int led, bool ledon);
 void efm32_setleds(uint8_t ledset);
 #endif
+
+void* board_get_nx_dev(int devno, int vplaneno);
 
 #endif /* __CONFIGS_EFM32_PNBFANO_INCLUDE_BOARD_H */

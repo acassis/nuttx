@@ -90,6 +90,23 @@ void efm32_boardinitialize(void)
 }
 
 /****************************************************************************
+ * Name: board_get_dev_vplane
+ *
+ * Description:
+ *  It return NX_DRIVER of device devno,vplaneno.
+ *
+ ****************************************************************************/
+
+NX_DRIVERTYPE board_get_nx_dev(int devno, int vplaneno)
+{
+    NX_DRIVERTYPE dev = NULL;
+
+    dev = up_lcdgetdev(int devno);
+
+    return dev;
+}
+
+/****************************************************************************
  * Name: board_initialize
  *
  * Description:
@@ -106,15 +123,15 @@ void efm32_boardinitialize(void)
 void board_initialize(void)
 {
 
-#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || defined(CONFIG_PNBFANO_LCD_KEYPAD) 
-    keypad_kbdinit();
-#endif
-
     syslog(LOG_NOTICE,"initialize LCD !\n");
     if ( up_lcdinitialize() != OK )
     {
         syslog(LOG_ERR,"Cannot initialize LCD !\n");
     }
+
+#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || defined(CONFIG_PNBFANO_LCD_KEYPAD) 
+    keypad_kbdinit();
+#endif
 
   /* Mount the SDIO-based MMC/SD block driver */
 

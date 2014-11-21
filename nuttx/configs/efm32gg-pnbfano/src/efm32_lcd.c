@@ -1,8 +1,8 @@
 /************************************************************************************
  * configs/efm32gg-pnbfano/src/efm32_spi.c
  *
- *   Copyright (C) 2009-2013 Bouteville Pierre-Noel. All rights reserved.
- *   Author: Bouteville Pierre-Noel <pnb990@gmail.com>
+ *   Copyright (C) 2014 Pierre-Noel Bouteville. All rights reserved.
+ *   Author: Pierre-Noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
