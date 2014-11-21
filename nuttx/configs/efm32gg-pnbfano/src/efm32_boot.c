@@ -45,6 +45,7 @@
 #include "efm32gg-pnbfano.h"
 
 #include <nuttx/input/keypad.h>
+#include <nuttx/nx/nx.h>
 #include <syslog.h>
 
 #include <stdint.h>
@@ -55,6 +56,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
+
 
 
 /****************************************************************************
@@ -97,11 +99,11 @@ void efm32_boardinitialize(void)
  *
  ****************************************************************************/
 
-NX_DRIVERTYPE board_get_nx_dev(int devno, int vplaneno)
+void* board_get_nx_dev(int devno, int vplaneno)
 {
-    NX_DRIVERTYPE dev = NULL;
+    NX_DRIVERTYPE* dev = NULL;
 
-    dev = up_lcdgetdev(int devno);
+    dev = up_lcdgetdev( devno);
 
     return dev;
 }
