@@ -5,7 +5,16 @@
 
 if ARCH_BOARD_EFM32GG_PNBFANO
 
-comment "EFM32 PNBFANO Hardware Configuration"
+choice
+    prompt  PNBFANO_BOARD
+	default PNBFANO_BOARD_V1
+
+config PNBFANO_BOARD_V1
+	bool "PnbFano board V1"
+
+endchoice
+
+menu "EFM32 PNBFANO Hardware Configuration"
 
 config PNBFANO_GPIO_KEYPAD
 	bool "EFM32 GPIO keypad Driver"
@@ -14,7 +23,7 @@ config PNBFANO_GPIO_KEYPAD
     select LIB_KBDCODEC
     select BOARD_INITIALIZE
 	depends on ARCH_CHIP_EFM32
-	default n
+	default n if PNBFANO_BOARD_V1
 	---help---
 		Enables support for keypad on gpio.
 
@@ -24,7 +33,7 @@ config PNBFANO_LCD_KEYPAD
     select LIB_KBDCODEC
     select BOARD_INITIALIZE
 	depends on ARCH_CHIP_EFM32
-	default y
+	default y if PNBFANO_BOARD_V1
 	---help---
 		Enables support for keypad on LCD bus.
 
@@ -34,9 +43,35 @@ config PNBFANO_USE_MMCSD
     select MMCSD
     select MMCSD_SPI
 	depends on ARCH_CHIP_EFM32
-	default y
+	default y if PNBFANO_BOARD_V1
 	---help---
 		Enables support for SD card on gpio.
 
+config PNBFANO_BOARD_VPLANE
+	int "Video Plane"
+	int 
+	default 0 if PNBFANO_BOARD_V1
+	---help---
+		The plane to select from the framebuffer driver for use in the test.
+		Default: 0
+
+config PNBFANO_BOARD_DEVNO
+	int "Video Device Number"
+	int 
+	default 0 if PNBFANO_BOARD_V1
+	---help---
+		The LCD device to select from the LCD driver for use in the test:
+		Default: 0
+
+config PNBFANO_BOARD_BPP
+	int "Bits-Per-Pixel"
+	int 
+	default 1 if PNBFANO_BOARD_V1
+	---help---
+		Pixels per pixel to use.  Valid options include 1, 2, 4, 8, 16, 24,
+		and 32.  Default is 32.
+
+endmenu
 
 endif
+
