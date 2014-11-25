@@ -1,7 +1,7 @@
 /****************************************************************************
- * net/netdev/netdev_findbyname.c
+ * net/netdev/netdev_default.c
  *
- *   Copyright (C) 2007, 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,11 +40,7 @@
 #include <nuttx/config.h>
 #if defined(CONFIG_NET) && CONFIG_NSOCKET_DESCRIPTORS > 0
 
-#include <string.h>
-#include <errno.h>
-
 #include <nuttx/net/netdev.h>
-
 #include "netdev/netdev.h"
 
 /****************************************************************************
@@ -68,46 +64,61 @@
  ****************************************************************************/
 
 /****************************************************************************
+ * Function: netdev_maskcmp
+ ****************************************************************************/
+
+/****************************************************************************
  * Global Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Function: netdev_findbyname
+ * Function: netdev_default
  *
  * Description:
- *   Find a previously registered network device using its assigned
- *   network interface name
+ *   Return the default network device.  REVISIT:  At present this function
+ *   arbitrarily returns the first UP device at the head of the device
+ *   list.  Perhaps the default device should be a device name
+ *   configuration option?
+ *
+ *   So why is this here:  It represents my current though for what to do
+ *   if a socket is connected with INADDY_ANY.  In this case, I suppose we
+ *   should use the IP address associated with some default device???
  *
  * Parameters:
- *   ifname The interface name of the device of interest
+ *   NULL
  *
  * Returned Value:
- *  Pointer to driver on success; null on failure
+ *  Pointer to default network driver on success; null on failure
  *
  * Assumptions:
  *  Called from normal user mode
  *
  ****************************************************************************/
 
-FAR struct net_driver_s *netdev_findbyname(const char *ifname)
+FAR struct net_driver_s *netdev_default(void)
 {
-  struct net_driver_s *dev;
-  if (ifname)
-    {
-      netdev_semtake();
-      for (dev = g_netdevices; dev; dev = dev->flink)
-        {
-          if (strcmp(ifname, dev->d_ifname) == 0)
-            {
-              netdev_semgive();
-              return dev;
-            }
-        }
+  FAR struct net_driver_s *dev;
 
-      netdev_semgive();
+  /* Examine each registered network device */
+
+  netdev_semtake();
+  for (dev = g_netdevices; dev; dev = dev->flink)
+    {
+      /* Is the interface in the "up" state? */
+
+      if ((dev->d_flags & IFF_UP) != 0)
+        {
+          /* Return a reference to the first device we find that is in the UP
+           * state.
+           */
+
+          netdev_semgive();
+          return dev;
+        }
     }
 
+  netdev_semgive();
   return NULL;
 }
 
-#endif /* CONFIG_NET && CONFIG_NSOCKET_DESCRIPTORS */
+#endif /* CONFIG_NET  */

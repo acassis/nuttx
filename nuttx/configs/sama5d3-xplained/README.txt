@@ -2907,12 +2907,37 @@ Configurations
        the warning in the section "Information Common to All Configurations"
        for further information.
 
+    3. This configuration executes out of SDRAM flash and is loaded into
+       SDRAM from NAND, Serial DataFlash, SD card or from a TFTPC sever via
+       U-Boot or BareBox.  Data also is positioned in SDRAM.
+
+       I did most testing with nuttx.bin on an SD card.  These are the
+       commands that I used to boot NuttX from the SD card:
+
+         U-Boot> fatload mmc 0 0x20008000 nuttx.bin
+         U-Boot> go 0x20008040
+
+    4. You will almost certainly need to adapt this configuration to
+       work in your network environment.  I did all testing with a
+       single 10.0.0.xx network and a 4+1 port switch:
+
+       - Host PC IP 10.0.0.1
+       - Target GMAC IP: 10.0.0.2
+       - Target EMAC IP: 10.0.0.3
+
+       Host PC, EMAC, and GMAC were all connected using an Ethernet
+       switch to the same 255.255.255.0 network.
+
     STATUS:
 
       2014-11-20:  Configuration created.  Partially verified.  Both the
         EMAC and GMAC appear to be function; both respond to pings from
         the host PC.  But I cannot perform the full bridge test yet
         because there still is no host-side test driver in apps/examples/bridge.
+      2014-11-21:  Added the host-side test driver and correct a number
+        of errors in the test logic.  The testing is working (according
+        to WireShark), but I an having some procedural issues related to
+        the Windows firewall.
 
   nsh:
 

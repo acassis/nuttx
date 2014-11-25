@@ -1,5 +1,5 @@
 /****************************************************************************
- * net/ipv6/net_neighbor.c
+ * net/ipv6/ipv6_neighbor.c
  * Database of link-local neighbors, used by IPv6 code and to be used by
  * a future ARP code rewrite.
  *
