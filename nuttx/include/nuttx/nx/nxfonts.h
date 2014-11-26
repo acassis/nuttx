@@ -113,7 +113,7 @@
 #elif defined(CONFIG_NXFONT_SERIF38X49B)
 # define NXFONT_DEFAULT FONTID_SERIF38X49B
 
-/* Serif bold fonts */
+/* Pixel fonts */
 
 #elif defined(CONFIG_NXFONT_PIXEL_UNICODE)
 # define NXFONT_DEFAULT FONTID_PIXEL_UNICODE
@@ -229,7 +229,6 @@ enum nx_fontid_e
 #ifdef CONFIG_NXFONT_PIXEL_LCD_MACHINE
   , FONTID_PIXEL_LCD_MACHINE = 20  /* Pixel lcd machine font */
 #endif
-
 };
 
 /* This structures provides the metrics for one glyph */

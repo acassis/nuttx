@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __GRAPHICS_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H
-#define __GRAPHICS_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H
+#ifndef __LIBNX_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H
+#define __LIBNX_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H
 
 /****************************************************************************
  * Included Files
@@ -691,7 +691,8 @@
 #undef EXTERN
 #if defined(__cplusplus)
 #define EXTERN extern "C"
-extern "C" {
+extern "C"
+{
 #else
 #define EXTERN extern
 #endif
@@ -705,4 +706,4 @@ extern "C" {
 }
 #endif
 
-#endif /* __GRAPHICS_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H */
+#endif /* __LIBNX_NXFONTS_NXFONTS_PIXEL_LCD_MACHINE_H */
