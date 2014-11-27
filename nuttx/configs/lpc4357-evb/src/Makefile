@@ -1,7 +1,7 @@
 ############################################################################
-# drivers/Makefile
+# configs/lpc4357-evb/src/Makefile
 #
-#   Copyright (C) 2007-2014 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,71 +34,40 @@
 ############################################################################
 
 -include $(TOPDIR)/Make.defs
-DELIM ?= $(strip /)
 
-ifeq ($(WINTOOL),y)
-INCDIROPT = -w
-endif
+CFLAGS += -I$(TOPDIR)/sched
 
-DEPPATH = --dep-path .
 ASRCS =
-CSRCS =
-VPATH = .
+CSRCS = lpc43_boot.c
 
-# Include support for various drivers.  Each Make.defs file will add its
-# files to the source file list, add its DEPPATH info, and will add
-# the appropriate paths to the VPATH variable
+ifeq ($(CONFIG_NSH_ARCHINIT),y)
+CSRCS += lpc43_nsh.c
+endif
 
-include analog$(DELIM)Make.defs
-include audio$(DELIM)Make.defs
-include bch$(DELIM)Make.defs
-include input$(DELIM)Make.defs
-include lcd$(DELIM)Make.defs
-include mmcsd$(DELIM)Make.defs
-include mtd$(DELIM)Make.defs
-include eeprom$(DELIM)Make.defs
-include net$(DELIM)Make.defs
-include pipes$(DELIM)Make.defs
-include power$(DELIM)Make.defs
-include sensors$(DELIM)Make.defs
-include sercomm$(DELIM)Make.defs
-include serial$(DELIM)Make.defs
-include spi$(DELIM)Make.defs
-include syslog$(DELIM)Make.defs
-include usbdev$(DELIM)Make.defs
-include usbhost$(DELIM)Make.defs
-include video$(DELIM)Make.defs
-include wireless$(DELIM)Make.defs
+ifeq ($(CONFIG_ARCH_FPU),y)
+CSRCS += lpc43_ostest.c
+endif
 
-ifneq ($(CONFIG_NFILE_DESCRIPTORS),0)
-  CSRCS += dev_null.c dev_zero.c loop.c
-
-ifneq ($(CONFIG_DISABLE_MOUNTPOINT),y)
-  CSRCS += ramdisk.c
-ifeq ($(CONFIG_DRVR_WRITEBUFFER),y)
-  CSRCS += rwbuffer.c
+ifeq ($(CONFIG_ARCH_LEDS),y)
+CSRCS += lpc43_autoleds.c
 else
-ifeq ($(CONFIG_DRVR_READAHEAD),y)
-  CSRCS += rwbuffer.c
-endif
-endif
+CSRCS += lpc43_userleds.c
 endif
 
-ifeq ($(CONFIG_CAN),y)
-  CSRCS += can.c
+ifeq ($(CONFIG_ARCH_BUTTONS),y)
+CSRCS += lpc43_buttons.c
 endif
 
-ifeq ($(CONFIG_PWM),y)
-  CSRCS += pwm.c
+ifeq ($(CONFIG_USBMSC),y)
+CSRCS += lpc43_usbmsc.c
 endif
 
-ifeq ($(CONFIG_WATCHDOG),y)
-  CSRCS += watchdog.c
-endif
-
-ifeq ($(CONFIG_TIMER),y)
-  CSRCS += timer.c
-endif
+ifeq ($(CONFIG_SPIFI_LIBRARY),y)
+CFLAGS += -DEUROBIRD
+SPIFI_LIB = spifi_lib
+CSRCS += $(SPIFI_LIB)/spifi_rom_api.c
+CSRCS += $(SPIFI_LIB)/spansion.c
+CSRCS += $(SPIFI_LIB)/winbond.c
 endif
 
 AOBJS = $(ASRCS:.S=$(OBJEXT))
@@ -107,27 +76,34 @@ COBJS = $(CSRCS:.c=$(OBJEXT))
 SRCS = $(ASRCS) $(CSRCS)
 OBJS = $(AOBJS) $(COBJS)
 
-BIN = libdrivers$(LIBEXT)
+ARCH_SRCDIR = $(TOPDIR)/arch/$(CONFIG_ARCH)/src
+ifeq ($(WINTOOL),y)
+  CFLAGS += -I "${shell cygpath -w $(ARCH_SRCDIR)/chip}" \
+            -I "${shell cygpath -w $(ARCH_SRCDIR)/common}" \
+            -I "${shell cygpath -w $(ARCH_SRCDIR)/armv7-m}"
+else
+  CFLAGS += -I$(ARCH_SRCDIR)/chip -I$(ARCH_SRCDIR)/common -I$(ARCH_SRCDIR)/armv7-m
+endif
 
-all: $(BIN)
+all: libboard$(LIBEXT)
 
 $(AOBJS): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
 
-$(COBJS): %$(OBJEXT): %.c
+$(COBJS) $(LINKOBJS): %$(OBJEXT): %.c
 	$(call COMPILE, $<, $@)
 
-$(BIN): $(OBJS)
+libboard$(LIBEXT): $(OBJS)
 	$(call ARCHIVE, $@, $(OBJS))
 
 .depend: Makefile $(SRCS)
-	$(Q) $(MKDEP) $(DEPPATH) "$(CC)" -- $(CFLAGS) -- $(SRCS) >Make.dep
+	$(Q) $(MKDEP) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
 	$(Q) touch $@
 
 depend: .depend
 
 clean:
-	$(call DELFILE, $(BIN))
+	$(call DELFILE, libboard$(LIBEXT))
 	$(call CLEAN)
 
 distclean: clean
