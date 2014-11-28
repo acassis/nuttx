@@ -232,11 +232,11 @@ struct efm32_config_s
 struct efm32_usart_s
 {
 #ifdef CONFIG_SERIAL_TERMIOS
-        struct efm32_config_s *config;
+  struct efm32_config_s *config;
 #else
   const struct efm32_config_s *config;
 #endif
-  uint16_t  ien;       /* Interrupts enabled */
+  uint16_t ien;        /* Interrupts enabled */
 };
 
 /****************************************************************************
@@ -585,7 +585,7 @@ static void efm32_restoreuartint(struct efm32_usart_s *priv, uint32_t ien)
  * Name: efm32_disableuartint
  ****************************************************************************/
 
-#if ( ( defined HAVE_UART_CONSOLE ) || ( defined CONFIG_SERIAL_TERMIOS ) )
+#if defined(HAVE_UART_CONSOLE) || defined(CONFIG_SERIAL_TERMIOS)
 static void efm32_disableuartint(struct efm32_usart_s *priv, uint32_t *ien)
 {
   irqstate_t flags;
@@ -914,7 +914,6 @@ static int  efm32_uart1_txinterrupt(int irq, void *context)
 
 static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
 {
-
   struct inode *inode;
   struct uart_dev_s *dev;
 #ifdef CONFIG_SERIAL_TERMIOS
@@ -939,7 +938,7 @@ static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
   switch (cmd)
     {
 #ifdef CONFIG_SERIAL_TERMIOS
-    case TCGETS: 
+    case TCGETS:
       {
         struct termios *termiosp = (struct termios*)arg;
 
@@ -961,10 +960,9 @@ static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
       }
       break;
 
-    case TCSETS: 
+    case TCSETS:
       {
         struct termios *termiosp = (struct termios*)arg;
- 
 
         if (!termiosp)
           {
@@ -989,7 +987,7 @@ static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
 
         /* TODO : PARENB, PARODD, CSTOPB, CCTS_OFLOW, CCTS_IFLOW */
 
-#if 0 
+#if 0
         if (termiosp->c_cflag & PARENB)
           {
             priv->parity = (termiosp->c_cflag & PARODD) ? 1 : 2;
@@ -1006,7 +1004,6 @@ static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
 #ifdef CONFIG_SERIAL_IFLOWCONTROL
         priv->iflow = (termiosp->c_cflag & CRTS_IFLOW) != 0;
 #endif
-
 #endif 
 
         /* Note that only cfgetispeed is used because we have knowledge
@@ -1030,7 +1027,6 @@ static int efm32_ioctl(struct file *filep, int cmd, unsigned long arg)
       }
       break;
 #endif
-
 
     default:
       ret = -ENOTTY;
