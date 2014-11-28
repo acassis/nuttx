@@ -74,7 +74,7 @@ extern "C"
 
 /* ioctl() is a non-standard UNIX-like API */
 
-int ioctl(int fd, int req, ...);
+int ioctl(int fd, int req, unsigned long arg);
 
 #undef EXTERN
 #if defined(__cplusplus)
