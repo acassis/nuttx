@@ -85,13 +85,19 @@
  *
  ****************************************************************************/
 
-int ioctl(int fd, int req, unsigned long arg)
+int ioctl(int fd, int req, ...)
 {
   int err;
 #if CONFIG_NFILE_DESCRIPTORS > 0
   FAR struct file     *filep;
   FAR struct inode    *inode;
   int                  ret = OK;
+  va_list ap;
+  unsigned long arg;
+
+  va_start(ap, req);
+  arg = va_arg(ap, unsigned long );
+  va_end(ap);
 
   /* Did we get a valid file descriptor? */
 
