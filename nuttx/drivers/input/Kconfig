@@ -335,8 +335,27 @@ config DJOYSTICK
 if DJOYSTICK
 
 config DJOYSTICK_NPOLLWAITERS
-	int "Max Number of Poll Waiters
+	int "Max Number of Poll Waiters"
 	default 2
 	depends on !DISABLE_POLL
 
 endif # DJOYSTICK
+
+config AJOYSTICK
+	bool "Analog Joystick"
+	default n
+	---help---
+		Enable standard analog joystick upper half driver.  An analog
+		joystick refers to a joystick that provides position data as an
+		integer value that might have been obtained through Analog-
+		to-Digital Conversion (ADC).  The analog positional data may also
+		be accompanied by discrete button data.
+
+if AJOYSTICK
+
+config AJOYSTICK_NPOLLWAITERS
+	int "Max Number of Poll Waiters"
+	default 2
+	depends on !DISABLE_POLL
+
+endif # AJOYSTICK

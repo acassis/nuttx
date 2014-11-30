@@ -72,22 +72,39 @@
  * reported in the djoy_buttonset_t bitset.
  */
 
-#define DJOY_UP             (1 << 0) /* Bit 0: True = Joystick UP */
-#define DJOY_DOWN           (1 << 1) /* Bit 1: True = Joystick DOWN */
-#define DJOY_LEFT           (1 << 2) /* Bit 2: True = Joystick LEFT */
-#define DJOY_RIGHT          (1 << 3) /* Bit 3: True = Joystick RIGHT */
-#define DJOY_BUTTON_1       (1 << 4) /* Bit 4: True = Button 1 pressed */
-#define DJOY_BUTTON_2       (1 << 5) /* Bit 5: True = Button 2 pressed */
-#define DJOY_BUTTON_3       (1 << 6) /* Bit 6: True = Button 3 pressed */
-#define DJOY_BUTTON_3       (1 << 7) /* Bit 7: True = Button 4 pressed */
-#define DJOY_BUTTONS_ALL    0xff     /* The set of all buttons */
+#define DJOY_UP              (0)                  /* Bit 0: Joystick UP */
+#define DJOY_DOWN            (1)                  /* Bit 1: Joystick DOWN */
+#define DJOY_LEFT            (2)                  /* Bit 2: Joystick LEFT */
+#define DJOY_RIGHT           (3)                  /* Bit 3: Joystick RIGHT */
+#define DJOY_BUTTON_1        (4)                  /* Bit 4: Button 1 */
+#define DJOY_BUTTON_2        (5)                  /* Bit 5: Button 2 */
+#define DJOY_BUTTON_3        (6)                  /* Bit 6: Button 3 */
+#define DJOY_BUTTON_4        (7)                  /* Bit 7: Button 4 */
+#define DJOY_NDISCRETES      (8)                  /* Total number of discrete signals */
+
+#define DJOY_UP_BIT          (1 << DJOY_UP)       /* 1:Joystick UP selected */
+#define DJOY_DOWN_BIT        (1 << DJOY_DOWN)     /* 1:Joystick DOWN selected */
+#define DJOY_LEFT_BIT        (1 << DJOY_LEFT)     /* 1:Joystick LEFT selected */
+#define DJOY_RIGHT_BIT       (1 << DJOY_RIGHT)    /* 1:Joystick RIGHT selected */
+#define DJOY_BUTTONS_JOYBITS 0x0f                 /* Set of all joystick directions */
+#define DJOY_BUTTON_1_BIT    (1 << DJOY_BUTTON_1) /* 1:Button 1 pressed */
+#define DJOY_BUTTON_2_BIT    (1 << DJOY_BUTTON_2) /* 1:Button 2 pressed */
+#define DJOY_BUTTON_3_BIT    (1 << DJOY_BUTTON_3) /* 1:Button 3 pressed */
+#define DJOY_BUTTON_4_BIT    (1 << DJOY_BUTTON_4) /* 1:Button 4 pressed */
+#define DJOY_BUTTONS_ALLBITS 0xf0                 /* Set of all buttons */
+#define DJOY_ALLBITS         0xff                 /* Set of all bits */
 
 /* Typical usage */
 
-#define DJOY_BUTTON_SELECT   DJOY_BUTTON_1
-#define DJOY_BUTTON_FIRE     DJOY_BUTTON_2
-#define DJOY_BUTTON_JUMP     DJOY_BUTTON_3
-#define DJOY_BUTTON_RUN      DJOY_BUTTON_4
+#define DJOY_BUTTON_SELECT     DJOY_BUTTON_1
+#define DJOY_BUTTON_FIRE       DJOY_BUTTON_2
+#define DJOY_BUTTON_JUMP       DJOY_BUTTON_3
+#define DJOY_BUTTON_RUN        DJOY_BUTTON_4
+
+#define DJOY_BUTTON_SELECT_BIT DJOY_BUTTON_1_BIT
+#define DJOY_BUTTON_FIRE_BIT   DJOY_BUTTON_2_BIT
+#define DJOY_BUTTON_JUMP_BIT   DJOY_BUTTON_3_BIT
+#define DJOY_BUTTON_RUN_BIT    DJOY_BUTTON_4_BIT
 
 /* IOCTL commands
  *
@@ -96,11 +113,26 @@
  *
  * 1) The read() method will always return a single value of size
  *    djoy_buttonset_t represent the current state of the joystick buttons.
+ *    read() never blocks.
  * 2) The poll() method can be used to notify a client if there is a change
  *    in any of the joystick discrete inputs.  This feature, of course,
- *    depends upon interrupt GPIO support from the platform.
+ *    depends upon interrupt GPIO support from the platform.  NOTE: that
+ *    semantics of poll() for POLLIN are atypical:  The successful poll
+ *    means that the data has changed and has nothing to with the
+ *    availability of data to be read; data is always available to be
+ *    read.
  * 3) The ioctl() method supports the commands documented below:
  */
+
+/* Command:     DJOYIOC_SUPPORTED
+ * Description: Report the set of button events supported by the hardware;
+ * Argument:    A pointer to writeable integer value in which to return the
+ *              set of supported buttons.
+ * Return:      Zero (OK) on success.  Minus one will be returned on failure
+ *              with the errno value set appropriately.
+ */
+
+#define DJOYIOC_SUPPORTED  _DJOYIOC(0x0001)
 
 /* Command:     DJOYIOC_POLLEVENTS
  * Description: Specify the set of button events that can cause a poll()
@@ -111,7 +143,7 @@
  *              with the errno value set appropriately.
  */
 
-#define DJOYIOC_POLLEVENTS  _DJOYIOC(0x0001)
+#define DJOYIOC_POLLEVENTS  _DJOYIOC(0x0002)
 
 /* Command:     DJOYIOC_REGISTER
  * Description: Register to receive a signal whenever there is a change in
@@ -123,7 +155,7 @@
  *              with the errno value set appropriately.
  */
 
-#define DJOYIOC_REGISTER   _DJOYIOC(0x0002)
+#define DJOYIOC_REGISTER   _DJOYIOC(0x0003)
 
 /****************************************************************************
  * Public Types
@@ -161,6 +193,7 @@ struct djoy_notify_s
  * the struct djoy_lowerhalf_s enable() method.
  */
 
+struct djoy_lowerhalf_s;
 typedef CODE void (*djoy_interrupt_t)
   (FAR const struct djoy_lowerhalf_s *lower, FAR void *arg);
 
@@ -187,7 +220,7 @@ struct djoy_lowerhalf_s
 
   CODE djoy_buttonset_t (*dl_sample)(FAR const struct djoy_lowerhalf_s *lower);
 
-  /* Enable interrupts on the selecte set of joystick buttons.  And empty
+  /* Enable interrupts on the selected set of joystick buttons.  And empty
    * set will disable all interrupts.
    */
 
@@ -218,7 +251,7 @@ extern "C"
  * Description:
  *   Bind the lower half discrete joystick driver to an instance of the
  *   upper half discrete joystick driver and register the composite character
- *   driver as the specific device.
+ *   driver as the specified device.
  *
  * Input Parameters:
  *   devname - The name of the discrete joystick device to be registers.
