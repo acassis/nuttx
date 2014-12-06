@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/sama5d3-xplained/src/sam_ajoystick.c
+ * configs/nucleo-f3x1re/src/stm32_ajoystick.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -47,10 +47,10 @@
 #include <nuttx/arch.h>
 #include <nuttx/input/ajoystick.h>
 
-#include "sam_pio.h"
-#include "sam_adc.h"
-#include "chip/sam_adc.h"
-#include "sama5d3-xplained.h"
+#include "stm32_gpio.h"
+#include "stm32_adc.h"
+#include "chip/stm32_adc.h"
+#include "nucleo-f4x1re.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -61,36 +61,51 @@
 #  if !defined(CONFIG_ADC)
 #    error CONFIG_ADC is required for the Itead joystick
 #    undef CONFIG_AJOYSTICK
-#  elif !defined(CONFIG_SAMA5_ADC_CHAN0) || !defined(CONFIG_SAMA5_ADC_CHAN1)
-#    error CONFIG_SAMA5_ADC_CHAN0 and 1 are required for Itead joystick
-#  elif !defined(CONFIG_SAMA5_PIOC_IRQ)
-#    error CONFIG_SAMA5_PIOC_IRQ is required for the Itead joystick
+#  elif !defined(CONFIG_STM32_ADC1)
+#    error CONFIG_STM32_ADC1 is required for Itead joystick
 #    undef CONFIG_AJOYSTICK
-#  elif defined(CONFIG_SAMA5_EMACA)
-#    error EMAC conflicts with the Itead PIO usage
-#    undef CONFIG_AJOYSTICK
-#  elif defined(CONFIG_SAMA5_SSC0)
-#    error SSC0 conflicts with the Itead PIO usage
-#    undef CONFIG_AJOYSTICK
-#  elif defined(CONFIG_SAMA5_SPI1)
-#    warning SPI1 may conflict with the Itead PIO usage
-#  elif defined(CONFIG_SAMA5_ISI)
-#    warning ISI may conflict with the Itead PIO usage
 #  endif
 #endif /* CONFIG_AJOYSTICK */
 
 #ifdef CONFIG_AJOYSTICK
 
+/* A no-ADC, buttons only version can be built for testing */
+
+#undef NO_JOYSTICK_ADC
+
+/* Maximum number of ADC channels */
+
+#define MAX_ADC_CHANNELS 8
+
+/* Dual channel ADC support requires DMA */
+
+#ifdef CONFIG_ADC_DMA
+#  define NJOYSTICK_CHANNELS 2
+#else
+#  define NJOYSTICK_CHANNELS 1
+#endif
+
+#ifdef CONFIG_NUCLEO_F401RE_AJOY_MINBUTTONS
 /* Number of Joystick buttons */
 
-#define AJOY_NGPIOS  7
+#  define AJOY_NGPIOS  3
 
 /* Bitset of supported Joystick buttons */
 
-#define AJOY_SUPPORTED (AJOY_BUTTON_1_BIT | AJOY_BUTTON_2_BIT | \
-                        AJOY_BUTTON_3_BIT | AJOY_BUTTON_4_BIT | \
-                        AJOY_BUTTON_5_BIT | AJOY_BUTTON_6_BIT | \
-                        AJOY_BUTTON_7_BIT )
+#  define AJOY_SUPPORTED (AJOY_BUTTON_1_BIT | AJOY_BUTTON_2_BIT | \
+                          AJOY_BUTTON_3_BIT)
+#else
+/* Number of Joystick buttons */
+
+#  define AJOY_NGPIOS  7
+
+/* Bitset of supported Joystick buttons */
+
+#  define AJOY_SUPPORTED (AJOY_BUTTON_1_BIT | AJOY_BUTTON_2_BIT | \
+                          AJOY_BUTTON_3_BIT | AJOY_BUTTON_4_BIT | \
+                          AJOY_BUTTON_5_BIT | AJOY_BUTTON_6_BIT | \
+                          AJOY_BUTTON_7_BIT )
+#endif
 
 /****************************************************************************
  * Private Types
@@ -118,17 +133,18 @@ static int ajoy_interrupt(int irq, FAR void *context);
  * button definitions in include/nuttx/input/ajoystick.h.
  */
 
-static const pio_pinset_t g_joypio[AJOY_NGPIOS] =
+#ifdef CONFIG_NUCLEO_F401RE_AJOY_MINBUTTONS
+static const uint32_t g_joygpio[AJOY_NGPIOS] =
 {
-  PIO_BUTTON_1, PIO_BUTTON_2, PIO_BUTTON_3, PIO_BUTTON_4,
-  PIO_BUTTON_5, PIO_BUTTON_6, PIO_BUTTON_6
+  GPIO_BUTTON_1, GPIO_BUTTON_2, GPIO_BUTTON_3
 };
-
-static const uint8_t g_joyirq[AJOY_NGPIOS] =
+#else
+static const uint32_t g_joygpio[AJOY_NGPIOS] =
 {
-  IRQ_BUTTON_1, IRQ_BUTTON_2, IRQ_BUTTON_3, IRQ_BUTTON_4,
-  IRQ_BUTTON_5, IRQ_BUTTON_6, IRQ_BUTTON_6
+  GPIO_BUTTON_1, GPIO_BUTTON_2, GPIO_BUTTON_3, GPIO_BUTTON_4,
+  GPIO_BUTTON_5, GPIO_BUTTON_6, GPIO_BUTTON_7
 };
+#endif
 
 /* This is the button joystick lower half driver interface */
 
@@ -140,9 +156,11 @@ static const struct ajoy_lowerhalf_s g_ajoylower =
   .al_enable     = ajoy_enable,
 };
 
+#ifndef NO_JOYSTICK_ADC
 /* Descriptor for the open ADC driver */
 
 static int g_adcfd = -1;
+#endif
 
 /* Current interrupt handler and argument */
 
@@ -178,7 +196,8 @@ static ajoy_buttonset_t ajoy_supported(FAR const struct ajoy_lowerhalf_s *lower)
 static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
                        FAR struct ajoy_sample_s *sample)
 {
-  struct adc_msg_s adcmsg[SAM_ADC_NCHANNELS];
+#ifndef NO_JOYSTICK_ADC
+  struct adc_msg_s adcmsg[MAX_ADC_CHANNELS];
   FAR struct adc_msg_s *ptr;
   ssize_t nread;
   ssize_t offset;
@@ -189,7 +208,7 @@ static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
    * channels are enabled).
    */
 
-  nread = read(g_adcfd, adcmsg, SAM_ADC_NCHANNELS * sizeof(struct adc_msg_s));
+  nread = read(g_adcfd, adcmsg, MAX_ADC_CHANNELS * sizeof(struct adc_msg_s));
   if (nread < 0)
     {
       int errcode = get_errno();
@@ -200,7 +219,7 @@ static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
 
       return -errcode;
     }
-  else if (nread < 2 * sizeof(struct adc_msg_s))
+  else if (nread < NJOYSTICK_CHANNELS * sizeof(struct adc_msg_s))
     {
       idbg("ERROR: read too small: %ld\n", (long)nread);
       return -EIO;
@@ -208,8 +227,18 @@ static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
 
   /* Sample and the raw analog inputs */
 
-  for (i = 0, offset = 0, have = 0;
-       i < SAM_ADC_NCHANNELS && offset < nread && have != 3;
+#ifdef CONFIG_ADC_DMA
+  have = 0;
+
+#else
+  /* If DMA is not supported, then we will have only a single ADC channel */
+
+  have = 2;
+  sample->as_y = 0;
+#endif
+
+  for (i = 0, offset = 0;
+       i < MAX_ADC_CHANNELS && offset < nread && have != 3;
        i++, offset += sizeof(struct adc_msg_s))
     {
       ptr = &adcmsg[i];
@@ -225,6 +254,7 @@ static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
           ivdbg("X sample: %ld -> %d\n", (long)tmp, (int)sample->as_x);
         }
 
+#ifdef CONFIG_ADC_DMA
       if ((have & 2) == 0 && ptr->am_channel == 1)
         {
           int32_t tmp = ptr->am_data;
@@ -233,19 +263,26 @@ static int ajoy_sample(FAR const struct ajoy_lowerhalf_s *lower,
 
           ivdbg("Y sample: %ld -> %d\n", (long)tmp, (int)sample->as_y);
         }
+#endif
     }
 
   if (have != 3)
     {
-      idbg("ERROR: Could not find joystack channels\n");
+      idbg("ERROR: Could not find joystick channels\n");
       return -EIO;
     }
 
+#else
+  /* ADC support is disabled */
+
+  sample->as_x = 0;
+  sample->as_y = 0;
+#endif
 
   /* Sample the discrete button inputs */
 
   sample->as_buttons = ajoy_buttons(lower);
-  ivdbg("Returning: %02x\n", AJOY_SUPPORTED);
+  ivdbg("Returning: %02x\n", sample->as_buttons);
   return OK;
 }
 
@@ -270,7 +307,7 @@ static ajoy_buttonset_t ajoy_buttons(FAR const struct ajoy_lowerhalf_s *lower)
        * button is pressed.
        */
 
-      if (!sam_pioread(g_joypio[i]))
+      if (!stm32_gpioread(g_joygpio[i]))
         {
           ret |= (1 << i);
         }
@@ -296,6 +333,8 @@ static void ajoy_enable(FAR const struct ajoy_lowerhalf_s *lower,
   irqstate_t flags;
   ajoy_buttonset_t either = press | release;
   ajoy_buttonset_t bit;
+  bool rising;
+  bool falling;
   int i;
 
   /* Start with all interrupts disabled */
@@ -328,12 +367,18 @@ static void ajoy_enable(FAR const struct ajoy_lowerhalf_s *lower,
            bit = (1 << i);
            if ((either & bit) != 0)
              {
-               /* REVISIT:  It would be better if we reconfigured for
-                * the edges of interest so that we do not get spurious
-                * interrupts.
+               /* Active low so a press corresponds to a falling edge and
+                * a release corresponds to a rising edge.
                 */
 
-               sam_pioirqenable(g_joyirq[i]);
+               falling = ((press & bit) != 0);
+               rising  = ((release & bit) != 0);
+               
+               illvdbg("GPIO %d: rising: %d falling: %d\n",
+                        i, rising, falling);
+
+               (void)stm32_gpiosetevent(g_joygpio[i], rising, falling,
+                                        true, ajoy_interrupt);
              }
         }
     }
@@ -359,7 +404,7 @@ static void ajoy_disable(void)
   flags = irqsave();
   for (i = 0; i < AJOY_NGPIOS; i++)
     {
-      sam_pioirqdisable(g_joyirq[i]);
+      (void)stm32_gpiosetevent(g_joygpio[i], false, false, false, NULL);
     }
 
   irqrestore(flags);
@@ -381,6 +426,7 @@ static void ajoy_disable(void)
 static int ajoy_interrupt(int irq, FAR void *context)
 {
   DEBUGASSERT(g_ajoyhandler);
+
   if (g_ajoyhandler)
     {
       g_ajoyhandler(&g_ajoylower, g_ajoyarg);
@@ -394,17 +440,20 @@ static int ajoy_interrupt(int irq, FAR void *context)
  ****************************************************************************/
 
 /****************************************************************************
- * Name: sam_ajoy_initialization
+ * Name: board_ajoy_initialize
  *
  * Description:
  *   Initialize and register the button joystick driver
  *
  ****************************************************************************/
 
-int sam_ajoy_initialization(void)
+int board_ajoy_initialize(void)
 {
   int ret;
   int i;
+
+#ifndef NO_JOYSTICK_ADC
+  ivdbg("Initialize ADC driver: /dev/adc0\n");
 
   /* Initialize ADC.  We will need this to read the ADC inputs */
 
@@ -424,32 +473,32 @@ int sam_ajoy_initialization(void)
       idbg("ERROR: Failed to open /dev/adc0: %d\n", errcode);
       return -errcode;
     }
+#endif
 
-  /* Configure the GPIO pins as interrupting inputs. */
+  /* Configure the GPIO pins as interrupting inputs.  NOTE: This is
+   * unnecessary for interrupting pins since it will also be done by
+   * stm32_gpiosetevent().
+   */
 
   for (i = 0; i < AJOY_NGPIOS; i++)
     {
       /* Configure the PIO as an input */
 
-      sam_configpio(g_joypio[i]);
-
-      /* Configure PIO interrupts, attach the interrupt handler, but leave
-       * the interrupt disabled.
-       */
-
-      sam_pioirq(g_joypio[i]);
-      (void)irq_attach(g_joyirq[i], ajoy_interrupt);
-      sam_pioirqdisable(g_joyirq[i]);
+      stm32_configgpio(g_joygpio[i]);
     }
 
   /* Register the joystick device as /dev/ajoy0 */
+
+  ivdbg("Initialize joystick driver: /dev/ajoy0\n");
 
   ret = ajoy_register("/dev/ajoy0", &g_ajoylower);
   if (ret < 0)
     {
       idbg("ERROR: ajoy_register failed: %d\n", ret);
+#ifndef NO_JOYSTICK_ADC
       close(g_adcfd);
       g_adcfd = -1;
+#endif
     }
 
   return ret;

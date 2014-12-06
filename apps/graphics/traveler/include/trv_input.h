@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/nucleo-f4x1re/src/stm32_nsh.c
+ * apps/graphics/traveler/include/trv_input.h
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,120 +33,54 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_INPUT_H
+#define __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_INPUT_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include <stdio.h>
-#include <syslog.h>
-#include <errno.h>
-
-#include <nuttx/arch.h>
-#include <nuttx/sdio.h>
-#include <nuttx/mmcsd.h>
-
-#include <stm32.h>
-#include <stm32_uart.h>
-
-#include <arch/board/board.h>
-
-#include "nucleo-f4x1re.h"
+#include "trv_types.h"
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
+
+/* Number of units player moves forward or backward. */
+
+#define STEP_DISTANCE 15
 
 /****************************************************************************
- * Private Data
+ * Public Types
  ****************************************************************************/
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: up_netinitialize
- *
- * Description:
- *   Dummy function expected to start-up logic.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_WL_CC3000
-void up_netinitialize(void)
+struct trv_input_s
 {
-}
-#endif
+  int16_t fwdrate;    /* Forward motion rate.  Negative is backward */
+  int16_t leftrate;   /* Left motion rate.  Negative is right */
+  int16_t yawrate;    /* Yaw turn rate.  Positive is to the left */
+  int16_t pitchrate;  /* Pitch turn rate.  Positive is upward */
+  int16_t stepheight; /* Size a a vertical step, if applicable */
+  bool    dooropen;   /* True: Open a door */
+};
 
 /****************************************************************************
- * Name: nsh_archinitialize
- *
- * Description:
- *   Perform architecture specific initialization
- *
+ * Public Data
  ****************************************************************************/
 
-int nsh_archinitialize(void)
-{
-#if defined(HAVE_MMCSD) || defined(CONFIG_AJOYSTICK)
-  int ret;
+/* Report positional inputs */
+
+extern struct trv_input_s g_trv_input;
+
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+void trv_input_initialize(void);
+void trv_input_read(void);
+void trv_input_terminate(void);
+#ifdef CONFIG_GRAPHICS_TRAVELER_NX_XYINPUT
+void trv_input_xyinput(trv_coord_t xpos, trv_coord_t xpos, uint8_t buttons);
 #endif
 
-  /* Configure CPU load estimation */
-
-#ifdef CONFIG_SCHED_INSTRUMENTATION
-  cpuload_initialize_once();
-#endif
-
-#ifdef HAVE_MMCSD
-  /* First, get an instance of the SDIO interface */
-
-  g_sdio = sdio_initialize(CONFIG_NSH_MMCSDSLOTNO);
-  if (!g_sdio)
-    {
-      syslog(LOG_ERR, "ERROR: Failed to initialize SDIO slot %d\n",
-             CONFIG_NSH_MMCSDSLOTNO);
-      return -ENODEV;
-    }
-
-  /* Now bind the SDIO interface to the MMC/SD driver */
-
-  ret = mmcsd_slotinitialize(CONFIG_NSH_MMCSDMINOR, g_sdio);
-  if (ret != OK)
-    {
-      syslog(LOG_ERR,
-             "ERROR: Failed to bind SDIO to the MMC/SD driver: %d\n",
-             ret);
-      return ret;
-    }
-
-  /* Then let's guess and say that there is a card in the slot. There is no
-   * card detect GPIO.
-   */
-
-  sdio_mediachange(g_sdio, true);
-
-  syslog(LOG_INFO, "[boot] Initialized SDIO\n");
-#endif
-
-#ifdef CONFIG_AJOYSTICK
-  /* Initialize and register the joystick driver */
-
-  ret = board_ajoy_initialize();
-  if (ret != OK)
-    {
-      syslog(LOG_ERR,
-             "ERROR: Failed to register the joystick driver: %d\n",
-             ret);
-      return ret;
-    }
-#endif
-
-  return OK;
-}
+#endif /* __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_INPUT_H */

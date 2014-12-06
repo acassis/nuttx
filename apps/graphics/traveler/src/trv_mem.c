@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/nucleo-f4x1re/src/stm32_nsh.c
+ * apps/graphics/traveler/src/trv_mem.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -37,116 +37,49 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
+#include "trv_types.h"
+#include "trv_main.h"
+#include "trv_mem.h"
 
-#include <stdio.h>
-#include <syslog.h>
-#include <errno.h>
-
-#include <nuttx/arch.h>
-#include <nuttx/sdio.h>
-#include <nuttx/mmcsd.h>
-
-#include <stm32.h>
-#include <stm32_uart.h>
-
-#include <arch/board/board.h>
-
-#include "nucleo-f4x1re.h"
-
-/****************************************************************************
- * Pre-Processor Definitions
- ****************************************************************************/
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
+#include <stdlib.h>
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_netinitialize
+ * Name: trv_malloc
  *
  * Description:
- *   Dummy function expected to start-up logic.
- *
  ****************************************************************************/
 
-#ifdef CONFIG_WL_CC3000
-void up_netinitialize(void)
+FAR void *trv_malloc(size_t size)
 {
+  FAR void *memory;
+
+  memory = malloc(size);
+  if (memory == NULL)
+    {
+      trv_abort("Out of memory (trv_malloc %x bytes)", size);
+    }
+
+  return memory;
 }
-#endif
 
 /****************************************************************************
- * Name: nsh_archinitialize
+ * Name: trv_free
  *
  * Description:
- *   Perform architecture specific initialization
- *
  ****************************************************************************/
 
-int nsh_archinitialize(void)
+void trv_free(void *memory)
 {
-#if defined(HAVE_MMCSD) || defined(CONFIG_AJOYSTICK)
-  int ret;
-#endif
-
-  /* Configure CPU load estimation */
-
-#ifdef CONFIG_SCHED_INSTRUMENTATION
-  cpuload_initialize_once();
-#endif
-
-#ifdef HAVE_MMCSD
-  /* First, get an instance of the SDIO interface */
-
-  g_sdio = sdio_initialize(CONFIG_NSH_MMCSDSLOTNO);
-  if (!g_sdio)
+  if (memory == NULL)
     {
-      syslog(LOG_ERR, "ERROR: Failed to initialize SDIO slot %d\n",
-             CONFIG_NSH_MMCSDSLOTNO);
-      return -ENODEV;
+      trv_abort("Freeing NULL");
     }
-
-  /* Now bind the SDIO interface to the MMC/SD driver */
-
-  ret = mmcsd_slotinitialize(CONFIG_NSH_MMCSDMINOR, g_sdio);
-  if (ret != OK)
+  else
     {
-      syslog(LOG_ERR,
-             "ERROR: Failed to bind SDIO to the MMC/SD driver: %d\n",
-             ret);
-      return ret;
+      free(memory);
     }
-
-  /* Then let's guess and say that there is a card in the slot. There is no
-   * card detect GPIO.
-   */
-
-  sdio_mediachange(g_sdio, true);
-
-  syslog(LOG_INFO, "[boot] Initialized SDIO\n");
-#endif
-
-#ifdef CONFIG_AJOYSTICK
-  /* Initialize and register the joystick driver */
-
-  ret = board_ajoy_initialize();
-  if (ret != OK)
-    {
-      syslog(LOG_ERR,
-             "ERROR: Failed to register the joystick driver: %d\n",
-             ret);
-      return ret;
-    }
-#endif
-
-  return OK;
 }

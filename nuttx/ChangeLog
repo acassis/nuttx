@@ -9131,5 +9131,16 @@
 	  MCO pin definition.  From Jussi Kivilinna (2014-12-02).
 	* arch/arm/src/stm32/stm32_rcc.h:  Add missing MCO configuration for
 	  the STM32L1xxx.  From Jussi Kivilinna (2014-12-02).
-	* configs/sama5d3-xplained/src/sam_ajoystick.c:  Add a analog Joystick
-	  support for the SAMA5D3 Xplained board (2014-12-3).
+	* configs/sama5d3-xplained/src/sam_ajoystick.c:  Add analog Joystick
+	  shield support for the SAMA5D3 Xplained board (2014-12-3).
+	* configs/ucleo-f4x1re/src/sam_ajoystick.c and sam_adc.c:  Add
+	  analog Joystick shield support for the Nucleo F4x1RE boards.  There
+	  are still some ADC issues to be worke through as of the initial
+	  commit (2014-12-3).
+	* /drivers/eeprom/spi_xx25xx.c and /include/nuttx/eeprom/spi_xx25xx.h:
+	  Add support for ST Micro EEPROM device geometries.  From Sebastien
+	  Lorquet (2014-12-5).
+	* sched/mqueue: msg type should be char * not void * in mq_send,
+	  mq_timedsend, mq_receive, and mq_timedreceive.  Noted by  Pierre-Noel
+	  Bouteville (2014-12-05).
+

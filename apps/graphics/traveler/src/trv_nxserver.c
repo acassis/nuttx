@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/nucleo-f4x1re/src/stm32_nsh.c
+ * apps/graphics/traveler/trv_nxlistener.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -37,25 +37,25 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
+#include "trv_types.h"
 
-#include <stdio.h>
-#include <syslog.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sched.h>
 #include <errno.h>
 
 #include <nuttx/arch.h>
-#include <nuttx/sdio.h>
-#include <nuttx/mmcsd.h>
+#include <nuttx/nx/nx.h>
+#include <nuttx/video/fb.h>
 
-#include <stm32.h>
-#include <stm32_uart.h>
-
-#include <arch/board/board.h>
-
-#include "nucleo-f4x1re.h"
+#ifdef CONFIG_NX_MULTIUSER
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Types
  ****************************************************************************/
 
 /****************************************************************************
@@ -71,82 +71,44 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_netinitialize
- *
- * Description:
- *   Dummy function expected to start-up logic.
- *
+ * Name: trv_nxlistener
  ****************************************************************************/
 
-#ifdef CONFIG_WL_CC3000
-void up_netinitialize(void)
+FAR void *trv_nxlistener(FAR void *arg)
 {
-}
-#endif
-
-/****************************************************************************
- * Name: nsh_archinitialize
- *
- * Description:
- *   Perform architecture specific initialization
- *
- ****************************************************************************/
-
-int nsh_archinitialize(void)
-{
-#if defined(HAVE_MMCSD) || defined(CONFIG_AJOYSTICK)
   int ret;
-#endif
 
-  /* Configure CPU load estimation */
+  /* Process events forever */
 
-#ifdef CONFIG_SCHED_INSTRUMENTATION
-  cpuload_initialize_once();
-#endif
-
-#ifdef HAVE_MMCSD
-  /* First, get an instance of the SDIO interface */
-
-  g_sdio = sdio_initialize(CONFIG_NSH_MMCSDSLOTNO);
-  if (!g_sdio)
+  for (;;)
     {
-      syslog(LOG_ERR, "ERROR: Failed to initialize SDIO slot %d\n",
-             CONFIG_NSH_MMCSDSLOTNO);
-      return -ENODEV;
+      /* Handle the next event.  If we were configured blocking, then
+       * we will stay right here until the next event is received.  Since
+       * we have dedicated a while thread to servicing events, it would
+       * be most natural to also select CONFIG_NX_BLOCKING -- if not, the
+       * following would be a tight infinite loop (unless we added addition
+       * logic with nx_eventnotify and sigwait to pace it).
+       */
+
+      ret = nx_eventhandler(g_hnx);
+      if (ret < 0)
+        {
+          /* An error occurred... assume that we have lost connection with
+           * the server.
+           */
+
+          trv_abort("Lost server connection: %d\n", errno);
+        }
+
+      /* If we received a message, we must be connected */
+
+      if (!g_trv_nxrconnected)
+        {
+          g_trv_nxrconnected = true;
+          sem_post(&g_trv_nxevent);
+          trv_debug("Connected to server\n");
+        }
     }
-
-  /* Now bind the SDIO interface to the MMC/SD driver */
-
-  ret = mmcsd_slotinitialize(CONFIG_NSH_MMCSDMINOR, g_sdio);
-  if (ret != OK)
-    {
-      syslog(LOG_ERR,
-             "ERROR: Failed to bind SDIO to the MMC/SD driver: %d\n",
-             ret);
-      return ret;
-    }
-
-  /* Then let's guess and say that there is a card in the slot. There is no
-   * card detect GPIO.
-   */
-
-  sdio_mediachange(g_sdio, true);
-
-  syslog(LOG_INFO, "[boot] Initialized SDIO\n");
-#endif
-
-#ifdef CONFIG_AJOYSTICK
-  /* Initialize and register the joystick driver */
-
-  ret = board_ajoy_initialize();
-  if (ret != OK)
-    {
-      syslog(LOG_ERR,
-             "ERROR: Failed to register the joystick driver: %d\n",
-             ret);
-      return ret;
-    }
-#endif
-
-  return OK;
 }
+
+#endif /* CONFIG_NX_MULTIUSER */
