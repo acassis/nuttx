@@ -9150,4 +9150,36 @@
 	* Add sys/custom_file.h.  Used when CUSTOM_FILE_IO is define and avoids
 	  re-definition errors about the FILE define.  From Thomas Gruber via
 	  the PX4 repository (2014-12-06).
-
+	* tools/bfd-converter.c and mkdeps.c:  Eliminate a warnging about
+	  redefined strtok_r on some platforms (2014-12-8).
+	* arch/sim/Kconfig:  Allow building the simulated framebuffer driver
+	  even if NX is not enabled (12014-12-8).
+	* configs/sim/traveler and README.txt:  Add a configuration build and test
+	  the Traveler firt person game using the simualtor (2014-12-8).
+	* arch/arm/src/stm32/chip/stm32f20xxx_pinmap.h and stm32f40xxx_pinmap.h:
+	  Set the GPIO_SPEED_50MHz on all F2 and F4 SPI pin configurations.
+	  This is based on an F411 SPI1 errata but the fixed is generalized to
+	  all SPI and all F2 and F4 (let me know if this introduces any other
+	  issues).  Discovered and fixed by Sebastien Lorquet after much
+	  consternation (2014-12-8).
+	* libc/stdio/lib_avsprintf.c: avsprintf():  Fix a bug in usage of
+	  va_list on x86.  On x86, va_list is a pointer to a single copy on the
+	  stack.  avsprintf() calls lib_vsprintf() twice and so traverses the
+	  va_list twice using va_start.  va_start modifies that single copy on 
+	  he stack so that the second call to lib_vsprintf() fails.  This appears
+	  to be an issue with x86 only so far (2014-12-8).
+	* stdint.h:  Don't use hex values to specify minimum values of fixed
+	  width, signed values.  Hex values are inherently unsigned and not
+	  usable for this purpose in all contexts (2014-12-8).
+	* arch/arm/src/tiva/tiva_i2c.c, tiva_i2c.h, Kconfig, and Make.defs: Add
+	  build framework and skeleton files for Tiva I2C driver.  Initial
+	  commit is just the STM32 I2C driver with name changes and STM32-
+	  specific logic removed (2014-12-9).
+	* fs/procfs/fs_procfs.c:  Add procfs write support.  From Ken Petit
+	  (2014-12-9).
+	* include/crc8.h, libc/misc/lib_crc8.c, and Make.defs: Add CRC8 support.
+	  From Ken Pettit (2014-12-9).
+	* drivers/mtd/smart.c, Kconfig, fs/smartfs/smartfs_smart.c,
+	  smartfs_procfs.c, smartfs_utils.c, smartfs.h, Kconfig,
+	  include/nuttx/fs/ioctl.h, smart.h, and mtd/smart.h: Implements wear-
+	  leveling in the SmartFS.  From Ken Pettit (2014-12-9).

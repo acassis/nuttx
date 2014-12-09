@@ -1,7 +1,7 @@
-############################################################################
-# libc/misc/Make.defs
+#!/bin/bash
+# sim/traveler/setenv.sh
 #
-#   Copyright (C) 2011-2012, 2014 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,63 +31,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
 
-# Add the internal C files to the build
+if [ "$(basename $0)" = "setenv.sh" ] ; then
+  echo "You must source this script, not run it!" 1>&2
+  exit 1
+fi
 
-CSRCS += lib_stream.c lib_filesem.c
+if [ -z ${PATH_ORIG} ]; then export PATH_ORIG=${PATH}; fi
 
-# Add C files that depend on file OR socket descriptors
+#export NUTTX_BIN=
+#export PATH=${NUTTX_BIN}:/sbin:/usr/sbin:${PATH_ORIG}
 
-ifneq ($(CONFIG_NFILE_DESCRIPTORS),0)
-
-CSRCS += lib_sendfile.c
-
-ifneq ($(CONFIG_NFILE_STREAMS),0)
-CSRCS += lib_streamsem.c
-endif
-
-ifeq ($(CONFIG_LIBC_IOCTL_VARIADIC),y)
-CSRCS += lib_ioctl.c
-endif
-
-else
-ifneq ($(CONFIG_NSOCKET_DESCRIPTORS),0)
-
-CSRCS += lib_sendfile.c
-
-ifneq ($(CONFIG_NFILE_STREAMS),0)
-CSRCS += lib_streamsem.c
-endif
-
-ifeq ($(CONFIG_LIBC_IOCTL_VARIADIC),y)
-CSRCS += lib_ioctl.c
-endif
-
-endif
-endif
-
-# Add the miscellaneous C files to the build
-
-CSRCS += lib_match.c lib_crc32.c lib_crc16.c lib_crc8.c lib_dumpbuffer.c
-
-ifeq ($(CONFIG_DEBUG),y)
-CSRCS += lib_dbg.c
-endif
-
-# Keyboard driver encoder/decoder
-
-ifeq ($(CONFIG_LIB_KBDCODEC),y)
-CSRCS += lib_kbdencode.c lib_kbddecode.c
-endif
-
-# SLCD driver encoder/decoder
-
-ifeq ($(CONFIG_LIB_SLCDCODEC),y)
-CSRCS += lib_slcdencode.c lib_slcddecode.c
-endif
-
-# Add the misc directory to the build
-
-DEPPATH += --dep-path misc
-VPATH += :misc
+echo "PATH : ${PATH}"

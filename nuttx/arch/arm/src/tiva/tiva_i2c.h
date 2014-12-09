@@ -1,5 +1,5 @@
-/****************************************************************************
- * apps/graphics/traveler/include/trv_fsutils.h
+/************************************************************************************
+ * arch/arm/src/tiva/tiva_i2c.h
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -31,24 +31,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ****************************************************************************/
+ ************************************************************************************/
 
-#ifndef __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H
-#define __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H
+#ifndef __ARCH_ARM_SRC_TIVA_TIVA_I2C_H
+#define __ARCH_ARM_SRC_TIVA_TIVA_I2C_H
 
-/****************************************************************************
+/************************************************************************************
  * Included Files
- ****************************************************************************/
+ ************************************************************************************/
 
-#include "trv_types.h"
+#include <nuttx/config.h>
+#include <nuttx/i2c.h>
 
-#include <stdio.h>
+#include "chip.h"
+#include "chip/tiva_i2c.h"
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-int16_t trv_read_decimal(FAR FILE *fp);
-FAR char *trv_fullpath(FAR const char *path, FAR const char *name);
-
-#endif /* __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H */
+#endif /* __ARCH_ARM_SRC_TIVA_TIVA_I2C_H */

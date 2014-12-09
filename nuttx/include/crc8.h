@@ -1,8 +1,8 @@
 /****************************************************************************
- * apps/graphics/traveler/include/trv_fsutils.h
+ * include/crc8.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2014 Ken Pettit. All rights reserved.
+ *   Author: Ken Pettit <pettitkd@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,22 +33,52 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H
-#define __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H
+#ifndef __INCLUDE_CRC8_H
+#define __INCLUDE_CRC8_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "trv_types.h"
-
-#include <stdio.h>
+#include <sys/types.h>
+#include <stdint.h>
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-int16_t trv_read_decimal(FAR FILE *fp);
-FAR char *trv_fullpath(FAR const char *path, FAR const char *name);
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
 
-#endif /* __APPS_GRAPHICS_TRAVELER_INCLUDE_TRV_FSUTILS_H */
+/****************************************************************************
+ * Name: crc8part
+ *
+ * Description:
+ *   Continue CRC calculation on a part of the buffer.
+ *
+ ****************************************************************************/
+
+uint8_t crc8part(FAR const uint8_t *src, size_t len, uint8_t crc8val);
+
+/****************************************************************************
+ * Name: crc8
+ *
+ * Description:
+ *   Return an 8-bit CRC of the contents of the 'src' buffer, length 'len'
+ *   using the polynomial x^8+x^6+x^3+x^2+1 (Koopman, et al. "0xA6" poly).
+ *
+ ****************************************************************************/
+
+uint8_t crc8(FAR const uint8_t *src, size_t len);
+
+#undef EXTERN
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __INCLUDE_CRC8_H */

@@ -1,7 +1,7 @@
 /****************************************************************************
- * fs/vfs/fs_fsync.c
+ * config/sim/src/sim_touchscreen.c
  *
- *   Copyright (C) 2007-2009, 2013-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,29 +39,40 @@
 
 #include <nuttx/config.h>
 
-#include <unistd.h>
-#include <fcntl.h>
+#include <sys/types.h>
+#include <stdint.h>
 #include <errno.h>
-#include <assert.h>
+#include <debug.h>
 
-#include <nuttx/fs/fs.h>
-#include <nuttx/sched.h>
-
-#include "inode/inode.h"
-
-#ifndef CONFIG_DISABLE_MOUNTPOINT
+#include <nuttx/video/fb.h>
+#include <nuttx/input/touchscreen.h>
+#include <nuttx/nx/nx.h>
+#include <nuttx/nx/nxglib.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+/* Configuration ************************************************************/
+/* Pick a background color */
+
+#ifndef CONFIG_EXAMPLES_TOUCHSCREEN_BGCOLOR
+#  define CONFIG_EXAMPLES_TOUCHSCREEN_BGCOLOR 0x007b68ee
+#endif
 
 /****************************************************************************
- * Private Variables
+ * Private Types
  ****************************************************************************/
 
+struct sim_touchscreen_s
+{
+  NXHANDLE hnx;
+};
+
 /****************************************************************************
- * Public Variables
+ * Private Data
  ****************************************************************************/
+
+static struct sim_touchscreen_s g_simtc;
 
 /****************************************************************************
  * Private Functions
@@ -72,81 +83,100 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: file_fsync
+ * Name: arch_tcinitialize()
  *
  * Description:
- *   Equivalent to the standard fsync() function except that is accepts a
- *   struct file instance instead of a file descriptor.  Currently used
- *   only by aio_fsync();
+ *   Perform architecuture-specific initialization of the touchscreen
+ *   hardware.  This interface must be provided by all configurations
+ *   using apps/examples/touchscreen
  *
  ****************************************************************************/
 
-int file_fsync(FAR struct file *filep)
+int arch_tcinitialize(int minor)
 {
-  struct inode *inode;
+  FAR NX_DRIVERTYPE *dev;
+  nxgl_mxpixel_t color;
   int ret;
 
-  /* Was this file opened for write access? */
-
-  if ((filep->f_oflags & O_WROK) == 0)
-    {
-      ret = EBADF;
-      goto errout;
-    }
-
-  /* Is this inode a registered mountpoint? Does it support the
-   * sync operations may be relevant to device drivers but only
-   * the mountpoint operations vtable contains a sync method.
+  /* Initialize the simulated frame buffer device.  We need to create an
+   * X11 window to support the mouse-driven touchscreen simulation.
    */
 
-  inode = filep->f_inode;
-  if (!inode || !INODE_IS_MOUNTPT(inode) ||
-      !inode->u.i_mops || !inode->u.i_mops->sync)
+  ivdbg("Initializing framebuffer\n");
+  ret = up_fbinitialize();
+  if (ret < 0)
     {
-      ret = EINVAL;
+      idbg("up_fbinitialize failed: %d\n", -ret);
       goto errout;
     }
 
-  /* Yes, then tell the mountpoint to sync this file */
-
-  ret = inode->u.i_mops->sync(filep);
-  if (ret >= 0)
+  dev = up_fbgetvplane(0);
+  if (!dev)
     {
-      return OK;
+      idbg("up_fbgetvplane 0 failed\n");
+      ret = -ENODEV;
+      goto errout_with_fb;
     }
 
-  ret = -ret;
+  /* Then open NX */
 
+  ivdbg("Open NX\n");
+  g_simtc.hnx = nx_open(dev);
+  if (!g_simtc.hnx)
+    {
+      ret = -errno;
+      idbg("nx_open failed: %d\n", ret);
+      goto errout_with_fb;
+    }
+
+  /* Set the background to the configured background color */
+
+  ivdbg("Set background color=%d\n", CONFIG_EXAMPLES_TOUCHSCREEN_BGCOLOR);
+
+  color = CONFIG_EXAMPLES_TOUCHSCREEN_BGCOLOR;
+  ret = nx_setbgcolor(g_simtc.hnx, &color);
+  if (ret < 0)
+    {
+      idbg("nx_setbgcolor failed: %d\n", ret);
+      goto errout_with_nx;
+    }
+
+  /* Finally, initialize the touchscreen simulation on the X window */
+
+  ret = arch_tcinitialize(minor);
+  if (ret < 0)
+    {
+      idbg("arch_tcinitialize failed: %d\n", ret);
+      goto errout_with_nx;
+    }
+  return OK;
+
+errout_with_nx:
+  nx_close(g_simtc.hnx);
+  goto errout;
+errout_with_fb:
+  fb_uninitialize();
 errout:
-  set_errno(ret);
-  return ERROR;
+  return ret;
 }
 
 /****************************************************************************
- * Name: fsync
+ * Name: arch_tcuninitialize()
  *
  * Description:
- *   This func simply binds inode sync methods to the sync system call.
+ *   Perform architecuture-specific un-initialization of the touchscreen
+ *   hardware.  This interface must be provided by all configurations
+ *   using apps/examples/touchscreen
  *
  ****************************************************************************/
 
-int fsync(int fd)
+void arch_tcuninitialize(void)
 {
-  FAR struct file *filep;
+  /* Shut down the touchscreen driver */
 
-  /* Get the file structure corresponding to the file descriptor. */
+  sim_tcuninitialize();
 
-  filep = fs_getfilep(fd);
-  if (!filep)
-    {
-      /* The errno value has already been set */
+  /* Close NX */
 
-      return ERROR;
-    }
-
-  /* Perform the fsync operation */
-
-  return file_fsync(filep);
+  nx_close(g_simtc.hnx);
 }
-
-#endif /* !CONFIG_DISABLE_MOUNTPOINT */

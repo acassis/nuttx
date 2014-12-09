@@ -86,7 +86,7 @@ static FAR struct fb_vtable_s *trv_get_fbdev(void)
   ret = up_fbinitialize();
   if (ret < 0)
     {
-      trv_abort("up_fbinitialize failed: %d\n", -ret);
+      trv_abort("ERROR: up_fbinitialize failed: %d\n", -ret);
     }
 
   /* Set up to use video plane 0.  There is no support for anything but
@@ -96,7 +96,7 @@ static FAR struct fb_vtable_s *trv_get_fbdev(void)
   fbdev = up_fbgetvplane(0);
   if (!fbdev)
     {
-      trv_abort("up_fbgetvplane(0) failed\n");
+      trv_abort("ERROR: up_fbgetvplane(0) failed\n");
     }
 
   return fbdev;
@@ -128,7 +128,7 @@ static void trv_fb_initialize(FAR struct trv_graphics_info_s *ginfo)
   ret = fbdev->getvideoinfo(fbdev, &vinfo);
   if (ret < 0)
     {
-      trv_abort("getvideoinfo() failed\n");
+      trv_abort("ERROR: getvideoinfo() failed\n");
     }
 
   ginfo->xres = vinfo.xres;
@@ -137,7 +137,7 @@ static void trv_fb_initialize(FAR struct trv_graphics_info_s *ginfo)
   ret = fbdev->getplaneinfo(fbdev, 0, &pinfo);
   if (ret < 0)
     {
-      trv_abort("getplaneinfo() failed\n");
+      trv_abort("ERROR: getplaneinfo() failed\n");
     }
 
   ginfo->stride   = pinfo.stride;
@@ -145,7 +145,7 @@ static void trv_fb_initialize(FAR struct trv_graphics_info_s *ginfo)
 
   if (vinfo.fmt != TRV_COLOR_FMT || pinfo.bpp != TRV_BPP)
     {
-      trv_abort("Bad color format(%d)/bpp(%b)\n", vinfo.fmt, pinfo.bpp);
+      trv_abort("ERROR: Bad color format(%d)/bpp(%d)\n", vinfo.fmt, pinfo.bpp);
     }
 }
 #endif
@@ -352,7 +352,7 @@ void trv_row_update(struct trv_graphics_info_s *ginfo,
 }
 
 /****************************************************************************
- * Name: trv_row_tranfer
+ * Name: trv_row_transfer
  *
  * Description:
  *   Transfer one line from the line buffer to the NX window.
@@ -544,7 +544,7 @@ void trv_display_update(struct trv_graphics_info_s *ginfo)
 #ifdef CONFIG_NX
       /* Transfer the row buffer to the NX window */
 
-      trv_row_tranfer(ginfo, dest, destrow);
+      trv_row_transfer(ginfo, dest, destrow);
       destrow++;
 #else
       first = dest;
@@ -558,7 +558,7 @@ void trv_display_update(struct trv_graphics_info_s *ginfo)
 #ifdef CONFIG_NX
           /* Transfer the row buffer to the NX window */
 
-          trv_row_tranfer(ginfo, dest, destrow);
+          trv_row_transfer(ginfo, dest, destrow);
           destrow++;
 #else
           /* Point to the next row in the frame buffer */
