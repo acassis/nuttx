@@ -77,32 +77,32 @@
 
 /* I2C Slave */
 
-#define TIVA_I2CS_OAR_OFFSET           0x0000 /* I2C Slave Own Address */
-#define TIVA_I2CS_CSR_OFFSET           0x0004 /* I2C Slave Control/Status */
-#define TIVA_I2CS_DR_OFFSET            0x0008 /* I2C Slave Data */
-#define TIVA_I2CS_IMR_OFFSET           0x000c /* I2C Slave Interrupt Mask */
-#define TIVA_I2CS_RIS_OFFSET           0x0010 /* I2C Slave Raw Interrupt Status */
-#define TIVA_I2CS_MIS_OFFSET           0x0014 /* I2C Slave Masked Interrupt Status */
-#define TIVA_I2CS_ICR_OFFSET           0x0018 /* I2C Slave Interrupt Clear */
+#define TIVA_I2CS_OAR_OFFSET           0x0800 /* I2C Slave Own Address */
+#define TIVA_I2CS_CSR_OFFSET           0x0804 /* I2C Slave Control/Status */
+#define TIVA_I2CS_DR_OFFSET            0x0808 /* I2C Slave Data */
+#define TIVA_I2CS_IMR_OFFSET           0x080c /* I2C Slave Interrupt Mask */
+#define TIVA_I2CS_RIS_OFFSET           0x0810 /* I2C Slave Raw Interrupt Status */
+#define TIVA_I2CS_MIS_OFFSET           0x0814 /* I2C Slave Masked Interrupt Status */
+#define TIVA_I2CS_ICR_OFFSET           0x0818 /* I2C Slave Interrupt Clear */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS_SOAR2_OFFSET       0x001c /* I2C Slave Own Address 2 */
-#  define TIVA_I2CS_ACKCTL_OFFSET      0x0020 /* I2C Slave ACK Control */
+#  define TIVA_I2CS_SOAR2_OFFSET       0x081c /* I2C Slave Own Address 2 */
+#  define TIVA_I2CS_ACKCTL_OFFSET      0x0820 /* I2C Slave ACK Control */
 #endif
 
 /* I2C Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC_FIFODATA_OFFSET   0x0000 /* I2C FIFO Data */
-#  define TIVA_I2CSC_FIFOCTL_OFFSET    0x0004 /* I2C FIFO Control */
-#  define TIVA_I2CSC_FIFOSTATUS_OFFSET 0x0008 /* I2C FIFO Status */
+#  define TIVA_I2CSC_FIFODATA_OFFSET   0x0f00 /* I2C FIFO Data */
+#  define TIVA_I2CSC_FIFOCTL_OFFSET    0x0f04 /* I2C FIFO Control */
+#  define TIVA_I2CSC_FIFOSTATUS_OFFSET 0x0f08 /* I2C FIFO Status */
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC_PP_OFFSET         0x00c0 /* I2C Peripheral Properties */
-#  define TIVA_I2CSC_PC_OFFSET         0x00c4 /* I2C Peripheral Configuration */
+#  define TIVA_I2CSC_PP_OFFSET         0x0fc0 /* I2C Peripheral Properties */
+#  define TIVA_I2CSC_PC_OFFSET         0x0fc4 /* I2C Peripheral Configuration */
 #endif
 
 /* I2C Register Addresses ***********************************************************/
@@ -111,59 +111,59 @@
 
 /* I2C0 Master */
 
-#define TIVA_I2CM0_SA                  (TIVA_I2CM0_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM0_CS                  (TIVA_I2CM0_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM0_DR                  (TIVA_I2CM0_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM0_TPR                 (TIVA_I2CM0_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM0_IMR                 (TIVA_I2CM0_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM0_RIS                 (TIVA_I2CM0_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM0_MIS                 (TIVA_I2CM0_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM0_ICR                 (TIVA_I2CM0_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM0_CR                  (TIVA_I2CM0_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM0_SA                  (TIVA_I2C0_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM0_CS                  (TIVA_I2C0_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM0_DR                  (TIVA_I2C0_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM0_TPR                 (TIVA_I2C0_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM0_IMR                 (TIVA_I2C0_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM0_RIS                 (TIVA_I2C0_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM0_MIS                 (TIVA_I2C0_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM0_ICR                 (TIVA_I2C0_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM0_CR                  (TIVA_I2C0_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM0_CLKOCNT           (TIVA_I2CM0_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM0_BMON              (TIVA_I2CM0_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM0_CLKOCNT           (TIVA_I2C0_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM0_BMON              (TIVA_I2C0_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM0_BLEN              (TIVA_I2CM0_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM0_BCNT              (TIVA_I2CM0_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM0_BLEN              (TIVA_I2C0_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM0_BCNT              (TIVA_I2C0_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM0_CR2               (TIVA_I2CM0_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM0_CR2               (TIVA_I2C0_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C0 Slave */
 
-#define TIVA_I2CS0_OAR                 (TIVA_I2CS0_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS0_CSR                 (TIVA_I2CS0_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS0_DR                  (TIVA_I2CS0_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS0_IMR                 (TIVA_I2CS0_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS0_RIS                 (TIVA_I2CS0_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS0_MIS                 (TIVA_I2CS0_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS0_ICR                 (TIVA_I2CS0_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS0_OAR                 (TIVA_I2C0_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS0_CSR                 (TIVA_I2C0_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS0_DR                  (TIVA_I2C0_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS0_IMR                 (TIVA_I2C0_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS0_RIS                 (TIVA_I2C0_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS0_MIS                 (TIVA_I2C0_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS0_ICR                 (TIVA_I2C0_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS0_SOAR2             (TIVA_I2CS0_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS0_ACKCTL            (TIVA_I2CS0_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS0_SOAR2             (TIVA_I2C0_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS0_ACKCTL            (TIVA_I2C0_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C0 Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC0_FIFODATA         (TIVA_I2CSC0_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC0_FIFOCTL          (TIVA_I2CSC0_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC0_FIFOSTATUS       (TIVA_I2CSC0_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC0_FIFODATA         (TIVA_I2C0_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC0_FIFOCTL          (TIVA_I2C0_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC0_FIFOSTATUS       (TIVA_I2C0_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC0_PP               (TIVA_I2CSC0_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC0_PC               (TIVA_I2CSC0_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC0_PP               (TIVA_I2C0_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC0_PC               (TIVA_I2C0_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 0 */
 
@@ -171,59 +171,59 @@
 
 /* I2C1 Master */
 
-#define TIVA_I2CM1_SA                  (TIVA_I2CM1_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM1_CS                  (TIVA_I2CM1_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM1_DR                  (TIVA_I2CM1_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM1_TPR                 (TIVA_I2CM1_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM1_IMR                 (TIVA_I2CM1_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM1_RIS                 (TIVA_I2CM1_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM1_MIS                 (TIVA_I2CM1_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM1_ICR                 (TIVA_I2CM1_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM1_CR                  (TIVA_I2CM1_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM1_SA                  (TIVA_I2C1_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM1_CS                  (TIVA_I2C1_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM1_DR                  (TIVA_I2C1_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM1_TPR                 (TIVA_I2C1_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM1_IMR                 (TIVA_I2C1_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM1_RIS                 (TIVA_I2C1_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM1_MIS                 (TIVA_I2C1_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM1_ICR                 (TIVA_I2C1_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM1_CR                  (TIVA_I2C1_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM1_CLKOCNT           (TIVA_I2CM1_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM1_BMON              (TIVA_I2CM1_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM1_CLKOCNT           (TIVA_I2C1_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM1_BMON              (TIVA_I2C1_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM1_BLEN              (TIVA_I2CM1_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM1_BCNT              (TIVA_I2CM1_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM1_BLEN              (TIVA_I2C1_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM1_BCNT              (TIVA_I2C1_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM1_CR2               (TIVA_I2CM1_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM1_CR2               (TIVA_I2C1_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C1 Slave */
 
-#define TIVA_I2CS1_OAR                 (TIVA_I2CS1_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS1_CSR                 (TIVA_I2CS1_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS1_DR                  (TIVA_I2CS1_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS1_IMR                 (TIVA_I2CS1_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS1_RIS                 (TIVA_I2CS1_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS1_MIS                 (TIVA_I2CS1_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS1_ICR                 (TIVA_I2CS1_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS1_OAR                 (TIVA_I2C1_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS1_CSR                 (TIVA_I2C1_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS1_DR                  (TIVA_I2C1_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS1_IMR                 (TIVA_I2C1_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS1_RIS                 (TIVA_I2C1_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS1_MIS                 (TIVA_I2C1_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS1_ICR                 (TIVA_I2C1_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS1_SOAR2             (TIVA_I2CS1_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS1_ACKCTL            (TIVA_I2CS1_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS1_SOAR2             (TIVA_I2C1_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS1_ACKCTL            (TIVA_I2C1_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C1 Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC1_FIFODATA         (TIVA_I2CSC1_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC1_FIFOCTL          (TIVA_I2CSC1_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC1_FIFOSTATUS       (TIVA_I2CSC1_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC1_FIFODATA         (TIVA_I2C1_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC1_FIFOCTL          (TIVA_I2C1_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC1_FIFOSTATUS       (TIVA_I2C1_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC1_PP               (TIVA_I2CSC1_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC1_PC               (TIVA_I2CSC1_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC1_PP               (TIVA_I2C1_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC1_PC               (TIVA_I2C1_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 1 */
 
@@ -231,59 +231,59 @@
 
 /* I2C2 Master */
 
-#define TIVA_I2CM2_SA                  (TIVA_I2CM2_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM2_CS                  (TIVA_I2CM2_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM2_DR                  (TIVA_I2CM2_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM2_TPR                 (TIVA_I2CM2_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM2_IMR                 (TIVA_I2CM2_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM2_RIS                 (TIVA_I2CM2_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM2_MIS                 (TIVA_I2CM2_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM2_ICR                 (TIVA_I2CM2_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM2_CR                  (TIVA_I2CM2_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM2_SA                  (TIVA_I2C2_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM2_CS                  (TIVA_I2C2_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM2_DR                  (TIVA_I2C2_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM2_TPR                 (TIVA_I2C2_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM2_IMR                 (TIVA_I2C2_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM2_RIS                 (TIVA_I2C2_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM2_MIS                 (TIVA_I2C2_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM2_ICR                 (TIVA_I2C2_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM2_CR                  (TIVA_I2C2_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM2_CLKOCNT           (TIVA_I2CM2_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM2_BMON              (TIVA_I2CM2_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM2_CLKOCNT           (TIVA_I2C2_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM2_BMON              (TIVA_I2C2_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM2_BLEN              (TIVA_I2CM2_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM2_BCNT              (TIVA_I2CM2_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM2_BLEN              (TIVA_I2C2_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM2_BCNT              (TIVA_I2C2_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM2_CR2               (TIVA_I2CM2_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM2_CR2               (TIVA_I2C2_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C2 Slave */
 
-#define TIVA_I2CS2_OAR                 (TIVA_I2CS2_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS2_CSR                 (TIVA_I2CS2_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS2_DR                  (TIVA_I2CS2_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS2_IMR                 (TIVA_I2CS2_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS2_RIS                 (TIVA_I2CS2_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS2_MIS                 (TIVA_I2CS2_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS2_ICR                 (TIVA_I2CS2_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS2_OAR                 (TIVA_I2C2_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS2_CSR                 (TIVA_I2C2_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS2_DR                  (TIVA_I2C2_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS2_IMR                 (TIVA_I2C2_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS2_RIS                 (TIVA_I2C2_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS2_MIS                 (TIVA_I2C2_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS2_ICR                 (TIVA_I2C2_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS2_SOAR2             (TIVA_I2CS2_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS2_ACKCTL            (TIVA_I2CS2_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS2_SOAR2             (TIVA_I2C2_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS2_ACKCTL            (TIVA_I2C2_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C2 Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC2_FIFODATA         (TIVA_I2CSC2_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC2_FIFOCTL          (TIVA_I2CSC2_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC2_FIFOSTATUS       (TIVA_I2CSC2_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC2_FIFODATA         (TIVA_I2C2_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC2_FIFOCTL          (TIVA_I2C2_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC2_FIFOSTATUS       (TIVA_I2C2_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC2_PP               (TIVA_I2CSC2_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC2_PC               (TIVA_I2CSC2_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC2_PP               (TIVA_I2C2_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC2_PC               (TIVA_I2C2_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 2 */
 
@@ -291,59 +291,59 @@
 
 /* I2C3 Master */
 
-#define TIVA_I2CM3_SA                  (TIVA_I2CM3_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM3_CS                  (TIVA_I2CM3_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM3_DR                  (TIVA_I2CM3_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM3_TPR                 (TIVA_I2CM3_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM3_IMR                 (TIVA_I2CM3_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM3_RIS                 (TIVA_I2CM3_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM3_MIS                 (TIVA_I2CM3_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM3_ICR                 (TIVA_I2CM3_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM3_CR                  (TIVA_I2CM3_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM3_SA                  (TIVA_I2C3_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM3_CS                  (TIVA_I2C3_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM3_DR                  (TIVA_I2C3_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM3_TPR                 (TIVA_I2C3_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM3_IMR                 (TIVA_I2C3_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM3_RIS                 (TIVA_I2C3_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM3_MIS                 (TIVA_I2C3_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM3_ICR                 (TIVA_I2C3_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM3_CR                  (TIVA_I2C3_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM3_CLKOCNT           (TIVA_I2CM3_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM3_BMON              (TIVA_I2CM3_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM3_CLKOCNT           (TIVA_I2C3_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM3_BMON              (TIVA_I2C3_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM3_BLEN              (TIVA_I2CM3_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM3_BCNT              (TIVA_I2CM3_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM3_BLEN              (TIVA_I2C3_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM3_BCNT              (TIVA_I2C3_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM3_CR2               (TIVA_I2CM3_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM3_CR2               (TIVA_I2C3_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C3 Slave */
 
-#define TIVA_I2CS3_OAR                 (TIVA_I2CS3_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS3_CSR                 (TIVA_I2CS3_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS3_DR                  (TIVA_I2CS3_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS3_IMR                 (TIVA_I2CS3_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS3_RIS                 (TIVA_I2CS3_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS3_MIS                 (TIVA_I2CS3_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS3_ICR                 (TIVA_I2CS3_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS3_OAR                 (TIVA_I2C3_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS3_CSR                 (TIVA_I2C3_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS3_DR                  (TIVA_I2C3_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS3_IMR                 (TIVA_I2C3_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS3_RIS                 (TIVA_I2C3_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS3_MIS                 (TIVA_I2C3_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS3_ICR                 (TIVA_I2C3_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS3_SOAR2             (TIVA_I2CS3_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS3_ACKCTL            (TIVA_I2CS3_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS3_SOAR2             (TIVA_I2C3_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS3_ACKCTL            (TIVA_I2C3_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C3 Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC3_FIFODATA         (TIVA_I2CSC3_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC3_FIFOCTL          (TIVA_I2CSC3_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC3_FIFOSTATUS       (TIVA_I2CSC3_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC3_FIFODATA         (TIVA_I2C3_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC3_FIFOCTL          (TIVA_I2C3_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC3_FIFOSTATUS       (TIVA_I2C3_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC3_PP               (TIVA_I2CSC3_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC3_PC               (TIVA_I2CSC3_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC3_PP               (TIVA_I2C3_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC3_PC               (TIVA_I2C3_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 3 */
 
@@ -351,59 +351,59 @@
 
 /* I2C4 Master */
 
-#define TIVA_I2CM4_SA                  (TIVA_I2CM4_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM4_CS                  (TIVA_I2CM4_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM4_DR                  (TIVA_I2CM4_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM4_TPR                 (TIVA_I2CM4_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM4_IMR                 (TIVA_I2CM4_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM4_RIS                 (TIVA_I2CM4_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM4_MIS                 (TIVA_I2CM4_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM4_ICR                 (TIVA_I2CM4_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM4_CR                  (TIVA_I2CM4_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM4_SA                  (TIVA_I2C4_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM4_CS                  (TIVA_I2C4_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM4_DR                  (TIVA_I2C4_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM4_TPR                 (TIVA_I2C4_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM4_IMR                 (TIVA_I2C4_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM4_RIS                 (TIVA_I2C4_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM4_MIS                 (TIVA_I2C4_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM4_ICR                 (TIVA_I2C4_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM4_CR                  (TIVA_I2C4_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM4_CLKOCNT           (TIVA_I2CM4_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM4_BMON              (TIVA_I2CM4_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM4_CLKOCNT           (TIVA_I2C4_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM4_BMON              (TIVA_I2C4_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM4_BLEN              (TIVA_I2CM4_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM4_BCNT              (TIVA_I2CM4_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM4_BLEN              (TIVA_I2C4_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM4_BCNT              (TIVA_I2C4_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM4_CR2               (TIVA_I2CM4_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM4_CR2               (TIVA_I2C4_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C4 Slave */
 
-#define TIVA_I2CS4_OAR                 (TIVA_I2CS4_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS4_CSR                 (TIVA_I2CS4_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS4_DR                  (TIVA_I2CS4_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS4_IMR                 (TIVA_I2CS4_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS4_RIS                 (TIVA_I2CS4_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS4_MIS                 (TIVA_I2CS4_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS4_ICR                 (TIVA_I2CS4_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS4_OAR                 (TIVA_I2C4_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS4_CSR                 (TIVA_I2C4_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS4_DR                  (TIVA_I2C4_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS4_IMR                 (TIVA_I2C4_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS4_RIS                 (TIVA_I2C4_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS4_MIS                 (TIVA_I2C4_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS4_ICR                 (TIVA_I2C4_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS4_SOAR2             (TIVA_I2CS4_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS4_ACKCTL            (TIVA_I2CS4_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS4_SOAR2             (TIVA_I2C4_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS4_ACKCTL            (TIVA_I2C4_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C4 Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC4_FIFODATA         (TIVA_I2CSC4_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC4_FIFOCTL          (TIVA_I2CSC4_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC4_FIFOSTATUS       (TIVA_I2CSC4_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC4_FIFODATA         (TIVA_I2C4_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC4_FIFOCTL          (TIVA_I2C4_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC4_FIFOSTATUS       (TIVA_I2C4_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC4_PP               (TIVA_I2CSC4_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC4_PC               (TIVA_I2CSC4_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC4_PP               (TIVA_I2C4_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC4_PC               (TIVA_I2C4_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 4 */
 
@@ -411,59 +411,59 @@
 
 /* I2C5 Master */
 
-#define TIVA_I2CM5_SA                  (TIVA_I2CM5_BASE + TIVA_I2CM_SA_OFFSET)
-#define TIVA_I2CM5_CS                  (TIVA_I2CM5_BASE + TIVA_I2CM_CS_OFFSET)
-#define TIVA_I2CM5_DR                  (TIVA_I2CM5_BASE + TIVA_I2CM_DR_OFFSET)
-#define TIVA_I2CM5_TPR                 (TIVA_I2CM5_BASE + TIVA_I2CM_TPR_OFFSET)
-#define TIVA_I2CM5_IMR                 (TIVA_I2CM5_BASE + TIVA_I2CM_IMR_OFFSET)
-#define TIVA_I2CM5_RIS                 (TIVA_I2CM5_BASE + TIVA_I2CM_RIS_OFFSET)
-#define TIVA_I2CM5_MIS                 (TIVA_I2CM5_BASE + TIVA_I2CM_MIS_OFFSET)
-#define TIVA_I2CM5_ICR                 (TIVA_I2CM5_BASE + TIVA_I2CM_ICR_OFFSET)
-#define TIVA_I2CM5_CR                  (TIVA_I2CM5_BASE + TIVA_I2CM_CR_OFFSET)
+#define TIVA_I2CM5_SA                  (TIVA_I2C5_BASE + TIVA_I2CM_SA_OFFSET)
+#define TIVA_I2CM5_CS                  (TIVA_I2C5_BASE + TIVA_I2CM_CS_OFFSET)
+#define TIVA_I2CM5_DR                  (TIVA_I2C5_BASE + TIVA_I2CM_DR_OFFSET)
+#define TIVA_I2CM5_TPR                 (TIVA_I2C5_BASE + TIVA_I2CM_TPR_OFFSET)
+#define TIVA_I2CM5_IMR                 (TIVA_I2C5_BASE + TIVA_I2CM_IMR_OFFSET)
+#define TIVA_I2CM5_RIS                 (TIVA_I2C5_BASE + TIVA_I2CM_RIS_OFFSET)
+#define TIVA_I2CM5_MIS                 (TIVA_I2C5_BASE + TIVA_I2CM_MIS_OFFSET)
+#define TIVA_I2CM5_ICR                 (TIVA_I2C5_BASE + TIVA_I2CM_ICR_OFFSET)
+#define TIVA_I2CM5_CR                  (TIVA_I2C5_BASE + TIVA_I2CM_CR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM5_CLKOCNT           (TIVA_I2CM5_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
-#  define TIVA_I2CM5_BMON              (TIVA_I2CM5_BASE + TIVA_I2CM_BMON_OFFSET)
+#  define TIVA_I2CM5_CLKOCNT           (TIVA_I2C5_BASE + TIVA_I2CM_CLKOCNT_OFFSET)
+#  define TIVA_I2CM5_BMON              (TIVA_I2C5_BASE + TIVA_I2CM_BMON_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CM5_BLEN              (TIVA_I2CM5_BASE + TIVA_I2CM_BLEN_OFFSET)
-#  define TIVA_I2CM5_BCNT              (TIVA_I2CM5_BASE + TIVA_I2CM_BCNT_OFFSET)
+#  define TIVA_I2CM5_BLEN              (TIVA_I2C5_BASE + TIVA_I2CM_BLEN_OFFSET)
+#  define TIVA_I2CM5_BCNT              (TIVA_I2C5_BASE + TIVA_I2CM_BCNT_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB)
-#  define TIVA_I2CM5_CR2               (TIVA_I2CM5_BASE + TIVA_I2CM_CR2_OFFSET)
+#  define TIVA_I2CM5_CR2               (TIVA_I2C5_BASE + TIVA_I2CM_CR2_OFFSET)
 #endif
 
 /* I2C5 Slave */
 
-#define TIVA_I2CS5_OAR                 (TIVA_I2CS5_BASE + TIVA_I2CS_OAR_OFFSET)
-#define TIVA_I2CS5_CSR                 (TIVA_I2CS5_BASE + TIVA_I2CS_CSR_OFFSET)
-#define TIVA_I2CS5_DR                  (TIVA_I2CS5_BASE + TIVA_I2CS_DR_OFFSET)
-#define TIVA_I2CS5_IMR                 (TIVA_I2CS5_BASE + TIVA_I2CS_IMR_OFFSET)
-#define TIVA_I2CS5_RIS                 (TIVA_I2CS5_BASE + TIVA_I2CS_RIS_OFFSET)
-#define TIVA_I2CS5_MIS                 (TIVA_I2CS5_BASE + TIVA_I2CS_MIS_OFFSET)
-#define TIVA_I2CS5_ICR                 (TIVA_I2CS5_BASE + TIVA_I2CS_ICR_OFFSET)
+#define TIVA_I2CS5_OAR                 (TIVA_I2C5_BASE + TIVA_I2CS_OAR_OFFSET)
+#define TIVA_I2CS5_CSR                 (TIVA_I2C5_BASE + TIVA_I2CS_CSR_OFFSET)
+#define TIVA_I2CS5_DR                  (TIVA_I2C5_BASE + TIVA_I2CS_DR_OFFSET)
+#define TIVA_I2CS5_IMR                 (TIVA_I2C5_BASE + TIVA_I2CS_IMR_OFFSET)
+#define TIVA_I2CS5_RIS                 (TIVA_I2C5_BASE + TIVA_I2CS_RIS_OFFSET)
+#define TIVA_I2CS5_MIS                 (TIVA_I2C5_BASE + TIVA_I2CS_MIS_OFFSET)
+#define TIVA_I2CS5_ICR                 (TIVA_I2C5_BASE + TIVA_I2CS_ICR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CS5_SOAR2             (TIVA_I2CS5_BASE + TIVA_I2CS_SOAR2_OFFSET)
-#  define TIVA_I2CS5_ACKCTL            (TIVA_I2CS5_BASE + TIVA_I2CS_ACKCTL_OFFSET)
+#  define TIVA_I2CS5_SOAR2             (TIVA_I2C5_BASE + TIVA_I2CS_SOAR2_OFFSET)
+#  define TIVA_I2CS5_ACKCTL            (TIVA_I2C5_BASE + TIVA_I2CS_ACKCTL_OFFSET)
 #endif
 
 /* I2C Status and control */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC5_FIFODATA         (TIVA_I2CSC5_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
-#  define TIVA_I2CSC5_FIFOCTL          (TIVA_I2CSC5_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
-#  define TIVA_I2CSC5_FIFOSTATUS       (TIVA_I2CSC5_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
+#  define TIVA_I2CSC5_FIFODATA         (TIVA_I2C5_BASE + TIVA_I2CSC_FIFODATA_OFFSET)
+#  define TIVA_I2CSC5_FIFOCTL          (TIVA_I2C5_BASE + TIVA_I2CSC_FIFOCTL_OFFSET)
+#  define TIVA_I2CSC5_FIFOSTATUS       (TIVA_I2C5_BASE + TIVA_I2CSC_FIFOSTATUS_OFFSET)
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define TIVA_I2CSC5_PP               (TIVA_I2CSC5_BASE + TIVA_I2CSC_PP_OFFSET)
-#  define TIVA_I2CSC5_PC               (TIVA_I2CSC5_BASE + TIVA_I2CSC_PC_OFFSET)
+#  define TIVA_I2CSC5_PP               (TIVA_I2C5_BASE + TIVA_I2CSC_PP_OFFSET)
+#  define TIVA_I2CSC5_PC               (TIVA_I2C5_BASE + TIVA_I2CSC_PC_OFFSET)
 #endif
 #endif /* TIVA_NI2C > 5 */
 
@@ -543,7 +543,7 @@
 
 /* I2C Master Interrupt Mask (I2CM_IMR) */
 
-#define I2CM_IMR_IM                    (1 << 0)  /* Bit 0:  Interrupt Mask */
+#define I2CM_IMR_MIM                  (1 << 0)  /* Bit 0:  Master Interrupt Mask */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
@@ -565,68 +565,68 @@
 
 /* I2C Master Raw Interrupt Status (I2CM_RIS) */
 
-#define I2CM_RIS_RIS                   (1 << 0)  /* Bit 0:  Raw Interrupt Status */
+#define I2CM_RIS_MRIS                 (1 << 0)  /* Bit 0:  Master Raw Interrupt Status */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_RIS_CLKRIS              (1 << 1)  /* Bit 1:  Clock Timeout Raw Interrupt Status */
+#  define I2CM_RIS_CLKRIS             (1 << 1)  /* Bit 1:  Clock Timeout Raw Interrupt Status */
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_RIS_DMARXRIS           (1 << 2)  /* Bit 2:  Receive DMA Interrupt Mask */
-#  define I2CM_RIS_DMATXRIS           (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Mask */
-#  define I2CM_RIS_NACKRIS            (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Mask */
-#  define I2CM_RIS_STARTRIS           (1 << 5)  /* Bit 5:  START Detection Interrupt Mask */
-#  define I2CM_RIS_STOPRIS            (1 << 6)  /* Bit 6:  STOP Detection Interrupt Mask */
-#  define I2CM_RIS_ARBLOSTRIS         (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Mask */
-#  define I2CM_RIS_TXRIS              (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Mask */
-#  define I2CM_RIS_RXRIS              (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Mask */
-#  define I2CM_RIS_TXFERIS            (1 << 10) /* Bit 10: Transmit FIFO Empty Interrupt Mask */
-#  define I2CM_RIS_RXFFRIS            (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Mask */
+#  define I2CM_RIS_DMARXRIS           (1 << 2)  /* Bit 2:  Receive DMA Interrupt Status */
+#  define I2CM_RIS_DMATXRIS           (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Status */
+#  define I2CM_RIS_NACKRIS            (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Status */
+#  define I2CM_RIS_STARTRIS           (1 << 5)  /* Bit 5:  START Detection Interrupt Status */
+#  define I2CM_RIS_STOPRIS            (1 << 6)  /* Bit 6:  STOP Detection Interrupt Status */
+#  define I2CM_RIS_ARBLOSTRIS         (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Status */
+#  define I2CM_RIS_TXRIS              (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Status */
+#  define I2CM_RIS_RXRIS              (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Status */
+#  define I2CM_RIS_TXFERIS            (1 << 10) /* Bit 10: Transmit FIFO Empty Interrupt Status */
+#  define I2CM_RIS_RXFFRIS            (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Status */
 #endif
 
 /* I2C Master Masked Interrupt Status (I2CM_MIS) */
 
-#define I2CM_MIS_MIS                   (1 << 0)  /* Bit 0:  Masked Interrupt Status */
+#define I2CM_MIS_MMIS                 (1 << 0)  /* Bit 0:  Maseter Masked Interrupt Status */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_MIS_CLKMIS              (1 << 1)  /* Bit 1:  Clock Timeout Masked Interrupt Status */
+#  define I2CM_MIS_CLKMIS             (1 << 1)  /* Bit 1:  Clock Timeout Masked Interrupt Status */
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_MIS_DMARXMIS           (1 << 2)  /* Bit 2:  Receive DMA Interrupt Mask */
-#  define I2CM_MIS_DMATXMIS           (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Mask */
-#  define I2CM_MIS_NACKMIS            (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Mask */
-#  define I2CM_MIS_STARTMIS           (1 << 5)  /* Bit 5:  START Detection Interrupt Mask */
-#  define I2CM_MIS_STOPMIS            (1 << 6)  /* Bit 6:  STOP Detection Interrupt Mask */
-#  define I2CM_MIS_ARBLOSTMIS         (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Mask */
-#  define I2CM_MIS_TXMIS              (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Mask */
-#  define I2CM_MIS_RXMIS              (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Mask */
-#  define I2CM_MIS_TXFEMIS            (1 << 10) /* Bit 10: Transmit FIFO Empty Interrupt Mask */
-#  define I2CM_MIS_RXFFMIS            (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Mask */
+#  define I2CM_MIS_DMARXMIS           (1 << 2)  /* Bit 2:  Receive DMA Interrupt Status */
+#  define I2CM_MIS_DMATXMIS           (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Status */
+#  define I2CM_MIS_NACKMIS            (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Status */
+#  define I2CM_MIS_STARTMIS           (1 << 5)  /* Bit 5:  START Detection Interrupt Status */
+#  define I2CM_MIS_STOPMIS            (1 << 6)  /* Bit 6:  STOP Detection Interrupt Status */
+#  define I2CM_MIS_ARBLOSTMIS         (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Status */
+#  define I2CM_MIS_TXMIS              (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Status */
+#  define I2CM_MIS_RXMIS              (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Status */
+#  define I2CM_MIS_TXFEMIS            (1 << 10) /* Bit 10: Transmit FIFO Empty Interrupt Status */
+#  define I2CM_MIS_RXFFMIS            (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Status */
 #endif
 
 /* I2C Master Masked Interrupt Status (I2CM_ICR) */
 
-#define I2CM_ICR_IC                    (1 << 0)  /* Bit 0:  Masked Interrupt Status */
+#define I2CM_ICR_MIC                  (1 << 0)  /* Bit 0:  Master Masked Interrupt Clear */
 
 #if defined(CONFIG_ARCH_CHIP_TM4C123GH6ZRB) || \
     defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_ICR_CLKIC               (1 << 1)  /* Bit 1:  Clock Timeout Interrupt Clear */
+#  define I2CM_ICR_CLKC               (1 << 1)  /* Bit 1:  Clock Timeout Interrupt Clear */
 #endif
 
 #if defined(CONFIG_ARCH_CHIP_TM4C1294NCPDT)
-#  define I2CM_ICR_DMARXIC            (1 << 2)  /* Bit 2:  Receive DMA Interrupt Mask */
-#  define I2CM_ICR_DMATXIC            (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Mask */
-#  define I2CM_ICR_NACKIC             (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Mask */
-#  define I2CM_ICR_STARTIC            (1 << 5)  /* Bit 5:  START Detection Interrupt Mask */
-#  define I2CM_ICR_STOPIC             (1 << 6)  /* Bit 6:  STOP Detection Interrupt Mask */
-#  define I2CM_ICR_ARBLOSTIC          (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Mask */
-#  define I2CM_ICR_TXIC               (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Mask */
-#  define I2CM_ICR_RXIC               (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Mask */
+#  define I2CM_ICR_DMARXIC            (1 << 2)  /* Bit 2:  Receive DMA Interrupt Clear */
+#  define I2CM_ICR_DMATXIC            (1 << 3)  /* Bit 3:  Transmit DMA Interrupt Clear */
+#  define I2CM_ICR_NACKIC             (1 << 4)  /* Bit 4:  Address/Data NACK Interrupt Clear */
+#  define I2CM_ICR_STARTIC            (1 << 5)  /* Bit 5:  START Detection Interrupt Clear */
+#  define I2CM_ICR_STOPIC             (1 << 6)  /* Bit 6:  STOP Detection Interrupt Clear */
+#  define I2CM_ICR_ARBLOSTIC          (1 << 7)  /* Bit 7:  Arbitration Lost Interrupt Clear */
+#  define I2CM_ICR_TXIC               (1 << 8)  /* Bit 8:  Transmit FIFO Request Interrupt Clear */
+#  define I2CM_ICR_RXIC               (1 << 9)  /* Bit 9:  Receive FIFO Request Interrupt Clear */
 #  define I2CM_ICR_TXFEIC             (1 << 10) /* Bit 10: Transmit FIFO Empty Interrupt Mask */
-#  define I2CM_ICR_RXFFIC             (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Mask */
+#  define I2CM_ICR_RXFFIC             (1 << 11) /* Bit 11: Receive FIFO Full Interrupt Clear */
 #endif
 
 /* I2C Master Configuration (I2CM_CR) */
