@@ -1,9 +1,8 @@
 /************************************************************************************
- * configs/freedom-kl25z/src/up_pwm.c
+ * configs/dk-tm4c129x/src/tm4c_boot.c
  *
- *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
- *           Alan Carvalho de Assis <acassis@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,29 +39,17 @@
 
 #include <nuttx/config.h>
 
-#include <errno.h>
 #include <debug.h>
 
-#include <nuttx/pwm.h>
-#include <sys/types.h>
 #include <arch/board/board.h>
 
-#include "chip.h"
 #include "up_arch.h"
-#include "kl_pwm.h"
+#include "up_internal.h"
+#include "dk-tm4c129x.h"
 
 /************************************************************************************
  * Definitions
  ************************************************************************************/
-/* Configuration *******************************************************************/
-/* PWM
- *
- * The Kinetis Freedom board provides a LED on GPIO.
- */
-
-#ifdef CONFIG_PWM
-
-extern struct pwm_lowerhalf_s *kl_pwminitialize(int timer);
 
 /************************************************************************************
  * Private Functions
@@ -73,48 +60,55 @@ extern struct pwm_lowerhalf_s *kl_pwminitialize(int timer);
  ************************************************************************************/
 
 /************************************************************************************
- * Name: pwm_devinit
+ * Name: tiva_boardinitialize
  *
  * Description:
- *   All Kinetis KL architectures must provide the following interface to work with
- *   examples/pwm.
+ *   All Tiva architectures must provide the following entry point.  This entry
+ *   point is called early in the initialization -- after all memory has been
+ *   configured and mapped but before any devices have been initialized.
  *
  ************************************************************************************/
 
-int pwm_devinit(void)
+void tiva_boardinitialize(void)
 {
-  static bool initialized = false;
-  struct pwm_lowerhalf_s *pwm;
-  int ret;
+  /* Configure SPI chip selects if 1) SSI is not disabled, and 2) the weak function
+   * tm4c_ssiinitialize() has been brought into the link.
+   */
 
-  /* Have we already initialized? */
+  /* The DK-TM4C129x microSD CS and OLED are on SSI0 */
 
-  if (!initialized)
+#if !defined(CONFIG_SSI0_DISABLE) || !defined(CONFIG_SSI1_DISABLE)
+  if (tm4c_ssiinitialize)
     {
-      /* Call kl_pwminitialize() to get an instance of the PWM interface */
-
-      pwm = kl_pwminitialize(0);
-      if (!pwm)
-        {
-          adbg("Failed to get the KL25 PWM lower half\n");
-          return -ENODEV;
-        }
-
-      /* Register the PWM driver at "/dev/pwm0" */
-
-      ret = pwm_register("/dev/pwm0", pwm);
-      if (ret < 0)
-        {
-          adbg("pwm_register failed: %d\n", ret);
-          return ret;
-        }
-
-      /* Now we are initialized */
-
-      initialized = true;
+      tm4c_ssiinitialize();
     }
+#endif
 
-  return OK;
+  /* Configure on-board LEDs if LED support has been selected. */
+
+#ifdef CONFIG_ARCH_LEDS
+  tm4c_ledinit();
+#endif
 }
 
-#endif /* CONFIG_PWM */
+/****************************************************************************
+ * Name: board_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a
+ *   function called board_initialize().  board_initialize() will be
+ *   called immediately after up_intiialize() is called and just before the
+ *   initial application is started.  This additional initialization phase
+ *   may be used, for example, to initialize board-specific device drivers.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_BOARD_INITIALIZE
+void board_initialize(void)
+{
+  /* Perform board initialization */
+
+  (void)tm4c_bringup();
+}
+#endif /* CONFIG_BOARD_INITIALIZE */
