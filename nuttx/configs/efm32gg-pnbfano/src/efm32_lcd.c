@@ -466,9 +466,6 @@ int up_lcdinitialize(void)
       return -ENODEV;
   }
 
-  g_lcd->setpower(      g_lcd,CONFIG_LCD_MAXPOWER);
-  g_lcd->setcontrast(   g_lcd,25);
-
   return OK;
 }
 
