@@ -42,9 +42,11 @@
 #include <sys/mount.h>
 
 #include "efm32_start.h"
+#include "efm32_pwm.h"
 #include "efm32gg-pnbfano.h"
 
 #include <nuttx/input/keypad.h>
+#include <nuttx/pwm.h>
 #include <nuttx/nx/nx.h>
 #include <syslog.h>
 
@@ -109,6 +111,40 @@ void* board_get_nx_dev(int devno, int vplaneno)
 }
 
 /****************************************************************************
+ * Name: board_init_pwm
+ *
+ * Description:
+ *  It return NX_DRIVER of device devno,vplaneno.
+ *
+ ****************************************************************************/
+int board_init_pwm(void)
+{
+    int ret = 0;
+    struct pwm_lowerhalf_s *pwm;    
+
+    pwm = efm32_pwminitialize(0);
+
+    if (!pwm)
+    {
+        adbg("Failed to get the EFM32 PWM lower half\n");
+        return -ENODEV;
+    }
+
+    /* Register the PWM driver at "/dev/pwm0" */
+
+    ret = pwm_register("/dev/pwm0", pwm);
+    if (ret < 0)
+    {
+        adbg("pwm_register failed: %d\n", ret);
+        return ret;
+    }
+
+    /* Now we are initialized */
+    return 0;
+}
+
+
+/****************************************************************************
  * Name: board_initialize
  *
  * Description:
@@ -124,6 +160,13 @@ void* board_get_nx_dev(int devno, int vplaneno)
 #ifdef CONFIG_BOARD_INITIALIZE
 void board_initialize(void)
 {
+
+    syslog(LOG_NOTICE,"initialize PWM !\n");
+	if ( board_init_pwm() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize PWMs\n");
+        return;
+    }
 
     syslog(LOG_NOTICE,"initialize LCD !\n");
     if ( up_lcdinitialize() != OK )

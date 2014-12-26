@@ -41,9 +41,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <debug.h>
 #include <semaphore.h>
+#include <sys/ioctl.h>
 
 //#include <nuttx/spi/spi.h>
 //#include <nuttx/mmcsd.h>
@@ -55,8 +57,13 @@
 #include "efm32gg-pnbfano.h"
 #include "chip/efm32_gpio.h"
 #include "efm32_gpio.h"
+#include "nuttx/pwm.h"
 #include "nuttx/lcd/lcd.h"
 #include "nuttx/lcd/st7565.h"
+
+#ifdef GPIO_LCD_PWM_DEV
+#include <nuttx/pwm.h>
+#endif
 
 /* TODO: put all bus 8080 access in separate file (driver) */
 
@@ -101,6 +108,9 @@ static const uint32_t g_lcd_port_pins[GPIO_LCD_PORT_BUS_WIDTH] =
  ******************************************************************************/
 
 FAR struct lcd_dev_s *g_lcd = NULL;
+#ifdef GPIO_LCD_PWM_DEV
+static int lcd_pwm_dev = -1;
+#endif
 
 
 /****************************************************************************
@@ -397,12 +407,73 @@ static int  st7565_senddata  (FAR struct st7565_lcd_s *lcd, const uint8_t *data,
 
 static int  st7565_backlight (FAR struct st7565_lcd_s *lcd, int level)
 {
-    /* TODO use PWM */
+    int ret = OK;
     UNUSED(lcd);
 
-    efm32_gpiowrite(GPIO_LCD_PWM,level);
+#ifdef GPIO_LCD_PWM_PIN
+    efm32_gpiowrite(GPIO_LCD_PWM_PIN,level);
+#endif
 
-    return OK;
+#ifdef GPIO_LCD_PWM_DEV
+    if ( lcd_pwm_dev < 0 )
+    {
+        lcd_pwm_dev = open(GPIO_LCD_PWM_DEV, O_RDONLY);
+        if (lcd_pwm_dev < 0)
+        {
+            ldbg("LCD pwm open failed errno: %d\n");
+        }
+    }
+    if ( lcd_pwm_dev < 0 )
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct pwm_info_s info;
+        /* Configure the characteristics of the pulse train */
+
+        /* Frequency of the pulse train */
+        info.frequency = 100; /* 100 Hz */
+        /* Duty of the pulse train, "1"-to-"0" duration.
+         * Maximum: 65535/65536 (0x0000ffff)
+         * Minimum:     1/65536 (0x00000001) */
+        info.duty      = (((uint32_t)level)*65535) / 100;
+
+#ifdef CONFIG_PWM_PULSECOUNT
+        /* The number of pulse to generate.  0 means to
+         * generate an indefinite number of pulses  */
+        info.count     = 0;
+#endif
+
+        ret = ioctl(lcd_pwm_dev, 
+                    PWMIOC_SETCHARACTERISTICS, 
+                    (unsigned long)&info
+                   );
+        if (ret < 0)
+        {
+            ldbg("pwm_main: ioctl(PWMIOC_SETCHARACTERISTICS)"
+                 " failed errno: %d\n",
+                 errno
+                );
+        }
+
+        /* Then start the pulse train.  Since the driver was opened in blocking
+         * mode, this call will block if the count value is greater than zero.
+         */
+
+        if ( ret >= 0 )
+        {
+            ret = ioctl(lcd_pwm_dev, PWMIOC_START, 0);
+            if (ret < 0)
+            {
+                ldbg("pwm_main: ioctl(PWMIOC_START) failed: %d\n", errno);
+            }
+        }
+    }
+
+#endif
+
+    return ret;
 
 }
 
@@ -453,7 +524,17 @@ int up_lcdinitialize(void)
 
   st7565_set_bus_output();
 
-  efm32_configgpio(GPIO_LCD_PWM);
+#ifdef GPIO_LCD_PWM_PIN
+  efm32_configgpio(GPIO_LCD_PWM_PIN);
+#endif
+#ifdef GPIO_LCD_PWM_DEV
+
+    lcd_pwm_dev = open(GPIO_LCD_PWM_DEV, O_RDONLY);
+    if (lcd_pwm_dev < 0)
+    {
+        ldbg("LCD pwm open failed errno: %d\n");
+    }
+#endif
 
   /* Configure and enable LCD */
 
@@ -471,12 +552,10 @@ int up_lcdinitialize(void)
 
 
 /************************************************************************************
- * Name:  up_lcdinitialize
+ * Name:  up_lcdgetdev
  *
  * Description:
- *   Initialize the LCD video hardware.  The initial state of the LCD is fully
- *   initialized, display memory cleared, and the LCD ready to use, but with the power
- *   setting at 0 (full off).
+ *  Give lcd pointer instance
  *
  ************************************************************************************/
 

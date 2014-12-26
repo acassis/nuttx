@@ -253,6 +253,14 @@
 #define BOARD_USART2_TX_GPIO        (GPIO_PORTC|GPIO_PIN2)
 #define BOARD_USART2_ROUTE_LOCATION _USART_ROUTE_LOCATION_LOC0
 
+/* Pin routing **************************************************************/
+/* PWM on TIMER0 for backlight:
+ *
+ *   TIMER0 Channel 1 #4 PC0  
+ */
+#define BOARD_PWM_TIMER0_PINCFG     (GPIO_PORTC|GPIO_PIN0|GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET)
+#define BOARD_PWM_TIMER0_PINLOC     _TIMER_ROUTE_LOCATION_LOC4
+#define BOARD_PWM_TIMER0_CLKIN      BOARD_SYSTEM_FREQUENCY
 
 /****************************************************************************
  * Public Function Prototypes
