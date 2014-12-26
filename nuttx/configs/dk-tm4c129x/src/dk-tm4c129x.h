@@ -47,20 +47,17 @@
 #include "tiva_gpio.h"
 
 /************************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ************************************************************************************/
 /* Configuration ********************************************************************/
 
 /* How many SSI modules does this chip support? */
 
 #if TIVA_NSSI < 1
-#  undef CONFIG_SSI0_DISABLE
-#  define CONFIG_SSI0_DISABLE 1
-#  undef CONFIG_SSI1_DISABLE
-#  define CONFIG_SSI1_DISABLE 1
+#  undef CONFIG_TIVA_SSI0
+#  undef CONFIG_TIVA_SSI0
 #elif TIVA_NSSI < 2
-#  undef CONFIG_SSI1_DISABLE
-#  define CONFIG_SSI1_DISABLE 1
+#  undef CONFIG_TIVA_SSI0
 #endif
 
 /* LED definitions ******************************************************************/
@@ -75,11 +72,13 @@
  *   PQ4 Blue LED     J36 pins 3 and 4
  *   PQ7 Green LED    J36 pins 5 and 6
  *   --- ------------ -----------------
+ *
+ * A high output illuminates the LED.
  */
 
-#define GPIO_LED_R   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ONE | GPIO_PORTN | GPIO_PIN_5)
-#define GPIO_LED_G   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ONE | GPIO_PORTQ | GPIO_PIN_4)
-#define GPIO_LED_B   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ONE | GPIO_PORTQ | GPIO_PIN_7)
+#define GPIO_LED_R   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ZERO | GPIO_PORTN | GPIO_PIN_5)
+#define GPIO_LED_G   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ZERO | GPIO_PORTQ | GPIO_PIN_7)
+#define GPIO_LED_B   (GPIO_FUNC_OUTPUT | GPIO_VALUE_ZERO | GPIO_PORTQ | GPIO_PIN_4)
 
 /* Button definitions ***************************************************************/
 /* There are three push buttons on the board.
@@ -111,7 +110,7 @@
  * Name: tm4c_ssiinitialize
  *
  * Description:
- *   Called to configure SPI chip select GPIO pins for the DK-TM4C129x.
+ *   Called to configure SPI chip select GPIO pins for the DK-TM4C129X.
  *
  ************************************************************************************/
 

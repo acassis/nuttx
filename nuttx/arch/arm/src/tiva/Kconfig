@@ -15,6 +15,7 @@ config ARCH_CHIP_LM3S6918
 	depends on ARCH_CHIP_LM
 	select ARCH_CORTEXM3
 	select ARCH_CHIP_LM3S
+	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_SSI1
 
 config ARCH_CHIP_LM3S9B96
@@ -23,6 +24,8 @@ config ARCH_CHIP_LM3S9B96
 	select ARCH_CORTEXM3
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_UART3
+	select TIVA_HAVE_I2C1
+	select TIVA_HAVE_SSI1
 	select TIVA_HAVE_GPIOH_IRQS
 
 config ARCH_CHIP_LM3S6432
@@ -37,6 +40,7 @@ config ARCH_CHIP_LM3S6965
 	select ARCH_CORTEXM3
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_UART3
+	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_GPIOH_IRQS
 
 config ARCH_CHIP_LM3S8962
@@ -45,6 +49,7 @@ config ARCH_CHIP_LM3S8962
 	select ARCH_CORTEXM3
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_UART3
+	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_GPIOH_IRQS
 
 config ARCH_CHIP_LM4F120
@@ -57,9 +62,8 @@ config ARCH_CHIP_LM4F120
 config ARCH_CHIP_TM4C123GH6ZRB
 	bool "TM4C123GH6ZRB"
 	depends on ARCH_CHIP_TIVA
-	select ARCH_CORTEXM4
 	select ARCH_CHIP_TM4C
-	select ARCH_HAVE_FPU
+	select ARCH_CHIP_TM4C123
 	select TIVA_HAVE_GPIOQ_IRQS
 	select TIVA_HAVE_I2C4
 	select TIVA_HAVE_I2C5
@@ -67,36 +71,33 @@ config ARCH_CHIP_TM4C123GH6ZRB
 config ARCH_CHIP_TM4C123GH6PMI
 	bool "TM4C123GH6PMI"
 	depends on ARCH_CHIP_TIVA
-	select ARCH_CORTEXM4
 	select ARCH_CHIP_TM4C
-	select ARCH_HAVE_FPU
+	select ARCH_CHIP_TM4C123
 
 config ARCH_CHIP_TM4C1294NC
 	bool "TM4C1294NC"
 	depends on ARCH_CHIP_TIVA
-	select ARCH_CORTEXM4
 	select ARCH_CHIP_TM4C
-	select ARCH_HAVE_FPU
-	select TIVA_HAVE_GPIOQ_IRQS
+	select ARCH_CHIP_TM4C129
 
 config ARCH_CHIP_TM4C129XNC
 	bool "TM4C129XNC"
 	depends on ARCH_CHIP_TIVA
-	select ARCH_CORTEXM4
 	select ARCH_CHIP_TM4C
-	select ARCH_HAVE_FPU
-	select TIVA_HAVE_GPIOQ_IRQS
+	select ARCH_CHIP_TM4C129
 
 config ARCH_CHIP_CC3200
 	bool "CC3200"
 	depends on ARCH_CHIP_TIVA
 	select ARCH_CORTEXM4
+	select TIVA_HAVE_I2C1
 
 endchoice
 
 # Chip families
 
 config ARCH_CHIP_LM3S
+	bool
 	select TIVA_HAVE_GPIOA_IRQS
 	select TIVA_HAVE_GPIOB_IRQS
 	select TIVA_HAVE_GPIOC_IRQS
@@ -104,7 +105,7 @@ config ARCH_CHIP_LM3S
 	select TIVA_HAVE_GPIOE_IRQS
 	select TIVA_HAVE_GPIOF_IRQS
 	select TIVA_HAVE_GPIOG_IRQS
-	bool
+	select TIVA_HAVE_SSI0
 
 config ARCH_CHIP_LM4F
 	bool
@@ -116,6 +117,7 @@ config ARCH_CHIP_LM4F
 	select TIVA_HAVE_GPIOF_IRQS
 	select TIVA_HAVE_GPIOG_IRQS
 	select TIVA_HAVE_GPIOH_IRQS
+	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_I2C2
 	select TIVA_HAVE_I2C3
 	select TIVA_HAVE_UART3
@@ -123,10 +125,30 @@ config ARCH_CHIP_LM4F
 	select TIVA_HAVE_UART5
 	select TIVA_HAVE_UART6
 	select TIVA_HAVE_UART7
+	select TIVA_HAVE_SSI0
+	select TIVA_HAVE_SSI1
+	select TIVA_HAVE_SSI2
+	select TIVA_HAVE_SSI3
+
+config ARCH_CHIP_TM4C123
+	bool
+
+config ARCH_CHIP_TM4C129
+	bool
+	select TIVA_HAVE_GPIOQ_IRQS
+	select TIVA_HAVE_I2C4
+	select TIVA_HAVE_I2C5
+	select TIVA_HAVE_I2C6
+	select TIVA_HAVE_I2C7
+	select TIVA_HAVE_I2C8
+	select TIVA_HAVE_I2C9
 
 config ARCH_CHIP_TM4C
 	bool
+	select ARCH_CORTEXM4
+	select ARCH_HAVE_FPU
 	select TIVA_HAVE_GPIOP_IRQS
+	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_I2C2
 	select TIVA_HAVE_I2C3
 	select TIVA_HAVE_UART3
@@ -134,6 +156,10 @@ config ARCH_CHIP_TM4C
 	select TIVA_HAVE_UART5
 	select TIVA_HAVE_UART6
 	select TIVA_HAVE_UART7
+	select TIVA_HAVE_SSI0
+	select TIVA_HAVE_SSI1
+	select TIVA_HAVE_SSI2
+	select TIVA_HAVE_SSI3
 
 config LM_REVA2
 	bool "Rev A2"
@@ -151,36 +177,83 @@ menu "Tiva/Stellaris Peripheral Support"
 
 config TIVA_I2C
 	bool
+	default n
+
+config TIVA_HAVE_I2C1
+	bool
+	default n
 
 config TIVA_HAVE_I2C2
 	bool
+	default n
 
 config TIVA_HAVE_I2C3
 	bool
+	default n
 
 config TIVA_HAVE_I2C4
 	bool
+	default n
 
 config TIVA_HAVE_I2C5
 	bool
+	default n
+
+config TIVA_HAVE_I2C6
+	bool
+	default n
+
+config TIVA_HAVE_I2C7
+	bool
+	default n
+
+config TIVA_HAVE_I2C8
+	bool
+	default n
+
+config TIVA_HAVE_I2C9
+	bool
+	default n
 
 config TIVA_HAVE_UART3
 	bool
+	default n
 
 config TIVA_HAVE_UART4
 	bool
+	default n
 
 config TIVA_HAVE_UART5
 	bool
+	default n
 
 config TIVA_HAVE_UART6
 	bool
+	default n
 
 config TIVA_HAVE_UART7
 	bool
+	default n
+
+config TIVA_HAVE_SSI0
+	bool
+	default n
 
 config TIVA_HAVE_SSI1
 	bool
+	default n
+
+config TIVA_HAVE_SSI2
+	bool
+	default n
+
+config TIVA_HAVE_SSI3
+	bool
+	default n
+
+config TIVA_SSI
+	bool
+	default n
 
 config TIVA_I2C0
 	bool "I2C0"
@@ -214,6 +287,30 @@ config TIVA_I2C5
 	bool "I2C5"
 	default n
 	depends on TIVA_HAVE_I2C5
+	select TIVA_I2C
+
+config TIVA_I2C6
+	bool "I2C6"
+	default n
+	depends on TIVA_HAVE_I2C6
+	select TIVA_I2C
+
+config TIVA_I2C7
+	bool "I2C7"
+	default n
+	depends on TIVA_HAVE_I2C7
+	select TIVA_I2C
+
+config TIVA_I2C8
+	bool "I2C8"
+	default n
+	depends on TIVA_HAVE_I2C8
+	select TIVA_I2C
+
+config TIVA_I2C9
+	bool "I2C9"
+	default n
+	depends on TIVA_HAVE_I2C9
 	select TIVA_I2C
 
 config TIVA_UART0
@@ -261,13 +358,29 @@ config TIVA_UART7
 	depends on TIVA_HAVE_UART7
 	select ARCH_HAVE_UART7
 
-config SSI0_DISABLE
-	bool "Disable SSI0"
+config TIVA_SSI0
+	bool "SSI0"
 	default y
+	depends on TIVA_HAVE_SSI0
+	select TIVA_SSI
 
-config SSI1_DISABLE
-	bool "Disable SSI1"
+config TIVA_SSI1
+	bool "SSI1"
 	default y
+	depends on TIVA_HAVE_SSI1
+	select TIVA_SSI
+
+config TIVA_SSI2
+	bool "SSI2"
+	default y
+	depends on TIVA_HAVE_SSI2
+	select TIVA_SSI
+
+config TIVA_SSI3
+	bool "SSI3"
+	default y
+	depends on TIVA_HAVE_SSI3
+	select TIVA_SSI
 
 config TIVA_ETHERNET
 	bool "Ethernet"
@@ -585,7 +698,7 @@ config M3S_DUMPPACKET
 endmenu
 endif
 
-if !SSI0_DISABLE || !SSI1_DISABLE
+if TIVA_SSI
 menu "Tiva/Stellaris SSI Configuration"
 
 config SSI_POLLWAIT
