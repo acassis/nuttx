@@ -115,14 +115,14 @@ struct efm32_pwmtimer_s
   uint8_t                     irq;     /* Timer update IRQ */
   uint8_t                     prev;    /* The previous value of the RCR (pre-loaded) */
   uint8_t                     curr;    /* The current value of the RCR (pre-loaded) */
-  uint32_t                    count;   /* Remaining pluse count */
+  uint32_t                    count;   /* Remaining pulse count */
 #endif
   uint32_t                    base;    /* The base address of the timer */
   uint32_t                    pincfg;  /* Output pin configuration */
   uint32_t                    pclk;    /* The frequency of the peripheral clock
                                         * that drives the timer module. */
 #ifdef CONFIG_PWM_PULSECOUNT
-  FAR void *                  handle;  /* Handle used for upper-half callback */
+  FAR void                   *handle;  /* Handle used for upper-half callback */
 #endif
 };
 
@@ -132,7 +132,8 @@ struct efm32_pwmtimer_s
 /* Register access */
 
 static uint32_t pwm_getreg(struct efm32_pwmtimer_s *priv, int offset);
-static void pwm_putreg(struct efm32_pwmtimer_s *priv, int offset, uint32_t value);
+static void pwm_putreg(struct efm32_pwmtimer_s *priv, int offset,
+                       uint32_t value);
 
 #if defined(CONFIG_DEBUG_PWM) && defined(CONFIG_DEBUG_VERBOSE)
 static void pwm_dumpregs(struct efm32_pwmtimer_s *priv, FAR const char *msg);
@@ -410,30 +411,34 @@ static int pwm_timer(FAR struct efm32_pwmtimer_s *priv,
 #endif
 
   if ( efm32_timer_set_freq(priv->base,priv->pclk,info->frequency) < 0 )
-  {
+    {
       pwmdbg("Cannot set TIMER frequency %dHz from clock %dHz\n",
              info->frequency,
              priv->pclk
             );
       return -EINVAL;
-  }
+    }
 
   regval = ((uint32_t)(priv->pinloc)) << _TIMER_ROUTE_LOCATION_SHIFT;
 
   switch(priv->channel)
-  {
-      case 0:
-          regval |= _TIMER_ROUTE_CC0PEN_MASK;
-          break;
-      case 1:
-          regval |= _TIMER_ROUTE_CC1PEN_MASK;
-          break;
-      case 2:
-          regval |= _TIMER_ROUTE_CC2PEN_MASK;
-          break;
-     default:
-          ASSERT(false);
-  }
+    {
+    case 0:
+      regval |= _TIMER_ROUTE_CC0PEN_MASK;
+      break;
+
+    case 1:
+      regval |= _TIMER_ROUTE_CC1PEN_MASK;
+      break;
+
+    case 2:
+      regval |= _TIMER_ROUTE_CC2PEN_MASK;
+      break;
+
+    default:
+      ASSERT(false);
+    }
+
   pwm_putreg( priv, EFM32_TIMER_ROUTE_OFFSET, regval );
 
   regval = (info->duty * pwm_getreg(priv, EFM32_TIMER_TOP_OFFSET)) >> 16;
@@ -447,8 +452,8 @@ static int pwm_timer(FAR struct efm32_pwmtimer_s *priv,
   pwm_putreg(priv, cc_offet + EFM32_TIMER_CC_CTRL_OFFSET, regval );
 
   /* Start Timer */
-  pwm_putreg(priv, EFM32_TIMER_CMD_OFFSET, TIMER_CMD_START );
 
+  pwm_putreg(priv, EFM32_TIMER_CMD_OFFSET, TIMER_CMD_START );
   pwm_dumpregs(priv, "After starting");
   return OK;
 }
@@ -475,8 +480,7 @@ static int pwm_timer(FAR struct efm32_pwmtimer_s *priv,
 #warning "not yet implemented"
 static int pwm_interrupt(struct efm32_pwmtimer_s *priv)
 {
-
-    /* TODO pwm_interrupt */
+  /* TODO pwm_interrupt */
 #if 0
   uint32_t regval;
 
@@ -503,7 +507,7 @@ static int pwm_interrupt(struct efm32_pwmtimer_s *priv)
       regval &= ~ATIM_BDTR_MOE;
       pwm_putreg(priv, STM32_ATIM_BDTR_OFFSET, regval);
 
-      /* Disable first interrtups, stop and reset the timer */
+      /* Disable first interrupts, stop and reset the timer */
 
       (void)pwm_stop((FAR struct pwm_lowerhalf_s *)priv);
 
@@ -548,10 +552,10 @@ static int pwm_interrupt(struct efm32_pwmtimer_s *priv)
 #endif
 
 /****************************************************************************
- * Name: pwm_tim1/8interrupt
+ * Name: pwm_timer0/3_interrupt
  *
  * Description:
- *   Handle timer 1 and 8 interrupts.
+ *   Handle timer 0..3 interrupts.
  *
  * Input parameters:
  *   Standard NuttX interrupt inputs
@@ -588,7 +592,6 @@ static int pwm_timer3_interrupt(int irq, void *context)
   return pwm_interrupt(&g_pwm3dev);
 }
 #endif
-
 
 /****************************************************************************
  * Name: pwm_pulsecount
@@ -664,38 +667,42 @@ static uint8_t pwm_pulsecount(uint32_t count)
 
 static int pwm_setup(FAR struct pwm_lowerhalf_s *dev)
 {
-    FAR struct efm32_pwmtimer_s *priv = (FAR struct efm32_pwmtimer_s *)dev;
+  FAR struct efm32_pwmtimer_s *priv = (FAR struct efm32_pwmtimer_s *)dev;
 
-    pwmvdbg("TIMER%d pincfg: %08x\n", priv->timid, priv->pincfg);
-    pwm_dumpregs(priv, "Initially");
+  pwmvdbg("TIMER%d pincfg: %08x\n", priv->timid, priv->pincfg);
+  pwm_dumpregs(priv, "Initially");
 
-    /* Configure the PWM output pin, but do not start the timer yet */
+  /* Configure the PWM output pin, but do not start the timer yet */
 
-    /* enable TIMER clock */
-    switch(priv->timid)
+  /* Dnable TIMER clock */
+
+  switch(priv->timid)
     {
-        case 0:
-            modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER0);
-            break;
-        case 1:
-            modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER1);
-            break;
-        case 2:
-            modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER2);
-            break;
-        case 3:
-            modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER3);
-            break;
-        default:
-            ASSERT(false);
-            break;
+    case 0:
+      modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER0);
+      break;
+
+    case 1:
+      modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER1);
+      break;
+
+    case 2:
+      modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER2);
+      break;
+
+    case 3:
+      modifyreg32(EFM32_CMU_HFPERCLKEN0,0,CMU_HFPERCLKEN0_TIMER3);
+      break;
+
+    default:
+      ASSERT(false);
+      break;
     }
 
-
-    efm32_configgpio(priv->pincfg);
-    pwm_putreg(priv,EFM32_TIMER_ROUTE_OFFSET,BOARD_PWM_TIMER0_PINLOC);
-    pwm_dumpgpio(priv->pincfg, "PWM setup");
-    return OK;
+  efm32_configgpio(priv->pincfg);
+  pwm_putreg(priv,EFM32_TIMER_ROUTE_OFFSET,BOARD_PWM_TIMER0_PINLOC);
+  pwm_dumpgpio(priv->pincfg, "PWM setup");
+  return OK;
 }
 
 /****************************************************************************
@@ -924,7 +931,6 @@ FAR struct pwm_lowerhalf_s *efm32_pwminitialize(int timer)
 #endif
         break;
 #endif
-
 
       default:
         pwmdbg("No such timer configured\n");

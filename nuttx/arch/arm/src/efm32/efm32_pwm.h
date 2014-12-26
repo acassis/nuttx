@@ -102,8 +102,6 @@
  * not supported by this driver:  Only one output channel per timer.
  */
 
-
-
 /************************************************************************************
  * Public Types
  ************************************************************************************/
@@ -117,7 +115,8 @@
 #undef EXTERN
 #if defined(__cplusplus)
 #define EXTERN extern "C"
-extern "C" {
+extern "C"
+{
 #else
 #define EXTERN extern
 #endif
@@ -143,7 +142,7 @@ extern "C" {
  *
  ************************************************************************************/
 
-EXTERN FAR struct pwm_lowerhalf_s *efm32_pwminitialize(int timer);
+FAR struct pwm_lowerhalf_s *efm32_pwminitialize(int timer);
 
 #undef EXTERN
 #if defined(__cplusplus)

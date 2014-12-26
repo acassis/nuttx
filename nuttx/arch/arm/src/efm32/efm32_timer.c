@@ -87,26 +87,21 @@
 #  define efm32_timer_dumpgpio(p,m)
 #endif
 
-
 /****************************************************************************
  * Private Types
  ****************************************************************************/
-
 
 /****************************************************************************
  * Static Function Prototypes
  ****************************************************************************/
 
-
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
-
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-
 
 /****************************************************************************
  * Name: efm32_timer_dumpregs
@@ -124,46 +119,48 @@
 
 void efm32_timer_dumpregs(uintptr_t base, FAR const char *msg)
 {
-    int i;
-    efm32_timervdbg("%s:\n", msg);
-    efm32_timervdbg("  CTRL: %04x STATUS: %04x   IEN: %04x     IF: %04x\n",
-                    getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
-                    getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
-                    getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
-                    getreg32(base + EFM32_TIMER_IF_OFFSET     )
-                   );
-    efm32_timervdbg("   TOP: %04x   TOPB: %04x   CNT: %04x  ROUTE: %04x\n",
-                    getreg32(base + EFM32_TIMER_TOP_OFFSET    ),
-                    getreg32(base + EFM32_TIMER_TOPB_OFFSET   ),
-                    getreg32(base + EFM32_TIMER_CNT_OFFSET    ),
-                    getreg32(base + EFM32_TIMER_ROUTE_OFFSET  )
-                   );
+  int i;
 
-    for(i = 0; i < EFM32_TIMER_NCC; i++)
+  efm32_timervdbg("%s:\n", msg);
+  efm32_timervdbg("  CTRL: %04x STATUS: %04x   IEN: %04x     IF: %04x\n",
+                  getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
+                  getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
+                  getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
+                  getreg32(base + EFM32_TIMER_IF_OFFSET     )
+                 );
+  efm32_timervdbg("   TOP: %04x   TOPB: %04x   CNT: %04x  ROUTE: %04x\n",
+                  getreg32(base + EFM32_TIMER_TOP_OFFSET    ),
+                  getreg32(base + EFM32_TIMER_TOPB_OFFSET   ),
+                  getreg32(base + EFM32_TIMER_CNT_OFFSET    ),
+                  getreg32(base + EFM32_TIMER_ROUTE_OFFSET  )
+                 );
+
+  for (i = 0; i < EFM32_TIMER_NCC; i++)
     {
 #if defined(CONFIG_DEBUG_TIMER) && defined(CONFIG_DEBUG_VERBOSE)
-        uintptr_t base_cc = base + EFM32_TIMER_CC_OFFSET(i);
+      uintptr_t base_cc = base + EFM32_TIMER_CC_OFFSET(i);
 #endif
-        efm32_timervdbg("CC%d => CTRL: %04x    CCV:  %04x  CCVP: %04x CCVB: %04x\n",
-                        i
-                        getreg32(base_cc + EFM32_TIMER_CC_CTRL_OFFSET ),
-                        getreg32(base_cc + EFM32_TIMER_CC_CCV_OFFSET  ),
-                        getreg32(base_cc + EFM32_TIMER_CC_CCVP_OFFSET ),
-                        getreg32(base_cc + EFM32_TIMER_CC_CCVB_OFFSET )
-                       );
+      efm32_timervdbg("CC%d => CTRL: %04x    CCV:  %04x  CCVP: %04x CCVB: %04x\n",
+                      i
+                      getreg32(base_cc + EFM32_TIMER_CC_CTRL_OFFSET ),
+                      getreg32(base_cc + EFM32_TIMER_CC_CCV_OFFSET  ),
+                      getreg32(base_cc + EFM32_TIMER_CC_CCVP_OFFSET ),
+                      getreg32(base_cc + EFM32_TIMER_CC_CCVB_OFFSET )
+                     );
     }
-    efm32_timervdbg("DTCTRL: %04x DTTIME: %04x  DTFC: %04x DTOGEN:  %04x\n",
-                    getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
-                    getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
-                    getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
-                    getreg32(base + EFM32_TIMER_IF_OFFSET     )
-                   );
-    efm32_timervdbg("DTFAULT: %04x DTFAULTC: %04x  DTLOCK: %04x \n",
-                    getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
-                    getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
-                    getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
-                    getreg32(base + EFM32_TIMER_IF_OFFSET     )
-                   );
+
+  efm32_timervdbg("DTCTRL: %04x DTTIME: %04x  DTFC: %04x DTOGEN:  %04x\n",
+                  getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
+                  getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
+                  getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
+                  getreg32(base + EFM32_TIMER_IF_OFFSET     )
+                 );
+  efm32_timervdbg("DTFAULT: %04x DTFAULTC: %04x  DTLOCK: %04x \n",
+                  getreg32(base + EFM32_TIMER_CTRL_OFFSET   ),
+                  getreg32(base + EFM32_TIMER_STATUS_OFFSET ),
+                  getreg32(base + EFM32_TIMER_IEN_OFFSET    ),
+                  getreg32(base + EFM32_TIMER_IF_OFFSET     )
+                 );
 }
 
 /****************************************************************************
@@ -182,40 +179,45 @@ void efm32_timer_dumpregs(uintptr_t base, FAR const char *msg)
 
 void efm32_timer_reset(uintptr_t base)
 {
-    int i;
-    /* Make sure disabled first, before resetting other registers */
-    putreg32(TIMER_CMD_STOP, base + EFM32_TIMER_CMD_OFFSET);
+  int i;
 
-    /* Reset timer register */
-    putreg32(_TIMER_CTRL_RESETVALUE,  base + EFM32_TIMER_CTRL_OFFSET     );
-    putreg32(_TIMER_IEN_RESETVALUE,   base + EFM32_TIMER_STATUS_OFFSET   );
-    putreg32(_TIMER_IFC_MASK,         base + EFM32_TIMER_IEN_OFFSET      );
-    putreg32(_TIMER_TOP_RESETVALUE,   base + EFM32_TIMER_IF_OFFSET       );
-    putreg32(_TIMER_TOPB_RESETVALUE,  base + EFM32_TIMER_CTRL_OFFSET     ); 
-    putreg32(_TIMER_CNT_RESETVALUE,   base + EFM32_TIMER_CMD_OFFSET      ); 
-    /* Do not reset route register, setting should be done independently */
-    /* (Note: ROUTE register may be locked by DTLOCK register.) */
-    //putreg32(_TIMER_ROUTE_RESETVALUE, base + EFM32_TIMER_ROUTE_OFFSET    );
+  /* Make sure disabled first, before resetting other registers */
 
-    for(i = 0; i < EFM32_TIMER_NCC; i++)
+  putreg32(TIMER_CMD_STOP, base + EFM32_TIMER_CMD_OFFSET);
+
+  /* Reset timer register */
+
+  putreg32(_TIMER_CTRL_RESETVALUE,  base + EFM32_TIMER_CTRL_OFFSET     );
+  putreg32(_TIMER_IEN_RESETVALUE,   base + EFM32_TIMER_STATUS_OFFSET   );
+  putreg32(_TIMER_IFC_MASK,         base + EFM32_TIMER_IEN_OFFSET      );
+  putreg32(_TIMER_TOP_RESETVALUE,   base + EFM32_TIMER_IF_OFFSET       );
+  putreg32(_TIMER_TOPB_RESETVALUE,  base + EFM32_TIMER_CTRL_OFFSET     ); 
+  putreg32(_TIMER_CNT_RESETVALUE,   base + EFM32_TIMER_CMD_OFFSET      ); 
+
+  /* Do not reset route register, setting should be done independently */
+  /* (Note: ROUTE register may be locked by DTLOCK register.) */
+  //putreg32(_TIMER_ROUTE_RESETVALUE, base + EFM32_TIMER_ROUTE_OFFSET    );
+
+  for(i = 0; i < EFM32_TIMER_NCC; i++)
     {
-        uintptr_t base_cc = base + EFM32_TIMER_CC_OFFSET(i);
-        putreg32(_TIMER_CC_CTRL_RESETVALUE, base_cc+EFM32_TIMER_CC_CTRL_OFFSET);
-        putreg32(_TIMER_CC_CCV_RESETVALUE,  base_cc+EFM32_TIMER_CC_CCV_OFFSET );
-        putreg32(_TIMER_CC_CCVB_RESETVALUE, base_cc+EFM32_TIMER_CC_CCVB_OFFSET);
+      uintptr_t base_cc = base + EFM32_TIMER_CC_OFFSET(i);
+      putreg32(_TIMER_CC_CTRL_RESETVALUE, base_cc+EFM32_TIMER_CC_CTRL_OFFSET);
+      putreg32(_TIMER_CC_CCV_RESETVALUE,  base_cc+EFM32_TIMER_CC_CCV_OFFSET );
+      putreg32(_TIMER_CC_CCVB_RESETVALUE, base_cc+EFM32_TIMER_CC_CCVB_OFFSET);
     }
 
-    /* Reset dead time insertion module, no effect on timers without DTI */
+  /* Reset dead time insertion module, no effect on timers without DTI */
 
 #ifdef TIMER_DTLOCK_LOCKKEY_UNLOCK
-    /* Unlock DTI registers first in case locked */
-    putreg32(TIMER_DTLOCK_LOCKKEY_UNLOCK, base + EFM32_TIMER_DTLOCK_OFFSET);
+  /* Unlock DTI registers first in case locked */
 
-    putreg32(_TIMER_DTCTRL_RESETVALUE,base + EFM32_TIMER_DTCTRL_OFFSET   );
-    putreg32(_TIMER_DTTIME_RESETVALUE,base + EFM32_TIMER_DTTIME_OFFSET   );
-    putreg32(_TIMER_DTFC_RESETVALUE,  base + EFM32_TIMER_DTFC_OFFSET     );
-    putreg32(_TIMER_DTOGEN_RESETVALUE,base + EFM32_TIMER_DTOGEN_OFFSET   );
-    putreg32(_TIMER_DTFAULTC_MASK,    base + EFM32_TIMER_DTFAULTC_OFFSET );
+  putreg32(TIMER_DTLOCK_LOCKKEY_UNLOCK, base + EFM32_TIMER_DTLOCK_OFFSET);
+
+  putreg32(_TIMER_DTCTRL_RESETVALUE,base + EFM32_TIMER_DTCTRL_OFFSET   );
+  putreg32(_TIMER_DTTIME_RESETVALUE,base + EFM32_TIMER_DTTIME_OFFSET   );
+  putreg32(_TIMER_DTFC_RESETVALUE,  base + EFM32_TIMER_DTFC_OFFSET     );
+  putreg32(_TIMER_DTOGEN_RESETVALUE,base + EFM32_TIMER_DTOGEN_OFFSET   );
+  putreg32(_TIMER_DTFAULTC_MASK,    base + EFM32_TIMER_DTFAULTC_OFFSET );
 #endif
 }   
 
@@ -236,35 +238,36 @@ void efm32_timer_reset(uintptr_t base)
  ****************************************************************************/
 int efm32_timer_set_freq(uintptr_t base, uint32_t clk_freq, uint32_t freq)
 {
-    int prescaler = 0;
-    int cnt_freq = clk_freq>>16;
-    int reload;
+  int prescaler = 0;
+  int cnt_freq = clk_freq>>16;
+  int reload;
 
-    while ( cnt_freq > freq )
+  while ( cnt_freq > freq )
     {
-        prescaler++;
-        cnt_freq>>=1;
-        if ( prescaler > (_TIMER_CTRL_PRESC_MASK>>_TIMER_CTRL_PRESC_SHIFT))
-            return -1;
+      prescaler++;
+      cnt_freq>>=1;
+      if ( prescaler > (_TIMER_CTRL_PRESC_MASK>>_TIMER_CTRL_PRESC_SHIFT))
+        {
+          return -1;
+        }
     }
-    modifyreg32(base + EFM32_TIMER_CTRL_OFFSET,
-                _TIMER_CTRL_PRESC_MASK,
-                prescaler<<_TIMER_CTRL_PRESC_SHIFT
-               );
 
-    prescaler = 1<<prescaler;
+  modifyreg32(base + EFM32_TIMER_CTRL_OFFSET,
+              _TIMER_CTRL_PRESC_MASK,
+              prescaler<<_TIMER_CTRL_PRESC_SHIFT
+             );
 
-    reload = (clk_freq/prescaler/freq);
+  prescaler = 1<<prescaler;
 
-    efm32_timerdbg("Source: %4xHz Div: %4x Reload: %4x \n",
-                   clk_freq,
-                   prescaler,
-                   reload
-                  );
+  reload = (clk_freq/prescaler/freq);
 
-    putreg32(reload, base + EFM32_TIMER_TOP_OFFSET);
+  efm32_timerdbg("Source: %4xHz Div: %4x Reload: %4x \n",
+                 clk_freq,
+                 prescaler,
+                 reload
+                );
 
-    return prescaler;
+  putreg32(reload, base + EFM32_TIMER_TOP_OFFSET);
+
+  return prescaler;
 }
-
-

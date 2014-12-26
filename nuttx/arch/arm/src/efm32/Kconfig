@@ -468,9 +468,9 @@ config EFM32_TIMER0_PWM
 		Reserve timer 0 for use by PWM
 
 		Timer devices may be used for different purposes.  One special purpose is
-		to generate modulated outputs for such things as motor control.  
-		If EFM32_TIMER0 is defined then THIS following may also be defined 
-		to indicate that the timer is intended to be used for pulsed output 
+		to generate modulated outputs for such things as motor control.
+		If EFM32_TIMER0 is defined then THIS following may also be defined
+		to indicate that the timer is intended to be used for pulsed output
 		modulation.
 
 config EFM32_TIMER0_CHANNEL
@@ -481,7 +481,6 @@ config EFM32_TIMER0_CHANNEL
 	---help---
 		If TIMER0 is enabled for PWM usage, you also need specifies the timer output
 		channel {0,1,2}
-
 
 config EFM32_TIMER1
 	bool "TIMER1"
@@ -497,9 +496,9 @@ config EFM32_TIMER1_PWM
 		Reserve timer 0 for use by PWM
 
 		Timer devices may be used for different purposes.  One special purpose is
-		to generate modulated outputs for such things as motor control.  
-		If EFM32_TIMER1 is defined then THIS following may also be defined 
-		to indicate that the timer is intended to be used for pulsed output 
+		to generate modulated outputs for such things as motor control.
+		If EFM32_TIMER1 is defined then THIS following may also be defined
+		to indicate that the timer is intended to be used for pulsed output
 		modulation.
 
 config EFM32_TIMER1_CHANNEL
@@ -510,7 +509,6 @@ config EFM32_TIMER1_CHANNEL
 	---help---
 		If TIMER1 is enabled for PWM usage, you also need specifies the timer output
 		channel {0,1,2}
-
 
 config EFM32_TIMER2
 	bool "TIMER2"
@@ -526,9 +524,9 @@ config EFM32_TIMER2_PWM
 		Reserve timer 0 for use by PWM
 
 		Timer devices may be used for different purposes.  One special purpose is
-		to generate modulated outputs for such things as motor control.  
-		If EFM32_TIMER2 is defined then THIS following may also be defined 
-		to indicate that the timer is intended to be used for pulsed output 
+		to generate modulated outputs for such things as motor control.
+		If EFM32_TIMER2 is defined then THIS following may also be defined
+		to indicate that the timer is intended to be used for pulsed output
 		modulation.
 
 config EFM32_TIMER2_CHANNEL
@@ -539,7 +537,6 @@ config EFM32_TIMER2_CHANNEL
 	---help---
 		If TIMER2 is enabled for PWM usage, you also need specifies the timer output
 		channel {0,1,2}
-
 
 config EFM32_TIMER3
 	bool "TIMER3"
@@ -555,9 +552,9 @@ config EFM32_TIMER3_PWM
 		Reserve timer 0 for use by PWM
 
 		Timer devices may be used for different purposes.  One special purpose is
-		to generate modulated outputs for such things as motor control.  
-		If EFM32_TIMER3 is defined then THIS following may also be defined 
-		to indicate that the timer is intended to be used for pulsed output 
+		to generate modulated outputs for such things as motor control.
+		If EFM32_TIMER3 is defined then THIS following may also be defined
+		to indicate that the timer is intended to be used for pulsed output
 		modulation.
 
 config EFM32_TIMER3_CHANNEL
@@ -568,7 +565,5 @@ config EFM32_TIMER3_CHANNEL
 	---help---
 		If TIMER3 is enabled for PWM usage, you also need specifies the timer output
 		channel {0,1,2}
-
-
 
 endif # ARCH_CHIP_EFM32
