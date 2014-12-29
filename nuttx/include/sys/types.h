@@ -197,6 +197,14 @@ typedef intptr_t     ptrdiff_t;
 typedef uint16_t     wchar_t;
 #endif
 
+/* Hack for broken newlib headers that assume wint_t is in stddef.h 
+ * if -DCONFIG_NEED_WINT is not included in the CXXFLAGS.
+ */
+#ifdef CONFIG_NEED_WINT
+typedef wchar_t          wint_t;
+#endif
+
+
 /* blkcnt_t and off_t are signed integer types.
  *
  *   blkcnt_t is used for file block counts.
