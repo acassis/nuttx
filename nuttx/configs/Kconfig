@@ -56,6 +56,9 @@ config ARCH_BOARD_C5471EVM
 config ARCH_BOARD_CLOUDCTRL
 	bool "Darcy's CloudController stm32f10x board"
 	depends on ARCH_CHIP_STM32F107VC
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_IRQBUTTONS
 	---help---
 		Small network relay development board. Based on the Shenzhou IV development
 		board design.
@@ -195,6 +198,18 @@ config ARCH_BOARD_EZ80F910200ZCO
 		ez80Acclaim! Microcontroller.  This port use the Zilog ez80f910200zco
 		development kit, eZ80F091 part, and the Zilog ZDS-II Windows command line
 		tools.  The development environment is Cygwin under WinXP.
+
+config ARCH_BOARD_FIRE_STM32
+	bool " M3 Wildfire STM32 board"
+	depends on ARCH_CHIP_STM32F103VE
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_IRQBUTTONS
+	---help---
+		Support for the M3 Wildfire STM32 board.  This board is based on the
+		STM32F103VET6 chip.  See http://firestm32.taobao.com .  Version 2
+		and 3 of the boards are supported but only version 2 has been
+		tested.
 
 config ARCH_BOARD_FREEDOM_KL25Z
 	bool "Freescale Freedom KL25Z"
@@ -1046,6 +1061,7 @@ config ARCH_BOARD
 	default "arduino-due"              if ARCH_BOARD_ARDUINO_DUE
 	default "avr32dev1"                if ARCH_BOARD_AVR32DEV1
 	default "c5471evm"                 if ARCH_BOARD_C5471EVM
+	default "cloudctrl"                if ARCH_BOARD_CLOUDCTRL
 	default "compal_e86"               if ARCH_BOARD_COMPALE86
 	default "compal_e88"               if ARCH_BOARD_COMPALE88
 	default "compal_e99"               if ARCH_BOARD_COMPALE99
@@ -1208,6 +1224,9 @@ source "configs/avr32dev1/Kconfig"
 endif
 if ARCH_BOARD_C5471EVM
 source "configs/c5471evm/Kconfig"
+endif
+if ARCH_BOARD_CLOUDCTRL
+source "configs/cloudctrl/Kconfig"
 endif
 if ARCH_BOARD_COMPALE86
 source "configs/compal_e86/Kconfig"
