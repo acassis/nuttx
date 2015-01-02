@@ -48,6 +48,13 @@ CSRCS += efm32_keypad.c
 CSRCS += efm32_gpio_keypad.c
 endif
 
+ifeq ($(CONFIG_PNBFANO_GPIO_PPS),y)
+CSRCS += efm32_pps_sync.c
+endif
+
+ifeq ($(CONFIG_PNBFANO_GPIO_PPS),y)
+CSRCS += efm32_chrono.c
+endif
 
 COBJS = $(CSRCS:.c=$(OBJEXT))
 SRCS = $(ASRCS) $(CSRCS)

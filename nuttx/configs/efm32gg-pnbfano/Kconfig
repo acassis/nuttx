@@ -17,7 +17,7 @@ endchoice
 menu "EFM32 PNBFANO Hardware Configuration"
 
 config PNBFANO_GPIO_KEYPAD
-	bool "EFM32 GPIO keypad Driver"
+	bool "PNBFANO GPIO keypad Driver"
     select ARCH_BUTTONS
     select EFM32_GPIO_IRQ
     select LIB_KBDCODEC
@@ -26,6 +26,26 @@ config PNBFANO_GPIO_KEYPAD
 	default n if PNBFANO_BOARD_V1
 	---help---
 		Enables support for keypad on gpio.
+
+config PNBFANO_GPIO_PPS
+	bool "PNBFANO GPIO PPS Driver"
+    select ARCH_BUTTONS
+    select EFM32_GPIO_IRQ
+    select BOARD_INITIALIZE
+	depends on ARCH_CHIP_EFM32
+	default n if PNBFANO_BOARD_V1
+	---help---
+		Enables support for PPS on gpio.
+
+config PNBFANO_GPIO_CHRONO
+	bool "PNBFANO GPIO CHRONO Driver"
+    select ARCH_BUTTONS
+    select EFM32_GPIO_IRQ
+    select BOARD_INITIALIZE
+	depends on ARCH_CHIP_EFM32
+	default n if PNBFANO_BOARD_V1
+	---help---
+		Enables support for chrono on gpio.
 
 config PNBFANO_LCD_KEYPAD
 	bool "EFM32 keypad using LCD bus Driver"

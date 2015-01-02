@@ -168,6 +168,20 @@ void board_initialize(void)
         return;
     }
 
+    syslog(LOG_NOTICE,"initialize CHRONO !\n");
+	if ( efm32_gpio_chrono_init() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize Chrono\n");
+        return;
+    }
+
+    syslog(LOG_NOTICE,"initialize PPS !\n");
+	if ( efm32_gpio_pps_init() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize PPS\n");
+        return;
+    }
+
     syslog(LOG_NOTICE,"initialize LCD !\n");
     if ( up_lcdinitialize() != OK )
     {

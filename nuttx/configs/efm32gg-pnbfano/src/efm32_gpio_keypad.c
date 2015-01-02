@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/arm/include/efm32/keypad/keypad.c
+ * arch/arm/src/efm32/src/keypad.c
  * Driver for Stk3300 keypad hardware
  *
- *   Copyright (C) 2011 Stefan Richter. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville. All rights reserved.
  *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without

@@ -1,7 +1,7 @@
 /****************************************************************************
  * configs/efm32gg-pnbfano/src/efm32_gpio_keypad.c
  *
- *   Copyright (C) 2011 Stefan Richter. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville. All rights reserved.
  *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without

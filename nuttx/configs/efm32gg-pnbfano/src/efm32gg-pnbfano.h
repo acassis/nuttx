@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/olimex-efm32g880f128-stk/src/efm32gg-pnbfano.h
+ * configs/efm32gg-pnbfano/src/efm32gg-pnbfano.h
  *
  *   Copyright (C) 2014 Pierre-noel Bouteville . All rights reserved.
  *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
@@ -96,6 +96,44 @@
 #define GPIO_LCD_PWM_DEV      "/dev/pwm0"
 
 
+/* PPS GPIO:
+ *
+ * The pnbfano board has a Pulse Per Second GPIO input. 
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PPS(PA8)              PPS
+ * PPS GPIO_IRQ_PA8
+ * --------------------- ---------------------
+ */
+
+#  define GPIO_PPS      (GPIO_INPUT_PULLDOWN|\
+                         GPIO_INT_RISING|\
+                         GPIO_PORTA|\
+                         GPIO_PIN8\
+                        )
+#  define GPIO_PPS_IRQ  (EFM32_IRQ_EXTI8)
+
+/* Chrono GPIO:
+ *
+ * The pnbfano board has a Lap chronometer GPIO input. 
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * CHRONO (PD3)          CHRONO
+ * CHRONO GPIO_IRQ_PD3
+ * --------------------- ---------------------
+ */
+
+#  define GPIO_CHRONO     (GPIO_INPUT_PULLUP|\
+                           GPIO_INT_FALLING|\
+                           GPIO_PORTD|\
+                           GPIO_PIN3\
+                          )
+#  define GPIO_CHRONO_IRQ (EFM32_IRQ_EXTI3)
+
 /* Lcd Buttons:
  *
  * The pnbfano board has four buttons, BUT1-4. Each is grounded and so should
@@ -161,5 +199,13 @@ int up_lcdinitialize(void);
 int st7565_lock(void);
 
 void st7565_unlock(void);
+
+#ifdef CONFIG_PNBFANO_GPIO_PPS
+int efm32_gpio_pps_init( void );
+#endif
+
+#ifdef CONFIG_PNBFANO_GPIO_CHRONO
+int efm32_gpio_chrono_init( void );
+#endif
 
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */
