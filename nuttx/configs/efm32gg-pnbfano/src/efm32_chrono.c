@@ -45,7 +45,7 @@
 #include <arch/board/chrono.h>
 
 #include <string.h>
-//#include <stdbool.h>
+#include <poll.h>
 #include <errno.h>
 #include <nuttx/kmalloc.h>
 
@@ -61,6 +61,8 @@
 #  define CONFIG_EFM32_GPIO_CHRONO_BUFSIZE 64
 #endif
 
+#define __CHRONO_EVENT_FILTER_DELAY_S 5
+
 /****************************************************************************
  * Fileops Prototypes and Structures
  ****************************************************************************/
@@ -69,21 +71,31 @@ typedef FAR struct file file_t;
 
 static int efm32_gpio_chrono_open(file_t * filep);
 static int efm32_gpio_chrono_close(file_t * filep);
-static int efm32_gpio_chrono_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
+static ssize_t efm32_gpio_chrono_read(file_t * filep, 
+                                      FAR char *buf, 
+                                      size_t buflen
+                                     );
+static int efm32_gpio_chrono_ioctl(FAR struct file *filep, 
+                                   int cmd, 
+                                   unsigned long arg
+                                  );
 #ifndef CONFIG_DISABLE_POLL
-//static int efm32_gpio_chrono_poll(file_t * filep, FAR struct pollfd *fds, bool setup);
+static int efm32_gpio_chrono_poll(file_t * filep, 
+                                  FAR struct pollfd *fds, 
+                                  bool setup
+                                 );
 #endif
 
 static const struct file_operations gpio_chrono_ops =
 {
-    efm32_gpio_chrono_open,  /* open */
-    efm32_gpio_chrono_close, /* close */
-    NULL,                 /* write */
-    NULL,                 /* seek */
-    NULL,                 /* ioctl */
-    efm32_gpio_chrono_ioctl, /* read */
+    .open   = efm32_gpio_chrono_open,
+    .close  = efm32_gpio_chrono_close,
+    .read   = efm32_gpio_chrono_read,                 
+    .write  = NULL,                
+    .seek   = NULL,
+    .ioctl  = efm32_gpio_chrono_ioctl, 
 #ifndef CONFIG_DISABLE_POLL
-    NULL,                 /* efm32_gpio_chrono_poll */ /* poll */
+    .poll   = efm32_gpio_chrono_poll, 
 #endif
 };
 
@@ -94,6 +106,10 @@ static const struct file_operations gpio_chrono_ops =
  ****************************************************************************/
 typedef struct 
 {
+    /* Poll event semaphore */
+
+    sem_t   *poll_sem;
+
     /* Chronometer event from start */
 
     sem_t   mutex;
@@ -105,6 +121,10 @@ typedef struct
     /* start date */
 
     struct timespec start;
+
+    /* start date */
+
+    time_t filter;
 
     /* fifo semaphore */
 
@@ -131,6 +151,56 @@ typedef struct
  ****************************************************************************/
 efm32_gpio_chrono_t* efm32_gpio_chrono;
 
+/************************************************************************************
+ * Name: efm32_gpio_chrono_takesem
+ ************************************************************************************/
+
+static int efm32_gpio_chrono_takesem(FAR sem_t *sem, bool errout)
+{
+  /* Loop, ignoring interrupts, until we have successfully acquired the semaphore */
+
+  while (sem_wait(sem) != OK)
+    {
+      /* The only case that an error should occur here is if the wait was awakened
+       * by a signal.
+       */
+
+      ASSERT(get_errno() == EINTR);
+
+      /* When the signal is received, should we errout? Or should we just continue
+       * waiting until we have the semaphore?
+       */
+
+      if (errout)
+        {
+          return -EINTR;
+        }
+    }
+
+  return OK;
+}
+
+/************************************************************************************
+ * Name: efm32_gpio_chrono_givesem
+ ************************************************************************************/
+
+#define efm32_gpio_chrono_givesem(sem) (void)sem_post(sem)
+
+
+/****************************************************************************
+ * Name: efm32_chrono_level
+ ****************************************************************************/
+
+int efm32_gpio_chrono_level(FAR efm32_gpio_chrono_t *dev)
+{
+    int level = dev->wr_idx - dev->rd_idx;
+
+    if ( level < 0 )
+        level += CONFIG_EFM32_GPIO_CHRONO_BUFSIZE;
+
+    return level;
+}
+
 
 /****************************************************************************
  * irq handler
@@ -139,39 +209,53 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
 {
     (void)context;
     (void)irq;
-    int level;
     struct timespec tp;
     chrono_t *ptr;
+    efm32_gpio_chrono_t *dev = efm32_gpio_chrono;
 
     if ( clock_gettime(CLOCK_REALTIME,&tp) < 0 )
     {
         return -1;
     }
 
-    ASSERT(efm32_gpio_chrono != NULL);
+    ASSERT(dev != NULL);
 
-    level = efm32_gpio_chrono->wr_idx - efm32_gpio_chrono->rd_idx;
+    if ( dev->filter >= tp.tv_sec )
+    {
+        EFM32_GPIO_CHRONO_LOG(LOG_NOTICE,"Event filtered\n");
+        return -1; 
+    }
 
-    if ( level < 0 )
-        level += CONFIG_EFM32_GPIO_CHRONO_BUFSIZE;
+    dev->filter = tp.tv_sec+__CHRONO_EVENT_FILTER_DELAY_S;
 
-    if (level >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE)
+    if (efm32_gpio_chrono_level(dev) >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE)
     {
         EFM32_GPIO_CHRONO_LOG(LOG_WARNING,"Buffer overflow\n");
         return -1; 
     }
 
-    ptr = &efm32_gpio_chrono->buf[efm32_gpio_chrono->wr_idx];
+    if ( dev->event_nbr == 0 )
+    {
+        dev->start = tp;
+    }
+
+    ptr = &dev->buf[dev->wr_idx];
 
     ptr->trigged = true;
-    ptr->event_nbr = efm32_gpio_chrono->event_nbr++;
+    ptr->event_nbr = dev->event_nbr++;
     ptr->tp = tp;
 
-    efm32_gpio_chrono->wr_idx++;
-    if ( efm32_gpio_chrono->wr_idx >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE )
-        efm32_gpio_chrono->wr_idx = 0;
+    dev->wr_idx++;
+    if ( dev->wr_idx >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE )
+        dev->wr_idx = 0;
 
-    sem_post(&efm32_gpio_chrono->rd_sem);
+    sem_post(&dev->rd_sem);
+
+    /* add event to waiting semaphore */
+    if ( dev->poll_sem )
+    {
+        sem_post( dev->poll_sem );
+    }
 
     return 0;
 }
@@ -191,35 +275,45 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
 int efm32_gpio_chrono_init( void )
 {
     irqstate_t flags;
+    efm32_gpio_chrono_t *dev;
 
     /* Disable interrupts until we are done.  This guarantees that the
      * following operations are atomic.
      */
 
-
     ASSERT(efm32_gpio_chrono == NULL);
 
-    efm32_gpio_chrono = (efm32_gpio_chrono_t*)kmm_malloc(sizeof(efm32_gpio_chrono_t));
-    if ( efm32_gpio_chrono == NULL )
+    dev = (efm32_gpio_chrono_t*)kmm_malloc(sizeof(efm32_gpio_chrono_t));
+    if ( dev == NULL )
     {
         EFM32_GPIO_CHRONO_LOG(LOG_ERR,"Cannot allocate it!\n");
         return -ENODEV;
     }
 
-
-    memset(efm32_gpio_chrono,0,sizeof(*efm32_gpio_chrono));
-
-    sem_init(&efm32_gpio_chrono->rd_sem, 0, 0);
-    sem_init(&efm32_gpio_chrono->mutex,  0, 1);
-
     flags = irqsave();
+
+    memset(dev,0,sizeof(*dev));
+
+    //dev->poll_sem = NULL; already done */
+    sem_init(&dev->rd_sem, 0, 0);
+    sem_init(&dev->mutex,  0, 1);
+
     efm32_configgpio(GPIO_CHRONO);
     efm32_gpioirq(GPIO_CHRONO);
     (void)irq_attach(GPIO_CHRONO_IRQ, efm32_gpio_chrono_irq);
-    efm32_gpioirqenable(GPIO_CHRONO_IRQ);
+
+    ASSERT(efm32_gpio_chrono == NULL);
+
+    efm32_gpio_chrono = dev;
+
     irqrestore(flags);
 
-    return register_driver("/dev/chrono0", &gpio_chrono_ops, 0444, NULL);
+
+    return register_driver("/dev/chrono0", 
+                           &gpio_chrono_ops, 
+                           0444, 
+                           dev
+                          );
 
 }
 
@@ -230,11 +324,12 @@ int efm32_gpio_chrono_init( void )
 
 static int efm32_gpio_chrono_open(file_t * filep)
 {
-    if ( efm32_gpio_chrono == NULL )
-    {
-        EFM32_GPIO_CHRONO_LOG(LOG_ERR,"Not initialized!\n");
-        return -EINVAL;
-    }
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_chrono_t *dev    = inode->i_private;
+
+    ASSERT( dev != NULL );
+
+    efm32_gpioirqenable(GPIO_CHRONO_IRQ);
 
     return OK;
 }
@@ -245,6 +340,10 @@ static int efm32_gpio_chrono_open(file_t * filep)
 
 static int efm32_gpio_chrono_close(file_t * filep)
 {
+    //FAR struct inode *inode     = filep->f_inode;
+    //FAR efm32_gpio_chrono_t *dev    = inode->i_private;
+
+    efm32_gpioirqdisable(GPIO_CHRONO_IRQ);
 
     /* nothing to do */
 
@@ -253,46 +352,167 @@ static int efm32_gpio_chrono_close(file_t * filep)
 
 
 /****************************************************************************
- * Name: efm32_gpio_chrono_read
+ * Name: efm32_gpio_chrono_ioctl
  ****************************************************************************/
 
 static int efm32_gpio_chrono_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_chrono_t *dev    = inode->i_private;
+
     int res = 0;
     irqstate_t flags;
 
+    ASSERT( dev != NULL );
 
-    if ( efm32_gpio_chrono == NULL )
-    {
-        EFM32_GPIO_CHRONO_LOG(LOG_ERR,"Not initialized!\n");
-        return -EINVAL;
-    }
-
-    sem_wait( &efm32_gpio_chrono->mutex );
+    sem_wait( &dev->mutex );
 
     switch(cmd)
     {
         case 0: /* restart with number event to start */
             flags = irqsave();
-            efm32_gpio_chrono->rd_idx = 0;
-            efm32_gpio_chrono->wr_idx = 0;
-            efm32_gpio_chrono->event_nbr = (int)arg;
-            irqrestore(flags);
-            break;
-        case 1: /* restart with number event to start */
-            flags = irqsave();
-            /* TODO */
-            *((chrono_t*)arg) = efm32_gpio_chrono->buf[efm32_gpio_chrono->rd_idx];
+            dev->rd_idx = 0;
+            dev->wr_idx = 0;
+            dev->event_nbr = (int)arg;
             irqrestore(flags);
             break;
         default:
             res = -EINVAL;
     }
 
-    sem_post( &efm32_gpio_chrono->mutex );
+    sem_post( &dev->mutex );
 
     return res;
 }
 
+/****************************************************************************
+ * Name: efm32_gpio_chrono_poll
+ ****************************************************************************/
 
+#ifndef CONFIG_DISABLE_POLL
+static int efm32_gpio_chrono_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
+{
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_chrono_t *dev    = inode->i_private;
+
+    int res = 0;
+
+    /* Are we setting up the poll?  Or tearing it down? */
+
+    res = efm32_gpio_chrono_takesem(&dev->mutex, true);
+
+    if (res < 0)
+    {
+        /* A signal received while waiting for access to the poll data
+         * will abort the operation.
+         */
+
+        return res;
+    }
+
+    if (setup)
+    {
+        fds->revents = 0;
+        /* This is a request to set up the poll.  Find an available
+         * slot for the poll structure reference
+         */
+
+        if ( dev->poll_sem != NULL)
+        {
+            res = -EINVAL;
+            goto errout;
+        }
+
+        if ( efm32_gpio_chrono_level(dev) > 0 )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
+
+        if ( fds->revents == 0 )
+        {
+            dev->poll_sem = fds->sem ;
+        }
+        else
+        {
+            sem_post(fds->sem);
+            res = 1;
+        }
+    }
+    else if ( dev->poll_sem == fds->sem )
+    {
+        if ( efm32_gpio_chrono_level(dev) > 0 )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
+        dev->poll_sem = NULL;
+    }
+errout:
+    efm32_gpio_chrono_givesem(&dev->mutex);
+    return res;
+}
+#endif
+
+
+/****************************************************************************
+ * Name: efm32_gpio_chrono_read
+ ****************************************************************************/
+
+static ssize_t efm32_gpio_chrono_read(file_t * filep, FAR char *buf, size_t buflen)
+{
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_chrono_t *dev    = inode->i_private;
+
+    chrono_t chrono;
+    ssize_t size = 0;
+
+    if ( dev == NULL )
+    {
+        EFM32_GPIO_CHRONO_LOG(LOG_ERR,"Not initialized!\n");
+        return -EINVAL;
+    }
+
+    sem_wait( &dev->mutex );
+
+    while (size < buflen)
+    {
+        int len = buflen;
+
+        /* first lock it then only try lock */
+
+        if ( size == 0 )
+            sem_wait( &dev->rd_sem);
+        else if ( sem_trywait( &dev->rd_sem ) < 0 )
+            break;
+
+        irqstate_t saved_state;
+
+        saved_state = irqsave();
+
+        chrono = dev->buf[dev->rd_idx++];
+        if (dev->rd_idx >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE )
+            dev->rd_idx=0;
+
+        irqrestore(saved_state);
+
+        if ( len > sizeof(chrono) )
+            len = sizeof(chrono);
+
+        EFM32_GPIO_CHRONO_LOG(LOG_NOTICE,
+                              "Read %d bytes of trigged %s, event %3d, timespec %8d.%3d\n",
+                              len,
+                              chrono.trigged,
+                              chrono.event_nbr,
+                              chrono.tp.tv_sec,
+                              chrono.tp.tv_nsec/1000000
+                             );
+
+        memcpy(&buf[size],&chrono,len);
+
+        size += len; 
+    }
+
+    sem_post( &dev->mutex );
+
+    return size;
+}
 

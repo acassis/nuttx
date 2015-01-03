@@ -329,7 +329,7 @@ static void efm32_lcd_kbd_worker(FAR void *arg)
  ****************************************************************************/
 int keypad_kbdinit( void )
 {
-    static efm32_lcd_kbd_t * dev = NULL;
+    efm32_lcd_kbd_t * dev = NULL;
 
     /* can be called only once */
 
