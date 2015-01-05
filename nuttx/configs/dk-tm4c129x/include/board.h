@@ -156,11 +156,74 @@
 #define BUTTON_SW4_BIT    (1 << BUTTON_SW4)
 
 /* Pin Multiplexing Disambiguation **************************************************/
+/* UARTs
+ *
+ *   UART0: PA0-1 (fixed configuration)
+ *   UART3: PJ0-1 to EM_TX/EM_RX or BOOSTER_PACK2_RX/BOOSTER_PACK2_TX(Depending
+ *          on J12/J13)
+ *   UART5: PH6-7 to BOOSTER_PACK1_RX/BOOSTER_PACK1_TX
+ */
 
-#define GPIO_UART1_CTS    GPIO_UART1_CTS_1
-#define GPIO_UART1_RTS    GPIO_UART1_RTS_1
-#define GPIO_UART1_RX     GPIO_UART1_RX_1
-#define GPIO_UART1_TX     GPIO_UART1_TX_1
+#define GPIO_UART3_RX     GPIO_UART3_RX_2
+#define GPIO_UART3_TX     GPIO_UART3_TX_2
+
+#define GPIO_UART5_RX     GPIO_UART5_RX_2
+#define GPIO_UART5_TX     GPIO_UART5_TX_2
+
+/* SSI:
+ *
+ *   SSI0: PA2-5 are used for SSI0 to the second booster pack (fixed configuration)
+ *   SSI3: PF0/PF4-5/PH4/PQ0-2 are used for the SPI flash (on-board and SD card).
+ *         PH4 selects the SD card and PQ1 selects the on-board SPI flash.
+ */
+
+#define GPIO_SSI3_CLK     GPIO_SSI3_CLK_2
+#define GPIO_SSI3_FSS     GPIO_SSI3_FSS_2
+#define GPIO_SSI3_XDAT0   GPIO_SSI3_XDAT0_2
+#define GPIO_SSI3_XDAT1   GPIO_SSI3_XDAT1_1
+#define GPIO_SSI3_XDAT2   GPIO_SSI3_XDAT2_1
+#define GPIO_SSI3_XDAT3   GPIO_SSI3_XDAT3_1
+
+/* I2C:
+ *
+ *   I2C3: PG4-5 are provide to the BoostPack 1 interface
+ *   I2C7: PA4-5 are provide to the BoostPack 2 interface
+ *   I2C6: PB6-7 are used for I2C to the TMP100 and the EM connector.
+ *         J18 and J20 must be closed to connect the TMP100.
+ *         I2C address is 0x4A
+ */
+
+#define GPIO_I2C3_SCL     GPIO_I2C3_SCL_1
+#define GPIO_I2C3_SDA     GPIO_I2C3_SDA_1
+#define GPIO_I2C7_SCL     GPIO_I2C7_SCL_1
+#define GPIO_I2C7_SDA     GPIO_I2C7_SDA_1
+#define GPIO_I2C6_SCL     GPIO_I2C6_SCL_2
+#define GPIO_I2C6_SDA     GPIO_I2C6_SDA_2
+
+/* USB:
+ *
+ *   PB0-1/PD6-7/PL6-7 are used for USB (Only PD6-7 are not fixed configuration)
+ */
+
+#define GPIO_USB0_EPEN   GPIO_USB0_EPEN_3
+#define GPIO_USB0_PFLT   GPIO_USB0_PFLT_2
+
+/* Ethernet LEDs
+ *
+ *    PF1/PK4/PK6 are used for Ethernet LEDs.
+ *      PK4/EN0RXD3/LED0
+ *      PK6/EN0TXD2/LED1
+ *      PF1/LED2
+ */
+
+#  define GPIO_EN0_LED0   GPIO_EN0_LED0_2
+#  define GPIO_EN0_LED1   GPIO_EN0_LED1_2
+#  define GPIO_EN0_LED2   GPIO_EN0_LED2_1
+
+/* LCD
+ *
+ *   PF6-7/PJ6/PS4-5/PR0-7 are used for the LCD (fixed configuration).
+ */
 
 /************************************************************************************
  * Public Function Prototypes

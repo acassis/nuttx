@@ -9351,5 +9351,22 @@
 	  stm32f429i-disco: change ltdc initializing during boot up. This moves
 	  initializing of the ili9341 lcd and ltdc driver to the board specific
 	  initializing routine.  From Marco Krahl (2014-12-29).
-	* /nuttx/arch/arm/src/stm32/stm32_ltdc.c:  Clean up documentation, some
+	* arch/arm/src/stm32/stm32_ltdc.c:  Clean up documentation, some
 	  formatting improvements.  From Marco Krahl (2014-12-29).
+	* arch/arm/src/tiva/chip/tiva_ethernet.h, lm3s_ethernet.c, and
+	  tm4c_ethernet.h:  Add logic to descriminate betwen LM3S class Ethernet
+	  register definitions and TM4C129X class Ethernet register definitions.
+	  Add TM4C129X Ethernet register definitions (2014-12-30).
+	* arch/arm/src/tiva/tm4c_ethernet.c, lm3s_ethernet.c, Kconfig, and
+	  Make.defs: First cut at TM4C129X Ethernet driver.  Initial commit is
+	  basically just the STM32 Ethernet driver with modifications for a clean
+	  compilation in the Tiva environment (2014-12-31).
+	* arch/arm/src/stm32/stm32_rtc.c, stm32_rcc.c, Kconfig: Add support for
+	  the internal low speed clock (LSI) as a source of the RTC clock.  Some
+	  boards do not have the external 32khz oscillator installed, for those
+	  boards we must fallback to the crummy internal RC clock.  Turn on by
+	  defining CONFIG_RTC_LSICLOCK.  From Kevin Hester (2015-01-02).
+	* net/tcp/tcp_conn.c:  Fix a logic error when CONFIG_NETDEV_MULTINIC is
+	  selected: net_unlock(flags) will be called will an uninitialized
+          variable (2015-01-03).
+
