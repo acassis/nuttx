@@ -42,9 +42,10 @@
 
 #include <arch/irq.h>
 #include <arch/board/board.h>
+#include <arch/board/pps.h>
 
 #include <string.h>
-//#include <stdbool.h>
+#include <poll.h>
 #include <errno.h>
 #include <nuttx/kmalloc.h>
 
@@ -56,6 +57,9 @@
 //#define EFM32_GPIO_PPS_LOG(lvl,...) lldbg(__VA_ARGS__)
 #define EFM32_GPIO_PPS_LOG(...) syslog(__VA_ARGS__)
 
+#ifndef CONFIG_EFM32_GPIO_PPS_BUFSIZE
+#  define CONFIG_EFM32_GPIO_PPS_BUFSIZE 64
+#endif
 
 /****************************************************************************
  * Fileops Prototypes and Structures
@@ -65,21 +69,31 @@ typedef FAR struct file file_t;
 
 static int efm32_gpio_pps_open(file_t * filep);
 static int efm32_gpio_pps_close(file_t * filep);
-static int efm32_gpio_pps_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
+static ssize_t efm32_gpio_pps_read(file_t * filep, 
+                                      FAR char *buf, 
+                                      size_t buflen
+                                     );
+static int efm32_gpio_pps_ioctl(FAR struct file *filep,
+                                   int cmd, 
+                                   unsigned long arg
+                                  );
 #ifndef CONFIG_DISABLE_POLL
-//static int efm32_gpio_pps_poll(file_t * filep, FAR struct pollfd *fds, bool setup);
+static int efm32_gpio_pps_poll(file_t * filep, 
+                                  FAR struct pollfd *fds, 
+                                  bool setup
+                                 );
 #endif
 
 static const struct file_operations gpio_pps_ops =
 {
-    efm32_gpio_pps_open,  /* open */
-    efm32_gpio_pps_close, /* close */
-    NULL,                 /* write */
-    NULL,                 /* seek */
-    NULL,                 /* ioctl */
-    efm32_gpio_pps_ioctl, /* read */
+    .open   = efm32_gpio_pps_open,
+    .close  = efm32_gpio_pps_close,
+    .read   = efm32_gpio_pps_read,                 
+    .write  = NULL,                
+    .seek   = NULL,
+    .ioctl  = efm32_gpio_pps_ioctl, 
 #ifndef CONFIG_DISABLE_POLL
-    NULL,                 /* efm32_gpio_pps_poll */ /* poll */
+    .poll   = efm32_gpio_pps_poll, 
 #endif
 };
 
@@ -91,10 +105,38 @@ static const struct file_operations gpio_pps_ops =
  ****************************************************************************/
 typedef struct 
 {
+    /* Poll event semaphore */
+
+    sem_t   *poll_sem;
+
+    /* Chronometer event from start */
+
     sem_t   mutex;
-    bool    pps;
-    time_t  next_time;
-    int     pps_nsec;
+	
+    /* number of pps found without shift */
+
+    int     pps_ok_nbr;
+
+    /* last pps received */
+
+    struct timespec last_pps;
+
+    /* fifo semaphore */
+
+    sem_t   rd_sem;
+
+    /* fifo read index */
+
+    int     rd_idx;
+
+    /* fifo write index */
+
+    int     wr_idx;
+
+    /* fifo data */
+
+    pps_t buf[CONFIG_EFM32_GPIO_PPS_BUFSIZE];
+
 }efm32_gpio_pps_t;
 
 /****************************************************************************
@@ -104,6 +146,79 @@ typedef struct
  ****************************************************************************/
 efm32_gpio_pps_t* efm32_gpio_pps;
 
+/************************************************************************************
+ * Name: efm32_gpio_pps_takesem
+ ************************************************************************************/
+
+static int efm32_gpio_pps_takesem(FAR sem_t *sem, bool errout)
+{
+  /* Loop, ignoring interrupts, until we have successfully acquired the semaphore */
+
+  while (sem_wait(sem) != OK)
+    {
+      /* The only case that an error should occur here is if the wait was awakened
+       * by a signal.
+       */
+
+      ASSERT(get_errno() == EINTR);
+
+      /* When the signal is received, should we errout? Or should we just continue
+       * waiting until we have the semaphore?
+       */
+
+      if (errout)
+        {
+          return -EINTR;
+        }
+    }
+
+  return OK;
+}
+
+/************************************************************************************
+ * Name: efm32_gpio_pps_givesem
+ ************************************************************************************/
+
+#define efm32_gpio_pps_givesem(sem) (void)sem_post(sem)
+
+
+/****************************************************************************
+ * Name: efm32_gpio_pps_level
+ ****************************************************************************/
+
+int efm32_gpio_pps_level(FAR efm32_gpio_pps_t *dev)
+{
+    int level = dev->wr_idx - dev->rd_idx;
+
+    if ( level < 0 )
+        level += CONFIG_EFM32_GPIO_PPS_BUFSIZE;
+
+    return level;
+}
+
+/******************************************************************************
+ * Name: timeval_subtract 
+ *
+ * result = X - Y,
+ * storing the result in RESULT.
+ * Return 1 if the difference is negative, otherwise 0. 
+ *****************************************************************************/
+
+
+static void timespec_subtract (struct timespec *result, 
+                               struct timespec *x, 
+                               struct timespec *y
+                              )
+{
+	if ((x->tv_nsec - y->tv_nsec)<0) {
+		result->tv_sec = x->tv_sec - y->tv_sec-1;
+		result->tv_nsec = 1000000000+x->tv_nsec - y->tv_nsec;
+	} else {
+		result->tv_sec = x->tv_sec - y->tv_sec;
+		result->tv_nsec = x->tv_nsec - y->tv_nsec;
+	}
+}
+ 
 /****************************************************************************
  * irq handler
  ****************************************************************************/
@@ -112,14 +227,76 @@ int efm32_gpio_pps_irq(int irq, FAR void* context)
     (void)context;
     (void)irq;
     struct timespec tp;
+    struct timespec diff;
+    pps_t *ptr;
+    efm32_gpio_pps_t *dev = efm32_gpio_pps;
 
     if ( clock_gettime(CLOCK_REALTIME,&tp) < 0 )
     {
         return -1;
     }
 
-    efm32_gpio_pps->pps_nsec = tp.tv_nsec;
-    efm32_gpio_pps->pps = true;
+    ASSERT(dev != NULL);
+
+    /* next pps so one second more */
+
+    dev->last_pps.tv_sec++;
+
+    timespec_subtract(&diff,&dev->last_pps,&tp);
+
+    EFM32_GPIO_PPS_LOG(LOG_DEBUG,"tp : %d.%09d last %d.%09d diff %d.%09d\n",
+                       tp.tv_sec,tp.tv_nsec,
+                       dev->last_pps.tv_sec,dev->last_pps.tv_nsec,
+                       diff.tv_sec,diff.tv_nsec
+                      );
+
+    if ( diff.tv_sec != 0 )
+    {
+        EFM32_GPIO_PPS_LOG(LOG_WARNING,"PPS Missed ! \n");
+        if ( dev->pps_ok_nbr < 0 )
+            return -1; /* pps lost event already sent */
+
+        /* missed pps */
+        dev->last_pps.tv_sec  = tp.tv_sec;
+        dev->last_pps.tv_nsec = tp.tv_nsec;
+        dev->pps_ok_nbr = -1;
+    }
+    else if ( diff.tv_nsec == 0 ) 
+    {
+        /* pps synchronised */
+        if ( dev->pps_ok_nbr >= 0 )
+        {
+            dev->pps_ok_nbr++;
+            return 0; /* event already sent */
+        }
+    }
+
+    if (efm32_gpio_pps_level(dev) >= CONFIG_EFM32_GPIO_PPS_BUFSIZE)
+    {
+        EFM32_GPIO_PPS_LOG(LOG_WARNING,"Buffer overflow\n");
+        return -1; 
+    }
+
+    ptr = &dev->buf[dev->wr_idx];
+
+    ptr->shift_nsec = diff.tv_nsec;
+    ptr->pps_ok_nbr = dev->pps_ok_nbr;
+    ptr->tp = tp;
+
+    dev->pps_ok_nbr = 0;
+    dev->last_pps = tp;
+
+    dev->wr_idx++;
+    if ( dev->wr_idx >= CONFIG_EFM32_GPIO_PPS_BUFSIZE )
+        dev->wr_idx = 0;
+
+    sem_post(&dev->rd_sem);
+
+    /* add event to waiting semaphore */
+    if ( dev->poll_sem )
+    {
+        sem_post( dev->poll_sem );
+    }
 
     return 0;
 }
@@ -139,34 +316,45 @@ int efm32_gpio_pps_irq(int irq, FAR void* context)
 int efm32_gpio_pps_init( void )
 {
     irqstate_t flags;
+    efm32_gpio_pps_t *dev;
 
     /* Disable interrupts until we are done.  This guarantees that the
      * following operations are atomic.
      */
 
-
     ASSERT(efm32_gpio_pps == NULL);
 
-    efm32_gpio_pps = (efm32_gpio_pps_t*)kmm_malloc(sizeof(efm32_gpio_pps_t));
-    if ( efm32_gpio_pps == NULL )
+    dev = (efm32_gpio_pps_t*)kmm_malloc(sizeof(efm32_gpio_pps_t));
+    if ( dev == NULL )
     {
         EFM32_GPIO_PPS_LOG(LOG_ERR,"Cannot allocate it!\n");
         return -ENODEV;
     }
 
-
-    memset(efm32_gpio_pps,0,sizeof(*efm32_gpio_pps));
-
-    sem_init(&efm32_gpio_pps->mutex, 0, 1);
-
     flags = irqsave();
+
+    memset(dev,0,sizeof(*dev));
+
+    //dev->poll_sem = NULL; already done */
+    sem_init(&dev->rd_sem, 0, 0);
+    sem_init(&dev->mutex,  0, 1);
+
     efm32_configgpio(GPIO_PPS);
     efm32_gpioirq(GPIO_PPS);
     (void)irq_attach(GPIO_PPS_IRQ, efm32_gpio_pps_irq);
-    efm32_gpioirqenable(GPIO_PPS_IRQ);
+
+    ASSERT(efm32_gpio_pps == NULL);
+
+    efm32_gpio_pps = dev;
+
     irqrestore(flags);
 
-    return register_driver("/dev/pps0", &gpio_pps_ops, 0444, NULL);
+
+    return register_driver("/dev/pps0", 
+                           &gpio_pps_ops, 
+                           0444, 
+                           dev
+                          );
 
 }
 
@@ -177,11 +365,12 @@ int efm32_gpio_pps_init( void )
 
 static int efm32_gpio_pps_open(file_t * filep)
 {
-    if ( efm32_gpio_pps == NULL )
-    {
-        EFM32_GPIO_PPS_LOG(LOG_ERR,"Not initialized!\n");
-        return -EINVAL;
-    }
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_pps_t *dev    = inode->i_private;
+
+    ASSERT( dev != NULL );
+
+    efm32_gpioirqenable(GPIO_PPS_IRQ);
 
     return OK;
 }
@@ -192,6 +381,10 @@ static int efm32_gpio_pps_open(file_t * filep)
 
 static int efm32_gpio_pps_close(file_t * filep)
 {
+    //FAR struct inode *inode     = filep->f_inode;
+    //FAR efm32_gpio_pps_t *dev    = inode->i_private;
+
+    efm32_gpioirqdisable(GPIO_PPS_IRQ);
 
     /* nothing to do */
 
@@ -205,37 +398,165 @@ static int efm32_gpio_pps_close(file_t * filep)
 
 static int efm32_gpio_pps_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_pps_t *dev    = inode->i_private;
+
     int res = 0;
-    int i;
-    static int shift_nano_second = 0;
     irqstate_t flags;
 
-    if ( efm32_gpio_pps == NULL )
-    {
-        EFM32_GPIO_PPS_LOG(LOG_ERR,"Not initialized!\n");
-        return -EINVAL;
-    }
+    ASSERT( dev != NULL );
+
+    sem_wait( &dev->mutex );
 
     switch(cmd)
     {
-        case 0:
-            if ( efm32_gpio_pps->pps )
-            {
+        case 0: /* reset pps */
                 flags = irqsave();
-                i = efm32_gpio_pps->pps_nsec;
-                efm32_gpio_pps->pps = false;
+                dev->rd_idx = 0;
+                dev->wr_idx = 0;
+                dev->pps_ok_nbr = 0;
+                dev->last_pps.tv_nsec = -1;
+                dev->last_pps.tv_sec  = -1;
                 irqrestore(flags);
-                *((int*)arg) = i-shift_nano_second;
-                shift_nano_second = i;
-                res = 1;
-            }
             break;
         default:
             return -EINVAL;
     }
 
+    sem_post( &dev->mutex );
+
     return res;
 }
 
+/****************************************************************************
+ * Name: efm32_gpio_pps_poll
+ ****************************************************************************/
 
+#ifndef CONFIG_DISABLE_POLL
+static int efm32_gpio_pps_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
+{
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_pps_t *dev    = inode->i_private;
+
+    int res = 0;
+
+    /* Are we setting up the poll?  Or tearing it down? */
+
+    res = efm32_gpio_pps_takesem(&dev->mutex, true);
+
+    if (res < 0)
+    {
+        /* A signal received while waiting for access to the poll data
+         * will abort the operation.
+         */
+
+        return res;
+    }
+
+    if (setup)
+    {
+        fds->revents = 0;
+        /* This is a request to set up the poll.  Find an available
+         * slot for the poll structure reference
+         */
+
+        if ( dev->poll_sem != NULL)
+        {
+            res = -EINVAL;
+            goto errout;
+        }
+
+        if ( efm32_gpio_pps_level(dev) > 0 )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
+
+        if ( fds->revents == 0 )
+        {
+            dev->poll_sem = fds->sem ;
+        }
+        else
+        {
+            sem_post(fds->sem);
+            res = 1;
+        }
+    }
+    else if ( dev->poll_sem == fds->sem )
+    {
+        if ( efm32_gpio_pps_level(dev) > 0 )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
+        dev->poll_sem = NULL;
+    }
+errout:
+    efm32_gpio_pps_givesem(&dev->mutex);
+    return res;
+}
+#endif
+
+
+/****************************************************************************
+ * Name: efm32_gpio_pps_read
+ ****************************************************************************/
+
+static ssize_t efm32_gpio_pps_read(file_t * filep, FAR char *buf, size_t buflen)
+{
+    FAR struct inode *inode      = filep->f_inode;
+    FAR efm32_gpio_pps_t *dev    = inode->i_private;
+
+    pps_t pps;
+    ssize_t size = 0;
+
+    if ( dev == NULL )
+    {
+        EFM32_GPIO_PPS_LOG(LOG_ERR,"Not initialized!\n");
+        return -EINVAL;
+    }
+
+    sem_wait( &dev->mutex );
+
+    while (size < buflen)
+    {
+        int len = buflen;
+
+        /* first lock it then only try lock */
+
+        if ( size == 0 )
+            sem_wait( &dev->rd_sem);
+        else if ( sem_trywait( &dev->rd_sem ) < 0 )
+            break;
+
+        irqstate_t saved_state;
+
+        saved_state = irqsave();
+
+        pps = dev->buf[dev->rd_idx++];
+        if (dev->rd_idx >= CONFIG_EFM32_GPIO_PPS_BUFSIZE )
+            dev->rd_idx=0;
+
+        irqrestore(saved_state);
+
+        if ( len > sizeof(pps) )
+            len = sizeof(pps);
+
+        EFM32_GPIO_PPS_LOG(LOG_NOTICE,
+                              "Read %d bytes of shift %5d.%06d nsec, pps sync %3d, timespec %8d.%3d\n",
+                              len,
+                              pps.shift_nsec/1000000,
+                              pps.shift_nsec%1000000,
+                              pps.pps_ok_nbr,
+                              pps.tp.tv_sec,
+                              pps.tp.tv_nsec/1000000
+                             );
+
+        memcpy(&buf[size],&pps,len);
+
+        size += len; 
+    }
+
+    sem_post( &dev->mutex );
+
+    return size;
+}
 
