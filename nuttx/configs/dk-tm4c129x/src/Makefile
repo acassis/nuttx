@@ -55,8 +55,18 @@ ifeq ($(CONFIG_TIVA_ETHERNET),y)
 CSRCS += tm4c_ethernet.c
 endif
 
+ifeq ($(CONFIG_DK_TM4C129X_TIMER),y)
+CSRCS += tm4c_timer.c
+endif
+
 ifeq ($(CONFIG_NSH_ARCHINIT),y)
 CSRCS += tm4c_nsh.c
+endif
+
+ifeq ($(CONFIG_I2C_LM75),y)
+ifeq ($(CONFIG_TIVA_I2C6),y)
+CSRCS += tm4c_tmp100.c
+endif
 endif
 
 COBJS = $(CSRCS:.c=$(OBJEXT))

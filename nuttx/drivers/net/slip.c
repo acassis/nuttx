@@ -705,7 +705,7 @@ static int slip_rxtask(int argc, FAR char *argv[])
        * enough to hold an IP header.
        */
 
-      if (priv->rxlen >= IP_HDRLEN)
+      if (priv->rxlen >= IPv4_HDRLEN)
         {
           /* Handle the IP input.  Get exclusive access to uIP. */
 
@@ -714,7 +714,7 @@ static int slip_rxtask(int argc, FAR char *argv[])
           priv->dev.d_len = priv->rxlen;
 
           flags = net_lock();
-          devif_input(&priv->dev);
+          ipv4_input(&priv->dev);
 
           /* If the above function invocation resulted in data that should
            * be sent out on the network, the field  d_len will set to a

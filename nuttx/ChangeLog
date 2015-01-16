@@ -9208,7 +9208,7 @@
 	  and the FS clock enable bits are set in FS mode, then the ARM never
 	  awakens from WFI due to a chip issue.  This is only an issue if you
 	  are using the internal PHY.  From Ken Pettit (2014-12-13).
-	* drivers/serial/serial.c: In case a thread is doing a blockingi
+	* drivers/serial/serial.c: In case a thread is doing a blocking
 	  operation (e.g. read()) on a serial device, while it is being
 	  terminated by pthread_cancel(), then uart_close() gets called, but
 	  the semaphore (dev->recv.sem in the above example) is still blocked.
@@ -9354,7 +9354,7 @@
 	* arch/arm/src/stm32/stm32_ltdc.c:  Clean up documentation, some
 	  formatting improvements.  From Marco Krahl (2014-12-29).
 	* arch/arm/src/tiva/chip/tiva_ethernet.h, lm3s_ethernet.c, and
-	  tm4c_ethernet.h:  Add logic to descriminate betwen LM3S class Ethernet
+	  tm4c_ethernet.h:  Add logic to discriminate betwen LM3S class Ethernet
 	  register definitions and TM4C129X class Ethernet register definitions.
 	  Add TM4C129X Ethernet register definitions (2014-12-30).
 	* arch/arm/src/tiva/tm4c_ethernet.c, lm3s_ethernet.c, Kconfig, and
@@ -9368,5 +9368,60 @@
 	  defining CONFIG_RTC_LSICLOCK.  From Kevin Hester (2015-01-02).
 	* net/tcp/tcp_conn.c:  Fix a logic error when CONFIG_NETDEV_MULTINIC is
 	  selected: net_unlock(flags) will be called will an uninitialized
-          variable (2015-01-03).
-
+	  variable (2015-01-03).
+	* arch/arm/src/tiva/tiva_irq.c:  Fix Tiva IRQ control logic; was limited
+	  to only 64 IRQs.  That is a problem for higher numbered IRQs on many
+	  platforms (2015-01-06).
+	* arch/arm/src/stm32/stm32_sdio.c, drivers/mmcsd/mmcsd_sdio.c and Kconfig,
+	  and include/nuttx/sdio.h: MMCSD SDIO:  Add support for a new
+	  SDWAIT_WRCOMPLETE condition.  The previous logic used a busy-wait loop
+	  to poll the card R1 status to determine when the card was ready for
+	  the next transfer.  That busy-wait can be quite long -- up to hundreds
+	  of milliseconds.  An alternative is to look the the SD D0 pin which
+	  will change state when the card is no longer busy.  This change avoids
+	  the busy-wait poll by reconfiguring the SD D0 pin as a GPIO interrupt,
+	  then waiting for the card to become ready without taking up CPU
+	  cycles.  This change is conditioned on CONFIG_MMCSD_SDIOWATI_WRCOMPLETE
+	  and is currently only implemented for the STM32 SDIO driver. From
+	  David Sidrane (2015-01-08).
+	* arch/arm/src/tiva/tiva_timerlib.c and .h:  Add a timer library for
+	  generic support of Tiva timers (2015-01-08).
+	* arch/arm/src/tiva/tiva_timerlow32.c:  Add a driver lower half for
+	  drivers/timer.c.  Only 32-bit periodic timers are supported.  This
+	  provides userspace access to timers.
+	* configs/px4-v2_upstream, Kconfig, README.txt: Remove the px4-v2_upstream
+	  configuration.  Moved to misc/Obsoleted/configs.  This was not the
+	  official configuration for the PX4 board and has led to confusion by
+	  NuttX users.  The board configuration also requires some ongoing
+	  maintenance and customization to support ongoing PX4 testing and
+	  evaluation.  It is best retained the PX4 repositories where it can be
+	  properly maintained and not in the upstream NuttX repository
+	  (2015-01-14).
+	* net/netdev/netdev_ioctl.c and include/nuttx/net/ioctl.h:  Add support
+	  for IPv6 ioctls to manipulate IP addresses (2015-01-14).
+	* net/icmpv6:  Create a future home for ICMPv6 (2015-01-14).
+	* net/icmp:  Remove all logic conditioned on CONFIG_NET_IPv6
+	  (2015-01-14).
+	* net/, include/nuttx/net, and a few other files: (1) Copied all ICMP
+	  sources files to net/icmpv6 with proper renaming and removal of IPv4
+	  logic, (2) remove IPv6 logic from files in net/icmp, (3) copied
+	  include/nuttx/icmp.h to icmpv6.h and removed IPv4 specific logic, (4)
+	  removed all IPv6 logic from icmp.h, (5) IP_HDRLEN became IPv4_HDRLEN
+	  and IPv6_HDRLEN, (6) ip_chksum() became ipv4_chksum() and
+	  ipv6_chksum(), and (7) added partial support for ICMPv6 statistics
+	  (2015-01-14).
+	* arch/, drivers/net/, include/nuttx/net, and net/devif:  (1) Rename
+	  devif_input() ipv4_input(), (2) copy net/devif/devif_input.c to
+	  ipv6_input.c, remove all IPv4-specific logic, (3) rename
+	  net/devif/devif_input.c to ipv4_input.c, remove all IPv6-specific
+	  logic, and (4) xplit IPv4 header structure out as net_ipv4hdr_s from
+	  net_iphdr_s (2015-01-15).
+	* arch/ and drivers/net:  All Ethernet drivers:  Call ipv6_input() if
+	  IPv6 is enabled and an IPv6 packet is received (2015-01-15).
+	* net/devif, net/tcp, net/ucp, include/nuttx/net:  Seperate tcp_input()
+	  and udp_input() into seprate functions tcp_ipv4_input(),
+	  tcp_ipv6_input(), udp_ipv4_input(), and upd_ipv6_input() than can deal
+	  will the data offsets caused by the differing sizes of the IP header
+	  (2015-01-15).
+	* net/utils/net_ipv6_maskcmp.c:  Add missing implementation of
+	  net_ipv6_maskcmp() (2015-01-15).

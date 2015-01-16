@@ -17,6 +17,7 @@ config ARCH_CHIP_LM3S6918
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_SSI1
+	select TIVA_HAVE_TIMER3
 	select TIVA_HAVE_ETHERNET
 
 config ARCH_CHIP_LM3S9B96
@@ -27,6 +28,7 @@ config ARCH_CHIP_LM3S9B96
 	select TIVA_HAVE_UART3
 	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_SSI1
+	select TIVA_HAVE_TIMER3
 	select TIVA_HAVE_ETHERNET
 	select TIVA_HAVE_GPIOH_IRQS
 
@@ -44,6 +46,7 @@ config ARCH_CHIP_LM3S6965
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_UART3
 	select TIVA_HAVE_I2C1
+	select TIVA_HAVE_TIMER3
 	select TIVA_HAVE_ETHERNET
 	select TIVA_HAVE_GPIOH_IRQS
 
@@ -54,6 +57,9 @@ config ARCH_CHIP_LM3S8962
 	select ARCH_CHIP_LM3S
 	select TIVA_HAVE_UART3
 	select TIVA_HAVE_I2C1
+	select TIVA_HAVE_TIMER3
+	select TIVA_HAVE_TIMER4
+	select TIVA_HAVE_TIMER5
 	select TIVA_HAVE_ETHERNET
 	select TIVA_HAVE_GPIOH_IRQS
 
@@ -69,6 +75,7 @@ config ARCH_CHIP_TM4C123GH6ZRB
 	depends on ARCH_CHIP_TIVA
 	select ARCH_CHIP_TM4C
 	select ARCH_CHIP_TM4C123
+	select TIVA_HAVE_GPIOP_IRQS
 	select TIVA_HAVE_GPIOQ_IRQS
 	select TIVA_HAVE_I2C4
 	select TIVA_HAVE_I2C5
@@ -78,6 +85,12 @@ config ARCH_CHIP_TM4C123GH6PMI
 	depends on ARCH_CHIP_TIVA
 	select ARCH_CHIP_TM4C
 	select ARCH_CHIP_TM4C123
+	select TIVA_HAVE_GPIOA_IRQS
+	select TIVA_HAVE_GPIOB_IRQS
+	select TIVA_HAVE_GPIOC_IRQS
+	select TIVA_HAVE_GPIOD_IRQS
+	select TIVA_HAVE_GPIOE_IRQS
+	select TIVA_HAVE_GPIOF_IRQS
 
 config ARCH_CHIP_TM4C1294NC
 	bool "TM4C1294NC"
@@ -136,12 +149,16 @@ config ARCH_CHIP_LM4F
 	select TIVA_HAVE_SSI1
 	select TIVA_HAVE_SSI2
 	select TIVA_HAVE_SSI3
+	select TIVA_HAVE_TIMER3
+	select TIVA_HAVE_TIMER4
+	select TIVA_HAVE_TIMER5
 
 config ARCH_CHIP_TM4C123
 	bool
 
 config ARCH_CHIP_TM4C129
 	bool
+	select TIVA_HAVE_GPIOP_IRQS
 	select TIVA_HAVE_GPIOQ_IRQS
 	select TIVA_HAVE_I2C4
 	select TIVA_HAVE_I2C5
@@ -149,12 +166,13 @@ config ARCH_CHIP_TM4C129
 	select TIVA_HAVE_I2C7
 	select TIVA_HAVE_I2C8
 	select TIVA_HAVE_I2C9
+	select TIVA_HAVE_TIMER6
+	select TIVA_HAVE_TIMER7
 
 config ARCH_CHIP_TM4C
 	bool
 	select ARCH_CORTEXM4
 	select ARCH_HAVE_FPU
-	select TIVA_HAVE_GPIOP_IRQS
 	select TIVA_HAVE_I2C1
 	select TIVA_HAVE_I2C2
 	select TIVA_HAVE_I2C3
@@ -167,6 +185,9 @@ config ARCH_CHIP_TM4C
 	select TIVA_HAVE_SSI1
 	select TIVA_HAVE_SSI2
 	select TIVA_HAVE_SSI3
+	select TIVA_HAVE_TIMER3
+	select TIVA_HAVE_TIMER4
+	select TIVA_HAVE_TIMER5
 
 config LM_REVA2
 	bool "Rev A2"
@@ -263,6 +284,30 @@ config TIVA_HAVE_ETHERNET
 	default n
 
 config TIVA_SSI
+	bool
+	default n
+
+config TIVA_TIMER
+	bool
+	default n
+
+config TIVA_HAVE_TIMER3
+	bool
+	default n
+
+config TIVA_HAVE_TIMER4
+	bool
+	default n
+
+config TIVA_HAVE_TIMER5
+	bool
+	default n
+
+config TIVA_HAVE_TIMER6
+	bool
+	default n
+
+config TIVA_HAVE_TIMER7
 	bool
 	default n
 
@@ -371,27 +416,72 @@ config TIVA_UART7
 
 config TIVA_SSI0
 	bool "SSI0"
-	default y
+	default n
 	depends on TIVA_HAVE_SSI0
 	select TIVA_SSI
 
 config TIVA_SSI1
 	bool "SSI1"
-	default y
+	default n
 	depends on TIVA_HAVE_SSI1
 	select TIVA_SSI
 
 config TIVA_SSI2
 	bool "SSI2"
-	default y
+	default n
 	depends on TIVA_HAVE_SSI2
 	select TIVA_SSI
 
 config TIVA_SSI3
 	bool "SSI3"
-	default y
+	default n
 	depends on TIVA_HAVE_SSI3
 	select TIVA_SSI
+
+config TIVA_TIMER0
+	bool "16-/32-bit Timer 0"
+	default n
+	select TIVA_TIMER
+
+config TIVA_TIMER1
+	bool "16-/32-bit Timer 1"
+	default n
+	select TIVA_TIMER
+
+config TIVA_TIMER2
+	bool "16-/32-bit Timer 2"
+	default n
+	select TIVA_TIMER
+
+config TIVA_TIMER3
+	bool "16-/32-bit Timer 3"
+	default n
+	depends on TIVA_HAVE_TIMER3
+	select TIVA_TIMER
+
+config TIVA_TIMER4
+	bool "16-/32-bit Timer 4"
+	default n
+	depends on TIVA_HAVE_TIMER4
+	select TIVA_TIMER
+
+config TIVA_TIMER5
+	bool "16-/32-bit Timer 5"
+	default n
+	depends on TIVA_HAVE_TIMER5
+	select TIVA_TIMER
+
+config TIVA_TIMER6
+	bool "16-/32-bit Timer 6"
+	default n
+	depends on TIVA_HAVE_TIMER6
+	select TIVA_TIMER
+
+config TIVA_TIMER7
+	bool "16-/32-bit Timer 7"
+	default n
+	depends on TIVA_HAVE_TIMER7
+	select TIVA_TIMER
 
 config TIVA_ETHERNET
 	bool "Ethernet"
@@ -634,6 +724,14 @@ config TIVA_I2C_TIMEOTICKS
 
 endif # !TIVA_I2C_DYNTIMEO
 
+config TIVA_I2C_HIGHSPEED
+	bool "High speed support"
+	default n
+	depends on ARCH_CHIP_TM4C && EXPERIMENTAL
+	---help---
+		Enable support for high speed I2C transfers.
+		Only partially implemented and completely untested.
+
 config TIVA_I2C_REGDEBUG
 	bool "Register level debug"
 	default n
@@ -643,6 +741,63 @@ config TIVA_I2C_REGDEBUG
 
 endmenu # I2C Configuration
 endif # TIVA_I2C
+
+if TIVA_TIMER
+
+menu "Tiva Timer Configuration"
+
+config TIVA_TIMER_32BIT
+	bool "32-bit timer support"
+	default n
+
+if TIVA_TIMER_32BIT
+
+config TIVA_TIMER32_PERIODIC
+	bool "32-bit one-shot/periodic timer support"
+	default n
+
+config TIVA_TIMER32_RTC
+	bool "32-bit RTC (needs 32.768-KHz input)"
+	default n
+
+endif # TIVA_TIMER_32BIT
+
+config TIVA_TIMER_16BIT
+	bool "16-bit Timers"
+	default n
+
+if TIVA_TIMER_16BIT
+
+config TIVA_TIMER16_PERIODIC
+	bool "16-bit one-shot/periodic timer support"
+	default n
+
+config TIVA_TIMER32_EDGECOUNT
+	bool "16-bit input edge-count capture support"
+	default n
+	depends on EXPERIMENTAL
+
+config TIVA_TIMER32_TIMECAP
+	bool "16-bit input time capture support"
+	default n
+	depends on EXPERIMENTAL
+
+config TIVA_TIMER32_PWM
+	bool "16-bit PWM output support"
+	default n
+	depends on EXPERIMENTAL
+
+endif # TIVA_TIMER_16BIT
+
+config TIVA_TIMER_REGDEBUG
+	bool "Register level debug"
+	default n
+	depends on DEBUG
+	---help---
+		Enables extremely detailed register access debug output.
+
+endmenu # Tiva Timer Configuration
+endif # TIVA_TIMER
 
 if TIVA_ETHERNET
 

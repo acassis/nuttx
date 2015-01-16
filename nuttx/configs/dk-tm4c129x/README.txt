@@ -36,6 +36,8 @@ Contents
     - Buttons and LEDs
     - Serial Console
     - Networking Support
+    - Timers
+    - Temperature Sensor
     - DK-TM4129X Configuration Options
     - Configurations
 
@@ -648,6 +650,102 @@ f Application Configuration -> Network Utilities
       CONFIG_NSH_NETINIT_RETRYMSEC=2000     : Configure the network monitor as you like
       CONFIG_NSH_NETINIT_SIGNO=18
 
+Timers
+======
+
+  Tiva timers may be enbled in 32-bit periodic mode using these settings.
+
+  This settings enables the "upper half" timer driver:
+
+    Devices Drivers -> Timer Support
+      CONFIG_TIMER=y
+
+  These settings enable Tiva timer driver support
+
+    System Type -> Tiva/Stellaris Peripheral Support
+      CONFIG_TIVA_TIMER1=y     : For timer 1
+
+    System Type -> Tiva Timer Configuration (using Timer 1)
+      CONFIG_TIVA_TIMER_32BIT=y
+      CONFIG_TIVA_TIMER32_PERIODIC=y
+
+  These setting enable board-specific logic to initialize the timer logic
+  (using Timer 1):
+
+    Board Selection -> Timer driver selection
+      CONFIG_DK_TM4C129X_TIMER1=y
+      CONFIG_DK_TM4C129X_TIMER_DEVNAME="/dev/timer0"
+      CONFIG_DK_TM4C129X_TIMER_TIMEOUT=10000
+
+  There is a simple example at apps/examples/timer that can be used to
+  exercise the timers.  The following configuration options can be
+  selected to enable that example:
+
+    Application Configure -> Examples -> Timer Example
+      CONFIG_EXAMPLES_TIMER=y
+      CONFIG_EXAMPLE_TIMER_DEVNAME="/dev/timer0"
+      CONFIG_EXAMPLE_TIMER_DELAY=100000
+      CONFIG_EXAMPLE_TIMER_NSAMPLES=20
+
+Temperature Sensor
+==================
+
+  TMP-1000 Temperature Sensor Driver
+  ----------------------------------
+  Support for the on-board TMP-100 temperature sensor is available.  This
+  uses the driver for the compatible LM-75 part.  To set up the temperature
+  sensor, add the following to the NuttX configuration file:
+
+    System Type -> Tiva/Stellaris Peripheral Selection
+      CONFIG_TIVA_I2C6=y
+
+    Drivers -> I2C Support
+      CONFIG_I2C=y
+
+    Drivers -> Sensors
+      CONFIG_LM75=y
+      CONFIG_I2C_LM75=y
+
+    Applications -> NSH Library
+      CONFIG_NSH_ARCHINIT=y
+
+  Then you can implement logic like the following to use the temperature sensor:
+
+    #include <nuttx/sensors/lm75.h>
+    #include <arch/board/board.h>
+
+    ret = tiva_tmp100_initialize("/dev/temp");      /* Register the temperature sensor */
+    fd  = open("/dev/temp", O_RDONLY);              /* Open the temperature sensor device */
+    ret = ioctl(fd, SNIOC_FAHRENHEIT, 0);           /* Select Fahrenheit */
+    bytesread = read(fd, buffer, 8*sizeof(b16_t));  /* Read (8) temperature samples */
+
+  More complex temperature sensor operations are also available.  See the IOCTL
+  commands enumerated in include/nuttx/sensors/lm75.h.  Also read the descriptions
+  of the tiva_tmp100_initialize() and tiva_tmp100_attach() interfaces in the
+  arch/board/board.h file (sames as configs/dk-tm4c129x/include/board.h).
+
+  NSH Command Line Application
+  ----------------------------
+  There is a tiny NSH command line application at examples/system/lm75 that
+  will read the current temperature from an LM75 compatible temperature sensor
+  and print the temperature on stdout in either units of degrees Fahrenheit or
+  Centigrade.  This tiny command line application is enabled with the following
+  configuration options:
+
+    Library
+      CONFIG_LIBM=y
+      CONFIG_LIBC_FLOATINGPOINT=y
+
+    Applications -> NSH Library
+      CONFIG_NSH_ARCHINIT=y
+
+    Applications -> System Add-Ons
+      CONFIG_SYSTEM_LM75=y
+      CONFIG_SYSTEM_LM75_DEVNAME="/dev/temp"
+      CONFIG_SYSTEM_LM75_FAHRENHEIT=y  (or CENTIGRADE)
+      CONFIG_SYSTEM_LM75_STACKSIZE=1024
+      CONFIG_SYSTEM_LM75_PRIORITY=100
+
 DK-TM4129X Configuration Options
 ================================
 
@@ -836,3 +934,16 @@ Where <subdir> is one of the following:
        network back up when the link becomes available again (for example,
        if the cable is reconnected.  The paragraph "Network Monitor" above
        for additional information.
+
+    5. I2C6 and support for the on-board TMP-100 temperature sensor are
+       enabled.  Also enabled is the NSH 'temp' command that will show the
+       current temperature on the command line like:
+
+       nsh> temp
+       80.60 degrees Fahrenheit
+
+       [80.6 F in January.  I love living in Costa Rica1]
+
+       The default units is degrees Fahrenheit, but that is easily
+       reconfigured.  See the discussin above in the paragraph entitled
+       "Temperature Sensor".
