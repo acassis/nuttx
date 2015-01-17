@@ -114,14 +114,6 @@ typedef struct
 
     sem_t   mutex;
 
-    /* Chronometer event from start */
-
-    int     event_nbr;
-
-    /* start date */
-
-    struct timespec start;
-
     /* start date */
 
     time_t filter;
@@ -234,15 +226,8 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
         return -1; 
     }
 
-    if ( dev->event_nbr == 0 )
-    {
-        dev->start = tp;
-    }
-
     ptr = &dev->buf[dev->wr_idx];
 
-    ptr->trigged = true;
-    ptr->event_nbr = dev->event_nbr++;
     ptr->tp = tp;
 
     dev->wr_idx++;
@@ -373,7 +358,6 @@ static int efm32_gpio_chrono_ioctl(FAR struct file *filep, int cmd, unsigned lon
             flags = irqsave();
             dev->rd_idx = 0;
             dev->wr_idx = 0;
-            dev->event_nbr = (int)arg;
             irqrestore(flags);
             break;
         default:
@@ -498,10 +482,8 @@ static ssize_t efm32_gpio_chrono_read(file_t * filep, FAR char *buf, size_t bufl
             len = sizeof(chrono);
 
         EFM32_GPIO_CHRONO_LOG(LOG_NOTICE,
-                              "Read %d bytes of trigged %s, event %3d, timespec %8d.%3d\n",
+                              "Read %d bytes of timespec %8d.%3d\n",
                               len,
-                              chrono.trigged,
-                              chrono.event_nbr,
                               chrono.tp.tv_sec,
                               chrono.tp.tv_nsec/1000000
                              );

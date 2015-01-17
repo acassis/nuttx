@@ -41,14 +41,6 @@
 
 typedef struct
 {
-    /* true if value was triggered by irq */
-    
-    bool    trigged;
-
-    /* number of cumulate event in time_ms value */
-
-    int     event_nbr;
-
     /* current chronometer value */
 
     struct  timespec tp;
