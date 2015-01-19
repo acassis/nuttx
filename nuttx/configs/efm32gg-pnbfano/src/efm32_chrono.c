@@ -61,7 +61,9 @@
 #  define CONFIG_EFM32_GPIO_CHRONO_BUFSIZE 64
 #endif
 
-#define __CHRONO_EVENT_FILTER_DELAY_S 5
+#ifndef CONFIG_EFM32_GPIO_CHRONO_FILTER_DELAYS_S
+#  define CONFIG_EFM32_GPIO_CHRONO_FILTER_DELAYS_S 1
+#endif
 
 /****************************************************************************
  * Fileops Prototypes and Structures
@@ -218,7 +220,7 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
         return -1; 
     }
 
-    dev->filter = tp.tv_sec+__CHRONO_EVENT_FILTER_DELAY_S;
+    dev->filter = tp.tv_sec+CONFIG_EFM32_GPIO_CHRONO_FILTER_DELAYS_S;
 
     if (efm32_gpio_chrono_level(dev) >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE)
     {
