@@ -127,6 +127,10 @@ ifeq ($(CONFIG_EFM32_DMA),y)
 CHIP_CSRCS += efm32_dma.c
 endif
 
+ifeq ($(CONFIG_EFM32_RTC_BURTC),y)
+CHIP_CSRCS += efm32_rtc_burtc.c
+endif
+
 ifeq ($(CONFIG_EFM32_OTGFS),y)
 ifeq ($(CONFIG_USBDEV),y)
 CHIP_CSRCS += efm32_usbdev.c

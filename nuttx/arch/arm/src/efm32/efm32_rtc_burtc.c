@@ -1,13 +1,8 @@
 /************************************************************************************
- * arch/arm/src/stm32/stm32_rtcounter.c
+ * arch/arm/src/efm32/efm32_burtc.c
  *
- *   Copyright (C) 2011 Uros Platise. All rights reserved.
- *   Author: Uros Platise <uros.platise@isotel.eu>
- *
- * With extensions, modifications by:
- *
- *   Copyright (C) 2011-2013 Gregory Nutt. All rights reserved.
- *   Author: Gregroy Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2015 Pierre-Noel Bouteville. All rights reserved.
+ *   Author: Pierre-Noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,22 +33,6 @@
  *
  ************************************************************************************/
 
-/* The STM32 RTC Driver offers standard precision of 1 Hz or High Resolution
- * operating at rate up to 16384 Hz. It provides UTC time and alarm interface
- * with external output pin (for wake-up).
- *
- * RTC is based on hardware RTC module which is located in a separate power
- * domain. The 32-bit counter is extended by 16-bit registers in BKP domain
- * STM32_BKP_DR1 to provide system equiv. function to the: time_t time(time_t *).
- *
- * Notation:
- *  - clock refers to 32-bit hardware counter
- *  - time is a combination of clock and upper bits stored in backuped domain
- *    with unit of 1 [s]
- *
- * TODO: Error Handling in case LSE fails during start-up or during operation.
- */
-
 /************************************************************************************
  * Included Files
  ************************************************************************************/
@@ -72,33 +51,16 @@
 
 #include "up_arch.h"
 
-#include "stm32_pwr.h"
-#include "stm32_rcc.h"
-#include "stm32_rtc.h"
-#include "stm32_waste.h"
+#include "chip/efm32_burtc.h"
 
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
 /* Configuration ********************************************************************/
-/* In hi-res mode, the RTC operates at 16384Hz.  Overflow interrupts are handled
- * when the 32-bit RTC counter overflows every 3 days and 43 minutes.  A BKP register
- * is incremented on each overflow interrupt creating, effectively, a 48-bit RTC
- * counter.
- *
- * In the lo-res mode, the RTC operates at 1Hz.  Overflow interrupts are not handled
- * (because the next overflow is not expected until the year 2106.
- *
- * WARNING:  Overflow interrupts are lost whenever the STM32 is powered down.  The
- * overflow interrupt may be lost even if the STM32 is powered down only momentarily.
- * Therefor  hi-res solution is only useful in systems where the power is always on.
- */
 
 #ifdef CONFIG_RTC_HIRES
 #  ifndef CONFIG_RTC_FREQUENCY
 #    error "CONFIG_RTC_FREQUENCY is required for CONFIG_RTC_HIRES"
-#  elif CONFIG_RTC_FREQUENCY != 16384
-#    error "Only hi-res CONFIG_RTC_FREQUENCY of 16384Hz is supported"
 #  endif
 #else
 #  ifndef CONFIG_RTC_FREQUENCY
@@ -109,46 +71,12 @@
 #  endif
 #endif
 
-#ifndef CONFIG_STM32_BKP
-#  error "CONFIG_STM32_BKP is required for CONFIG_RTC"
-#endif
-
-#ifndef CONFIG_STM32_PWR
-#  error "CONFIG_STM32_PWR is required for CONFIG_RTC"
-#endif
-
 /* RTC/BKP Definitions *************************************************************/
-/* STM32_RTC_PRESCALAR_VALUE
- *   RTC pre-scalar value.  The RTC is driven by a 32,768Hz input clock.  This input
- *   value is divided by this value (plus one) to generate the RTC frequency.
- * RTC_TIMEMSB_REG
- *   The BKP module register used to hold the RTC overflow value.  Overflows are
- *   only handled in hi-res mode.
- * RTC_CLOCKS_SHIFT
- *   The shift used to convert the hi-res timer LSB to one second.  Not used with
- *   the lo-res timer.
- */
 
-#ifdef CONFIG_RTC_HIRES
-#  define STM32_RTC_PRESCALAR_VALUE STM32_RTC_PRESCALER_MIN
-#  define RTC_TIMEMSB_REG           STM32_BKP_DR1
-#  define RTC_CLOCKS_SHIFT          14
-#else
-#  define STM32_RTC_PRESCALAR_VALUE STM32_RTC_PRESCALER_SECOND
-#endif
 
 /************************************************************************************
  * Private Types
  ************************************************************************************/
-
-struct rtc_regvals_s
-{
-  uint16_t cntl;
-  uint16_t cnth;
-#ifdef CONFIG_RTC_HIRES
-  uint16_t ovf;
-#endif
-};
 
 /************************************************************************************
  * Private Data
@@ -176,125 +104,9 @@ volatile bool g_rtc_enabled = false;
  * Private Functions
  ************************************************************************************/
 
-/************************************************************************************
- * Name: stm32_rtc_beginwr
- *
- * Description:
- *   Enter configuration mode
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ************************************************************************************/
-
-static inline void stm32_rtc_beginwr(void)
-{
-  /* Previous write is done? */
-
-  while ((getreg16(STM32_RTC_CRL) & RTC_CRL_RTOFF) == 0)
-    {
-      up_waste();
-    }
-
-  /* Enter Config mode, Set Value and Exit */
-
-  modifyreg16(STM32_RTC_CRL, 0, RTC_CRL_CNF);
-}
 
 /************************************************************************************
- * Name: stm32_rtc_endwr
- *
- * Description:
- *   Exit configuration mode
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ************************************************************************************/
-
-static inline void stm32_rtc_endwr(void)
-{
-  modifyreg16(STM32_RTC_CRL, RTC_CRL_CNF, 0);
-}
-
-/************************************************************************************
- * Name: stm32_rtc_wait4rsf
- *
- * Description:
- *   Wait for registers to synchronise with RTC module, call after power-up only
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ************************************************************************************/
-
-static inline void stm32_rtc_wait4rsf(void)
-{
-  modifyreg16(STM32_RTC_CRL, RTC_CRL_RSF, 0);
-  while ((getreg16(STM32_RTC_CRL) & RTC_CRL_RSF) == 0)
-    {
-      up_waste();
-    }
-}
-
-/************************************************************************************
- * Name: up_rtc_breakout
- *
- * Description:
- *   Set the RTC to the provided time.
- *
- * Input Parameters:
- *   tp - the time to use
- *
- * Returned Value:
- *   None
- *
- ************************************************************************************/
-
-#ifdef CONFIG_RTC_HIRES
-static void up_rtc_breakout(FAR const struct timespec *tp,
-                            FAR struct rtc_regvals_s *regvals)
-{
-  uint64_t frac;
-  uint32_t cnt;
-  uint16_t ovf;
-
-  /* Break up the time in seconds + milleconds into the correct values for our use */
-
-  frac = ((uint64_t)tp->tv_nsec * CONFIG_RTC_FREQUENCY) / 1000000000;
-  cnt  = (tp->tv_sec << RTC_CLOCKS_SHIFT) | ((uint32_t)frac & (CONFIG_RTC_FREQUENCY-1));
-  ovf  = (tp->tv_sec >> (32 - RTC_CLOCKS_SHIFT));
-
-  /* Then return the broken out time */
-
-  regvals->cnth = cnt >> 16;
-  regvals->cntl = cnt & 0xffff;
-  regvals->ovf  = ovf;
-}
-#else
-static inline void up_rtc_breakout(FAR const struct timespec *tp,
-                                   FAR struct rtc_regvals_s *regvals)
-{
-  /* The low-res timer is easy... tv_sec holds exactly the value needed by the
-   * CNTH/CNTL registers.
-   */
-
-  regvals->cnth = (uint16_t)((uint32_t)tp->tv_sec >> 16);
-  regvals->cntl = (uint16_t)((uint32_t)tp->tv_sec & 0xffff);
-}
-#endif
-
-/************************************************************************************
- * Name: stm32_rtc_interrupt
+ * Name: efm32_rtc_interrupt
  *
  * Description:
  *    RTC interrupt service routine
@@ -309,7 +121,7 @@ static inline void up_rtc_breakout(FAR const struct timespec *tp,
  ************************************************************************************/
 
 #if defined(CONFIG_RTC_HIRES) || defined(CONFIG_RTC_ALARM)
-static int stm32_rtc_interrupt(int irq, void *context)
+static int efm32_rtc_interrupt(int irq, void *context)
 {
   uint16_t source = getreg16(STM32_RTC_CRL);
 
@@ -372,10 +184,6 @@ int up_rtcinitialize(void)
    */
 
   g_rtc_enabled = true;
-
-  /* TODO: Possible stall? should we set the timeout period? and return with -1 */
-
-  stm32_rtc_wait4rsf();
 
   /* Configure prescaler, note that these are write-only registers */
 

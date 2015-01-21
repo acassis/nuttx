@@ -566,4 +566,10 @@ config EFM32_TIMER3_CHANNEL
 		If TIMER3 is enabled for PWM usage, you also need specifies the timer output
 		channel {0,1,2}
 
+config EFM32_RTC_BURTC
+	int "use BURTC as rtc"
+	default n
+	---help---
+		Enable RTC with EFM32 BURTC
+
 endif # ARCH_CHIP_EFM32
