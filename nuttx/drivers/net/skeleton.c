@@ -60,6 +60,10 @@
 #  include <nuttx/wqueue.h>
 #endif
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -155,12 +159,16 @@ static void skel_poll_expiry(int argc, uint32_t arg, ...);
 
 /* NuttX callback functions */
 
-static int skel_ifup(struct net_driver_s *dev);
-static int skel_ifdown(struct net_driver_s *dev);
-static int skel_txavail(struct net_driver_s *dev);
+static int skel_ifup(FAR struct net_driver_s *dev);
+static int skel_ifdown(FAR struct net_driver_s *dev);
+static inline int skel_txavail_process(FAR struct skel_driver_s *skel);
+#ifdef CONFIG_NET_NOINTS
+static void skel_txavail_work(FAR void *arg);
+#endif
+static int skel_txavail(FAR struct net_driver_s *dev);
 #ifdef CONFIG_NET_IGMP
-static int skel_addmac(struct net_driver_s *dev, FAR const uint8_t *mac);
-static int skel_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac);
+static int skel_addmac(FAR struct net_driver_s *dev, FAR const uint8_t *mac);
+static int skel_rmmac(FAR struct net_driver_s *dev, FAR const uint8_t *mac);
 #endif
 
 /****************************************************************************
@@ -240,7 +248,30 @@ static int skel_txpoll(struct net_driver_s *dev)
 
   if (skel->sk_dev.d_len > 0)
     {
-      arp_out(&skel->sk_dev);
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(skel->sk_dev.d_flags))
+#endif
+        {
+          arp_out(&skel->sk_dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&skel->sk_dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+      /* Send the packet */
+
       skel_transmit(skel);
 
       /* Check if there is room in the device to hold another packet. If not,
@@ -284,6 +315,12 @@ static void skel_receive(FAR struct skel_driver_s *skel)
        * amount of data in skel->sk_dev.d_len
        */
 
+#ifdef CONFIG_NET_PKT
+      /* When packet sockets are enabled, feed the frame into the packet tap */
+
+       pkt_input(&skel->sk_dev);
+#endif
+
       /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -307,11 +344,17 @@ static void skel_receive(FAR struct skel_driver_s *skel)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (BUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(skel->sk_dev.d_flags))
 #endif
                 {
                   arp_out(&skel->sk_dev);
                 }
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&kel->sk_dev);
+                }
+#endif
 
               /* And send the packet */
 
@@ -335,12 +378,18 @@ static void skel_receive(FAR struct skel_driver_s *skel)
 
           if (skel->sk_dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(skel->sk_dev.d_flags))
                 {
                   arp_out(&skel->sk_dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&skel->sk_dev);
                 }
 #endif
 
@@ -459,10 +508,13 @@ static inline void skel_interrupt_process(FAR struct skel_driver_s *skel)
 static void skel_interrupt_work(FAR void *arg)
 {
   FAR struct skel_driver_s *skel = (FAR struct skel_driver_s *)arg;
+  net_lock_t state;
 
   /* Process pending Ethernet interrupts */
 
+  state = net_lock();
   skel_interrupt_process(skel);
+  net_unlock(state);
 
   /* Re-enable Ethernet interrupts */
 
@@ -579,10 +631,13 @@ static inline void skel_txtimeout_process(FAR struct skel_driver_s *skel)
 static void skel_txtimeout_work(FAR void *arg)
 {
   FAR struct skel_driver_s *skel = (FAR struct skel_driver_s *)arg;
+  net_lock_t state;
 
   /* Process pending Ethernet interrupts */
 
+  state = net_lock();
   skel_txtimeout_process(skel);
+  net_unlock(state);
 }
 #endif
 
@@ -689,10 +744,13 @@ static inline void skel_poll_process(FAR struct skel_driver_s *skel)
 static void skel_poll_work(FAR void *arg)
 {
   FAR struct skel_driver_s *skel = (FAR struct skel_driver_s *)arg;
+  net_lock_t state;
 
   /* Perform the poll */
 
+  state = net_lock();
   skel_poll_process(skel);
+  net_unlock(state);
 }
 #endif
 
@@ -827,6 +885,70 @@ static int skel_ifdown(struct net_driver_s *dev)
 }
 
 /****************************************************************************
+ * Function: skel_txavail_process
+ *
+ * Description:
+ *   Perform an out-of-cycle poll.
+ *
+ * Parameters:
+ *   dev  - Reference to the NuttX driver state structure
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called in normal user mode
+ *
+ ****************************************************************************/
+
+static int inline skel_txavail_process(FAR struct skel_driver_s *skel)
+{
+  /* Ignore the notification if the interface is not yet up */
+
+  if (skel->sk_bifup)
+    {
+      /* Check if there is room in the hardware to hold another outgoing packet. */
+
+      /* If so, then poll uIP for new XMIT data */
+
+      (void)devif_poll(&skel->sk_dev, skel_txpoll);
+    }
+
+  return OK;
+}
+
+/****************************************************************************
+ * Function: skel_txavail_work
+ *
+ * Description:
+ *   Perform an out-of-cycle poll on the worker thread.
+ *
+ * Parameters:
+ *   arg  - Reference to the NuttX driver state structure (cast to void*)
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called on the higher priority worker thread.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_NOINTS
+static void skel_txavail_work(FAR void *arg)
+{
+  FAR struct skel_driver_s *skel = (FAR struct skel_driver_s *)arg;
+  net_lock_t state;
+
+  /* Perform the poll */
+
+  state = net_lock();
+  skel_txavail_process(skel);
+  net_unlock(state);
+}
+#endif
+
+/****************************************************************************
  * Function: skel_txavail
  *
  * Description:
@@ -848,6 +970,21 @@ static int skel_ifdown(struct net_driver_s *dev)
 static int skel_txavail(struct net_driver_s *dev)
 {
   FAR struct skel_driver_s *skel = (FAR struct skel_driver_s *)dev->d_private;
+
+#ifdef CONFIG_NET_NOINTS
+  /* Is our single work structure available?  It may not be if there are
+   * pending interrupt actions and we will have to ignore the Tx
+   * availability action.
+   */
+
+  if (work_available(&skel->sk_work))
+    {
+      /* Schedule to serialize the poll on the worker thread. */
+
+      work_queue(HPWORK, &skel->sk_work, skel_txavail_work, skel, 0);
+    }
+
+#else
   irqstate_t flags;
 
   /* Disable interrupts because this function may be called from interrupt
@@ -856,18 +993,12 @@ static int skel_txavail(struct net_driver_s *dev)
 
   flags = irqsave();
 
-  /* Ignore the notification if the interface is not yet up */
+  /* Perform the out-of-cycle poll now */
 
-  if (skel->sk_bifup)
-    {
-      /* Check if there is room in the hardware to hold another outgoing packet. */
-
-      /* If so, then poll uIP for new XMIT data */
-
-      (void)devif_poll(&skel->sk_dev, skel_txpoll);
-    }
-
+  skel_poll_process(skel);
   irqrestore(flags);
+#endif
+
   return OK;
 }
 

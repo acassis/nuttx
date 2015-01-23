@@ -44,6 +44,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <string.h>
+#include <debug.h>
 
 #ifdef CONFIG_NET_PKT
 #  include <netpacket/packet.h>
@@ -146,14 +147,7 @@ int psock_bind(FAR struct socket *psock, const struct sockaddr *addr,
 #ifdef CONFIG_NET_PKT
   FAR const struct sockaddr_ll *lladdr = (const struct sockaddr_ll *)addr;
 #endif
-#if defined(CONFIG_NET_TCP) || defined(CONFIG_NET_UDP)
-#ifdef CONFIG_NET_IPv6
-  FAR const struct sockaddr_in6 *inaddr = (const struct sockaddr_in6 *)addr;
-#else
-  FAR const struct sockaddr_in *inaddr = (const struct sockaddr_in *)addr;
-#endif
-#endif
-
+  socklen_t minlen;
   int err;
   int ret = OK;
 
@@ -167,27 +161,35 @@ int psock_bind(FAR struct socket *psock, const struct sockaddr *addr,
 
   /* Verify that a valid address has been provided */
 
-  if (
-        (
-#if defined(CONFIG_NET_PKT)
-          addr->sa_family != AF_PACKET &&
-#endif
-#if defined(CONFIG_NET_IPv6)
-          addr->sa_family != AF_INET6
-#else
-          addr->sa_family != AF_INET
-#endif
-        ) ||
-#if defined(CONFIG_NET_PKT)
-      (addr->sa_family == AF_PACKET && addrlen < sizeof(struct sockaddr_ll)) ||
-#endif
-#if defined(CONFIG_NET_IPv6)
-      (addr->sa_family == AF_INET6 && addrlen < sizeof(struct sockaddr_in6))
-#else
-      (addr->sa_family == AF_INET && addrlen < sizeof(struct sockaddr_in))
-#endif
-     )
+  switch (addr->sa_family)
     {
+#ifdef CONFIG_NET_IPv4
+    case AF_INET:
+      minlen = sizeof(struct sockaddr_in);
+      break;
+#endif
+
+#ifdef CONFIG_NET_IPv6
+    case AF_INET6:
+      minlen = sizeof(struct sockaddr_in6);
+      break;
+#endif
+
+#ifdef CONFIG_NET_PKT
+    case AF_PACKET:
+      minlen = sizeof(struct sockaddr_ll);
+      break;
+#endif
+
+    default:
+      ndbg("ERROR: Unrecognized address family: %d\n", addr->sa_family);
+      err = EAFNOSUPPORT;
+      goto errout;
+    }
+
+  if (addrlen < minlen)
+    {
+      ndbg("ERROR: Invalid address length: %d < %d\n", addrlen, minlen);
       err = EBADF;
       goto errout;
     }
@@ -204,14 +206,14 @@ int psock_bind(FAR struct socket *psock, const struct sockaddr *addr,
 
 #ifdef CONFIG_NET_TCP
       case SOCK_STREAM:
-        ret = tcp_bind(psock->s_conn, inaddr);
+        ret = tcp_bind(psock->s_conn, addr);
         psock->s_flags |= _SF_BOUND;
         break;
 #endif
 
 #ifdef CONFIG_NET_UDP
       case SOCK_DGRAM:
-        ret = udp_bind(psock->s_conn, inaddr);
+        ret = udp_bind(psock->s_conn, addr);
         break;
 #endif
 

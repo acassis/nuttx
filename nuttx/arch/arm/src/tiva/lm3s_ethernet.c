@@ -56,6 +56,10 @@
 #include <nuttx/net/arp.h>
 #include <nuttx/net/netdev.h>
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 #include "chip.h"
 #include "up_arch.h"
 
@@ -616,12 +620,34 @@ static int tiva_txpoll(struct net_driver_s *dev)
   nllvdbg("Poll result: d_len=%d\n", priv->ld_dev.d_len);
   if (priv->ld_dev.d_len > 0)
     {
+      DEBUGASSERT((tiva_ethin(priv, TIVA_MAC_TR_OFFSET) & MAC_TR_NEWTX) == 0)
+
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(priv->ld_dev.d_flags))
+#endif
+        {
+          arp_out(&priv->ld_dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&priv->ld_dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
       /* Send the packet.  tiva_transmit() will return zero if the
        * packet was successfully handled.
        */
 
-      DEBUGASSERT((tiva_ethin(priv, TIVA_MAC_TR_OFFSET) & MAC_TR_NEWTX) == 0)
-      arp_out(&priv->ld_dev);
       ret = tiva_transmit(priv);
     }
 
@@ -766,6 +792,12 @@ static void tiva_receive(struct tiva_driver_s *priv)
       priv->ld_dev.d_len = pktlen - 6;
       tiva_dumppacket("Received packet", priv->ld_dev.d_buf, priv->ld_dev.d_len);
 
+#ifdef CONFIG_NET_PKT
+      /* When packet sockets are enabled, feed the frame into the packet tap */
+
+       pkt_input(&priv->ld_dev);
+#endif
+
       /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -790,11 +822,17 @@ static void tiva_receive(struct tiva_driver_s *priv)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (ETHBUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(priv->ld_dev.d_flags))
 #endif
                 {
                   arp_out(&priv->ld_dev);
                 }
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&priv->ld_dev);
+                }
+#endif
 
               /* And send the packet */
 
@@ -820,12 +858,18 @@ static void tiva_receive(struct tiva_driver_s *priv)
 
           if (priv->dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (ETHBUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(priv->ld_dev.d_flags))
                 {
                   arp_out(&priv->ld_dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&priv->ld_dev);
                 }
 #endif
 

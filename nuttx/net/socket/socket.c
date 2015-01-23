@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/socket/socket.c
  *
- *   Copyright (C) 2007-2009, 2012, 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2012, 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@
 #include "pkt/pkt.h"
 
 /****************************************************************************
- * Global Functions
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
@@ -96,66 +96,85 @@
 
 int psock_socket(int domain, int type, int protocol, FAR struct socket *psock)
 {
+  bool ipdomain = false;
   int err;
 
   /* Only PF_INET, PF_INET6 or PF_PACKET domains supported */
 
-  if (
-#if defined(CONFIG_NET_IPv6)
-      domain != PF_INET6
-#else
-      domain != PF_INET
-#endif
-#if defined(CONFIG_NET_PKT)
-      && domain != PF_PACKET
-#endif
-     )
+  switch (domain)
     {
+#ifdef CONFIG_NET_IPv4
+    case PF_INET:
+      ipdomain = true;
+      break;
+#endif
+
+#ifdef CONFIG_NET_IPv6
+    case PF_INET6:
+      ipdomain = true;
+      break;
+#endif
+
+#ifdef CONFIG_NET_PKT
+    case PF_PACKET:
+      break;
+#endif
+
+    default:
       err = EAFNOSUPPORT;
       goto errout;
     }
 
   /* Only SOCK_STREAM, SOCK_DGRAM and possible SOCK_RAW are supported */
 
-  if (
-#if defined(CONFIG_NET_TCP)
-        (type == SOCK_STREAM && protocol != 0 && protocol != IPPROTO_TCP) ||
-#endif
-#if defined(CONFIG_NET_UDP)
-        (type == SOCK_DGRAM  && protocol != 0 && protocol != IPPROTO_UDP) ||
-#endif
-        (
-#if defined(CONFIG_NET_TCP)
-#if defined(CONFIG_NET_UDP) || defined(CONFIG_NET_PKT)
-         type != SOCK_STREAM &&
-#else
-         type != SOCK_STREAM
-#endif
-#endif
-#if defined(CONFIG_NET_UDP)
-#if defined(CONFIG_NET_PKT)
-         type != SOCK_DGRAM &&
-#else
-         type != SOCK_DGRAM
-#endif
-#endif
-#if defined(CONFIG_NET_PKT)
-         type != SOCK_RAW
-#endif
-        )
-     )
+  switch (type)
     {
-      err = EPROTONOSUPPORT;
-      goto errout;
+#ifdef CONFIG_NET_TCP
+      case SOCK_STREAM:
+        if ((protocol != 0 && protocol != IPPROTO_TCP) || !ipdomain)
+          {
+            err = EPROTONOSUPPORT;
+            goto errout;
+          }
+
+        break;
+#endif
+
+#ifdef CONFIG_NET_UDP
+      case SOCK_DGRAM:
+        if ((protocol != 0 && protocol != IPPROTO_UDP) || !ipdomain)
+          {
+            err = EPROTONOSUPPORT;
+            goto errout;
+          }
+
+        break;
+#endif
+
+#ifdef CONFIG_NET_PKT
+      case SOCK_RAW:
+        if (ipdomain)
+          {
+            err = EPROTONOSUPPORT;
+            goto errout;
+          }
+
+        break;
+#endif
+
+      default:
+        err = EPROTONOSUPPORT;
+        goto errout;
     }
 
   /* Everything looks good.  Initialize the socket structure */
   /* Save the protocol type */
 
-  psock->s_type = type;
-  psock->s_conn = NULL;
+  psock->s_domain = domain;
+  psock->s_type   = type;
+  psock->s_conn   = NULL;
 #ifdef CONFIG_NET_TCP_WRITE_BUFFERS
-  psock->s_sndcb = NULL;
+  psock->s_sndcb  = NULL;
 #endif
 
   /* Allocate the appropriate connection structure.  This reserves the
@@ -166,33 +185,6 @@ int psock_socket(int domain, int type, int protocol, FAR struct socket *psock)
   err = ENOMEM; /* Assume failure to allocate connection instance */
   switch (type)
     {
-#ifdef CONFIG_NET_PKT
-      case SOCK_RAW:
-        {
-          /* Allocate the packet socket connection structure and save
-           * in the new socket instance.
-           */
-
-          FAR struct pkt_conn_s *conn = pkt_alloc();
-          if (!conn)
-            {
-              /* Failed to reserve a connection structure */
-
-              goto errout;
-            }
-
-          /* Set the reference count on the connection structure.  This
-           * reference count will be increment only if the socket is
-           * dup'ed
-           */
-
-          DEBUGASSERT(conn->crefs == 0);
-          psock->s_conn = conn;
-          conn->crefs   = 1;
-        }
-        break;
-#endif
-
 #ifdef CONFIG_NET_TCP
       case SOCK_STREAM:
         {
@@ -200,7 +192,7 @@ int psock_socket(int domain, int type, int protocol, FAR struct socket *psock)
            * socket instance.
            */
 
-          FAR struct tcp_conn_s *conn = tcp_alloc();
+          FAR struct tcp_conn_s *conn = tcp_alloc(domain);
           if (!conn)
             {
               /* Failed to reserve a connection structure */
@@ -227,12 +219,39 @@ int psock_socket(int domain, int type, int protocol, FAR struct socket *psock)
            * socket instance.
            */
 
-          FAR struct udp_conn_s *conn = udp_alloc();
+          FAR struct udp_conn_s *conn = udp_alloc(domain);
           if (!conn)
             {
               /* Failed to reserve a connection structure */
 
               goto errout; /* With err == ENFILE or ENOMEM */
+            }
+
+          /* Set the reference count on the connection structure.  This
+           * reference count will be increment only if the socket is
+           * dup'ed
+           */
+
+          DEBUGASSERT(conn->crefs == 0);
+          psock->s_conn = conn;
+          conn->crefs   = 1;
+        }
+        break;
+#endif
+
+#ifdef CONFIG_NET_PKT
+      case SOCK_RAW:
+        {
+          /* Allocate the packet socket connection structure and save
+           * in the new socket instance.
+           */
+
+          FAR struct pkt_conn_s *conn = pkt_alloc();
+          if (!conn)
+            {
+              /* Failed to reserve a connection structure */
+
+              goto errout;
             }
 
           /* Set the reference count on the connection structure.  This

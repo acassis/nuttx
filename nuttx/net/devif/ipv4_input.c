@@ -104,8 +104,8 @@
 
 /* Macros */
 
-#define BUF                  ((FAR struct net_iphdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
-#define FBUF                 ((FAR struct net_iphdr_s *)&g_reassembly_buffer[0])
+#define BUF                  ((FAR struct ipv4_hdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
+#define FBUF                 ((FAR struct ipv4_hdr_s *)&g_reassembly_buffer[0])
 
 /* IP fragment re-assembly */
 
@@ -151,8 +151,8 @@ static uint8_t g_reassembly_flags;
 #if defined(CONFIG_NET_TCP_REASSEMBLY) && !defined(CONFIG_NET_IPv6)
 static uint8_t devif_reassembly(void)
 {
-  FAR struct net_iphdr_s *pbuf  = BUF;
-  FAR struct net_iphdr_s *pfbuf = FBUF;
+  FAR struct ipv4_hdr_s *pbuf  = BUF;
+  FAR struct ipv4_hdr_s *pfbuf = FBUF;
   uint16_t offset;
   uint16_t len;
   uint16_t i;
@@ -311,7 +311,7 @@ nullreturn:
 
 int ipv4_input(FAR struct net_driver_s *dev)
 {
-  FAR struct net_iphdr_s *pbuf = BUF;
+  FAR struct ipv4_hdr_s *pbuf = BUF;
   uint16_t iplen;
 
   /* This is where the input processing starts. */
@@ -381,7 +381,8 @@ int ipv4_input(FAR struct net_driver_s *dev)
 
 #if defined(CONFIG_NET_BROADCAST) && defined(CONFIG_NET_UDP)
   if (pbuf->proto == IP_PROTO_UDP &&
-      net_ipv4addr_cmp(net_ip4addr_conv32(pbuf->destipaddr), g_alloneaddr))
+      net_ipv4addr_cmp(net_ip4addr_conv32(pbuf->destipaddr),
+                       g_ipv4_alloneaddr))
     {
       return udp_ipv4_input(dev);
     }
@@ -394,7 +395,7 @@ int ipv4_input(FAR struct net_driver_s *dev)
   else
 #endif
 #ifdef CONFIG_NET_ICMP
-  if (net_ipv4addr_cmp(dev->d_ipaddr, g_allzeroaddr))
+  if (net_ipv4addr_cmp(dev->d_ipaddr, g_ipv4_allzeroaddr))
     {
       /* If we are configured to use ping IP address configuration and
        * hasn't been assigned an IP address yet, we accept all ICMP

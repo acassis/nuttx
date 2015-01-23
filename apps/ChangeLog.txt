@@ -1171,4 +1171,25 @@
 	  Contributed by Dave Marples (2015-01-11).
 	* apps/examples/timer:  Add a trivial test of the timer driver
 	  (2015-01-13).
-
+	* apps/netutils/dnsclient:  Can select to be either IPv4 or IPv6, but
+	  not both (IPv6 still does not compile) (2015-01-18).
+	* apps/netutils/netlib:  Add new library functions to manipulate IPv6
+	  addresses (2015-01-13).
+	* apps/nshlib/Kconfig and nsh_netinit.c:  Add logic to initialize
+	  IPv6 addresses (2015-01-19).
+	* apps/netutils/netlib:  All IOCTLs must use a valid address family --
+	  even if the address family does not matter such as when getting the
+	  MAC address or the network flags (2015-01-19).
+	* apps/examples/nettest:  Update test so that it can be used to test
+	  IPv6 TCP sockets (2015-01-20).
+	* Many files: Correct name of fields in struct sockaddr_in6:  sin6_port
+	  and sin6_family, not sin_port and sin_family (2015-01-20).
+	* apps/netutils/telnetd:  Add protection when CONFIG_SCHED_HAVE_PARENT
+	  is enabled:  Call sigaction with SA_NOCLDWAIT so that exit status is
+	  not retained (no zombies) and block receipt of SIGCHLD so that accept
+	  is not awakened by a signal.  Iff accept() is awakened by a signal, do
+	  not do anything crazy like exit.  Most from Rony Xln (2015-01-22).
+	*  apps/examples/udp:  The UDP test example has been extend to support
+	  IPv6 domain sockets (2015-01-22).
+	* apps/nshlib:  Add the ping6 command to support checking IPv6 networks.
+	  NSH logic is complete but still nissing (2015-01-23).

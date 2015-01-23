@@ -9418,10 +9418,80 @@
 	  net_iphdr_s (2015-01-15).
 	* arch/ and drivers/net:  All Ethernet drivers:  Call ipv6_input() if
 	  IPv6 is enabled and an IPv6 packet is received (2015-01-15).
-	* net/devif, net/tcp, net/ucp, include/nuttx/net:  Seperate tcp_input()
+	* net/devif, net/tcp, net/ucp, include/nuttx/net:  Separate tcp_input()
 	  and udp_input() into seprate functions tcp_ipv4_input(),
 	  tcp_ipv6_input(), udp_ipv4_input(), and upd_ipv6_input() than can deal
 	  will the data offsets caused by the differing sizes of the IP header
 	  (2015-01-15).
 	* net/utils/net_ipv6_maskcmp.c:  Add missing implementation of
 	  net_ipv6_maskcmp() (2015-01-15).
+	* Networking: Drivers can have both IPv4 and IPv6 addresses, but a
+	  socket can only only one or the other; The socket connection
+	  structures need to include a union of IPv4 and IPv6 addresses for
+	  the local address binding and for the remote address connections
+	  (2015-01-16).
+	* Networking:  Replace all references to net_ipaddr_t with either
+	  in_addr_t on net_ipv6addr_t.  The goal is to support both IPv4 and
+	  IPv6 simultaneously.  This requires that the two types be distinct
+	  and not conditionally typedef'ed to net_ipaddr_t (2015-01-16).
+	* Networking:  Replace all references to the macros net_ipaddr_copy,
+	  net_ipaddr_hdrcopy, net_ipaddr_cmp, net_ipaddr_hdrcmp, and
+	  net_ipaddr_maskcmp with the appropriate IPv4 or IPv6 version of the
+	  macro (such as net_ipv4addr_copy).  The goal is to support both
+	  IPv4 and IPv6 simultaneously.  This requires that the macros be
+	  distinct and not conditionally defined to one on or the other
+	  (2015-01-16).
+	* Networking: UDP and TCP MSS depends on the IP header size (as well
+	  as the link layer header size) and cannot be represented with a
+	  single value (2015-01-16).
+	* net/neighbor:  Move net/ipv6 to net/neighbor (2015-01-16).
+	* include/net/if.h:  Add a bit to the device flags to indicate if the
+	  device packet buffer holds an IPv4 or an IPv6 domain packet.
+	  Set/clear the flag along with the correct offset to the application
+	  payload data as each packet is received (2015-01-17).
+	* net/socket, net/tcp, net/udp:  Add logic to select the domain of the
+	  outgoing packet before sending any UDP or TCP packet.  This sets the
+	  bit to indicate the IPv4 or IPv6 domain and the correct offset to the
+	  output going payload data (2015-01-17).
+	* net/socket and net/tcp: When we are ready to receive data or when we
+	  have outgoing data ready to be sent, we need to the notify the
+	  appropriate device driver of this condition.  The notifying socket
+	  will be configured as either PF_INET or PF_INET6 and must look up the
+	  correct driver using the correct IP domain (2015-01-17).
+	* net/socket/accept.c:  Fix accept() so that it returns the correct IP
+	  address for the selected socket IP domain (2015-01-17).
+	* Networking: Final detangling off IPv4 and IPv6 TCP/UDP send logic.
+	  The networking subsystem now compiles with IPv6 enabled (2015-01-18).
+	* arch/arm/src/tiva/tm4c_ethernet.c:  When calling into the stack
+	  from the worker thread, it is necessary to have the stack locked
+	  (2015-01-18).
+	* nuttx/arch/arm/src/stm32/stm32_serial.c: fix declaration and
+	definition of up_receive() and up_dma_receive() to match fields of
+	  uart_ops_s from nuttx/include/nuttx/serial/serial.h.  From Freddie
+	  Chopin (2015-01-19).
+	* drivers/pipes/pipe.c, drivers/usbdev/cdcacm.c, and
+	  mm/mm_gran/mm_granalloc.c: Fixes some issues found by the PX4 team
+	  using Coverity.  From Pavel Krienko (2015-01-19).
+	* net/icmpv6/icmpv6_solicit.c, net/neighbor/neighbor_out.c, and other
+	  files: Add logic to search the Neighbor Table and update the
+	  destination address in the output Ethernet header OR to send an
+	  ICMPv6 Neighbor Solicitation if there is no entry in the Neighbor
+	  table for the IPv6 address (2015-01-20).
+	* arch/ and drivers/net:  Add missing raw/packet socket support toi
+	  all Ethernet driverss (2015-01-20).
+	* arch/ and drivers/net: "Networking:  Modify all Ethernet drivers:
+	  Do neighbor look-up on all outgoing IPv6 packs in order to properly
+	  set the destination link layer address (2015-01-20).
+	* Networking:  When sending ICMPv6 advertisements and solicitations,
+	  set the NOARP bit so that we don't overwrite the destination MAC
+	  address (2015-01-20).
+	* Many files: Correct name of fields in struct sockaddr_in6:  sin6_port
+	  and sin6_family, not sin_port and sin_family (2015-01-20).
+	* net/socket/accept.c: Correct the value returned by accept() in the
+	  case where net_lockingwait() is called.  It was returning -1 and
+	  losing the errno value.  Noted by Rony Xln (2015-01-22).
+	* net/: After some significant effort, ICMPv6 and TCP are both
+	  functional when IPv6 is selected.  UDP still requies testing
+	  (2015-01-22).
+	* "configs/dk-tm4c129x/ipv6:  Add an IPv6-enabled NSH configruation
+	  (2015-01-23)

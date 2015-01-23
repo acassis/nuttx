@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/devif/devif.h
  *
- *   Copyright (C) 2007-2009, 2013-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2013-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * This logic was leveraged from uIP which also has a BSD-style license:
@@ -83,7 +83,7 @@
  *   UDP_POLL           periodically from the drivers to support (1) timed
  *   PKT_POLL           operations, and (2) to check if the socket layer has
  *   ICMP_POLL          data that it wants to send
- *                 OUT: Not used
+ *   ICMPv6_POLL   OUT: Not used
  *
  *   TCP_BACKLOG    IN: There is a new connection in the backlog list set
  *                      up by the listen() command. (TCP only)
@@ -126,6 +126,7 @@
 #define UDP_POLL        TCP_POLL
 #define PKT_POLL        TCP_POLL
 #define ICMP_POLL       TCP_POLL
+#define ICMPv6_POLL     TCP_POLL
 #define TCP_BACKLOG     (1 << 5)
 #define TCP_CLOSE       (1 << 6)
 #define TCP_ABORT       (1 << 7)
@@ -134,6 +135,20 @@
 #define ICMP_ECHOREPLY  (1 << 10)
 
 #define TCP_CONN_EVENTS (TCP_CLOSE | TCP_ABORT | TCP_CONNECTED | TCP_TIMEDOUT)
+
+/* IPv4/IPv6 Helpers */
+
+#ifdef CONFIG_NET_IPv4
+#  define DEVIF_IS_IPv4(dev) IFF_IS_IPv4(dev->d_flags)
+#else
+#  define DEVIF_IS_IPv4(dev) (0)
+#endif
+
+#ifdef CONFIG_NET_IPv6
+#  define DEVIF_IS_IPv6(dev) IFF_IS_IPv6(dev->d_flags)
+#else
+#  define DEVIF_IS_IPv6(dev) (0)
+#endif
 
 /****************************************************************************
  * Public Type Definitions
@@ -164,24 +179,38 @@ struct devif_callback_s
 /****************************************************************************
  * Public Data
  ****************************************************************************/
+/* Well-known addresses */
 
-extern const net_ipaddr_t g_alloneaddr;
-extern const net_ipaddr_t g_allzeroaddr;
+#ifdef CONFIG_NET_IPv4
+extern const in_addr_t g_ipv4_alloneaddr;
+extern const in_addr_t g_ipv4_allzeroaddr;
+#endif
+
+#ifdef CONFIG_NET_IPv6
+extern const net_ipv6addr_t g_ipv6_alloneaddr;
+extern const net_ipv6addr_t g_ipv6_allzeroaddr;
+#endif
 
 /* Increasing number used for the IP ID field. */
 
 extern uint16_t g_ipid;
 
+#if defined(CONFIG_NET_TCP_REASSEMBLY) && !defined(CONFIG_NET_IPv6)
 /* Reassembly timer (units: deci-seconds) */
 
-#if defined(CONFIG_NET_TCP_REASSEMBLY) && !defined(CONFIG_NET_IPv6)
 extern uint8_t g_reassembly_timer;
 #endif
 
+#if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING)
 /* List of applications waiting for ICMP ECHO REPLY */
 
-#if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING)
-extern struct devif_callback_s *g_echocallback;
+extern struct devif_callback_s *g_icmp_echocallback;
+#endif
+
+#if defined(CONFIG_NET_ICMPv6) && defined(CONFIG_NET_ICMPv6_PING)
+/* List of applications waiting for ICMPv6 ECHO REPLY */
+
+extern struct devif_callback_s *g_icmpv6_echocallback;
 #endif
 
 /****************************************************************************

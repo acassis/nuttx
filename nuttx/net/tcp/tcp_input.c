@@ -95,10 +95,11 @@
  *
  ****************************************************************************/
 
-static void tcp_input(FAR struct net_driver_s *dev,
-                      FAR struct tcp_hdr_s *tcp, unsigned int tcpiplen)
+static void tcp_input(FAR struct net_driver_s *dev, unsigned int iplen)
 {
+  FAR struct tcp_hdr_s *tcp;
   FAR struct tcp_conn_s *conn = NULL;
+  unsigned int tcpiplen;
   unsigned int hdrlen;
   uint16_t tmp16;
   uint16_t flags;
@@ -113,14 +114,19 @@ static void tcp_input(FAR struct net_driver_s *dev,
   g_netstats.tcp.recv++;
 #endif
 
+  /* Get a pointer to the TCP header.  The TCP header lies just after the
+   * the link layer header and the IP header.
+   */
+
+  tcp = (FAR struct tcp_hdr_s *)&dev->d_buf[iplen + NET_LL_HDRLEN(dev)];
+
+  /* Get the size of the IP header and the TCP header */
+
+  tcpiplen = iplen + TCP_HDRLEN;
+
   /* Get the size of the link layer header, the IP header, and the TCP header */
 
   hdrlen = tcpiplen + NET_LL_HDRLEN(dev);
-
-  /* Initialize for tcp_send() */
-
-  dev->d_snddata = &dev->d_buf[hdrlen];
-  dev->d_appdata = &dev->d_buf[hdrlen];
 
   /* Start of TCP input header processing code. */
 
@@ -240,11 +246,13 @@ static void tcp_input(FAR struct net_driver_s *dev,
                   else if (opt == TCP_OPT_MSS &&
                           dev->d_buf[hdrlen + 1 + i] == TCP_OPT_MSS_LEN)
                     {
+                      uint16_t tcp_mss = TCP_MSS(dev, iplen);
+
                       /* An MSS option with the right option length. */
 
                       tmp16 = ((uint16_t)dev->d_buf[hdrlen + 2 + i] << 8) |
                                (uint16_t)dev->d_buf[hdrlen + 3 + i];
-                      conn->mss = tmp16 > TCP_MSS(dev) ? TCP_MSS(dev) : tmp16;
+                      conn->mss = tmp16 > tcp_mss ? tcp_mss : tmp16;
 
                       /* And we are done processing options. */
 
@@ -326,10 +334,10 @@ found:
 
   /* d_len will contain the length of the actual TCP data. This is
    * calculated by subtracting the length of the TCP header (in
-   * len) and the length of the IP header (20 bytes).
+   * len) and the length of the IP header.
    */
 
-  dev->d_len -= (len + IPv4_HDRLEN);
+  dev->d_len -= (len + iplen);
 
   /* First, check if the sequence number of the incoming packet is
    * what we're expecting next. If not, we send out an ACK with the
@@ -530,12 +538,14 @@ found:
                     else if (opt == TCP_OPT_MSS &&
                               dev->d_buf[hdrlen + 1 + i] == TCP_OPT_MSS_LEN)
                       {
+                        uint16_t tcp_mss = TCP_MSS(dev, iplen);
+
                         /* An MSS option with the right option length. */
 
                         tmp16 =
                           (dev->d_buf[hdrlen + 2 + i] << 8) |
                           dev->d_buf[hdrlen + 3 + i];
-                        conn->mss = tmp16 > TCP_MSS(dev) ? TCP_MSS(dev) : tmp16;
+                        conn->mss = tmp16 > tcp_mss ? tcp_mss : tmp16;
 
                         /* And we are done processing options. */
 
@@ -697,7 +707,8 @@ found:
          * When the application is called, the d_len field
          * contains the length of the incoming data. The application can
          * access the incoming data through the global pointer
-         * d_appdata, which usually points hdrlen bytes into the d_buf array.
+         * d_appdata, which usually points hdrlen bytes into the d_buf
+         * array.
          *
          * If the application wishes to send any data, this data should be
          * put into the d_appdata and the length of the data should be
@@ -871,8 +882,13 @@ drop:
 #ifdef CONFIG_NET_IPv4
 void tcp_ipv4_input(FAR struct net_driver_s *dev)
 {
-  unsigned int offset = IPv4_HDRLEN + NET_LL_HDRLEN(dev);
-  tcp_input(dev, (FAR struct tcp_hdr_s *)&dev->d_buf[offset], IPv4TCP_HDRLEN);
+  /* Configure to receive an TCP IPv4 packet */
+
+  tcp_ipv4_select(dev);
+
+  /* Then process in the TCP IPv4 input */
+
+  tcp_input(dev, IPv4_HDRLEN);
 }
 #endif
 
@@ -896,8 +912,13 @@ void tcp_ipv4_input(FAR struct net_driver_s *dev)
 #ifdef CONFIG_NET_IPv6
 void tcp_ipv6_input(FAR struct net_driver_s *dev)
 {
-  unsigned int offset = IPv6_HDRLEN + NET_LL_HDRLEN(dev);
-  tcp_input(dev, (FAR struct tcp_hdr_s *)&dev->d_buf[offset], IPv6TCP_HDRLEN);
+  /* Configure to receive an TCP IPv6 packet */
+
+  tcp_ipv6_select(dev);
+
+  /* Then process in the TCP IPv6 input */
+
+  tcp_input(dev, IPv6_HDRLEN);
 }
 #endif
 

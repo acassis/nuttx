@@ -1,7 +1,7 @@
 /****************************************************************************
- * netutils/netlib/netlib_sethostaddr.c
+ * net/tcp/tcp_ipselect.c
  *
- *   Copyright (C) 2007-2009, 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,79 +38,69 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#if defined(CONFIG_NET) && CONFIG_NSOCKET_DESCRIPTORS > 0
+#ifdef CONFIG_NET
 
-#include <sys/socket.h>
-#include <sys/ioctl.h>
+#include <stdint.h>
+#include <debug.h>
 
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-
-#include <netinet/in.h>
 #include <net/if.h>
+#include <nuttx/net/netdev.h>
+#include <nuttx/net/tcp.h>
 
-#include <apps/netutils/netlib.h>
+#include "tcp/tcp.h"
 
 /****************************************************************************
- * Global Functions
+ * Private Data
  ****************************************************************************/
 
 /****************************************************************************
- * Name: netlib_sethostaddr
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Function: tcp_ipv4_select
  *
  * Description:
- *   Set the network driver IP address
+ *   Configure to send or receive an TCP IPv4 packet
  *
- * Parameters:
- *   ifname   The name of the interface to use
- *   ipaddr   The address to set
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+void tcp_ipv4_select(FAR struct net_driver_s *dev)
+{
+  /* Clear a bit in the d_flags to distinguish this from an IPv6 packet */
+
+  IFF_SET_IPv4(dev->d_flags);
+
+ /* Set the offset to the beginning of the TCP data payload */
+
+ dev->d_appdata = &dev->d_buf[IPv4TCP_HDRLEN + NET_LL_HDRLEN(dev)];
+}
+#endif /* CONFIG_NET_IPv4 */
+
+/****************************************************************************
+ * Function: tcp_ipv6_select
  *
- * Return:
- *   0 on sucess; -1 on failure
+ * Description:
+ *   Configure to send or receive an TCP IPv6 packet
  *
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IPv6
-int netlib_sethostaddr(const char *ifname, const struct in6_addr *addr)
-#else
-int netlib_sethostaddr(const char *ifname, const struct in_addr *addr)
-#endif
+void tcp_ipv6_select(FAR struct net_driver_s *dev)
 {
-  int ret = ERROR;
-  if (ifname && addr)
-    {
-      int sockfd = socket(PF_INET, NETLIB_SOCK_IOCTL, 0);
-      if (sockfd >= 0)
-        {
-          struct ifreq req;
-#ifdef CONFIG_NET_IPv6
-          struct sockaddr_in6 *inaddr;
-#else
-          struct sockaddr_in  *inaddr;
-#endif
-          /* Add the device name to the request */
+  /* Set a bit in the d_flags to distinguish this from an IPv6 packet */
 
-          strncpy(req.ifr_name, ifname, IFNAMSIZ);
+  IFF_SET_IPv6(dev->d_flags);
 
-          /* Add the INET address to the request */
+ /* Set the offset to the beginning of the TCP data payload */
 
-#ifdef CONFIG_NET_IPv6
-          inaddr             = (struct sockaddr_in6 *)&req.ifr_addr;
-          inaddr->sin_family = AF_INET6;
-          inaddr->sin_port   = 0;
-          memcpy(&inaddr->sin6_addr, addr, sizeof(struct in6_addr));
-#else
-          inaddr             = (struct sockaddr_in *)&req.ifr_addr;
-          inaddr->sin_family = AF_INET;
-          inaddr->sin_port   = 0;
-          memcpy(&inaddr->sin_addr, addr, sizeof(struct in_addr));
-#endif
-          ret = ioctl(sockfd, SIOCSIFADDR, (unsigned long)&req);
-          close(sockfd);
-        }
-    }
-  return ret;
+ dev->d_appdata = &dev->d_buf[IPv6TCP_HDRLEN + NET_LL_HDRLEN(dev)];
 }
+#endif /* CONFIG_NET_IPv6 */
 
-#endif /* CONFIG_NET && CONFIG_NSOCKET_DESCRIPTORS */
+#endif /* CONFIG_NET */

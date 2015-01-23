@@ -60,6 +60,10 @@
 #include <nuttx/net/arp.h>
 #include <nuttx/net/netdev.h>
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 #include <arch/io.h>
 
 #include "chip.h"
@@ -1081,11 +1085,32 @@ static int ez80emac_txpoll(struct net_driver_s *dev)
   nvdbg("Poll result: d_len=%d\n", priv->dev.d_len);
   if (priv->dev.d_len > 0)
     {
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(priv->dev.d_flags))
+#endif
+        {
+          arp_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
       /* Send the packet.  ez80emac_transmit() will return zero if the
        * packet was successfully handled.
        */
 
-      arp_out(&priv->dev);
       ret = ez80emac_transmit(priv);
     }
 
@@ -1268,6 +1293,12 @@ static int ez80emac_receive(struct ez80emac_driver_s *priv)
             ez80emac_rrp(), rwp,
             inp(EZ80_EMAC_BLKSLFT_H), inp(EZ80_EMAC_BLKSLFT_L));
 
+#ifdef CONFIG_NET_PKT
+      /* When packet sockets are enabled, feed the frame into the packet tap */
+
+       pkt_input(&priv->dev);
+#endif
+
       /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -1292,11 +1323,17 @@ static int ez80emac_receive(struct ez80emac_driver_s *priv)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (ETHBUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(priv->dev.d_flags))
 #endif
                 {
                   arp_out(&priv->dev);
                 }
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&priv->dev);
+                }
+#endif
 
               /* And send the packet */
 
@@ -1321,12 +1358,18 @@ static int ez80emac_receive(struct ez80emac_driver_s *priv)
 
           if (priv->dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (ETHBUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(priv->dev.d_flags))
                 {
                   arp_out(&priv->dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&priv->dev);
                 }
 #endif
 

@@ -53,8 +53,8 @@
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
 #include <nuttx/wdog.h>
-#include <nuttx/net/mii.h>
 
+#include <nuttx/net/mii.h>
 #include <nuttx/net/arp.h>
 #include <nuttx/net/netdev.h>
 #if defined(CONFIG_NET_PKT)
@@ -654,8 +654,10 @@ static void stm32_txtimeout(int argc, uint32_t arg, ...);
 static int  stm32_ifup(struct net_driver_s *dev);
 static int  stm32_ifdown(struct net_driver_s *dev);
 static int  stm32_txavail(struct net_driver_s *dev);
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static int  stm32_addmac(struct net_driver_s *dev, FAR const uint8_t *mac);
+#endif
+#ifdef CONFIG_NET_IGMP
 static int  stm32_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac);
 #endif
 #ifdef CONFIG_NETDEV_PHY_IOCTL
@@ -691,6 +693,9 @@ static inline void stm32_ethgpioconfig(FAR struct stm32_ethmac_s *priv);
 static void stm32_ethreset(FAR struct stm32_ethmac_s *priv);
 static int  stm32_macconfig(FAR struct stm32_ethmac_s *priv);
 static void stm32_macaddress(FAR struct stm32_ethmac_s *priv);
+#ifdef CONFIG_NET_ICMPv6
+static void stm32_ipv6multicast(FAR struct stm32_ethmac_s *priv);
+#endif
 static int  stm32_macenable(FAR struct stm32_ethmac_s *priv);
 static int  stm32_ethconfig(FAR struct stm32_ethmac_s *priv);
 
@@ -1175,9 +1180,30 @@ static int stm32_txpoll(struct net_driver_s *dev)
 
   if (priv->dev.d_len > 0)
     {
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(priv->dev.d_flags))
+#endif
+        {
+          arp_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
       /* Send the packet */
 
-      arp_out(&priv->dev);
       stm32_transmit(priv);
       DEBUGASSERT(dev->d_len == 0 && dev->d_buf == NULL);
 
@@ -1612,8 +1638,14 @@ static void stm32_receive(FAR struct stm32_ethmac_s *priv)
       if (dev->d_len > CONFIG_NET_ETH_MTU)
         {
           nlldbg("DROPPED: Too big: %d\n", dev->d_len);
+          continue;
         }
-      else
+
+#ifdef CONFIG_NET_PKT
+  /* When packet sockets are enabled, feed the frame into the packet tap */
+
+   pkt_input(&priv->dev);
+#endif
 
       /* We only accept IP packets of the configured type and ARP packets */
 
@@ -1638,11 +1670,17 @@ static void stm32_receive(FAR struct stm32_ethmac_s *priv)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (BUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(priv->dev.d_flags))
 #endif
                 {
                   arp_out(&priv->dev);
                 }
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&priv->dev);
+                }
+#endif
 
               /* And send the packet */
 
@@ -1666,12 +1704,18 @@ static void stm32_receive(FAR struct stm32_ethmac_s *priv)
 
           if (priv->dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(priv->dev.d_flags))
                 {
                   arp_out(&priv->dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&priv->dev);
                 }
 #endif
 
@@ -2264,7 +2308,7 @@ static uint32_t stm32_calcethcrc(const uint8_t *data, size_t length)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static int stm32_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   uint32_t crc;
@@ -2301,7 +2345,7 @@ static int stm32_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 
   return OK;
 }
-#endif
+#endif /* CONFIG_NET_IGMP || CONFIG_NET_ICMPv6 */
 
 /****************************************************************************
  * Function: stm32_rmmac
@@ -3433,6 +3477,60 @@ static void stm32_macaddress(FAR struct stm32_ethmac_s *priv)
 }
 
 /****************************************************************************
+ * Function: stm32_ipv6multicast
+ *
+ * Description:
+ *   Configure the IPv6 multicast MAC address.
+ *
+ * Parameters:
+ *   priv - A reference to the private driver state structure
+ *
+ * Returned Value:
+ *   OK on success; Negated errno on failure.
+ *
+ * Assumptions:
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6
+static void stm32_ipv6multicast(FAR struct stm32_ethmac_s *priv)
+{
+  struct net_driver_s *dev;
+  uint16_t tmp16;
+  uint8_t mac[6];
+
+  /* For ICMPv6, we need to add the IPv6 multicast address
+   *
+   * For IPv6 multicast addresses, the Ethernet MAC is derived by
+   * the four low-order octets OR'ed with the MAC 33:33:00:00:00:00,
+   * so for example the IPv6 address FF02:DEAD:BEEF::1:3 would map
+   * to the Ethernet MAC address 33:33:00:01:00:03.
+   *
+   * NOTES:  This appears correct for the ICMPv6 Router Solicitation
+   * Message, but the ICMPv6 Neighbor Solicitation message seems to
+   * use 33:33:ff:01:00:03.
+   */
+
+  mac[0] = 0x33;
+  mac[1] = 0x33;
+
+  dev    = &priv->dev;
+  tmp16  = dev->d_ipv6addr[6];
+  mac[2] = 0xff;
+  mac[3] = tmp16 >> 8;
+
+  tmp16  = dev->d_ipv6addr[7];
+  mac[4] = tmp16 & 0xff;
+  mac[5] = tmp16 >> 8;
+
+  nvdbg("IPv6 Multicast: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  (void)stm32_addmac(dev, mac);
+}
+#endif /* CONFIG_NET_ICMPv6 */
+
+/****************************************************************************
  * Function: stm32_macenable
  *
  * Description:
@@ -3455,6 +3553,12 @@ static int stm32_macenable(FAR struct stm32_ethmac_s *priv)
   /* Set the MAC address */
 
   stm32_macaddress(priv);
+
+#ifdef CONFIG_NET_ICMPv6
+  /* Set up the IPv6 multicast address */
+
+  stm32_ipv6multicast(priv);
+#endif
 
   /* Enable transmit state machine of the MAC for transmission on the MII */
 

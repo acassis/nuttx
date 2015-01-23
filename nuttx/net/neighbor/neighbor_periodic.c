@@ -1,20 +1,19 @@
 /****************************************************************************
- * net/ipv6/ipv6.h
- * Header file for database of link-local neighbors, used by IPv6 code and
- * to be used by future ARP code.
+ * net/neighbor/neighbor_periodic.c
  *
- *   Copyright (C) 2007-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
- * A direct leverage of logic from uIP which also has b BSD style license
+ * A leverage of logic from uIP which also has a BSD style license
  *
+ *   Copyright (c) 2006, Swedish Institute of Computer Science.  All rights
+ *     reserved.
  *   Author: Adam Dunkels <adam@sics.se>
- *   Copyright (c) 2006, Swedish Institute of Computer Science.
- *   All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -38,48 +37,71 @@
  *
  ****************************************************************************/
 
-#ifndef __NET_IPV6_IPV6_H
-#define __NET_IPV6_IPV6_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stdint.h>
+#include <nuttx/config.h>
+#include <nuttx/clock.h>
 
-#include <net/ethernet.h>
-
-#include <nuttx/net/ip.h>
-
-#ifdef CONFIG_NET_IPv6
+#include "neighbor/neighbor.h"
 
 /****************************************************************************
- * Public Types
+ * Public Functions
  ****************************************************************************/
 
-struct net_neighbor_addr_s
+#define USEC_PER_HSEC    500000
+#define TICK_PER_HSEC    (USEC_PER_HSEC / USEC_PER_TICK)   /* Truncates! */
+#define TICK2HSEC(tick)  (((tick)+(TICK_PER_HSEC/2))/TICK_PER_HSEC) /* Rounds */
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: neighbor_periodic
+ *
+ * Description:
+ *   Called from the timer poll logic in order to perform agin operations on
+ *   entries in the Neighbor Table
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+void neighbor_periodic(void)
 {
-#if CONFIG_NET_IPV6_NEIGHBOR_ADDRTYPE
-  CONFIG_NET_IPV6_NEIGHBOR_ADDRTYPE addr;
-#else
-  struct ether_addr addr;
-#endif
-};
+  uint32_t now;
+  uint32_t ticks;
+  uint32_t hsecs;
+  int i;
 
-/****************************************************************************
- * Public Data
- ****************************************************************************/
+  /* Get the elapsed time in units of half seconds */
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
+  now   = clock_systimer();
+  ticks = now - g_neighbor_polltime;
+  hsecs = TICK2HSEC(ticks);
 
-void net_neighbor_init(void);
-void net_neighbor_add(net_ipv6addr_t ipaddr, struct net_neighbor_addr_s *addr);
-void net_neighbor_update(net_ipv6addr_t ipaddr);
-struct net_neighbor_addr_s *net_neighbor_lookup(net_ipv6addr_t ipaddr);
-void net_neighbor_periodic(void);
+  /* Reset the time of the last poll */
 
-#endif /* CONFIG_NET_IPv6 */
-#endif /* __NET_IPV6_IPV6_H */
+  g_neighbor_polltime = now;
 
+  /* Add the elapsed half seconds from each activate entry in the
+   * Neighbor table.
+   */
+
+  for (i = 0; i < CONFIG_NET_IPv6_NCONF_ENTRIES; ++i)
+    {
+      uint32_t newtime = g_neighbors[i].ne_time + hsecs;
+      if (newtime > NEIGHBOR_MAXTIME)
+        {
+          newtime = NEIGHBOR_MAXTIME;
+        }
+
+      g_neighbors[i].ne_time = newtime;
+    }
+}

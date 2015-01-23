@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/nshlib/nsh_netinit.c
  *
- *   Copyright (C) 2010-2012, 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2010-2012, 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * This is influenced by similar logic from uIP:
@@ -131,6 +131,57 @@
 static sem_t g_notify_sem;
 #endif
 
+#ifdef CONFIG_NET_IPv6
+  /* Host IPv6 address */
+
+#ifdef CONFIG_NSH_DHCPC
+static const uint16_t g_ipv6_hostaddr[8] =
+{
+  0x0000, 0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000
+};
+#else
+static const uint16_t g_ipv6_hostaddr[8] =
+{
+  HTONS(CONFIG_NSH_IPv6ADDR_1),
+  HTONS(CONFIG_NSH_IPv6ADDR_2),
+  HTONS(CONFIG_NSH_IPv6ADDR_3),
+  HTONS(CONFIG_NSH_IPv6ADDR_4),
+  HTONS(CONFIG_NSH_IPv6ADDR_5),
+  HTONS(CONFIG_NSH_IPv6ADDR_6),
+  HTONS(CONFIG_NSH_IPv6ADDR_7),
+  HTONS(CONFIG_NSH_IPv6ADDR_8),
+};
+#endif
+
+/* Default routine IPv6 address */
+
+static const uint16_t g_ipv6_draddr[8] =
+{
+  HTONS(CONFIG_NSH_DRIPv6ADDR_1),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_2),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_3),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_4),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_5),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_6),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_7),
+  HTONS(CONFIG_NSH_DRIPv6ADDR_8),
+};
+
+/* IPv6 netmask */
+
+static const uint16_t g_ipv6_netmask[8] =
+{
+  HTONS(CONFIG_NSH_IPv6NETMASK_1),
+  HTONS(CONFIG_NSH_IPv6NETMASK_2),
+  HTONS(CONFIG_NSH_IPv6NETMASK_3),
+  HTONS(CONFIG_NSH_IPv6NETMASK_4),
+  HTONS(CONFIG_NSH_IPv6NETMASK_5),
+  HTONS(CONFIG_NSH_IPv6NETMASK_6),
+  HTONS(CONFIG_NSH_IPv6NETMASK_7),
+  HTONS(CONFIG_NSH_IPv6NETMASK_8),
+};
+#endif /* CONFIG_NET_IPv6 */
+
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
@@ -149,7 +200,9 @@ static sem_t g_notify_sem;
 
 static void nsh_netinit_configure(void)
 {
+#ifdef CONFIG_NET_IPv4
   struct in_addr addr;
+#endif
 #if defined(CONFIG_NSH_DHCPC)
   FAR void *handle;
 #endif
@@ -184,6 +237,7 @@ static void nsh_netinit_configure(void)
   netlib_setmacaddr(NET_DEVNAME, mac);
 #endif
 
+#ifdef CONFIG_NET_IPv4
   /* Set up our host address */
 
 #if !defined(CONFIG_NSH_DHCPC)
@@ -191,17 +245,35 @@ static void nsh_netinit_configure(void)
 #else
   addr.s_addr = 0;
 #endif
-  netlib_sethostaddr(NET_DEVNAME, &addr);
+  netlib_set_ipv4addr(NET_DEVNAME, &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_NSH_DRIPADDR);
-  netlib_setdraddr(NET_DEVNAME, &addr);
+  netlib_set_dripv4addr(NET_DEVNAME, &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_NSH_NETMASK);
-  netlib_setnetmask(NET_DEVNAME, &addr);
+  netlib_set_ipv4netmask(NET_DEVNAME, &addr);
+#endif
+
+#ifdef CONFIG_NET_IPv6
+  /* Set up our host address */
+
+  netlib_set_ipv6addr(NET_DEVNAME,
+                      (FAR const struct in6_addr *)g_ipv6_hostaddr);
+
+  /* Set up the default router address */
+
+  netlib_set_dripv6addr(NET_DEVNAME,
+                        (FAR const struct in6_addr *)g_ipv6_draddr);
+
+  /* Setup the subnet mask */
+
+  netlib_set_ipv6netmask(NET_DEVNAME,
+                        (FAR const struct in6_addr *)g_ipv6_netmask);
+#endif
 
 #if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
   /* Set up the resolver */
@@ -230,16 +302,16 @@ static void nsh_netinit_configure(void)
     {
         struct dhcpc_state ds;
         (void)dhcpc_request(handle, &ds);
-        netlib_sethostaddr(NET_DEVNAME, &ds.ipaddr);
+        netlib_set_ipv4addr(NET_DEVNAME, &ds.ipaddr);
 
         if (ds.netmask.s_addr != 0)
           {
-            netlib_setnetmask(NET_DEVNAME, &ds.netmask);
+            netlib_set_ipv4netmask(NET_DEVNAME, &ds.netmask);
           }
 
         if (ds.default_router.s_addr != 0)
           {
-            netlib_setdraddr(NET_DEVNAME, &ds.default_router);
+            netlib_set_dripv4addr(NET_DEVNAME, &ds.default_router);
           }
 
         if (ds.dnsaddr.s_addr != 0)

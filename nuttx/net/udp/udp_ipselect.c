@@ -1,7 +1,7 @@
 /****************************************************************************
- * netutils/netlib/netlib_gethostaddr.c
+ * net/udp/udp_ipselect.c
  *
- *   Copyright (C) 2007-2009, 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,76 +38,70 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#if defined(CONFIG_NET) && CONFIG_NSOCKET_DESCRIPTORS > 0
+#ifdef CONFIG_NET
 
-#include <sys/socket.h>
-#include <sys/ioctl.h>
+#include <stdint.h>
+#include <debug.h>
 
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-
-#include <netinet/in.h>
 #include <net/if.h>
+#include <nuttx/net/netdev.h>
+#include <nuttx/net/ip.h>
+#include <nuttx/net/udp.h>
 
-#include <apps/netutils/netlib.h>
+#include "udp/udp.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Private Data
  ****************************************************************************/
 
 /****************************************************************************
- * Global Functions
+ * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: netlib_gethostaddr
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Function: udp_ipv4_select
  *
  * Description:
- *   Get the network driver IP address
+ *   Configure to send or receive an UDP IPv4 packet
  *
- * Parameters:
- *   ifname   The name of the interface to use
- *   ipaddr   The location to return the IP address
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+void udp_ipv4_select(FAR struct net_driver_s *dev)
+{
+  /* Clear a bit in the d_flags to distinguish this from an IPv6 packet */
+
+  IFF_SET_IPv4(dev->d_flags);
+
+ /* Set the offset to the beginning of the UDP data payload */
+
+ dev->d_appdata = &dev->d_buf[IPv4UDP_HDRLEN + NET_LL_HDRLEN(dev)];
+}
+#endif /* CONFIG_NET_IPv4 */
+
+/****************************************************************************
+ * Function: udp_ipv6_select
  *
- * Return:
- *   0 on success; -1 on failure
+ * Description:
+ *   Configure to send or receive an UDP IPv6 packet
  *
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IPv6
-int netlib_gethostaddr(const char *ifname, struct in6_addr *addr)
-#else
-int netlib_gethostaddr(const char *ifname, struct in_addr *addr)
-#endif
+void udp_ipv6_select(FAR struct net_driver_s *dev)
 {
-  int ret = ERROR;
-  if (ifname && addr)
-    {
-      int sockfd = socket(PF_INET, NETLIB_SOCK_IOCTL, 0);
-      if (sockfd >= 0)
-        {
-          struct ifreq req;
-          strncpy(req.ifr_name, ifname, IFNAMSIZ);
-          ret = ioctl(sockfd, SIOCGIFADDR, (unsigned long)&req);
-          if (!ret)
-            {
-#ifdef CONFIG_NET_IPv6
-              FAR struct sockaddr_in6 *req_addr;
-              req_addr = (FAR struct sockaddr_in6 *)&req.ifr_addr;
-              memcpy(addr, &req_addr->sin6_addr, sizeof(struct in6_addr));
-#else
-              FAR struct sockaddr_in *req_addr;
-              req_addr = (FAR struct sockaddr_in*)&req.ifr_addr;
-              memcpy(addr, &req_addr->sin_addr, sizeof(struct in_addr));
-#endif
-            }
+  /* Set a bit in the d_flags to distinguish this from an IPv6 packet */
 
-          close(sockfd);
-        }
-    }
+  IFF_SET_IPv6(dev->d_flags);
 
-  return ret;
+ /* Set the offset to the beginning of the UDP data payload */
+
+ dev->d_appdata = &dev->d_buf[IPv6UDP_HDRLEN + NET_LL_HDRLEN(dev)];
 }
+#endif /* CONFIG_NET_IPv6 */
 
-#endif /* CONFIG_NET && CONFIG_NSOCKET_DESCRIPTORS */
+#endif /* CONFIG_NET */

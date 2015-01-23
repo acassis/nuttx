@@ -57,52 +57,61 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* ICMP definitions */
+/* ICMPv6 definitions */
 
-/* ICMP Message Types */
+/* ICMPv6 Message Types */
 
-#define ICMPv6_ECHO_REPLY              0    /* RFC 792 */
-#define ICMPv6_DEST_UNREACHABLE        3    /* RFC 792 */
-#define ICMPv6_SRC_QUENCH              4    /* RFC 792 */
-#define ICMPv6_REDIRECT                5    /* RFC 792 */
-#define ICMPv6_ALT_HOST_ADDRESS        6
-#define ICMPv6_ECHO_REQUEST            8    /* RFC 792 */
-#define ICMPv6_ROUTER_ADVERTISEMENT    9    /* RFC 1256 */
-#define ICMPv6_ROUTER_SOLICITATION     10   /* RFC 1256 */
-#define ICMPv6_TIME_EXCEEDED           11   /* RFC 792 */
-#define ICMPv6_PARAMETER_PROBLEM       12
-#define ICMPv6_TIMESTAMP_REQUEST       13
-#define ICMPv6_TIMESTAMP_REPLY         14
-#define ICMPv6_INFORMATION_REQUEST     15
-#define ICMPv6_INFORMATION_REPLY       16
-#define ICMPv6_ADDRESS_MASK_REQUEST    17
-#define ICMPv6_ADDRESS_MASK_REPLY      18
-#define ICMPv6_TRACEROUTE              30
-#define ICMPv6_CONVERSION_ERROR        31
-#define ICMPv6_MOBILE_HOST_REDIRECT    32
-#define ICMPv6_IPV6_WHEREAREYOU        33
-#define ICMPv6_IPV6_IAMHERE            34
-#define ICMPv6_MOBILE_REGIS_REQUEST    35
-#define ICMPv6_MOBILE_REGIS_REPLY      36
-#define ICMPv6_DOMAIN_NAME_REQUEST     37
-#define ICMPv6_DOMAIN_NAME_REPLY       38
-#define ICMPv6_SKIP_DISCOVERY_PROTO    39
-#define ICMPv6_PHOTURIS_SECURITY_FAIL  40
-#define ICMPv6_EXP_MOBILE_PROTO        41   /* RFC 4065 */
-#define ICMPv6_ECHO_REPLY             129
-#define ICMPv6_ECHO_REQUEST           128
-#define ICMPv6_NEIGHBOR_SOLICITATION  135
-#define ICMPv6_NEIGHBOR_ADVERTISEMENT 136
+#define ICMPv6_RESERVED                0    /* RFC 4443 */
+#define ICMPv6_DEST_UNREACHABLE        1
+#define ICMPv6_PACKET_TOO_BIG          2
+#define ICMPv6_PACKET_TIME_EXCEEDED    3
+#define ICMPv6_PACKET_PARAM_PROBLEM    4
+#define ICMPv6_PRIVATE_ERR_MSG_1       100
+#define ICMPv6_PRIVATE_ERR_MSG_2       101
+#define ICMPv6_RESERVED_ERROR_MSG      127
+#define ICMPv6_ECHO_REQUEST            128
+#define ICMPv6_ECHO_REPLY              129
+#define ICMPV6_MCAST_LISTEN_QUERY      130   /* RFC 2710 */
+#define ICMPV6_MCAST_LISTEN_REPORT     131
+#define ICMPV6_MCAST_LISTEN_DONE       132
+#define ICMPV6_ROUTER_SOLICIT          133   /* RFC 4861 */
+#define ICMPV6_ROUTER_ADVERTISE        134
+#define ICMPv6_NEIGHBOR_SOLICIT        135
+#define ICMPv6_NEIGHBOR_ADVERTISE      136
+#define ICMPv6_REDIRECT                137
+#define ICMPV6_ROUTER_RENUMBERING      138   /* Matt Crawford */
+#define ICMPV6_NODE_INFO_QUERY         139   /* RFC 4620 */
+#define ICMPV6_NODE_INFO_REPLY         140
+#define ICMPV6_INV_NEIGHBOR_DISCOVERY  141   /* RFC 3122 */
+#define ICMPV6_INV_NEIGHBOR_ADVERTISE  142
+#define ICMPV6_HOME_AGENT_DISCOVERY    144   /* RFC 3775 */
+#define ICMPV6_HOME_AGENT_REPLY        145
+#define ICMPV6_MOBILE_PREFIX_SOLICIT   146
+#define ICMPV6_MOBILE_PREFIX_ADVERTISE 147
+#define ICMPv6_PRIVATE_INFO_MSG_1      200   /* RFC 4443 */
+#define ICMPv6_PRIVATE_INFO_MSG_2      201
+#define ICMPv6_RESERVED_INFO_MSG       255
 
 #define ICMPv6_FLAG_S (1 << 6)
-
-#define ICMPv6_OPTION_SOURCE_LINK_ADDRESS 1
-#define ICMPv6_OPTION_TARGET_LINK_ADDRESS 2
 
 /* Header sizes */
 
 #define ICMPv6_HDRLEN    4                             /* Size of ICMPv6 header */
 #define IPICMPv6_HDRLEN  (ICMPv6_HDRLEN + IPv6_HDRLEN) /* Size of IPv6 + ICMPv6 header */
+
+/* Option types */
+
+#define ICMPv6_OPT_SRCLLADDR  1 /* Source Link-Layer Address */
+#define ICMPv6_OPT_TGTLLADDR  2 /* Target Link-Layer Address */
+#define ICMPv6_OPT_PREFIX     3 /* Prefix Information */
+#define ICMPv6_OPT_REDIRECT   4 /* Redirected Header */
+#define ICMPv6_OPT_MTU        5 /* MTU */
+
+/* ICMPv6 Neighbor Advertisement message flags */
+
+#define ICMPv6_FLAG_R    (1 << 7) /* Router flag */
+#define ICMPv6_FLAG_S    (1 << 6) /* Solicited flag */
+#define ICMPv6_FLAG_O    (1 << 5) /* Override flag */
 
 /****************************************************************************
  * Public Type Definitions
@@ -115,7 +124,7 @@ struct icmpv6_iphdr_s
   /* IPv6 Ip header */
 
   uint8_t  vtc;              /* Bits 0-3: version, bits 4-7: traffic class (MS) */
-  uint8_t  tcf;              /* Bits 0-3: traffic class (LS), bits 4-7: flow label (MS) */
+  uint8_t  tcf;              /* Bits 0-3: traffic class (LS), 4-bits: flow label (MS) */
   uint16_t flow;             /* 16-bit flow label (LS) */
   uint8_t  len[2];           /* 16-bit Payload length */
   uint8_t  proto;            /*  8-bit Next header (same as IPv4 protocol field) */
@@ -126,21 +135,44 @@ struct icmpv6_iphdr_s
   /* ICMPv6 header */
 
   uint8_t  type;             /* Defines the format of the ICMP message */
-  uint8_t  icode;            /* Further qualifies the ICMP messages */
-  uint16_t icmpv6chksum;     /* Checksum of ICMP header and data */
+  uint8_t  code;             /* Further qualifies the ICMP messages */
+  uint16_t chksum;           /* Checksum of ICMP header and data */
 
   /* Data following the ICMP header contains the data specific to the
    * message type indicated by the Type and Code fields.
    */
+};
 
-  /* ICMPv6_ECHO_REQUEST and ICMPv6_ECHO_REPLY data */
+/* This the message format for the ICMPv6 Neighbor Solicitation message */
 
-  uint8_t flags;
-  uint8_t reserved1;
-  uint8_t reserved2;
-  uint8_t reserved3;
-  uint8_t icmpv6data[16];
-  uint8_t options[1];
+struct icmpv6_neighbor_solicit_s
+{
+  uint8_t  type;             /* Message Type: ICMPv6_NEIGHBOR_SOLICIT */
+  uint8_t  code;             /* Further qualifies the ICMP messages */
+  uint16_t chksum;           /* Checksum of ICMP header and data */
+  uint8_t  flags[4];         /* See ICMPv6_FLAG_ definitions */
+  net_ipv6addr_t tgtaddr;    /* 128-bit Target IPv6 address */
+  uint8_t  opttype;          /* Option Type: ICMPv6_OPT_SRCLLADDR */
+  uint8_t  optlen;           /* Option length: 8 octets */
+#ifdef CONFIG_NET_ETHERNET
+  uint8_t  srclladdr[6];     /* Options: Source link layer address */
+#endif
+};
+
+/* This the message format for the ICMPv6 Neighbor Advertisement message */
+
+struct icmpv6_neighbor_advertise_s
+{
+  uint8_t  type;             /* Message Type: ICMPv6_NEIGHBOR_ADVERTISE */
+  uint8_t  code;             /* Further qualifies the ICMP messages */
+  uint16_t chksum;           /* Checksum of ICMP header and data */
+  uint8_t  flags[4];         /* See ICMPv6_FLAG_ definitions */
+  net_ipv6addr_t tgtaddr;    /* Target IPv6 address */
+  uint8_t  opttype;          /* Option Type: ICMPv6_OPT_TGTLLADDR */
+  uint8_t  optlen;           /* Option length: 8 octets */
+#ifdef CONFIG_NET_ETHERNET
+  uint8_t  tgtlladdr[6];     /* Options: Target link layer address */
+#endif
 };
 
 /* The structure holding the ICMP statistics that are gathered if

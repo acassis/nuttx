@@ -47,10 +47,12 @@
 
 #include "devif/devif.h"
 #include "arp/arp.h"
+#include "neighbor/neighbor.h"
 #include "tcp/tcp.h"
 #include "udp/udp.h"
 #include "pkt/pkt.h"
 #include "icmp/icmp.h"
+#include "icmpv6/icmpv6.h"
 #include "igmp/igmp.h"
 
 /****************************************************************************
@@ -101,11 +103,7 @@ static int devif_poll_pkt_connections(FAR struct net_driver_s *dev,
  * Function: devif_poll_icmp
  *
  * Description:
- *   Poll all UDP connections for available packets to send.
- *
- * Assumptions:
- *   This function is called from the MAC device driver and may be called from
- *   the timer interrupt/watchdog handle level.
+ *   Poll all of the connections waiting to send an ICMP ECHO request
  *
  ****************************************************************************/
 
@@ -113,7 +111,7 @@ static int devif_poll_pkt_connections(FAR struct net_driver_s *dev,
 static inline int devif_poll_icmp(FAR struct net_driver_s *dev,
                                   devif_poll_callback_t callback)
 {
-  /* Perform the UDP TX poll */
+  /* Perform the ICMP poll */
 
   icmp_poll(dev);
 
@@ -122,6 +120,28 @@ static inline int devif_poll_icmp(FAR struct net_driver_s *dev,
   return callback(dev);
 }
 #endif /* CONFIG_NET_ICMP && CONFIG_NET_ICMP_PING */
+
+/****************************************************************************
+ * Function: devif_poll_icmpv6
+ *
+ * Description:
+ *   Poll all of the connections waiting to send an ICMPv6 ECHO request
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_NET_ICMPv6) && defined(CONFIG_NET_ICMPv6_PING)
+static inline int devif_poll_icmpv6(FAR struct net_driver_s *dev,
+                                    devif_poll_callback_t callback)
+{
+  /* Perform the ICMPv6 poll */
+
+  icmpv6_poll(dev);
+
+  /* Call back into the driver */
+
+  return callback(dev);
+}
+#endif /* CONFIG_NET_ICMPv6 && CONFIG_NET_ICMPv6_PING */
 
 /****************************************************************************
  * Function: devif_poll_igmp
@@ -271,7 +291,7 @@ static inline int devif_poll_tcp_timer(FAR struct net_driver_s *dev,
  *
  * Description:
  *   This function will traverse each active uIP connection structure and
- *   will perform TCP and UDP polling operations. devif_poll() may be called
+ *   will perform network polling operations. devif_poll() may be called
  *   asynchronously with the network driver can accept another outgoing
  *   packet.
  *
@@ -354,6 +374,15 @@ int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback)
 
   if (!bstop)
 #endif
+#if defined(CONFIG_NET_ICMPv6) && defined(CONFIG_NET_ICMPv6_PING)
+    {
+      /* Traverse all of the tasks waiting to send an ICMPv6 ECHO request. */
+
+      bstop = devif_poll_icmpv6(dev, callback);
+    }
+
+  if (!bstop)
+#endif
     {
       /* Nothing more to do */
     }
@@ -366,8 +395,8 @@ int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback)
  *
  * Description:
  *   These function will traverse each active uIP connection structure and
- *   perform TCP timer operations (and UDP polling operations). The Ethernet
- *   driver MUST implement logic to periodically call devif_timer().
+ *   perform network timer operations. The Ethernet driver MUST implement
+ *   logic to periodically call devif_timer().
  *
  *   This function will call the provided callback function for every active
  *   connection. Polling will continue until all connections have been polled
@@ -392,12 +421,18 @@ int devif_timer(FAR struct net_driver_s *dev, devif_poll_callback_t callback,
 
   /* Increment the timer used by the IP reassembly logic */
 
-#if defined(CONFIG_NET_TCP_REASSEMBLY) && !defined(CONFIG_NET_IPv6)
+#if defined(CONFIG_NET_TCP_REASSEMBLY) && defined(CONFIG_NET_IPv4)
   if (g_reassembly_timer != 0 &&
       g_reassembly_timer < CONFIG_NET_TCP_REASS_MAXAGE)
     {
       g_reassembly_timer += hsec;
     }
+#endif
+
+#ifdef CONFIG_NET_IPv6
+  /* Perform aging on the entries in the Neighbor Table */
+
+  neighbor_periodic();
 #endif
 
   /* Traverse all of the active packet connections and perform the poll
@@ -455,6 +490,15 @@ int devif_timer(FAR struct net_driver_s *dev, devif_poll_callback_t callback,
       /* Traverse all of the tasks waiting to send an ICMP ECHO request. */
 
       bstop = devif_poll_icmp(dev, callback);
+    }
+
+  if (!bstop)
+#endif
+#if defined(CONFIG_NET_ICMP6) && defined(CONFIG_NET_ICMPv6_PING)
+    {
+      /* Traverse all of the tasks waiting to send an ICMP ECHO request. */
+
+      bstop = devif_poll_icmp6(dev, callback);
     }
 
   if (!bstop)

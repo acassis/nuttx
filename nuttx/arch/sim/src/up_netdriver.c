@@ -56,6 +56,10 @@
 #include <nuttx/net/netdev.h>
 #include <nuttx/net/arp.h>
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 #include "up_internal.h"
 
 /****************************************************************************
@@ -122,7 +126,30 @@ static int sim_txpoll(struct net_driver_s *dev)
 
   if (g_sim_dev.d_len > 0)
     {
-      arp_out(&g_sim_dev);
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(&g_sim_dev))
+#endif
+        {
+          arp_out(&g_sim_dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&g_sim_dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+      /* Send the packet */
+
       netdev_send(g_sim_dev.d_buf, g_sim_dev.d_len);
     }
 
@@ -157,6 +184,14 @@ void netdriver_loop(void)
 
       if (g_sim_dev.d_len > ETH_HDRLEN && up_comparemac(BUF->ether_dhost, &g_sim_dev.d_mac) == 0)
         {
+#ifdef CONFIG_NET_PKT
+          /* When packet sockets are enabled, feed the frame into the packet
+           * tap.
+           */
+
+          pkt_input(&g_sim_dev);
+#endif
+
           /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -181,11 +216,17 @@ void netdriver_loop(void)
                   /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-                  if (BUF->type == HTONS(ETHTYPE_IP))
+                  if (IFF_IS_IPv4(g_sim_dev.d_flags))
 #endif
                     {
                       arp_out(&g_sim_dev);
                     }
+#ifdef CONFIG_NET_IPv6
+                  else
+                    {
+                      neighbor_out(&g_sim_dev);
+                    }
+#endif
 
                   /* And send the packet */
 
@@ -210,12 +251,18 @@ void netdriver_loop(void)
 
               if (g_sim_dev.d_len > 0)
                {
-#ifdef CONFIG_NET_IPv4
                   /* Update the Ethernet header with the correct MAC address */
 
-                  if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+                  if (IFF_IS_IPv4(g_sim_dev.d_flags))
                     {
                       arp_out(&g_sim_dev);
+                    }
+                  else
+#endif
+#ifdef CONFIG_NET_IPv6
+                    {
+                      neighbor_out(&g_sim_dev);
                     }
 #endif
 

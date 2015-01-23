@@ -160,6 +160,22 @@
 #  undef CONFIG_NSH_TELNET
 #endif
 
+/* get and put require TFTP client support */
+
+#ifndef CONFIG_NETUTILS_TFTPC
+#  undef  CONFIG_NSH_DISABLE_PUT
+#  undef  CONFIG_NSH_DISABLE_GET
+#  define CONFIG_NSH_DISABLE_PUT 1
+#  define CONFIG_NSH_DISABLE_GET 1
+#endif
+
+/* wget depends on web client support */
+
+#ifndef CONFIG_NETUTILS_WEBCLIENT
+#  undef  CONFIG_NSH_DISABLE_WGET
+#  define CONFIG_NSH_DISABLE_WGET 1
+#endif
+
 /* One front end must be defined */
 
 #if !defined(CONFIG_NSH_CONSOLE) && !defined(CONFIG_NSH_TELNET)
@@ -945,6 +961,12 @@ void nsh_usbtrace(void);
      !defined(CONFIG_DISABLE_SIGNALS)
 #    ifndef CONFIG_NSH_DISABLE_PING
         int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv);
+#    endif
+#  endif
+#  if defined(CONFIG_NET_ICMPv6) && defined(CONFIG_NET_ICMPv6_PING) && \
+     !defined(CONFIG_DISABLE_SIGNALS)
+#    ifndef CONFIG_NSH_DISABLE_PING6
+        int cmd_ping6(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv);
 #    endif
 #  endif
 #  if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0

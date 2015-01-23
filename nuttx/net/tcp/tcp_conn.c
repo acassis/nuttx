@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/tcp/tcp_conn.c
  *
- *   Copyright (C) 2007-2011, 2013-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2011, 2013-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Large parts of this file were leveraged from uIP logic:
@@ -64,8 +64,8 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define IPv4 ((struct net_iphdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
-#define IPv6 ((struct net_ipv6hdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
+#define IPv4BUF ((struct ipv4_hdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
+#define IPv6BUF ((struct ipv6_hdr_s *)&dev->d_buf[NET_LL_HDRLEN(dev)])
 
 /****************************************************************************
  * Private Data
@@ -92,7 +92,7 @@ static uint16_t g_last_tcp_port;
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tcp_listener
+ * Name: tcp_ipv4_listener
  *
  * Description:
  *   Given a local port number (in network byte order), find the TCP
@@ -103,12 +103,9 @@ static uint16_t g_last_tcp_port;
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NETDEV_MULTINIC
-static FAR struct tcp_conn_s *tcp_listener(net_ipaddr_t ipaddr,
-                                           uint16_t portno)
-#else
-static FAR struct tcp_conn_s *tcp_listener(uint16_t portno)
-#endif
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NETDEV_MULTINIC)
+static inline FAR struct tcp_conn_s *tcp_ipv4_listener(inaddr_t ipaddr,
+                                                       uint16_t portno)
 {
   FAR struct tcp_conn_s *conn;
   int i;
@@ -125,20 +122,14 @@ static FAR struct tcp_conn_s *tcp_listener(uint16_t portno)
 
       if (conn->tcpstateflags != TCP_CLOSED && conn->lport == portno)
         {
-#ifdef CONFIG_NETDEV_MULTINIC
           /* If there are multiple interface devices, then the local IP
            * address of the connection must also match.  INADDR_ANY is a
            * special case:  There can only be instance of a port number
            * with INADDR_ANY.
            */
 
-          if (net_ipaddr_cmp(conn->lipaddr, ipaddr) ||
-#ifdef CONFIG_NET_IPv6
-              net_ipaddr_cmp(conn->lipaddr, g_allzeroaddr))
-#else
-              net_ipaddr_cmp(conn->lipaddr, INADDR_ANY))
-#endif
-#endif
+          if (net_ipv4addr_cmp(conn->u.ipv4.laddr, ipaddr) ||
+              net_ipv4addr_cmp(conn->u.ipv4.laddr, INADDR_ANY))
             {
               /* The port number is in use, return the connection */
 
@@ -149,6 +140,123 @@ static FAR struct tcp_conn_s *tcp_listener(uint16_t portno)
 
   return NULL;
 }
+#endif /* CONFIG_NET_IPv4 && CONFIG_NETDEV_MULTINIC */
+
+/****************************************************************************
+ * Name: tcp_ipv6_listener
+ *
+ * Description:
+ *   Given a local port number (in network byte order), find the TCP
+ *   connection that listens on this this port.
+ *
+ *   Primary uses: (1) to determine if a port number is available, (2) to
+ *   To identify the socket that will accept new connections on a local port.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_NET_IPv6) && defined(CONFIG_NETDEV_MULTINIC)
+static inline FAR struct tcp_conn_s *tcp_ipv6_ listener(net_ipv6addr_t ipaddr,
+                                                        uint16_t portno)
+{
+  FAR struct tcp_conn_s *conn;
+  int i;
+
+  /* Check if this port number is in use by any active UIP TCP connection */
+
+  for (i = 0; i < CONFIG_NET_TCP_CONNS; i++)
+    {
+      conn = &g_tcp_connections[i];
+
+      /* Check if this connection is open and the local port assignment
+       * matches the requested port number.
+       */
+
+      if (conn->tcpstateflags != TCP_CLOSED && conn->lport == portno)
+        {
+          /* If there are multiple interface devices, then the local IP
+           * address of the connection must also match.  INADDR_ANY is a
+           * special case:  There can only be instance of a port number
+           * with INADDR_ANY.
+           */
+
+          if (net_ipv6addr_cmp(conn->u.ipv6.laddr, ipaddr) ||
+              net_ipv6addr_cmp(conn->u.ipv6.laddr, g_ipv6_allzeroaddr))
+            {
+              /* The port number is in use, return the connection */
+
+              return conn;
+            }
+        }
+    }
+
+  return NULL;
+}
+#endif /* CONFIG_NET_IPv6 && CONFIG_NETDEV_MULTINIC */
+
+/****************************************************************************
+ * Name: tcp_listener
+ *
+ * Description:
+ *   Given a local port number (in network byte order), find the TCP
+ *   connection that listens on this this port.
+ *
+ *   Primary uses: (1) to determine if a port number is available, (2) to
+ *   To identify the socket that will accept new connections on a local port.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NETDEV_MULTINIC
+static FAR struct tcp_conn_s *
+  tcp_listener(uint8_t domain, FAR const union ip_binding_u *ipaddr,
+               uint16_t portno)
+{
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+  if (domain == PF_INET)
+#endif
+    {
+      return tcp_ipv4_listener(ipaddr->ipv4, portno);
+    }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+  else
+#endif
+    {
+      return tcp_ipv6_listener(ipaddr->ipv6, portno);
+    }
+#endif /* CONFIG_NET_IPv6 */
+}
+
+#else /* CONFIG_NETDEV_MULTINIC */
+
+static FAR struct tcp_conn_s *tcp_listener(uint16_t portno)
+{
+  FAR struct tcp_conn_s *conn;
+  int i;
+
+  /* Check if this port number is in use by any active UIP TCP connection */
+
+  for (i = 0; i < CONFIG_NET_TCP_CONNS; i++)
+    {
+      conn = &g_tcp_connections[i];
+
+      /* Check if this connection is open and the local port assignment
+       * matches the requested port number.
+       */
+
+      if (conn->tcpstateflags != TCP_CLOSED && conn->lport == portno)
+        {
+          /* The port number is in use, return the connection */
+
+          return conn;
+        }
+    }
+
+  return NULL;
+}
+#endif /* CONFIG_NETDEV_MULTINIC */
 
 /****************************************************************************
  * Name: tcp_selectport
@@ -176,7 +284,8 @@ static FAR struct tcp_conn_s *tcp_listener(uint16_t portno)
  ****************************************************************************/
 
 #ifdef CONFIG_NETDEV_MULTINIC
-static int tcp_selectport(net_ipaddr_t ipaddr, uint16_t portno)
+static int tcp_selectport(uint8_t domain, FAR const union ip_addr_u *ipaddr,
+                          uint16_t portno)
 #else
 static int tcp_selectport(uint16_t portno)
 #endif
@@ -204,7 +313,7 @@ static int tcp_selectport(uint16_t portno)
             }
         }
 #ifdef CONFIG_NETDEV_MULTINIC
-      while (tcp_listener(ipaddr, htons(g_last_tcp_port)));
+      while (tcp_listener(domain, ipaddr, htons(g_last_tcp_port)));
 #else
       while (tcp_listener(htons(g_last_tcp_port)));
 #endif
@@ -216,7 +325,7 @@ static int tcp_selectport(uint16_t portno)
        */
 
 #ifdef CONFIG_NETDEV_MULTINIC
-      if (tcp_listener(ipaddr, portno))
+      if (tcp_listener(domain, ipaddr, portno))
 #else
       if (tcp_listener(portno))
 #endif
@@ -231,6 +340,266 @@ static int tcp_selectport(uint16_t portno)
 
   return portno;
 }
+
+/****************************************************************************
+ * Name: tcp_ipv4_active
+ *
+ * Description:
+ *   Find a connection structure that is the appropriate
+ *   connection to be used with the provided TCP/IP header
+ *
+ * Assumptions:
+ *   This function is called from UIP logic at interrupt level
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+static inline FAR struct tcp_conn_s *
+  tcp_ipv4_active(FAR struct net_driver_s *dev, FAR struct tcp_hdr_s *tcp)
+{
+  FAR struct ipv4_hdr_s *ip = IPv4BUF;
+  FAR struct tcp_conn_s *conn;
+  in_addr_t srcipaddr;
+#ifdef CONFIG_NETDEV_MULTINIC
+  in_addr_t destipaddr;
+#endif
+
+  conn       = (FAR struct tcp_conn_s *)g_active_tcp_connections.head;
+  srcipaddr  = net_ip4addr_conv32(ip->srcipaddr);
+#ifdef CONFIG_NETDEV_MULTINIC
+  destipaddr = net_ip4addr_conv32(ip->destipaddr);
+#endif
+
+  while (conn)
+    {
+      /* Find an open connection matching the TCP input. The following
+       * checks are performed:
+       *
+       * - The local port number is checked against the destination port
+       *   number in the received packet.
+       * - The remote port number is checked if the connection is bound
+       *   to a remote port.
+       * - If multiple network interfaces are supported, then the local
+       *   IP address is available and we will insist that the
+       *   destination IP matches the bound address. If a socket is
+       *   bound to INADDRY_ANY, then it should receive all packets
+       *   directed to the port.
+       * - Finally, if the connection is bound to a remote IP address,
+       *   the source IP address of the packet is checked.
+       *
+       * If all of the above are true then the newly received TCP packet
+       * is destined for this TCP connection.
+       */
+
+      if (conn->tcpstateflags != TCP_CLOSED &&
+          tcp->destport == conn->lport &&
+          tcp->srcport  == conn->rport &&
+#ifdef CONFIG_NETDEV_MULTINIC
+          (net_ipv4addr_cmp(conn->u.ipv4.laddr, g_ipv4_allzeroaddr) ||
+           net_ipv4addr_cmp(destipaddr, conn->u.ipv4.laddr)) &&
+#endif
+          net_ipv4addr_cmp(srcipaddr, conn->u.ipv4.raddr))
+        {
+          /* Matching connection found.. break out of the loop and return a
+           * reference to it.
+           */
+
+          break;
+        }
+
+      /* Look at the next active connection */
+
+      conn = (FAR struct tcp_conn_s *)conn->node.flink;
+    }
+
+  return conn;
+}
+#endif /* CONFIG_NET_IPv4 */
+
+/****************************************************************************
+ * Name: tcp_ipv6_active
+ *
+ * Description:
+ *   Find a connection structure that is the appropriate
+ *   connection to be used with the provided TCP/IP header
+ *
+ * Assumptions:
+ *   This function is called from UIP logic at interrupt level
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv6
+static inline FAR struct tcp_conn_s *
+  tcp_ipv6_active(FAR struct net_driver_s *dev, FAR struct tcp_hdr_s *tcp)
+{
+  FAR struct ipv6_hdr_s *ip = IPv6BUF;
+  FAR struct tcp_conn_s *conn;
+  net_ipv6addr_t *srcipaddr;
+#ifdef CONFIG_NETDEV_MULTINIC
+  net_ipv6addr_t destipaddr;
+#endif
+
+  conn       = (FAR struct tcp_conn_s *)g_active_tcp_connections.head;
+  srcipaddr  = (net_ipv6addr_t *)ip->srcipaddr;
+#ifdef CONFIG_NETDEV_MULTINIC
+  destipaddr = (net_ipv6addr_t *)ip->destipaddr;
+#endif
+
+  while (conn)
+    {
+      /* Find an open connection matching the TCP input. The following
+       * checks are performed:
+       *
+       * - The local port number is checked against the destination port
+       *   number in the received packet.
+       * - The remote port number is checked if the connection is bound
+       *   to a remote port.
+       * - If multiple network interfaces are supported, then the local
+       *   IP address is available and we will insist that the
+       *   destination IP matches the bound address. If a socket is
+       *   bound to INADDRY_ANY, then it should receive all packets
+       *   directed to the port.
+       * - Finally, if the connection is bound to a remote IP address,
+       *   the source IP address of the packet is checked.
+       *
+       * If all of the above are true then the newly received TCP packet
+       * is destined for this TCP connection.
+       */
+
+      if (conn->tcpstateflags != TCP_CLOSED &&
+          tcp->destport == conn->lport &&
+          tcp->srcport  == conn->rport &&
+#ifdef CONFIG_NETDEV_MULTINIC
+          (net_ipv6addr_cmp(conn->u.ipv6.laddr, g_ipv6_allzeroaddr) ||
+           net_ipv6addr_cmp(*destipaddr, conn->u.ipv6.laddr)) &&
+#endif
+          net_ipv6addr_cmp(*srcipaddr, conn->u.ipv6.raddr))
+        {
+          /* Matching connection found.. break out of the loop and return a
+           * reference to it.
+           */
+
+          break;
+        }
+
+      /* Look at the next active connection */
+
+      conn = (FAR struct tcp_conn_s *)conn->node.flink;
+    }
+
+  return conn;
+}
+#endif /* CONFIG_NET_IPv6 */
+
+/****************************************************************************
+ * Name: tcp_ipv4_bind
+ *
+ * Description:
+ *   This function implements the lower level parts of the standard TCP
+ *   bind() operation.
+ *
+ * Return:
+ *   0 on success or -EADDRINUSE on failure
+ *
+ * Assumptions:
+ *   This function is called from normal user level code.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+static inline int tcp_ipv4_bind(FAR struct tcp_conn_s *conn,
+                                FAR const struct sockaddr_in *addr)
+{
+  net_lock_t flags;
+  int port;
+
+  /* Verify or select a local port and address */
+
+  flags = net_lock();
+
+  /* Verify or select a local port */
+
+#ifdef CONFIG_NETDEV_MULTINIC
+  port = tcp_selectport(PF_INET,
+                       (FAR const union ip_addr_u ipaddr *)&addr->sin_addr.s_addr,
+                        ntohs(addr->sin_port));
+#else
+  port = tcp_selectport(ntohs(addr->sin_port));
+#endif
+
+  net_unlock(flags);
+
+  if (port < 0)
+    {
+      return port;
+    }
+
+  /* Save the local address in the connection structure. */
+
+  conn->lport = addr->sin_port;
+
+#ifdef CONFIG_NETDEV_MULTINIC
+  net_ipv4addr_copy(conn->u.ipv4.laddr, ipaddr);
+#endif
+
+  return OK;
+}
+#endif /* CONFIG_NET_IPv4 */
+
+/****************************************************************************
+ * Name: tcp_ipv6_bind
+ *
+ * Description:
+ *   This function implements the lower level parts of the standard TCP
+ *   bind() operation.
+ *
+ * Return:
+ *   0 on success or -EADDRINUSE on failure
+ *
+ * Assumptions:
+ *   This function is called from normal user level code.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv6
+static inline int tcp_ipv6_bind(FAR struct tcp_conn_s *conn,
+                                FAR const struct sockaddr_in6 *addr)
+{
+  net_lock_t flags;
+  int port;
+
+  /* Verify or select a local port and address */
+
+  flags = net_lock();
+
+  /* Verify or select a local port */
+
+#ifdef CONFIG_NETDEV_MULTINIC
+  port = tcp_selectport(PF_INET6,
+                        (FAR const union ip_addr_u ipaddr *)addr->sin6_addr.in6_u.u6_addr16,
+                        ntohs(addr->sin6_port));
+#else
+  port = tcp_selectport(ntohs(addr->sin6_port));
+#endif
+
+  net_unlock(flags);
+
+  if (port < 0)
+    {
+      return port;
+    }
+
+  /* Save the local address in the connection structure. */
+
+  conn->lport = addr->sin6_port;
+
+#ifdef CONFIG_NETDEV_MULTINIC
+  net_ipv6addr_copy(conn->u.ipv6.laddr, addr->sin6_addr.in6_u.u6_addr16);
+#endif
+
+  return OK;
+}
+#endif /* CONFIG_NET_IPv6 */
 
 /****************************************************************************
  * Public Functions
@@ -278,7 +647,7 @@ void tcp_initialize(void)
  *
  ****************************************************************************/
 
-FAR struct tcp_conn_s *tcp_alloc(void)
+FAR struct tcp_conn_s *tcp_alloc(uint8_t domain)
 {
   FAR struct tcp_conn_s *conn;
   net_lock_t flags;
@@ -375,6 +744,9 @@ FAR struct tcp_conn_s *tcp_alloc(void)
     {
       memset(conn, 0, sizeof(struct tcp_conn_s));
       conn->tcpstateflags = TCP_ALLOCATED;
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NET_IPv6)
+      conn->domain        = domain;
+#endif
     }
 
   return conn;
@@ -487,62 +859,23 @@ void tcp_free(FAR struct tcp_conn_s *conn)
 FAR struct tcp_conn_s *tcp_active(FAR struct net_driver_s *dev,
                                   FAR struct tcp_hdr_s *tcp)
 {
-  FAR struct net_iphdr_s *ip = IPv4;
-  FAR struct tcp_conn_s *conn;
-  in_addr_t srcipaddr;
-#ifdef CONFIG_NETDEV_MULTINIC
-  in_addr_t destipaddr;
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+  if (IFF_IS_IPv6(dev->d_flags))
 #endif
-
-  conn       = (FAR struct tcp_conn_s *)g_active_tcp_connections.head;
-  srcipaddr  = net_ip4addr_conv32(ip->srcipaddr);
-#ifdef CONFIG_NETDEV_MULTINIC
-  destipaddr = net_ip4addr_conv32(ip->destipaddr);
-#endif
-
-  while (conn)
     {
-      /* Find an open connection matching the TCP input. The following
-       * checks are performed:
-       *
-       * - The local port number is checked against the destination port
-       *   number in the received packet.
-       * - The remote port number is checked if the connection is bound
-       *   to a remote port.
-       * - If multiple network interfaces are supported, then the local
-       *   IP address is available and we will insist that the
-       *   destination IP matches the bound address. If a socket is
-       *   bound to INADDRY_ANY, then it should receive all packets
-       *   directed to the port.
-       * - Finally, if the connection is bound to a remote IP address,
-       *   the source IP address of the packet is checked.
-       *
-       * If all of the above are true then the newly received TCP packet
-       * is destined for this TCP connection.
-       */
-
-      if (conn->tcpstateflags != TCP_CLOSED &&
-          tcp->destport == conn->lport &&
-          tcp->srcport  == conn->rport &&
-#ifdef CONFIG_NETDEV_MULTINIC
-          (net_ipaddr_cmp(conn->lipaddr, g_allzeroaddr) ||
-           net_ipaddr_cmp(destipaddr, conn->lipaddr)) &&
-#endif
-          net_ipaddr_cmp(srcipaddr, conn->ripaddr))
-        {
-          /* Matching connection found.. break out of the loop and return a
-           * reference to it.
-           */
-
-          break;
-        }
-
-      /* Look at the next active connection */
-
-      conn = (FAR struct tcp_conn_s *)conn->node.flink;
+      return tcp_ipv6_active(dev, tcp);
     }
+#endif /* CONFIG_NET_IPv6 */
 
-  return conn;
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+  else
+#endif
+    {
+      return tcp_ipv4_active(dev, tcp);
+    }
+#endif /* CONFIG_NET_IPv4 */
 }
 
 /****************************************************************************
@@ -585,10 +918,23 @@ FAR struct tcp_conn_s *tcp_nextconn(FAR struct tcp_conn_s *conn)
 FAR struct tcp_conn_s *tcp_alloc_accept(FAR struct net_driver_s *dev,
                                         FAR struct tcp_hdr_s *tcp)
 {
-  FAR struct net_iphdr_s *ip = IPv4;
   FAR struct tcp_conn_s *conn;
+  uint8_t domain;
 
-  conn = tcp_alloc();
+  /* Get the appropriate IP domain */
+
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NET_IPv4)
+  bool ipv6 = IFF_IS_IPv6(dev->d_flags);
+  domain = ipv6 ? PF_INET6 : PF_INET;
+#elif defined(CONFIG_NET_IPv4)
+  domain = PF_INET;
+#else /* defined(CONFIG_NET_IPv6) */
+  domain = PF_INET6;
+#endif
+
+  /* Allocate the connection structure */
+
+  conn = tcp_alloc(domain);
   if (conn)
     {
       /* Fill in the necessary fields for the new connection. */
@@ -600,19 +946,47 @@ FAR struct tcp_conn_s *tcp_alloc_accept(FAR struct net_driver_s *dev,
       conn->nrtx          = 0;
       conn->lport         = tcp->destport;
       conn->rport         = tcp->srcport;
-      conn->mss           = TCP_INITIAL_MSS(dev);
-      net_ipaddr_copy(conn->ripaddr, net_ip4addr_conv32(ip->srcipaddr));
-#ifdef CONFIG_NETDEV_MULTINIC
-      net_ipaddr_copy(conn->lipaddr, net_ip4addr_conv32(ip->destipaddr));
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      if (ipv6)
 #endif
+        {
+          FAR struct ipv6_hdr_s *ip = IPv6BUF;
+
+          conn->mss = TCP_IPv6_INITIAL_MSS(dev);
+          net_ipv6addr_copy(conn->u.ipv6.raddr, ip->srcipaddr);
+#ifdef CONFIG_NETDEV_MULTINIC
+          net_ipv6addr_copy(conn->u.ipv6.laddr, ip->destipaddr);
+#endif
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      else
+#endif
+        {
+          FAR struct ipv4_hdr_s *ip = IPv4BUF;
+
+          conn->mss = TCP_IPv4_INITIAL_MSS(dev);
+          net_ipv4addr_copy(conn->u.ipv4.raddr,
+                            net_ip4addr_conv32(ip->srcipaddr));
+#ifdef CONFIG_NETDEV_MULTINIC
+          net_ipv4addr_copy(conn->u.ipv4.laddr,
+                            net_ip4addr_conv32(ip->destipaddr));
+#endif
+        }
+#endif /* CONFIG_NET_IPv4 */
+
       conn->tcpstateflags = TCP_SYN_RCVD;
 
       tcp_initsequence(conn->sndseq);
-      conn->unacked       = 1;
+      conn->unacked = 1;
 #ifdef CONFIG_NET_TCP_WRITE_BUFFERS
-      conn->expired       = 0;
-      conn->isn           = 0;
-      conn->sent          = 0;
+      conn->expired = 0;
+      conn->isn     = 0;
+      conn->sent    = 0;
 #endif
 
       /* rcvseq should be the seqno from the incoming packet + 1. */
@@ -657,60 +1031,31 @@ FAR struct tcp_conn_s *tcp_alloc_accept(FAR struct net_driver_s *dev,
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IPv6
-int tcp_bind(FAR struct tcp_conn_s *conn,
-             FAR const struct sockaddr_in6 *addr)
-#else
-int tcp_bind(FAR struct tcp_conn_s *conn,
-             FAR const struct sockaddr_in *addr)
-#endif
+int tcp_bind(FAR struct tcp_conn_s *conn, FAR const struct sockaddr *addr)
 {
-  net_lock_t flags;
-  int port;
-#ifdef CONFIG_NETDEV_MULTINIC
-  net_ipaddr_t ipaddr;
-#endif
-
-  /* Verify or select a local port and address */
-
-  flags = net_lock();
-
-#ifdef CONFIG_NETDEV_MULTINIC
+#ifdef CONFIG_NET_IPv4
 #ifdef CONFIG_NET_IPv6
-  /* Get the IPv6 address that we are binding to */
-
-  ipaddr = addr->sin6_addr.in6_u.u6_addr16;
-
-#else
-  /* Get the IPv4 address that we are binding to */
-
-  ipaddr = addr->sin_addr.s_addr;
-
+  if (conn->domain == PF_INET)
 #endif
-
-  port = tcp_selectport(ipaddr, ntohs(addr->sin_port));
-#else
-  /* Verify or select a local port */
-
-  port = tcp_selectport(ntohs(addr->sin_port));
-#endif
-
-  net_unlock(flags);
-
-  if (port < 0)
     {
-      return port;
+      FAR const struct sockaddr_in *inaddr =
+       (FAR const struct sockaddr_in *)addr;
+
+      return tcp_ipv4_bind(conn, inaddr);
     }
+#endif /* CONFIG_NET_IPv4 */
 
-  /* Save the local address in the connection structure. */
-
-  conn->lport = addr->sin_port;
-
-#ifdef CONFIG_NETDEV_MULTINIC
-  net_ipaddr_copy(conn->lipaddr, ipaddr);
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+  else
 #endif
+    {
+      FAR const struct sockaddr_in6 *inaddr =
+       (FAR const struct sockaddr_in6 *)addr;
 
-  return OK;
+      return tcp_ipv6_bind(conn, inaddr);
+    }
+#endif /* CONFIG_NET_IPv6 */
 }
 
 /****************************************************************************
@@ -733,13 +1078,7 @@ int tcp_bind(FAR struct tcp_conn_s *conn,
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IPv6
-int tcp_connect(FAR struct tcp_conn_s *conn,
-                FAR const struct sockaddr_in6 *addr)
-#else
-int tcp_connect(FAR struct tcp_conn_s *conn,
-                FAR const struct sockaddr_in *addr)
-#endif
+int tcp_connect(FAR struct tcp_conn_s *conn, FAR const struct sockaddr *addr)
 {
   net_lock_t flags;
   int port;
@@ -761,7 +1100,7 @@ int tcp_connect(FAR struct tcp_conn_s *conn,
 
   flags = net_lock();
 #ifdef CONFIG_NETDEV_MULTINIC
-  port = tcp_selectport(conn->lipaddr, ntohs(conn->lport));
+  port = tcp_selectport(conn->domain, &conn->u, ntohs(conn->lport));
 #else
   port = tcp_selectport(ntohs(conn->lport));
 #endif
@@ -781,7 +1120,6 @@ int tcp_connect(FAR struct tcp_conn_s *conn,
   conn->tcpstateflags = TCP_SYN_SENT;
   tcp_initsequence(conn->sndseq);
 
-  conn->mss        = MIN_TCP_INITIAL_MSS;
   conn->unacked    = 1;    /* TCP length of the SYN is one. */
   conn->nrtx       = 0;
   conn->timer      = 1;    /* Send the SYN next time around. */
@@ -795,13 +1133,45 @@ int tcp_connect(FAR struct tcp_conn_s *conn,
   conn->sent       = 0;
 #endif
 
-  /* The sockaddr port is 16 bits and already in network order */
+  /* Save values that are specific to the IP address domain */
 
-  conn->rport = addr->sin_port;
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+  if (conn->domain == PF_INET)
+#endif
+    {
+      FAR const struct sockaddr_in *inaddr =
+        (FAR const struct sockaddr_in *)addr;
 
-  /* The sockaddr address is 32-bits in network order. */
+      /* Save MSS and the port from the sockaddr (already in network order) */
 
-  net_ipaddr_copy(conn->ripaddr, addr->sin_addr.s_addr);
+      conn->mss    = MIN_IPv4_TCP_INITIAL_MSS;
+      conn->rport  = inaddr->sin_port;
+
+      /* The sockaddr address is 32-bits in network order. */
+
+      net_ipv4addr_copy(conn->u.ipv4.raddr, inaddr->sin_addr.s_addr);
+    }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+  else
+#endif
+    {
+      FAR const struct sockaddr_in6 *inaddr =
+        (FAR const struct sockaddr_in6 *)addr;
+
+      /* Save MSS and the port from the sockaddr (already in network order) */
+
+      conn->mss     = MIN_IPv6_TCP_INITIAL_MSS;
+      conn->rport   = inaddr->sin6_port;
+
+      /* The sockaddr address is 32-bits in network order. */
+
+      net_ipv6addr_copy(conn->u.ipv6.raddr, inaddr->sin6_addr.s6_addr16);
+    }
+#endif /* CONFIG_NET_IPv6 */
 
 #ifdef CONFIG_NET_TCP_READAHEAD
   /* Initialize the list of TCP read-ahead buffers */

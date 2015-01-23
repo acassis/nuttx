@@ -99,7 +99,7 @@ struct net_driver_s
 #ifdef CONFIG_NET_MULTILINK
   /* Multi network devices using multiple data links protocols are selected */
 
-  uint8_t d_lltype;             /* See enum net_datalink_e */
+  uint8_t d_lltype;             /* See enum net_lltype_e */
   uint8_t d_llhdrlen;           /* Link layer header size */
   uint16_t d_mtu;               /* Maximum packet size */
 #ifdef CONFIG_NET_TCP
@@ -146,16 +146,10 @@ struct net_driver_s
 #endif
 
   /* d_appdata points to the location where application data can be read from
-   * or written into a packet.
+   * or written to in the the packet buffer.
    */
 
   uint8_t *d_appdata;
-
-  /* This is a pointer into d_buf where a user application may append
-   * data to be sent.
-   */
-
-  uint8_t *d_snddata;
 
 #ifdef CONFIG_NET_TCPURGDATA
   /* This pointer points to any urgent TCP data that has been received. Only
@@ -185,7 +179,7 @@ struct net_driver_s
   uint16_t d_len;
 
   /* When d_buf contains outgoing xmit data, d_sndlen is non-zero and represents
-   * the amount of application data after d_snddata
+   * the amount of application data after d_appdata
    */
 
   uint16_t d_sndlen;
@@ -350,7 +344,39 @@ int ipv6_input(FAR struct net_driver_s *dev);
  ****************************************************************************/
 
 int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback);
-int devif_timer(FAR struct net_driver_s *dev, devif_poll_callback_t callback, int hsec);
+int devif_timer(FAR struct net_driver_s *dev, devif_poll_callback_t callback,
+                int hsec);
+
+/****************************************************************************
+ * Name: neighbor_out
+ *
+ * Description:
+ *   This function should be called before sending out an IPv6 packet. The
+ *   function checks the destination IPv6 address of the IPv6 packet to see
+ *   what Ethernet MAC address that should be used as a destination MAC
+ *   address on the Ethernet.
+ *
+ *   If the destination IPv6 address is in the local network (determined
+ *   by logical ANDing of netmask and our IPv6 address), the function
+ *   checks the Neighbor Table to see if an entry for the destination IPv6
+ *   address is found.  If so, an Ethernet header is pre-pended at the
+ *   beginning of the packet and the function returns.
+ *
+ *   If no Neighbor Table entry is found for the destination IPv6 address,
+ *   the packet in the d_buf[] is replaced by an ICMPv6 Neighbor Solict
+ *   request packet for the IPv6 address. The IPv6 packet is dropped and 
+ *   it is assumed that the higher level protocols (e.g., TCP) eventually
+ *   will retransmit the dropped packet.
+ *
+ *   Upon return in either the case, a packet to be sent is present in the
+ *   d_buf[] buffer and the d_len field holds the length of the Ethernet
+ *   frame that should be transmitted.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv6
+void neighbor_out(FAR struct net_driver_s *dev);
+#endif /* CONFIG_NET_IPv6 */
 
 /****************************************************************************
  * Carrier detection

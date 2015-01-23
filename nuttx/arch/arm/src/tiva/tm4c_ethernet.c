@@ -726,9 +726,15 @@ static void tiva_poll_expiry(int argc, uint32_t arg, ...);
 
 static int  tiva_ifup(struct net_driver_s *dev);
 static int  tiva_ifdown(struct net_driver_s *dev);
+static inline void tiva_txavail_process(FAR struct tiva_ethmac_s *priv);
+#ifdef CONFIG_NET_NOINTS
+static void tiva_txavail_work(FAR void *arg);
+#endif
 static int  tiva_txavail(struct net_driver_s *dev);
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static int  tiva_addmac(struct net_driver_s *dev, FAR const uint8_t *mac);
+#endif
+#ifdef CONFIG_NET_IGMP
 static int  tiva_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac);
 #endif
 #ifdef CONFIG_NETDEV_PHY_IOCTL
@@ -757,6 +763,9 @@ static inline void tiva_phy_initialize(FAR struct tiva_ethmac_s *priv);
 static void tiva_ethreset(FAR struct tiva_ethmac_s *priv);
 static int  tiva_macconfig(FAR struct tiva_ethmac_s *priv);
 static void tiva_macaddress(FAR struct tiva_ethmac_s *priv);
+#ifdef CONFIG_NET_ICMPv6
+static void tiva_ipv6multicast(FAR struct tiva_ethmac_s *priv);
+#endif
 static int  tiva_macenable(FAR struct tiva_ethmac_s *priv);
 static int  tive_emac_configure(FAR struct tiva_ethmac_s *priv);
 
@@ -1242,9 +1251,30 @@ static int tiva_txpoll(struct net_driver_s *dev)
 
   if (priv->dev.d_len > 0)
     {
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(priv->dev.d_flags))
+#endif
+        {
+          arp_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&priv->dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
       /* Send the packet */
 
-      arp_out(&priv->dev);
       tiva_transmit(priv);
       DEBUGASSERT(dev->d_len == 0 && dev->d_buf == NULL);
 
@@ -1705,12 +1735,17 @@ static void tiva_receive(FAR struct tiva_ethmac_s *priv)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (BUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(priv->dev.d_flags))
 #endif
                 {
                   arp_out(&priv->dev);
                 }
-
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&priv->dev);
+                }
+#endif
               /* And send the packet */
 
               tiva_transmit(priv);
@@ -1721,7 +1756,7 @@ static void tiva_receive(FAR struct tiva_ethmac_s *priv)
 #ifdef CONFIG_NET_IPv6
       if (BUF->type == HTONS(ETHTYPE_IP6))
         {
-          nllvdbg("Iv6 frame\n");
+          nllvdbg("IPv6 frame\n");
 
           /* Give the IPv6 packet to the network layer */
 
@@ -1733,12 +1768,18 @@ static void tiva_receive(FAR struct tiva_ethmac_s *priv)
 
           if (priv->dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(priv->dev.d_flags))
                 {
                   arp_out(&priv->dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&priv->dev);
                 }
 #endif
 
@@ -1808,7 +1849,7 @@ static void tiva_receive(FAR struct tiva_ethmac_s *priv)
 
 static void tiva_freeframe(FAR struct tiva_ethmac_s *priv)
 {
-  struct emac_txdesc_s *txdesc;
+  FAR struct emac_txdesc_s *txdesc;
   int i;
 
   nvdbg("txhead: %p txtail: %p inflight: %d\n",
@@ -1845,7 +1886,7 @@ static void tiva_freeframe(FAR struct tiva_ethmac_s *priv)
 
           txdesc->tdes2 = 0;
 
-          /* Check if this is the last segement of a TX frame */
+          /* Check if this is the last segment of a TX frame */
 
           if ((txdesc->tdes0 & EMAC_TDES0_LS) != 0)
             {
@@ -1904,11 +1945,15 @@ static void tiva_freeframe(FAR struct tiva_ethmac_s *priv)
 
 static void tiva_txdone(FAR struct tiva_ethmac_s *priv)
 {
+  FAR struct net_driver_s *dev  = &priv->dev;
+
   DEBUGASSERT(priv->txtail != NULL);
 
-  /* Scan the TX desciptor change, returning buffers to free list */
+  /* Scan the TX descriptor change, returning buffers to free list */
 
   tiva_freeframe(priv);
+  dev->d_buf = NULL;
+  dev->d_len = 0;
 
   /* If no further xmits are pending, then cancel the TX timeout */
 
@@ -2002,13 +2047,13 @@ static inline void tiva_interrupt_process(FAR struct tiva_ethmac_s *priv)
 
 #ifdef CONFIG_DEBUG_NET
 
-  /* Check if there are pending "anormal" interrupts */
+  /* Check if there are pending "abnormal" interrupts */
 
   if ((dmaris & EMAC_DMAINT_AIS) != 0)
     {
       /* Just let the user know what happened */
 
-      nlldbg("Abormal event(s): %08x\n", dmaris);
+      nlldbg("Abnormal event(s): %08x\n", dmaris);
 
       /* Clear all pending abnormal events */
 
@@ -2041,11 +2086,16 @@ static inline void tiva_interrupt_process(FAR struct tiva_ethmac_s *priv)
 #ifdef CONFIG_NET_NOINTS
 static void tiva_interrupt_work(FAR void *arg)
 {
-  FAR struct tiva_ethmac_s *priv = ( FAR struct tiva_ethmac_s *)arg;
+  FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)arg;
+  net_lock_t state;
+
+  DEBUGASSERT(priv);
 
   /* Process pending Ethernet interrupts */
 
+  state = net_lock();
   tiva_interrupt_process(priv);
+  net_unlock(state);
 
   /* Re-enable Ethernet interrupts at the NVIC */
 
@@ -2187,11 +2237,14 @@ static inline void tiva_txtimeout_process(FAR struct tiva_ethmac_s *priv)
 #ifdef CONFIG_NET_NOINTS
 static void tiva_txtimeout_work(FAR void *arg)
 {
-  FAR struct tiva_ethmac_s *priv = ( FAR struct tiva_ethmac_s *)arg;
+  FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)arg;
+  net_lock_t state;
 
   /* Process pending Ethernet interrupts */
 
+  state = net_lock();
   tiva_txtimeout_process(priv);
+  net_unlock(state);
 }
 #endif
 
@@ -2337,10 +2390,13 @@ static inline void tiva_poll_process(FAR struct tiva_ethmac_s *priv)
 static void tiva_poll_work(FAR void *arg)
 {
   FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)arg;
+  net_lock_t state;
 
   /* Perform the poll */
 
+  state = net_lock();
   tiva_poll_process(priv);
+  net_unlock(state);
 }
 #endif
 
@@ -2415,9 +2471,13 @@ static int tiva_ifup(struct net_driver_s *dev)
   FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)dev->d_private;
   int ret;
 
+#ifdef CONFIG_NET_IPv4
   ndbg("Bringing up: %d.%d.%d.%d\n",
        dev->d_ipaddr & 0xff, (dev->d_ipaddr >> 8) & 0xff,
        (dev->d_ipaddr >> 16) & 0xff, dev->d_ipaddr >> 24);
+#else
+  ndbg("Bringing the network up\n");
+#endif
 
   /* Configure the Ethernet interface for DMA operation. */
 
@@ -2488,6 +2548,68 @@ static int tiva_ifdown(struct net_driver_s *dev)
 }
 
 /****************************************************************************
+ * Function: tiva_txavail_process
+ *
+ * Description:
+ *   Perform an out-of-cycle poll.
+ *
+ * Parameters:
+ *   priv - Reference to the NuttX driver state structure
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called in normal user mode
+ *
+ ****************************************************************************/
+
+static inline void tiva_txavail_process(FAR struct tiva_ethmac_s *priv)
+{
+  nvdbg("ifup: %d\n", priv->ifup);
+
+  /* Ignore the notification if the interface is not yet up */
+
+  if (priv->ifup)
+    {
+      /* Poll uIP for new XMIT data */
+
+      tiva_dopoll(priv);
+    }
+}
+
+/****************************************************************************
+ * Function: tiva_txavail_work
+ *
+ * Description:
+ *   Perform an out-of-cycle poll on the worker thread.
+ *
+ * Parameters:
+ *   arg  - Reference to the NuttX driver state structure (cast to void*)
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called on the higher priority worker thread.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_NOINTS
+static void tiva_txavail_work(FAR void *arg)
+{
+  FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)arg;
+  net_lock_t state;
+
+  /* Perform the poll */
+
+  state = net_lock();
+  tiva_txavail_process(priv);
+  net_unlock(state);
+}
+#endif
+
+/****************************************************************************
  * Function: tiva_txavail
  *
  * Description:
@@ -2509,9 +2631,22 @@ static int tiva_ifdown(struct net_driver_s *dev)
 static int tiva_txavail(struct net_driver_s *dev)
 {
   FAR struct tiva_ethmac_s *priv = (FAR struct tiva_ethmac_s *)dev->d_private;
-  irqstate_t flags;
 
-  nvdbg("ifup: %d\n", priv->ifup);
+#ifdef CONFIG_NET_NOINTS
+  /* Is our single work structure available?  It may not be if there are
+   * pending interrupt actions and we will have to ignore the Tx
+   * availability action.
+   */
+
+  if (work_available(&priv->work))
+    {
+      /* Schedule to serialize the poll on the worker thread. */
+
+      work_queue(HPWORK, &priv->work, tiva_txavail_work, priv, 0);
+    }
+
+#else
+  irqstate_t flags;
 
   /* Disable interrupts because this function may be called from interrupt
    * level processing.
@@ -2519,16 +2654,12 @@ static int tiva_txavail(struct net_driver_s *dev)
 
   flags = irqsave();
 
-  /* Ignore the notification if the interface is not yet up */
+  /* Perform the out-of-cycle poll now */
 
-  if (priv->ifup)
-    {
-      /* Poll uIP for new XMIT data */
-
-      tiva_dopoll(priv);
-    }
-
+  tiva_txavail_process(priv);
   irqrestore(flags);
+#endif
+
   return OK;
 }
 
@@ -2549,7 +2680,7 @@ static int tiva_txavail(struct net_driver_s *dev)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static uint32_t tiva_calcethcrc(const uint8_t *data, size_t length)
 {
   uint32_t crc = 0xffffffff;
@@ -2574,7 +2705,7 @@ static uint32_t tiva_calcethcrc(const uint8_t *data, size_t length)
 
   return ~crc;
 }
-#endif
+#endif /* CONFIG_NET_IGMP || CONFIG_NET_ICMPv6 */
 
 /****************************************************************************
  * Function: tiva_addmac
@@ -2594,7 +2725,7 @@ static uint32_t tiva_calcethcrc(const uint8_t *data, size_t length)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static int tiva_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   uint32_t crc;
@@ -2607,7 +2738,7 @@ static int tiva_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 
   /* Add the MAC address to the hardware multicast hash table */
 
-  crc = tiva_calcethcrc( mac, 6 );
+  crc = tiva_calcethcrc(mac, 6);
 
   hashindex = (crc >> 26) & 0x3F;
 
@@ -2664,7 +2795,7 @@ static int tiva_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 
   /* Remove the MAC address to the hardware multicast hash table */
 
-  crc = tiva_calcethcrc( mac, 6 );
+  crc = tiva_calcethcrc(mac, 6);
 
   hashindex = (crc >> 26) & 0x3F;
 
@@ -2684,7 +2815,7 @@ static int tiva_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 
   /* If there is no address registered any more, delete multicast filtering */
 
-  if (tiva_getreg(TIVA_EMAC_HASHTBLH ) == 0 &&
+  if (tiva_getreg(TIVA_EMAC_HASHTBLH) == 0 &&
       tiva_getreg(TIVA_EMAC_HASHTBLL) == 0)
     {
       temp = tiva_getreg(TIVA_EMAC_FRAMEFLTR);
@@ -3711,7 +3842,7 @@ static int tiva_macconfig(FAR struct tiva_ethmac_s *priv)
 
   if (priv->mbps100)
     {
-      /* Set the FES bit for 100Mbps fast ethernet support */
+      /* Set the FES bit for 100Mbps fast Ethernet support */
 
       regval |= EMAC_CFG_FES;
     }
@@ -3802,6 +3933,60 @@ static void tiva_macaddress(FAR struct tiva_ethmac_s *priv)
 }
 
 /****************************************************************************
+ * Function: tiva_ipv6multicast
+ *
+ * Description:
+ *   Configure the IPv6 multicast MAC address.
+ *
+ * Parameters:
+ *   priv - A reference to the private driver state structure
+ *
+ * Returned Value:
+ *   OK on success; Negated errno on failure.
+ *
+ * Assumptions:
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6
+static void tiva_ipv6multicast(FAR struct tiva_ethmac_s *priv)
+{
+  struct net_driver_s *dev;
+  uint16_t tmp16;
+  uint8_t mac[6];
+
+  /* For ICMPv6, we need to add the IPv6 multicast address
+   *
+   * For IPv6 multicast addresses, the Ethernet MAC is derived by
+   * the four low-order octets OR'ed with the MAC 33:33:00:00:00:00,
+   * so for example the IPv6 address FF02:DEAD:BEEF::1:3 would map
+   * to the Ethernet MAC address 33:33:00:01:00:03.
+   *
+   * NOTES:  This appears correct for the ICMPv6 Router Solicitation
+   * Message, but the ICMPv6 Neighbor Solicitation message seems to
+   * use 33:33:ff:01:00:03.
+   */
+
+  mac[0] = 0x33;
+  mac[1] = 0x33;
+
+  dev    = &priv->dev;
+  tmp16  = dev->d_ipv6addr[6];
+  mac[2] = 0xff;
+  mac[3] = tmp16 >> 8;
+
+  tmp16  = dev->d_ipv6addr[7];
+  mac[4] = tmp16 & 0xff;
+  mac[5] = tmp16 >> 8;
+
+  nvdbg("IPv6 Multicast: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  (void)tiva_addmac(dev, mac);
+}
+#endif /* CONFIG_NET_ICMPv6 */
+
+/****************************************************************************
  * Function: tiva_macenable
  *
  * Description:
@@ -3824,6 +4009,12 @@ static int tiva_macenable(FAR struct tiva_ethmac_s *priv)
   /* Set the MAC address */
 
   tiva_macaddress(priv);
+
+#ifdef CONFIG_NET_ICMPv6
+  /* Set up the IPv6 multicast address */
+
+  tiva_ipv6multicast(priv);
+#endif
 
   /* Enable transmit state machine of the MAC for transmission on the MII */
 

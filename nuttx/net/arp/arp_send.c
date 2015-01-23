@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/arp/arp_send.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -134,7 +134,7 @@ static uint16_t arp_send_interrupt(FAR struct net_driver_s *dev,
        * flag will be cleared in arp_out().
        */
 
-      dev->d_flags |= IFF_NOARP;
+      IFF_SET_NOARP(dev->d_flags);
 
       /* Don't allow any further call backs. */
 
@@ -223,9 +223,9 @@ int arp_send(in_addr_t ipaddr)
   /* Get the device that can route this request */
 
 #ifdef CONFIG_NET_MULTILINK
-  dev = netdev_findbyaddr(g_allzeroaddr, ipaddr);
+  dev = netdev_findby_ipv4addr(g_ipv4_allzeroaddr, ipaddr);
 #else
-  dev = netdev_findbyaddr(ipaddr);
+  dev = netdev_findby_ipv4addr(ipaddr);
 #endif
   if (!dev)
     {
@@ -264,7 +264,7 @@ int arp_send(in_addr_t ipaddr)
        * destination address when determining the MAC address.
        */
 
-      netdev_router(dev, ipaddr, &dripaddr);
+      netdev_ipv4_router(dev, ipaddr, &dripaddr);
 #else
       /* Use the device's default router IP address instead of the
        * destination address when determining the MAC address.
@@ -337,7 +337,7 @@ int arp_send(in_addr_t ipaddr)
       state.snd_cb->event = arp_send_interrupt;
 
       /* Notify the device driver that new TX data is available.
-       * NOTES: This is in essence what netdev_txnotify() does, which
+       * NOTES: This is in essence what netdev_ipv4_txnotify() does, which
        * is not possible to call since it expects a in_addr_t as
        * its single argument to lookup the network interface.
        */

@@ -55,6 +55,10 @@
 #include <nuttx/net/arp.h>
 #include <nuttx/net/netdev.h>
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 /****************************************************************************
  * Definitions
  ****************************************************************************/
@@ -212,7 +216,30 @@ static int emac_txpoll(struct net_driver_s *dev)
 
   if (priv->d_dev.d_len > 0)
     {
-      arp_out(&priv->d_dev);
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(priv->d_dev.d_flags))
+#endif
+        {
+          arp_out(&priv->d_dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&priv->d_dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+      /* Send the packet */
+
       emac_transmit(priv);
 
       /* Check if there is room in the device to hold another packet. If not,
@@ -256,6 +283,12 @@ static void emac_receive(FAR struct emac_driver_s *priv)
        * amount of data in priv->d_dev.d_len
        */
 
+#ifdef CONFIG_NET_PKT
+      /* When packet sockets are enabled, feed the frame into the packet tap */
+
+      pkt_input(&priv->d_dev);
+#endif
+
       /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -279,11 +312,17 @@ static void emac_receive(FAR struct emac_driver_s *priv)
               /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-              if (BUF->type == HTONS(ETHTYPE_IP))
+              if (IFF_IS_IPv4(priv->d_dev.d_flags))
 #endif
                 {
                   arp_out(&priv->d_dev);
                 }
+#ifdef CONFIG_NET_IPv6
+              else
+                {
+                  neighbor_out(&priv->d_dev);
+                }
+#endif
 
               /* And send the packet */
 
@@ -307,12 +346,18 @@ static void emac_receive(FAR struct emac_driver_s *priv)
 
           if (priv->d_dev.d_len > 0)
            {
-#ifdef CONFIG_NET_IPv4
               /* Update the Ethernet header with the correct MAC address */
 
-              if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+              if (IFF_IS_IPv4(priv->d_dev.d_flags))
                 {
                   arp_out(&priv->d_dev);
+                }
+              else
+#endif
+#ifdef CONFIG_NET_IPv6
+                {
+                  neighbor_out(&priv->d_dev);
                 }
 #endif
 

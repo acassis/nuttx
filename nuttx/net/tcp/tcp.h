@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/tcp/tcp.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,6 @@
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
-
 /* Representation of a TCP connection.
  *
  * The tcp_conn_s structure is used for identifying a connection. All
@@ -108,14 +107,14 @@ struct tcp_hdr_s;         /* Forward reference */
 struct tcp_conn_s
 {
   dq_entry_t node;        /* Implements a doubly linked list */
-#ifdef CONFIG_NETDEV_MULTINIC
-  net_ipaddr_t lipaddr;   /* The bound local IP address */
-#endif
-  net_ipaddr_t ripaddr;   /* The IP address of the remote host */
+  union ip_binding_u u;   /* IP address binding */
   uint8_t  rcvseq[4];     /* The sequence number that we expect to
                            * receive next */
   uint8_t  sndseq[4];     /* The sequence number that was last sent by us */
   uint8_t  crefs;         /* Reference counts on this instance */
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NET_IPv6)
+  uint8_t  domain;        /* IP domain: PF_INET or PF_INET6 */
+#endif
   uint8_t  sa;            /* Retransmission time-out calculation state
                            * variable */
   uint8_t  sv;            /* Retransmission time-out calculation state
@@ -270,7 +269,7 @@ extern "C"
 
 /* Defined in tcp_conn.c ****************************************************/
 
-struct tcp_iphdr_s; /* Forward reference */
+struct sockaddr;    /* Forward reference */
 
 /****************************************************************************
  * Name: tcp_initialize
@@ -294,7 +293,7 @@ void tcp_initialize(void);
  *
  ****************************************************************************/
 
-FAR struct tcp_conn_s *tcp_alloc(void);
+FAR struct tcp_conn_s *tcp_alloc(uint8_t domain);
 
 /****************************************************************************
  * Name: tcp_free
@@ -366,13 +365,7 @@ FAR struct tcp_conn_s *tcp_alloc_accept(FAR struct net_driver_s *dev,
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IPv6
-int tcp_bind(FAR struct tcp_conn_s *conn,
-             FAR const struct sockaddr_in6 *addr);
-#else
-int tcp_bind(FAR struct tcp_conn_s *conn,
-             FAR const struct sockaddr_in *addr);
-#endif
+int tcp_bind(FAR struct tcp_conn_s *conn, FAR const struct sockaddr *addr);
 
 /****************************************************************************
  * Name: tcp_connect
@@ -394,12 +387,31 @@ int tcp_bind(FAR struct tcp_conn_s *conn,
  *
  ****************************************************************************/
 
+int tcp_connect(FAR struct tcp_conn_s *conn, FAR const struct sockaddr *addr);
+
+/* Defined in tcp_ipselect.c ************************************************/
+/****************************************************************************
+ * Function: tcp_ipv4_select
+ *
+ * Description:
+ *   Configure to send or receive an TCP IPv4 packet
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+void tcp_ipv4_select(FAR struct net_driver_s *dev);
+#endif
+
+/****************************************************************************
+ * Function: tcp_ipv6_select
+ *
+ * Description:
+ *   Configure to send or receive an TCP IPv6 packet
+ *
+ ****************************************************************************/
+
 #ifdef CONFIG_NET_IPv6
-int tcp_connect(FAR struct tcp_conn_s *conn,
-                FAR const struct sockaddr_in6 *addr);
-#else
-int tcp_connect(FAR struct tcp_conn_s *conn,
-                FAR const struct sockaddr_in *addr);
+void tcp_ipv6_select(FAR struct net_driver_s *dev);
 #endif
 
 /* Defined in tcp_seqno.c ***************************************************/

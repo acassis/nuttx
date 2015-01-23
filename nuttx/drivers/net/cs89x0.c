@@ -55,6 +55,10 @@
 #include <nuttx/net/arp.h>
 #include <nuttx/net/netdev.h>
 
+#ifdef CONFIG_NET_PKT
+#  include <nuttx/net/pkt.h>
+#endif
+
 /****************************************************************************
  * Definitions
  ****************************************************************************/
@@ -337,7 +341,30 @@ static int cs89x0_txpoll(struct net_driver_s *dev)
 
   if (cs89x0->cs_dev.d_len > 0)
     {
-      arp_out(&cs89x0->cs_dev);
+      /* Look up the destination MAC address and add it to the Ethernet
+       * header.
+       */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      if (IFF_IS_IPv4(cs89x0->cs_dev.d_flags))
+#endif
+        {
+          arp_out(&cs89x0->cs_dev);
+        }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      else
+#endif
+        {
+          neighbor_out(&cs89x0->cs_dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+      /* Send the packet */
+
       cs89x0_transmit(cs89x0);
 
       /* Check if there is room in the CS89x0 to hold another packet. If not,
@@ -387,10 +414,12 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
         {
           cd89x0->cs_stats.rx_lengtherrors++;
         }
+
       if ((isq & RX_EXTRA_DATA) != 0)
         {
           cd89x0->cs_stats.rx_lengtherrors++;
         }
+
       if (isq & RX_CRC_ERROR) != 0)
         {
           if (!(isq & (RX_EXTRA_DATA|RX_RUNT)))
@@ -398,6 +427,7 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
               cd89x0->cs_stats.rx_crcerrors++;
             }
         }
+
       if ((isq & RX_DRIBBLE) != 0)
         {
           cd89x0->cs_stats.rx_frameerrors++;
@@ -431,6 +461,12 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
   cd89x0->cs_stats.rx_packets++;
 #endif
 
+#ifdef CONFIG_NET_PKT
+  /* When packet sockets are enabled, feed the frame into the packet tap */
+
+   pkt_input(&cs89x0->cs_dev);
+#endif
+
   /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv4
@@ -454,11 +490,17 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
           /* Update the Ethernet header with the correct MAC address */
 
 #ifdef CONFIG_NET_IPv6
-          if (BUF->type == HTONS(ETHTYPE_IP))
+          if (IFF_IS_IPv4(cs89x0->cs_dev.d_flags))
 #endif
             {
               arp_out(&cs89x0->cs_dev);
             }
+#ifdef CONFIG_NET_IPv6
+          else
+            {
+              neighbor_out(&s89x0->cs_dev);
+            }
+#endif
 
           /* And send the packet */
 
@@ -482,12 +524,18 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
 
       if (cs89x0->cs_dev.d_len > 0)
         {
-#ifdef CONFIG_NET_IPv4
           /* Update the Ethernet header with the correct MAC address */
 
-          if (BUF->type == HTONS(ETHTYPE_IP))
+#ifdef CONFIG_NET_IPv4
+          if (IFF_IS_IPv4(cs89x0->cs_dev.d_flags))
             {
               arp_out(&cs89x0->cs_dev);
+            }
+          else
+#endif
+#ifdef CONFIG_NET_IPv6
+            {
+              neighbor_out(&cs89x0->cs_dev);
             }
 #endif
 

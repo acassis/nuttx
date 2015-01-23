@@ -93,11 +93,15 @@
  *
  ****************************************************************************/
 
-static int udp_input(FAR struct net_driver_s *dev, FAR struct udp_hdr_s *udp,
-                     unsigned int udpiplen)
+static int udp_input(FAR struct net_driver_s *dev, unsigned int iplen)
 {
+  FAR struct udp_hdr_s *udp;
   FAR struct udp_conn_s *conn;
+  unsigned int udpiplen;
   unsigned int hdrlen;
+#ifdef CONFIG_NET_UDP_CHECKSUMS
+  uint16_t chksum;
+#endif
   int ret = OK;
 
   /* Update the count of UDP packets received */
@@ -106,22 +110,53 @@ static int udp_input(FAR struct net_driver_s *dev, FAR struct udp_hdr_s *udp,
   g_netstats.udp.recv++;
 #endif
 
-  /* UDP processing is really just a hack. We don't do anything to the UDP/IP
-   * headers, but let the UDP application do all the hard work. If the
-   * application sets d_sndlen, it has a packet to send.
+  /* Get a pointer to the UDP header.  The UDP header lies just after the
+   * the link layer header and the IP header.
    */
 
-  dev->d_len -= udpiplen;
+  udp = (FAR struct udp_hdr_s *)&dev->d_buf[iplen + NET_LL_HDRLEN(dev)];
+
+  /* Get the size of the IP header and the UDP header */
+
+  udpiplen = iplen + UDP_HDRLEN;
 
   /* Get the size of the link layer header, the IP header, and the UDP header */
 
   hdrlen = udpiplen + NET_LL_HDRLEN(dev);
 
-#ifdef CONFIG_NET_UDP_CHECKSUMS
+  /* UDP processing is really just a hack. We don't do anything to the UDP/IP
+   * headers, but let the UDP application do all the hard work. If the
+   * application sets d_sndlen, it has a packet to send.
+   */
+
+  dev->d_len    -= udpiplen;
   dev->d_appdata = &dev->d_buf[hdrlen];
 
-  if (udp->udpchksum != 0 && udp_chksum(dev) != 0xffff)
+#ifdef CONFIG_NET_UDP_CHECKSUMS
+  chksum = udp->udpchksum;
+  if (chksum != 0)
     {
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+      if (IFF_IS_IPv6(dev->d_flags))
+#endif
+        {
+          chksum = ~udp_ipv6_chksum(dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+      else
+#endif
+        {
+          chksum = ~udp_ipv4_chksum(dev);
+        }
+#endif /* CONFIG_NET_IPv6 */
+     }
+
+   if (chksum != 0)
+     {
 #ifdef CONFIG_NET_STATISTICS
       g_netstats.udp.drop++;
       g_netstats.udp.chkerr++;
@@ -156,7 +191,6 @@ static int udp_input(FAR struct net_driver_s *dev, FAR struct udp_hdr_s *udp,
           /* Set-up for the application callback */
 
           dev->d_appdata = &dev->d_buf[hdrlen];
-          dev->d_snddata = &dev->d_buf[hdrlen];
           dev->d_sndlen  = 0;
 
           /* Perform the application callback */
@@ -219,9 +253,13 @@ static int udp_input(FAR struct net_driver_s *dev, FAR struct udp_hdr_s *udp,
 #ifdef CONFIG_NET_IPv4
 int udp_ipv4_input(FAR struct net_driver_s *dev)
 {
-  unsigned int offset = IPv4_HDRLEN + NET_LL_HDRLEN(dev);
-  return udp_input(dev, (FAR struct udp_hdr_s *)&dev->d_buf[offset],
-                   IPv4UDP_HDRLEN);
+  /* Configure to receive an UDP IPv4 packet */
+
+  udp_ipv4_select(dev);
+
+  /* Then process in the UDP IPv4 input */
+
+  return udp_input(dev, IPv4_HDRLEN);
 }
 #endif
 
@@ -247,9 +285,13 @@ int udp_ipv4_input(FAR struct net_driver_s *dev)
 #ifdef CONFIG_NET_IPv6
 int udp_ipv6_input(FAR struct net_driver_s *dev)
 {
-  unsigned int offset = IPv6_HDRLEN + NET_LL_HDRLEN(dev);
-  return udp_input(dev, (FAR struct udp_hdr_s *)&dev->d_buf[offset],
-                   IPv6UDP_HDRLEN);
+  /* Configure to receive an UDP IPv6 packet */
+
+  udp_ipv6_select(dev);
+
+  /* Then process in the UDP IPv6 input */
+
+  return udp_input(dev, IPv6_HDRLEN);
 }
 #endif
 
