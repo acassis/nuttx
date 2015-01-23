@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/rtc.h>
 
 #include <stdint.h>
 #include <time.h>
@@ -85,7 +86,7 @@ int clock_systimespec(FAR struct timespec *ts)
     {
       /* Get the hi-resolution time from the RTC */
 
-      return up_rtc_gettime(tp);
+      return up_rtc_gettime(ts);
     }
   else
 #endif

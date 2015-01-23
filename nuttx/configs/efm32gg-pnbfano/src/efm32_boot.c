@@ -82,8 +82,6 @@ void efm32_boardinitialize(void)
 
     efm32_rmu_initialize();
 
-    //efm32_burtc_init();
-
     /* test log Message */
 
 	syslog(LOG_DEBUG,"EFM32 Board initialization.\n");

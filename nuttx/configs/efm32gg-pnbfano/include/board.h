@@ -153,6 +153,37 @@
 #   define BOARD_LFBCLK_FREQUENCY    BOARD_LFRCO_FREQUENCY
 #endif
 
+
+/* BURTC Clock source 
+ * select clock source from following value:
+ *  - BURTC_CTRL_CLKSEL_LFRCO 
+ *  - BURTC_CTRL_CLKSEL_LFXO  
+ *  - BURTC_CTRL_CLKSEL_ULFRCO 
+ */
+#define BOARD_BURTC_CLKSRC  BURTC_CTRL_CLKSEL_LFXO
+
+/* BURTC Prescaler 
+ * select Prescaler from following value:
+ *  - BURTC_CTRL_PRESC_DIV1
+ *  - BURTC_CTRL_PRESC_DIV2
+ *  - BURTC_CTRL_PRESC_DIV4
+ *  - BURTC_CTRL_PRESC_DIV8
+ *  - BURTC_CTRL_PRESC_DIV16
+ *  - BURTC_CTRL_PRESC_DIV32
+ *  - BURTC_CTRL_PRESC_DIV64
+ *  - BURTC_CTRL_PRESC_DIV128
+ */
+#define BOARD_BURTC_PRESC   BURTC_CTRL_PRESC_DIV1
+
+/* BURTC Mode 
+ * select enable mode from following value:
+ *  - BURTC_CTRL_MODE_EM2EN
+ *  - BURTC_CTRL_MODE_EM3EN
+ *  - BURTC_CTRL_MODE_EM4EN
+ */
+#define BOARD_BURTC_MODE    BURTC_CTRL_MODE_EM4EN
+
+
 /* PCNTnCLK - Pulse Counter n Clock
  *
  * Each available pulse counter is driven by its own clock, PCNTnCLK where

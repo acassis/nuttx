@@ -51,6 +51,7 @@
 
 #include "up_arch.h"
 
+#include "chip/efm32_rmu.h"
 #include "chip/efm32_burtc.h"
 
 /************************************************************************************
@@ -71,8 +72,53 @@
 #  endif
 #endif
 
-/* RTC/BKP Definitions *************************************************************/
+#ifndef BOARD_BURTC_MODE
+#   define BOARD_BURTC_MODE BURTC_CTRL_MODE_EM4EN
+#endif
 
+#ifndef BOARD_BURTC_PRESC
+#   define BOARD_BURTC_PRESC BURTC_CTRL_PRESC_DIV1
+#endif
+
+#ifndef BOARD_BURTC_CLKSRC
+#   define BOARD_BURTC_CLKSRC BURTC_CTRL_CLKSEL_LFRCO
+#endif
+
+#if    (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV1)
+#   define BURTC_CLK_DIV 1
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV2)
+#   define BURTC_CLK_DIV 2
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV4)
+#   define BURTC_CLK_DIV 4
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV8)
+#   define BURTC_CLK_DIV 8
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV16)
+#   define BURTC_CLK_DIV 16
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV32)
+#   define BURTC_CLK_DIV 32
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV64)
+#   define BURTC_CLK_DIV 64
+#elif  (BOARD_BURTC_PRESC == BURTC_CTRL_PRESC_DIV64)
+#   define BURTC_CLK_DIV 128
+#else
+#   error "BOARD_BURTC_PRESC is setted with unknown value"
+#endif
+
+#if   (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFRCO ) 
+#   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_LFRCO_FREQUENCY)
+#       error "CONFIG_RTC_FREQUENCY is not well be setted"
+#   endif
+#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFXO ) 
+#   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_LFXO_FREQUENCY)
+#       error "CONFIG_RTC_FREQUENCY is not well be setted"
+#   endif
+#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_ULFRCO ) 
+#   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_ULFRCO_FREQUENCY)
+#       error "CONFIG_RTC_FREQUENCY is not well be setted"
+#   endif
+#else
+#   error "BOARD_BURTC_CLKSRC badly setted !"
+#endif
 
 /************************************************************************************
  * Private Types
@@ -98,6 +144,10 @@ static alarmcb_t g_alarmcb;
  *   - during operation, reported by LSE interrupt
  */
 
+uint32_t g_efm32_burtc_reset_status;
+
+bool g_efm32_burtc_reseted = false;
+
 volatile bool g_rtc_enabled = false;
 
 /************************************************************************************
@@ -105,13 +155,11 @@ volatile bool g_rtc_enabled = false;
  ************************************************************************************/
 
 
-
-
 /************************************************************************************
  * Name: efm32_rtc_interrupt
  *
  * Description:
- *    RTC interrupt service routine
+ *    BURTC interrupt service routine
  *
  * Input Parameters:
  *   irq - The IRQ number that generated the interrupt
@@ -122,38 +170,42 @@ volatile bool g_rtc_enabled = false;
  *
  ************************************************************************************/
 
-#if defined(CONFIG_RTC_HIRES) || defined(CONFIG_RTC_ALARM)
-static int efm32_rtc_interrupt(int irq, void *context)
+static int efm32_rtc_burtc_interrupt(int irq, void *context)
 {
-  uint16_t source = getreg16(STM32_RTC_CRL);
+  uint32_t source = getreg32(EFM32_BURTC_IF);
+
+  ASSERT( source & BURTC_IF_LFXOFAIL );
 
 #ifdef CONFIG_RTC_HIRES
-  if ((source & RTC_CRL_OWF) != 0)
+  if ( source & BURTC_IF_OF )
     {
-      putreg16(getreg16(RTC_TIMEMSB_REG) + 1, RTC_TIMEMSB_REG);
+        /* add a second */
+
+        putreg32(getreg16(EFM32_BURTC_RET_REG(0)) + 1,EFM32_BURTC_RET_REG(0));
     }
 #endif
 
 #ifdef CONFIG_RTC_ALARM
-  if ((source & RTC_CRL_ALRF) != 0 && g_alarmcb != NULL)
+  if ( source & BURTC_IFC_COMP0 )
     {
-      /* Alarm callback */
+      if ( g_alarmcb != NULL )
+        {
 
-      g_alarmcb();
-      g_alarmcb = NULL;
+            /* Alarm callback */
+
+            g_alarmcb();
+            g_alarmcb = NULL;
+        }
     }
 #endif
 
   /* Clear pending flags, leave RSF high */
 
-  putreg16(RTC_CRL_RSF, STM32_RTC_CRL);
+  putreg32(BURTC_IFC_OF | BURTC_IFC_COMP0 | BURTC_IFC_LFXOFAIL, EFM32_BURTC_IFC);
+
   return 0;
 }
-#endif
 
-/************************************************************************************
- * Public Functions
- ************************************************************************************/
 
 /************************************************************************************
  * Name: efm32_burtc_init
@@ -162,63 +214,96 @@ static int efm32_rtc_interrupt(int irq, void *context)
  *   board initialization of burtc RTC.  
  *   This function is called once in efm32_boardinitialize
  *
- * Input Parameters:
- *   resetcause content getreg32(EFM32_RMU_RSTCAUSE) before it will be erased by 
- *   putreg32(EFM32_RMU_RSTCAUSE
+ * Note
+ *   efm32_rmu_initialize should be called one since boot.
  *
- * Returned Value:
- *   Zero (OK) on success; a negated errno on failure
  *
  ************************************************************************************/
 
-void efm32_burtc_init(uint32_t resetcause)
+static void efm32_rtc_burtc_init(void)
 {
     uint32_t regval;
 
-    regval = getreg32(BURTC_CTRL);
+    regval = g_efm32_rstcause;
 
-    if (   !(regval & BURTC_CTRL_RSTEN)  
-        && !(resetcause & RMU_RSTCAUSE_BUBODREG)
-        && !(resetcause & RMU_RSTCAUSE_BUBODUNREG)
-        && !(resetcause & RMU_RSTCAUSE_BUBODBUVIN) 
-        && !(resetcause & RMU_RSTCAUSE_EXTRST)
-        && !(resetcause & RMU_RSTCAUSE_PORST) 
+    if (   !(regval & BURTC_CTRL_RSTEN          )  
+        && !(regval & RMU_RSTCAUSE_BUBODREG     )
+        && !(regval & RMU_RSTCAUSE_BUBODUNREG   )
+        && !(regval & RMU_RSTCAUSE_BUBODBUVIN   ) 
+        && !(regval & RMU_RSTCAUSE_EXTRST       )
+        && !(regval & RMU_RSTCAUSE_PORST        ) 
        )
     {
-        burtc_boot_status = BURTC_Status();
-        /* Reset timestamp */
-        BURTC_StatusClear();
+        g_efm32_burtc_reset_status = getreg32(EFM32_BURTC_STATUS);
+
+        /* Reset timestamp BURTC clear status */
+
+        putreg32(BURTC_CMD_CLRSTATUS,EFM32_BURTC_CMD);
         return;
     }
 
-    /* Create burtcInit struct and fill with default values */ 
-    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
+    /* Make sure all registers are updated simultaneously */
 
-    /* Set burtcInit to proper values for this application */
-    /* To make this example easier to read, all fields are listed, 
-       even those which are equal to their default value */
-    burtcInit.enable = false;
-    burtcInit.mode = burtcModeEM4;
-    burtcInit.debugRun = false;
-    burtcInit.clkSel = burtcClkSelLFXO;
-    burtcInit.clkDiv = burtcClkDiv_128;
-    burtcInit.timeStamp = true;
-    burtcInit.compare0Top = false;
-    burtcInit.lowPowerMode = burtcLPDisable;
+    modifyreg32(EFM32_BURTC_FREEZE,0,BURTC_FREEZE_REGFREEZE_FREEZE);
 
-    /* Initialize BURTC with burtcInit struct */
-    BURTC_Init( &burtcInit );
+    /* Restore all not setted BURTC registers to default value */
+
+    putreg32(_BURTC_LPMODE_RESETVALUE,      EFM32_BURTC_LPMODE  );
+    putreg32(_BURTC_LFXOFDET_RESETVALUE,    EFM32_BURTC_LFXOFDET);
+    putreg32(_BURTC_COMP0_RESETVALUE,       EFM32_BURTC_COMP0   );
+
+    /* New configuration */
+
+    regval = ((BURTC_CTRL_RSTEN             ) |
+              (BOARD_BURTC_MODE             ) |
+              (BURTC_CTRL_DEBUGRUN_DEFAULT  ) |
+              (BURTC_CTRL_COMP0TOP_DEFAULT  ) |
+              (BURTC_CTRL_LPCOMP_DEFAULT    ) |
+              (BOARD_BURTC_PRESC            ) |
+              (BOARD_BURTC_CLKSRC           ) |
+              (BURTC_CTRL_BUMODETSEN_DEFAULT));
+
+    /* Clear interrupts */
+
+    putreg32(0xFFFFFFFF,EFM32_BURTC_IFC);
+
+    /* Set new configuration */
+
+    putreg32(regval,EFM32_BURTC_CTRL);
+
+    /* To enable BURTC counter, we need to disable reset */
+
+    modifyreg32(EFM32_BURTC_CTRL, 0, BURTC_CTRL_RSTEN);
+
+    /* Clear freeze */
+
+    modifyreg32(EFM32_BURTC_FREEZE,BURTC_FREEZE_REGFREEZE_FREEZE,0);
 
     /* Enable BURTC interrupt on compare match and counter overflow */
-    BURTC_IntEnable( BURTC_IF_COMP0 | BURTC_IF_OF | BURTC_IF_LFXOFAIL );
 
-    /* Start BURTC */
-    BURTC_Enable( true );
+    putreg32(BURTC_IF_OF|BURTC_IF_LFXOFAIL, EFM32_BURTC_IEN );
 
-    BURTC_Lock();
+    /* Lock BURTC to avoid modification */
 
-    burtc_reseted = true;
+    putreg32(BURTC_LOCK_LOCKKEY_LOCK,EFM32_BURTC_CTRL);
+
+    /* reset BURTC retention REG 0 used to store second offset */
+
+    putreg32(0,EFM32_BURTC_RET_REG(0));
+
+    /* reset BURTC retention REG 1 used to store hires value offset */
+
+    putreg32(0,EFM32_BURTC_RET_REG(1));
+
+    /* inform rest of software that BURTC was reset at boot */
+
+    g_efm32_burtc_reseted = true;
 }
+
+
+/************************************************************************************
+ * Public Functions
+ ************************************************************************************/
 
 
 /************************************************************************************
@@ -238,46 +323,15 @@ void efm32_burtc_init(uint32_t resetcause)
 
 int up_rtcinitialize(void)
 {
-  /* Set access to the peripheral, enable the backup domain (BKP) and the lower power
-   * extern 32,768Hz (Low-Speed External, LSE) oscillator.  Configure the LSE to
-   * drive the RTC.
-   */
 
-  stm32_pwr_enablebkp();
-  stm32_rcc_enablelse();
-
-  /* TODO: Get state from this function, if everything is
-   *   okay and whether it is already enabled (if it was disabled
-   *   reset upper time register)
-   */
-
-  g_rtc_enabled = true;
-
-  /* Configure prescaler, note that these are write-only registers */
-
-  stm32_rtc_beginwr();
-  putreg16(STM32_RTC_PRESCALAR_VALUE >> 16,    STM32_RTC_PRLH);
-  putreg16(STM32_RTC_PRESCALAR_VALUE & 0xffff, STM32_RTC_PRLL);
-  stm32_rtc_endwr();
+  efm32_rtc_burtc_init();
 
   /* Configure RTC interrupt to catch overflow and alarm interrupts. */
 
-#if defined(CONFIG_RTC_HIRES) || defined(CONFIG_RTC_ALARM)
-  irq_attach(STM32_IRQ_RTC, stm32_rtc_interrupt);
-  up_enable_irq(STM32_IRQ_RTC);
-#endif
+  irq_attach(EFM32_IRQ_BURTC, efm32_rtc_burtc_interrupt);
+  up_enable_irq(EFM32_IRQ_BURTC);
 
-  /* Previous write is done? This is required prior writing into CRH */
-
-  while ((getreg16(STM32_RTC_CRL) & RTC_CRL_RTOFF) == 0)
-    {
-      up_waste();
-    }
-  modifyreg16(STM32_RTC_CRH, 0, RTC_CRH_OWIE);
-
-  /* Alarm Int via EXTI Line */
-
-  /* STM32_IRQ_RTCALRM  41: RTC alarm through EXTI line interrupt */
+  g_rtc_enabled = true;
 
   return OK;
 }
@@ -303,49 +357,16 @@ int up_rtcinitialize(void)
 #ifndef CONFIG_RTC_HIRES
 time_t up_rtc_time(void)
 {
+  time_t t;
   irqstate_t flags;
-  uint16_t cnth;
-  uint16_t cntl;
-  uint16_t tmp;
-
-  /* The RTC counter is read from two 16-bit registers to form one 32-bit
-   * value.  Because these are non-atomic operations, many things can happen
-   * between the two reads:  This thread could get suspended or interrrupted
-   * or the lower 16-bit counter could rollover between reads.  Disabling
-   * interrupts will prevent suspensions and interruptions:
-   */
 
   flags = irqsave();
 
-  /* And the following loop will handle any clock rollover events that may
-   * happen between samples.  Most of the time (like 99.9%), the following
-   * loop will execute only once.  In the rare rollover case, it should
-   * execute no more than 2 times.
-   */
+  t = getreg32(EFM32_BURTC_RET_REG(0));
 
-  do
-    {
-      tmp  = getreg16(STM32_RTC_CNTL);
-      cnth = getreg16(STM32_RTC_CNTH);
-      cntl = getreg16(STM32_RTC_CNTL);
-    }
-
-  /* The second sample of CNTL could be less than the first sample of CNTL
-   * only if rollover occurred.  In that case, CNTH may or may not be out
-   * of sync.  The best thing to do is try again until we know that no
-   * rollover occurred.
-   */
-
-  while (cntl < tmp);
   irqrestore(flags);
 
-  /* Okay.. the samples should be as close together in time as possible and
-   * we can be assured that no clock rollover occurred between the samples.
-   *
-   * Return the time in seconds.
-   */
-
-  return (time_t)cnth << 16 | (time_t)cntl;
+  return t;
 }
 #endif
 
@@ -368,60 +389,38 @@ time_t up_rtc_time(void)
 #ifdef CONFIG_RTC_HIRES
 int up_rtc_gettime(FAR struct timespec *tp)
 {
+  time_t t;
+  uint32_t hires_val;
   irqstate_t flags;
-  uint32_t ls;
-  uint32_t ms;
-  uint16_t ovf;
-  uint16_t cnth;
-  uint16_t cntl;
-  uint16_t tmp;
-
-  /* The RTC counter is read from two 16-bit registers to form one 32-bit
-   * value.  Because these are non-atomic operations, many things can happen
-   * between the two reads:  This thread could get suspended or interrrupted
-   * or the lower 16-bit counter could rollover between reads.  Disabling
-   * interrupts will prevent suspensions and interruptions:
-   */
 
   flags = irqsave();
 
-  /* And the following loop will handle any clock rollover events that may
-   * happen between samples.  Most of the time (like 99.9%), the following
-   * loop will execute only once.  In the rare rollover case, it should
-   * execute no more than 2 times.
-   */
-
   do
-    {
-      tmp  = getreg16(STM32_RTC_CNTL);
-      cnth = getreg16(STM32_RTC_CNTH);
-      ovf  = getreg16(RTC_TIMEMSB_REG);
-      cntl = getreg16(STM32_RTC_CNTL);
+    { 
+      /* pending IRQ so theat it */
+
+      if ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 )
+          efm32_rtc_burtc_interrupt(EFM32_IRQ_BURTC,NULL);
+
+      t         = getreg32(EFM32_BURTC_RET_REG(0));
+      hires_val = getreg32(EFM32_BURTC_CNT) + getreg32(EFM32_BURTC_RET_REG(1));
     }
+  /* Retry if IRQ appear during register reading  */
+  while ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 );
 
-  /* The second sample of CNTL could be less than the first sample of CNTL
-   * only if rollover occurred.  In that case, CNTH may or may not be out
-   * of sync.  The best thing to do is try again until we know that no
-   * rollover occurred.
-   */
-
-  while (cntl < tmp);
   irqrestore(flags);
 
-  /* Okay.. the samples should be as close together in time as possible and
-   * we can be assured that no clock rollover occurred between the samples.
-   *
-   * Create a 32-bit value from the LS and MS 16-bit RTC counter values and
-   * from the MS and overflow 16-bit counter values.
-   */
-
-  ls = (uint32_t)cnth << 16 | (uint32_t)cntl;
-  ms = (uint32_t)ovf  << 16 | (uint32_t)cnth;
+  if ( hires_val >= CONFIG_RTC_FREQUENCY )
+    {
+      hires_val -= CONFIG_RTC_FREQUENCY;
+      t++;
+    }
 
   /* Then we can save the time in seconds and fractional seconds. */
 
-  tp->tv_sec  = (ms << (32-RTC_CLOCKS_SHIFT-16)) | (ls >> (RTC_CLOCKS_SHIFT+16));
-  tp->tv_nsec = (ls & (CONFIG_RTC_FREQUENCY-1)) * (1000000000/CONFIG_RTC_FREQUENCY);
+  tp->tv_sec  = t;
+  tp->tv_nsec = hires_val * (1000000000/CONFIG_RTC_FREQUENCY);
+
   return OK;
 }
 #endif
@@ -443,25 +442,29 @@ int up_rtc_gettime(FAR struct timespec *tp)
 
 int up_rtc_settime(FAR const struct timespec *tp)
 {
-  struct rtc_regvals_s regvals;
   irqstate_t flags;
 
-  /* Break out the time values */
+  struct timespec current_tp;
+#ifdef CONFIG_RTC_HIRES
+  up_rtc_gettime(&current_tp);
+#else
+  current_tp.tv_nsec = 0;
+  current_tp.tv_sec = up_rtc_gettime();
+#endif
 
-  up_rtc_breakout(tp, &regvals);
-
-  /* Then write the broken out values to the RTC counter and BKP overflow register
-   * (hi-res mode only)
-   */
+  /* compute difference */
+  current_tp.tv_nsec = tp->tv_nsec - current_tp.tv_nsec;
+  current_tp.tv_sec  = tp->tv_sec  - current_tp.tv_sec ;
+  if ( current_tp.tv_nsec < 0 )
+  {
+      current_tp.tv_nsec += 1000000000;
+      current_tp.tv_sec  -= 1 ;
+  }
 
   flags = irqsave();
-  stm32_rtc_beginwr();
-  putreg16(regvals.cnth, STM32_RTC_CNTH);
-  putreg16(regvals.cntl, STM32_RTC_CNTL);
-  stm32_rtc_endwr();
-
+  putreg32(current_tp.tv_sec  + EFM32_BURTC_RET_REG(0), EFM32_BURTC_RET_REG(0));
 #ifdef CONFIG_RTC_HIRES
-  putreg16(regvals.ovf, RTC_TIMEMSB_REG);
+  putreg32(current_tp.tv_nsec + EFM32_BURTC_RET_REG(1),EFM32_BURTC_RET_REG(1));
 #endif
   irqrestore(flags);
   return OK;
@@ -483,6 +486,7 @@ int up_rtc_settime(FAR const struct timespec *tp)
  ************************************************************************************/
 
 #ifdef CONFIG_RTC_ALARM
+#error "Sorry ! not yet implemented, just copied from STM32"
 int up_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
 {
   struct rtc_regvals_s regvals;
@@ -538,6 +542,7 @@ int up_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
  ************************************************************************************/
 
 #ifdef CONFIG_RTC_ALARM
+#error "Sorry ! not yet implemented, just copied from STM32"
 int up_rtc_cancelalarm(void)
 {
   irqstate_t flags;
