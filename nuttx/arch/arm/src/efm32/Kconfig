@@ -567,7 +567,7 @@ config EFM32_TIMER3_CHANNEL
 		channel {0,1,2}
 
 config EFM32_RTC_BURTC
-	int "use BURTC as rtc"
+	bool "use BURTC as rtc"
 	default n
 	---help---
 		Enable RTC with EFM32 BURTC

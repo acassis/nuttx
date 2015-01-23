@@ -59,7 +59,7 @@
  */
 
 #define BOARD_HAVE_HFXO        1        /* Have High frequency crystal oscillator */
-#define BOARD_HAVE_LFXO        0        /* Have Low frequency crystal oscillator */
+#define BOARD_HAVE_LFXO        1        /* Have Low frequency crystal oscillator */
 
 #define BOARD_HFRCO_FREQUENCY  14000000 /* 14MHz on reset */
 #define BOARD_HFXO_FREQUENCY   48000000 /* 32MHz crystal on board */

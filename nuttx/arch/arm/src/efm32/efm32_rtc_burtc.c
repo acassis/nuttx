@@ -105,6 +105,8 @@ volatile bool g_rtc_enabled = false;
  ************************************************************************************/
 
 
+
+
 /************************************************************************************
  * Name: efm32_rtc_interrupt
  *
@@ -152,6 +154,72 @@ static int efm32_rtc_interrupt(int irq, void *context)
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
+
+/************************************************************************************
+ * Name: efm32_burtc_init
+ *
+ * Description:
+ *   board initialization of burtc RTC.  
+ *   This function is called once in efm32_boardinitialize
+ *
+ * Input Parameters:
+ *   resetcause content getreg32(EFM32_RMU_RSTCAUSE) before it will be erased by 
+ *   putreg32(EFM32_RMU_RSTCAUSE
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno on failure
+ *
+ ************************************************************************************/
+
+void efm32_burtc_init(uint32_t resetcause)
+{
+    uint32_t regval;
+
+    regval = getreg32(BURTC_CTRL);
+
+    if (   !(regval & BURTC_CTRL_RSTEN)  
+        && !(resetcause & RMU_RSTCAUSE_BUBODREG)
+        && !(resetcause & RMU_RSTCAUSE_BUBODUNREG)
+        && !(resetcause & RMU_RSTCAUSE_BUBODBUVIN) 
+        && !(resetcause & RMU_RSTCAUSE_EXTRST)
+        && !(resetcause & RMU_RSTCAUSE_PORST) 
+       )
+    {
+        burtc_boot_status = BURTC_Status();
+        /* Reset timestamp */
+        BURTC_StatusClear();
+        return;
+    }
+
+    /* Create burtcInit struct and fill with default values */ 
+    BURTC_Init_TypeDef burtcInit = BURTC_INIT_DEFAULT;
+
+    /* Set burtcInit to proper values for this application */
+    /* To make this example easier to read, all fields are listed, 
+       even those which are equal to their default value */
+    burtcInit.enable = false;
+    burtcInit.mode = burtcModeEM4;
+    burtcInit.debugRun = false;
+    burtcInit.clkSel = burtcClkSelLFXO;
+    burtcInit.clkDiv = burtcClkDiv_128;
+    burtcInit.timeStamp = true;
+    burtcInit.compare0Top = false;
+    burtcInit.lowPowerMode = burtcLPDisable;
+
+    /* Initialize BURTC with burtcInit struct */
+    BURTC_Init( &burtcInit );
+
+    /* Enable BURTC interrupt on compare match and counter overflow */
+    BURTC_IntEnable( BURTC_IF_COMP0 | BURTC_IF_OF | BURTC_IF_LFXOFAIL );
+
+    /* Start BURTC */
+    BURTC_Enable( true );
+
+    BURTC_Lock();
+
+    burtc_reseted = true;
+}
+
 
 /************************************************************************************
  * Name: up_rtcinitialize

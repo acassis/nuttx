@@ -59,6 +59,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "chip/efm32_rmu.h"
+
 
 
 /****************************************************************************
@@ -77,6 +79,10 @@
 
 void efm32_boardinitialize(void)
 {
+
+    efm32_rmu_initialize();
+
+    //efm32_burtc_init();
 
     /* test log Message */
 
