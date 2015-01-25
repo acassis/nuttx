@@ -202,8 +202,4 @@
 #define _RMU_CMD_RCCLR_DEFAULT                0x00000000UL                  /**< Mode DEFAULT for RMU_CMD */
 #define RMU_CMD_RCCLR_DEFAULT                 (_RMU_CMD_RCCLR_DEFAULT << 0) /**< Shifted mode DEFAULT for RMU_CMD */
 
-extern uint32_t g_efm32_rstcause;
-
-void efm32_rmu_initialize(void);
-
 #endif /* __ARCH_ARM_SRC_EFM32_CHIP_EFM32_RMU_H */
