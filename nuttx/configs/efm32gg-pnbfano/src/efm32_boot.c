@@ -81,6 +81,7 @@ void efm32_boardinitialize(void)
 {
 
     efm32_rmu_initialize();
+ 
 
     /* test log Message */
 
