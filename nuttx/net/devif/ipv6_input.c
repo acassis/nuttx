@@ -85,6 +85,8 @@
 #include <debug.h>
 #include <string.h>
 
+#include <net/if.h>
+
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
 #include <nuttx/net/netstats.h>
@@ -140,12 +142,12 @@
 int ipv6_input(FAR struct net_driver_s *dev)
 {
   FAR struct ipv6_hdr_s *ipv6 = IPv6BUF;
-  uint16_t iplen;
+  uint16_t pktlen;
 
   /* This is where the input processing starts. */
 
 #ifdef CONFIG_NET_STATISTICS
-  g_netstats.ip.recv++;
+  g_netstats.ipv6.recv++;
 #endif
 
   /* Start of IP input header processing code. */
@@ -156,8 +158,8 @@ int ipv6_input(FAR struct net_driver_s *dev)
       /* IP version and header length. */
 
 #ifdef CONFIG_NET_STATISTICS
-      g_netstats.ip.drop++;
-      g_netstats.ip.vhlerr++;
+      g_netstats.ipv6.drop++;
+      g_netstats.ipv6.vhlerr++;
 #endif
 
       nlldbg("Invalid IPv6 version: %d\n", ipv6->vtc >> 4);
@@ -171,17 +173,22 @@ int ipv6_input(FAR struct net_driver_s *dev)
    * we set d_len to the correct value.
    *
    * The length reported in the IPv6 header is the length of the payload
-   * that follows the header. However, uIP uses the d_len variable for
-   * holding the size of the entire packet, including the IP header. For
-   * IPv4 this is not a problem as the length field in the IPv4 header
-   * contains the length of the entire packet. But for IPv6 we need to add
-   * the size of the IPv6 header (40 bytes).
+   * that follows the header. The device interface uses the d_len variable for
+   * holding the size of the entire packet, including the IP and link layer
+   * headers.
    */
 
-  iplen = (ipv6->len[0] << 8) + ipv6->len[1] + IPv6_HDRLEN;
-  if (iplen <= dev->d_len)
+#if defined(CONFIG_NET_MULTILINK)
+  pktlen = (ipv6->len[0] << 8) + ipv6->len[1] + IPv6_HDRLEN + dev->d_llhdrlen;
+#elif defined(CONFIG_NET_ETHERNET)
+  pktlen = (ipv6->len[0] << 8) + ipv6->len[1] + IPv6_HDRLEN + ETH_HDRLEN;
+#else /* if defined(CONFIG_NET_SLIP) */
+  pktlen = (ipv6->len[0] << 8) + ipv6->len[1] + IPv6_HDRLEN;
+#endif
+
+  if (pktlen <= dev->d_len)
     {
-      dev->d_len = iplen;
+      dev->d_len = pktlen;
     }
   else
     {
@@ -238,15 +245,19 @@ int ipv6_input(FAR struct net_driver_s *dev)
           ipv6->destipaddr[0] != HTONS(0xff02))
         {
 #ifdef CONFIG_NET_STATISTICS
-          g_netstats.ip.drop++;
+          g_netstats.ipv6.drop++;
 #endif
           goto drop;
         }
     }
 
-  /* Everything looks good so far.  Now process the incoming packet
-   * according to the protocol.
+  /* Make sure that all packet processing logic knows that there is an IPv6
+   * packet in the device buffer.
    */
+
+  IFF_SET_IPv6(dev->d_flags);
+
+  /* Now process the incoming packet according to the protocol. */
 
   switch (ipv6->proto)
     {
@@ -272,8 +283,8 @@ int ipv6_input(FAR struct net_driver_s *dev)
 
       default:              /* Unrecognized/unsupported protocol */
 #ifdef CONFIG_NET_STATISTICS
-        g_netstats.ip.drop++;
-        g_netstats.ip.protoerr++;
+        g_netstats.ipv6.drop++;
+        g_netstats.ipv6.protoerr++;
 #endif
 
         nlldbg("Unrecognized IP protocol: %04x\n", ipv6->proto);

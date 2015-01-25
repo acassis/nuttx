@@ -156,6 +156,10 @@ void udp_send(FAR struct net_driver_s *dev, FAR struct udp_conn_s *conn)
 
           ipv4->ipchksum    = 0;
           ipv4->ipchksum    = ~ipv4_chksum(dev);
+
+#ifdef CONFIG_NET_STATISTICS
+          g_netstats.ipv4.sent++;
+#endif
         }
 #endif /* CONFIG_NET_IPv4 */
 
@@ -198,6 +202,10 @@ void udp_send(FAR struct net_driver_s *dev, FAR struct udp_conn_s *conn)
            */
 
           dev->d_len       += IPv6_HDRLEN;
+
+#ifdef CONFIG_NET_STATISTICS
+          g_netstats.ipv6.sent++;
+#endif
         }
 #endif /* CONFIG_NET_IPv6 */
 
@@ -212,8 +220,8 @@ void udp_send(FAR struct net_driver_s *dev, FAR struct udp_conn_s *conn)
       /* Calculate UDP checksum. */
 
 #ifdef CONFIG_NET_IPv4
-#ifdef CONFIG_NET_IPv5
-      if (conn->domain = PF_INET)
+#ifdef CONFIG_NET_IPv6
+      if (conn->domain == PF_INET)
 #endif
         {
           udp->udpchksum = ~udp_ipv4_chksum(dev);
@@ -239,7 +247,6 @@ void udp_send(FAR struct net_driver_s *dev, FAR struct udp_conn_s *conn)
 
 #ifdef CONFIG_NET_STATISTICS
       g_netstats.udp.sent++;
-      g_netstats.ip.sent++;
 #endif
     }
 }

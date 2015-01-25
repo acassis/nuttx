@@ -85,6 +85,8 @@
 #include <debug.h>
 #include <string.h>
 
+#include <net/if.h>
+
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
 #include <nuttx/net/netstats.h>
@@ -220,7 +222,9 @@ static uint8_t devif_reassembly(void)
           {
             g_reassembly_bitmap[i] = 0xff;
           }
-        g_reassembly_bitmap[(offset + len) / (8 * 8)] |= ~g_bitmap_bits[((offset + len) / 8 ) & 7];
+
+        g_reassembly_bitmap[(offset + len) / (8 * 8)] |=
+          ~g_bitmap_bits[((offset + len) / 8 ) & 7];
       }
 
     /* If this fragment has the More Fragments flag set to zero, we know that
@@ -317,7 +321,7 @@ int ipv4_input(FAR struct net_driver_s *dev)
   /* This is where the input processing starts. */
 
 #ifdef CONFIG_NET_STATISTICS
-  g_netstats.ip.recv++;
+  g_netstats.ipv4.recv++;
 #endif
 
   /* Start of IP input header processing code. */
@@ -328,8 +332,8 @@ int ipv4_input(FAR struct net_driver_s *dev)
       /* IP version and header length. */
 
 #ifdef CONFIG_NET_STATISTICS
-      g_netstats.ip.drop++;
-      g_netstats.ip.vhlerr++;
+      g_netstats.ipv4.drop++;
+      g_netstats.ipv4.vhlerr++;
 #endif
       nlldbg("Invalid IP version or header length: %02x\n", pbuf->vhl);
       goto drop;
@@ -365,8 +369,8 @@ int ipv4_input(FAR struct net_driver_s *dev)
         }
 #else /* CONFIG_NET_TCP_REASSEMBLY */
 #ifdef CONFIG_NET_STATISTICS
-      g_netstats.ip.drop++;
-      g_netstats.ip.fragerr++;
+      g_netstats.ipv4.drop++;
+      g_netstats.ipv4.fragerr++;
 #endif
       nlldbg("IP fragment dropped\n");
       goto drop;
@@ -431,7 +435,7 @@ int ipv4_input(FAR struct net_driver_s *dev)
 #endif
             {
 #ifdef CONFIG_NET_STATISTICS
-              g_netstats.ip.drop++;
+              g_netstats.ipv4.drop++;
 #endif
               goto drop;
             }
@@ -443,16 +447,20 @@ int ipv4_input(FAR struct net_driver_s *dev)
       /* Compute and check the IP header checksum. */
 
 #ifdef CONFIG_NET_STATISTICS
-      g_netstats.ip.drop++;
-      g_netstats.ip.chkerr++;
+      g_netstats.ipv4.drop++;
+      g_netstats.ipv4.chkerr++;
 #endif
       nlldbg("Bad IP checksum\n");
       goto drop;
     }
 
-  /* Everything looks good so far.  Now process the incoming packet
-   * according to the protocol.
+  /* Make sure that all packet processing logic knows that there is an IPv4
+   * packet in the device buffer.
    */
+
+  IFF_SET_IPv4(dev->d_flags);
+
+  /* Now process the incoming packet according to the protocol. */
 
   switch (pbuf->proto)
     {
@@ -486,8 +494,8 @@ int ipv4_input(FAR struct net_driver_s *dev)
 
       default:              /* Unrecognized/unsupported protocol */
 #ifdef CONFIG_NET_STATISTICS
-        g_netstats.ip.drop++;
-        g_netstats.ip.protoerr++;
+        g_netstats.ipv4.drop++;
+        g_netstats.ipv4.protoerr++;
 #endif
 
         nlldbg("Unrecognized IP protocol\n");

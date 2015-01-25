@@ -38,14 +38,15 @@
  ************************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/arch.h>
-#include <arch/board/board.h>
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <errno.h>
+
+#include <nuttx/arch.h>
+#include <arch/board/board.h>
 
 #include "up_arch.h"
 
@@ -88,7 +89,6 @@ typedef struct
     const char*    str;
 }efm32_reset_cause_list_t;
 #endif
-
 
 /************************************************************************************
  * Private Data
@@ -180,7 +180,6 @@ static efm32_reset_cause_list_t efm32_reset_cause_list[] =
 };
 #endif
 
-
 /************************************************************************************
  * Public Data
  ************************************************************************************/
@@ -193,8 +192,25 @@ uint32_t g_efm32_rstcause;
  * Private Functions
  ************************************************************************************/
 
-#ifdef CONFIG_EFM32_RMU_DEBUG
-static const char* efm32_reset_cause_list_str(uint32_t reg, unsigned int *idx)
+
+/************************************************************************************
+ * Public Functions
+ ************************************************************************************/
+
+/************************************************************************************
+ * Name: efm32_reset_cause_list_str
+ *
+ * Description:
+ *    return next reset cause string, NULL if no more reset cause.
+ *
+ * reg: reset cause regiser to decode (like g_efm32_rstcause) 
+ *
+ * idx: use to keep in maind reset cause decoding position. 
+ *      set *idx to zero before first call.
+ *
+ ************************************************************************************/
+
+const char* efm32_reset_cause_list_str(uint32_t reg, unsigned int *idx)
 {
     int len = sizeof(efm32_reset_cause_list)/sizeof(efm32_reset_cause_list[0]);
     efm32_reset_cause_list_t *ptr = NULL;
@@ -213,18 +229,12 @@ static const char* efm32_reset_cause_list_str(uint32_t reg, unsigned int *idx)
         return ptr->str;
     return NULL;
 }
-#endif
-
-
-/************************************************************************************
- * Public Functions
- ************************************************************************************/
 
 /************************************************************************************
  * Name: efm32_rmu_initialize
  *
  * Description:
- *    store resetcause into g_efm32_rstcause then clear resetcause register.
+ *    Store reset cause into g_efm32_rstcause then clear reset cause register.
  *
  ************************************************************************************/
 
@@ -237,7 +247,6 @@ void efm32_rmu_initialize(void)
   
   g_efm32_rstcause = getreg32(EFM32_RMU_RSTCAUSE);
 
-
   /* Now clear reset cause */
 
   putreg32(RMU_CMD_RCCLR,EFM32_RMU_CMD);
@@ -245,21 +254,24 @@ void efm32_rmu_initialize(void)
   /* Clear some reset causes not cleared with RMU CMD register 
    * (If EMU registers locked, they must be unlocked first) 
    */
+
   locked = getreg32(EFM32_EMU_LOCK) & EMU_LOCK_LOCKKEY_LOCKED;
   if (locked)
-  {
-      // EMU unlock
+    {
+      /* EMU unlock */
+
       putreg32(EMU_LOCK_LOCKKEY_LOCK,EMU_LOCK_LOCKKEY_UNLOCK);
-  }
+    }
 
   modifyreg32(EFM32_EMU_AUXCTRL,0,EMU_AUXCTRL_HRCCLR);
   modifyreg32(EFM32_EMU_AUXCTRL,EMU_AUXCTRL_HRCCLR,0);
 
   if (locked)
-  {
-      // EMU lock
+    {
+      /* EMU lock */
+
       putreg32(EMU_LOCK_LOCKKEY_LOCK,EMU_LOCK_LOCKKEY_LOCK);
-  }
+    }
 
 #ifdef CONFIG_EFM32_RMU_DEBUG
   rmudbg("RMU => reg = 0x%08X\n",g_efm32_rstcause);
@@ -274,5 +286,3 @@ void efm32_rmu_initialize(void)
 #endif
 
 }
-
-

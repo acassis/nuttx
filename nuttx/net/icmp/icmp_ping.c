@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/icmp/icmp_ping.c
  *
- *   Copyright (C) 2008-2012, 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2012, 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -237,6 +237,7 @@ static uint16_t ping_interrupt(FAR struct net_driver_s *dev, FAR void *conn,
 
           dev->d_sndlen = pstate->png_datlen + 4;
           icmp_send(dev, &pstate->png_addr);
+
           pstate->png_sent = true;
           return flags;
         }
@@ -349,7 +350,7 @@ int icmp_ping(in_addr_t addr, uint16_t id, uint16_t seqno, uint16_t datalen,
   state.png_result = -ENOMEM;          /* Assume allocation failure */
   state.png_addr   = addr;             /* Address of the peer to be ping'ed */
   state.png_id     = id;               /* The ID to use in the ECHO request */
-  state.png_seqno  = seqno;            /* The seqno to use int the ECHO request */
+  state.png_seqno  = seqno;            /* The seqno to use in the ECHO request */
   state.png_datlen = datalen;          /* The length of data to send in the ECHO request */
   state.png_sent   = false;            /* ECHO request not yet sent */
 

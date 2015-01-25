@@ -122,10 +122,6 @@ void icmpv6_input(FAR struct net_driver_s *dev)
   g_netstats.icmpv6.recv++;
 #endif
 
-  /* Set a bit in the d_flags to distinguish this from an IPv6 packet */
-
-  IFF_SET_IPv6(dev->d_flags);
-
   /* If we get a neighbor solicitation for our address we should send
    * a neighbor advertisement message back.
    */
@@ -145,7 +141,7 @@ void icmpv6_input(FAR struct net_driver_s *dev)
            *
            *
            * Set up the IPv6 header.  Most is probably already in place from
-           * the Neighbor Solitication.  We could save some time here.
+           * the Neighbor Solicitation.  We could save some time here.
            */
 
           icmp->vtc    = 0x60;                            /* Version/traffic class (MS) */
@@ -224,6 +220,11 @@ void icmpv6_input(FAR struct net_driver_s *dev)
               eth->type  = HTONS(ETHTYPE_IP6);
             }
 #endif
+          /* No additional neighbor lookup is required on this packet
+           * (We are using a multicast address).
+           */
+
+          IFF_SET_NOARP(dev->d_flags);
         }
       else
         {
@@ -291,7 +292,7 @@ void icmpv6_input(FAR struct net_driver_s *dev)
    * a thread waiting to received the echo response.
    */
 
-#ifdef CONFIG_NET_ICMPv6v6_PING
+#ifdef CONFIG_NET_ICMPv6_PING
   else if (icmp->type == ICMPv6_ECHO_REPLY && g_icmpv6_echocallback)
     {
       uint16_t flags = ICMPv6_ECHOREPLY;
@@ -320,16 +321,12 @@ void icmpv6_input(FAR struct net_driver_s *dev)
       goto icmpv6_type_error;
     }
 
-  /* No additional neighbor lookup is required on this packet. */
-
-  IFF_SET_NOARP(dev->d_flags);
-
   nllvdbg("Outgoing ICMPv6 packet length: %d (%d)\n",
           dev->d_len, (icmp->len[0] << 8) | icmp->len[1]);
 
 #ifdef CONFIG_NET_STATISTICS
   g_netstats.icmpv6.sent++;
-  g_netstats.ip.sent++;
+  g_netstats.ipv6.sent++;
 #endif
   return;
 

@@ -98,6 +98,8 @@ void icmp_send(FAR struct net_driver_s *dev, FAR in_addr_t *destaddr)
 
   if (dev->d_sndlen > 0)
     {
+      IFF_SET_IPv4(dev->d_flags);
+
       /* The total length to send is the size of the application data plus
        * the IP and ICMP headers (and, eventually, the Ethernet header)
        */
@@ -146,7 +148,7 @@ void icmp_send(FAR struct net_driver_s *dev, FAR in_addr_t *destaddr)
 
 #ifdef CONFIG_NET_STATISTICS
       g_netstats.icmp.sent++;
-      g_netstats.ip.sent++;
+      g_netstats.ipv4.sent++;
 #endif
     }
 }
