@@ -647,7 +647,7 @@ void efm32_dmastart(DMA_HANDLE handle, dma_callback_t callback, void *arg)
   uint32_t regval;
   uint32_t bit;
 
-  DEBUGASSERT(dmach && dmach->inuse && dmach->desc);
+  DEBUGASSERT(dmach && dmach->inuse );
 
   /* Save the DMA complete callback info */
 

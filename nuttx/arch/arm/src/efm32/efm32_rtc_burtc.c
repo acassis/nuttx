@@ -51,8 +51,9 @@
 
 #include "up_arch.h"
 
-#include "chip/efm32_rmu.h"
 #include "chip/efm32_burtc.h"
+
+#include "efm32_rmu.h"
 
 /************************************************************************************
  * Pre-processor Definitions
@@ -226,7 +227,7 @@ static void efm32_rtc_burtc_init(void)
 
     regval = g_efm32_rstcause;
 
-    if (   !(regval & BURTC_CTRL_RSTEN          )  
+    if (   !(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN )  
         && !(regval & RMU_RSTCAUSE_BUBODREG     )
         && !(regval & RMU_RSTCAUSE_BUBODUNREG   )
         && !(regval & RMU_RSTCAUSE_BUBODBUVIN   ) 
@@ -242,20 +243,23 @@ static void efm32_rtc_burtc_init(void)
         return;
     }
 
+    /* Disable reset of BackupDomain */
+
+    modifyreg32(EFM32_RMU_CTRL,_RMU_CTRL_BURSTEN_MASK,0);
+
     /* Make sure all registers are updated simultaneously */
 
-    modifyreg32(EFM32_BURTC_FREEZE,0,BURTC_FREEZE_REGFREEZE_FREEZE);
+    putreg32(BURTC_FREEZE_REGFREEZE_FREEZE,EFM32_BURTC_FREEZE);
 
     /* Restore all not setted BURTC registers to default value */
 
-    putreg32(_BURTC_LPMODE_RESETVALUE,      EFM32_BURTC_LPMODE  );
-    putreg32(_BURTC_LFXOFDET_RESETVALUE,    EFM32_BURTC_LFXOFDET);
-    putreg32(_BURTC_COMP0_RESETVALUE,       EFM32_BURTC_COMP0   );
+//    putreg32(_BURTC_LPMODE_RESETVALUE,      EFM32_BURTC_LPMODE  );
+//    putreg32(_BURTC_LFXOFDET_RESETVALUE,    EFM32_BURTC_LFXOFDET);
+//    putreg32(_BURTC_COMP0_RESETVALUE,       EFM32_BURTC_COMP0   );
 
     /* New configuration */
 
-    regval = ((BURTC_CTRL_RSTEN             ) |
-              (BOARD_BURTC_MODE             ) |
+    regval = ((BOARD_BURTC_MODE             ) |
               (BURTC_CTRL_DEBUGRUN_DEFAULT  ) |
               (BURTC_CTRL_COMP0TOP_DEFAULT  ) |
               (BURTC_CTRL_LPCOMP_DEFAULT    ) |
@@ -269,15 +273,15 @@ static void efm32_rtc_burtc_init(void)
 
     /* Set new configuration */
 
-    putreg32(regval,EFM32_BURTC_CTRL);
-
-    /* To enable BURTC counter, we need to disable reset */
-
-    modifyreg32(EFM32_BURTC_CTRL, 0, BURTC_CTRL_RSTEN);
+    putreg32(regval|BURTC_CTRL_RSTEN,EFM32_BURTC_CTRL);
 
     /* Clear freeze */
 
-    modifyreg32(EFM32_BURTC_FREEZE,BURTC_FREEZE_REGFREEZE_FREEZE,0);
+    putreg32(0,EFM32_BURTC_FREEZE);
+
+    /* To enable BURTC counter, we need to disable reset */
+
+    putreg32(regval,EFM32_BURTC_CTRL);
 
     /* Enable BURTC interrupt on compare match and counter overflow */
 
@@ -285,7 +289,7 @@ static void efm32_rtc_burtc_init(void)
 
     /* Lock BURTC to avoid modification */
 
-    putreg32(BURTC_LOCK_LOCKKEY_LOCK,EFM32_BURTC_CTRL);
+    putreg32(BURTC_LOCK_LOCKKEY_LOCK,EFM32_BURTC_LOCK);
 
     /* reset BURTC retention REG 0 used to store second offset */
 
@@ -298,6 +302,7 @@ static void efm32_rtc_burtc_init(void)
     /* inform rest of software that BURTC was reset at boot */
 
     g_efm32_burtc_reseted = true;
+
 }
 
 
@@ -410,7 +415,7 @@ int up_rtc_gettime(FAR struct timespec *tp)
 
   irqrestore(flags);
 
-  if ( hires_val >= CONFIG_RTC_FREQUENCY )
+  while ( hires_val >= CONFIG_RTC_FREQUENCY )
     {
       hires_val -= CONFIG_RTC_FREQUENCY;
       t++;

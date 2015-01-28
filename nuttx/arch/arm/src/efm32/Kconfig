@@ -135,6 +135,7 @@ config EFM32_RMU
 config EFM32_RMU_DEBUG
     bool "Reset Management Unit (RMU) DEBUG "
     default n
+    depends on EFM32_RMU
 
 config EFM32_USART0
 	bool "USART0"

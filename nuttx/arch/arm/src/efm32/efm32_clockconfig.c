@@ -926,6 +926,15 @@ void efm32_clockconfig(void)
   lfaclk    = efm32_lfaclk_config(BOARD_LFACLKSEL, BOARD_LFA_ULFCO_ENABLE, hfcoreclk);
   lfbclk    = efm32_lfbclk_config(BOARD_LFBCLKSEL, BOARD_LFB_ULFCO_ENABLE, hfcoreclk);
 
+  /* Enable HFLE, if appropriate */
+
+  efm32_enable_hfle(hfcoreclk);
+
+  /* Enable core clocking to the LE */
+
+  efm32_enable_leclocking();
+
+
   efm32_pcntclk_config();
   efm32_wdogclk_config();
   efm32_auxclk_config();
