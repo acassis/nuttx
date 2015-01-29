@@ -53,9 +53,9 @@
 #include "efm32_gpio.h"
 #include "efm32gg-pnbfano.h"
 
-//#define EFM32_GPIO_PPS_LOG(...)
+#define EFM32_GPIO_PPS_LOG(...)
 //#define EFM32_GPIO_PPS_LOG(lvl,...) lldbg(__VA_ARGS__)
-#define EFM32_GPIO_PPS_LOG(...) syslog(__VA_ARGS__)
+//#define EFM32_GPIO_PPS_LOG(...) syslog(__VA_ARGS__)
 
 #ifndef CONFIG_EFM32_GPIO_PPS_BUFSIZE
 #  define CONFIG_EFM32_GPIO_PPS_BUFSIZE 64
@@ -541,7 +541,7 @@ static ssize_t efm32_gpio_pps_read(file_t * filep, FAR char *buf, size_t buflen)
             len = sizeof(pps);
 
         EFM32_GPIO_PPS_LOG(LOG_NOTICE,
-                              "Read %d bytes of shift %5d.%06d nsec, pps sync %3d, timespec %8d.%3d\n",
+                              "Read %d bytes of shift %5d.%06d msec, pps sync %3d, timespec %8d.%3d\n",
                               len,
                               pps.shift_nsec/1000000,
                               pps.shift_nsec%1000000,

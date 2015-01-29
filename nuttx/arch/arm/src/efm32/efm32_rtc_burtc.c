@@ -121,6 +121,11 @@
 #   error "BOARD_BURTC_CLKSRC badly setted !"
 #endif
 
+
+#define __CNT_OFF_REG  EFM32_BURTC_RET_REG(0)
+#define __SEC_OFF_REG   EFM32_BURTC_RET_REG(1)
+
+
 /************************************************************************************
  * Private Types
  ************************************************************************************/
@@ -180,9 +185,11 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
 #ifdef CONFIG_RTC_HIRES
   if ( source & BURTC_IF_OF )
     {
-        /* add a second */
+        int regval;
 
-        putreg32(getreg16(EFM32_BURTC_RET_REG(0)) + 1,EFM32_BURTC_RET_REG(0));
+        regval = getreg32(__SEC_OFF_REG);
+        regval += (_BURTC_CNT_MASK+1)/CONFIG_RTC_FREQUENCY;
+        putreg32(regval,__SEC_OFF_REG);
     }
 #endif
 
@@ -293,11 +300,11 @@ static void efm32_rtc_burtc_init(void)
 
     /* reset BURTC retention REG 0 used to store second offset */
 
-    putreg32(0,EFM32_BURTC_RET_REG(0));
+    putreg32(0,__CNT_OFF_REG);
 
     /* reset BURTC retention REG 1 used to store hires value offset */
 
-    putreg32(0,EFM32_BURTC_RET_REG(1));
+    putreg32(0,__SEC_OFF_REG);
 
     /* inform rest of software that BURTC was reset at boot */
 
@@ -367,7 +374,19 @@ time_t up_rtc_time(void)
 
   flags = irqsave();
 
-  t = getreg32(EFM32_BURTC_RET_REG(0));
+  do
+    { 
+      /* pending IRQ so theat it */
+
+      if ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 )
+          efm32_rtc_burtc_interrupt(EFM32_IRQ_BURTC,NULL);
+
+      t = getreg32(__SEC_OFF_REG) + getreg32(EFM32_BURTC_CNT);
+    }
+
+  /* Retry if IRQ appear during register reading  */
+
+  while ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 );
 
   irqrestore(flags);
 
@@ -402,24 +421,24 @@ int up_rtc_gettime(FAR struct timespec *tp)
 
   do
     { 
+
       /* pending IRQ so theat it */
 
       if ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 )
           efm32_rtc_burtc_interrupt(EFM32_IRQ_BURTC,NULL);
 
-      t         = getreg32(EFM32_BURTC_RET_REG(0));
-      hires_val = getreg32(EFM32_BURTC_CNT) + getreg32(EFM32_BURTC_RET_REG(1));
+      t         = getreg32(__SEC_OFF_REG);
+      hires_val = getreg32(EFM32_BURTC_CNT) + getreg32(__CNT_OFF_REG);
     }
+
   /* Retry if IRQ appear during register reading  */
+
   while ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 );
 
   irqrestore(flags);
 
-  while ( hires_val >= CONFIG_RTC_FREQUENCY )
-    {
-      hires_val -= CONFIG_RTC_FREQUENCY;
-      t++;
-    }
+  t += hires_val / CONFIG_RTC_FREQUENCY;
+  hires_val = hires_val % CONFIG_RTC_FREQUENCY;
 
   /* Then we can save the time in seconds and fractional seconds. */
 
