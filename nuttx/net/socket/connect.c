@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/socket/connect.c
  *
- *   Copyright (C) 2007-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2012, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <assert.h>
 #include <debug.h>
 
 #include <arch/irq.h>
@@ -56,6 +57,7 @@
 #include "devif/devif.h"
 #include "tcp/tcp.h"
 #include "udp/udp.h"
+#include "local/local.h"
 #include "socket/socket.h"
 
 /****************************************************************************
@@ -460,7 +462,7 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
                   socklen_t addrlen)
 {
   FAR const struct sockaddr_in *inaddr = (FAR const struct sockaddr_in *)addr;
-#if defined(CONFIG_NET_TCP) || defined(CONFIG_NET_UDP)
+#if defined(CONFIG_NET_TCP) || defined(CONFIG_NET_UDP) || defined(CONFIG_NET_LOCAL)
   int ret;
 #endif
   int err;
@@ -501,6 +503,18 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
       break;
 #endif
 
+#ifdef CONFIG_NET_LOCAL
+    case AF_LOCAL:
+      {
+        if (addrlen < sizeof(sa_family_t))
+          {
+            err = EBADF;
+            goto errout;
+          }
+      }
+      break;
+#endif
+
     default:
       DEBUGPANIC();
       err = EAFNOSUPPORT;
@@ -511,7 +525,7 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
 
   switch (psock->s_type)
     {
-#ifdef CONFIG_NET_TCP
+#if defined(CONFIG_NET_TCP) || defined(CONFIG_NET_LOCAL)
       case SOCK_STREAM:
         {
           /* Verify that the socket is not already connected */
@@ -522,9 +536,30 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
               goto errout;
             }
 
-          /* Its not ... connect it */
+          /* It's not ... connect it */
 
-          ret = psock_tcp_connect(psock, addr);
+#ifdef CONFIG_NET_LOCAL
+#ifdef CONFIG_NET_TCP
+          if (psock->s_domain == PF_LOCAL)
+#endif
+            {
+              /* Connect to the local Unix domain server */
+
+              ret = local_connect(psock->s_conn, addr);
+            }
+#endif /* CONFIG_NET_LOCAL */
+
+#ifdef CONFIG_NET_TCP
+#ifdef CONFIG_NET_LOCAL
+          else
+#endif
+            {
+              /* Connect the TCP/IP socket */
+
+              ret = psock_tcp_connect(psock, addr);
+            }
+#endif /* CONFIG_NET_TCP */
+
           if (ret < 0)
             {
               err = -ret;
@@ -532,12 +567,31 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
             }
         }
         break;
-#endif
+#endif /* CONFIG_NET_TCP || CONFIG_NET_LOCAL */
 
-#ifdef CONFIG_NET_UDP
+#if defined(CONFIG_NET_UDP) || defined(CONFIG_NET_LOCAL)
       case SOCK_DGRAM:
         {
-          ret = udp_connect(psock->s_conn, addr);
+#ifdef CONFIG_NET_LOCAL
+#ifdef CONFIG_NET_UDP
+          if (psock->s_domain == PF_LOCAL)
+#endif
+            {
+              /* Perform the datagram connection logic */
+
+              ret = local_connect(psock->s_conn, addr);
+            }
+#endif /* CONFIG_NET_LOCAL */
+
+#ifdef CONFIG_NET_UDP
+#ifdef CONFIG_NET_LOCAL
+          else
+#endif
+            {
+              ret = udp_connect(psock->s_conn, addr);
+            }
+#endif /* CONFIG_NET_UDP */
+
           if (ret < 0)
             {
               err = -ret;
@@ -545,7 +599,7 @@ int psock_connect(FAR struct socket *psock, FAR const struct sockaddr *addr,
             }
         }
         break;
-#endif
+#endif /* CONFIG_NET_UDP || CONFIG_NET_LOCAL */
 
       default:
         err = EBADF;

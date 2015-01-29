@@ -68,6 +68,7 @@
 #include "tcp/tcp.h"
 #include "udp/udp.h"
 #include "pkt/pkt.h"
+#include "local/local.h"
 #include "socket/socket.h"
 
 /****************************************************************************
@@ -115,7 +116,7 @@ struct recvfrom_s
  *   Copy the read data from the packet
  *
  * Parameters:
- *   dev      The sructure of the network driver that caused the interrupt
+ *   dev      The structure of the network driver that caused the interrupt
  *   pstate   recvfrom state structure
  *
  * Returned Value:
@@ -678,11 +679,11 @@ static uint16_t recvfrom_tcpinterrupt(FAR struct net_driver_s *dev,
            * 1) If CONFIG_NET_TCP_RECVDELAY == 0 then we will consider the
            *    TCP/IP transfer complete as soon as any data has been received.
            *    This is safe because if any additional data is received, it
-           *    will be retained inthe TCP/IP read-ahead buffer until the
+           *    will be retained in the TCP/IP read-ahead buffer until the
            *    next receive is performed.
            * 2) CONFIG_NET_TCP_RECVDELAY > 0 may be set to wait a little
            *    bit to determine if more data will be received.  You might
-           *    do this if read-ahead buffereing is disabled and we want to
+           *    do this if read-ahead buffering is disabled and we want to
            *    minimize the loss of back-to-back packets.  In this case,
            *    the transfer is complete when either a) the entire user buffer
            *    is full or 2) when the receive timeout occurs (below).
@@ -1032,7 +1033,7 @@ static void recvfrom_init(FAR struct socket *psock, FAR void *buf,
 #endif
 }
 
-/* The only uninitialization that has to be performed is destroying the
+/* The only un-initialization that has to be performed is destroying the
  * semaphore.
  */
 
@@ -1580,7 +1581,7 @@ static ssize_t tcp_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
  ****************************************************************************/
 
 ssize_t psock_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
-                       int flags,FAR struct sockaddr *from,
+                       int flags, FAR struct sockaddr *from,
                        FAR socklen_t *fromlen)
 {
   ssize_t ret;
@@ -1614,22 +1615,37 @@ ssize_t psock_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
 
       /* Get the minimum socket length */
 
-#ifdef CONFIG_NET_IPv4
-#ifdef CONFIG_NET_IPv6
-      if (psock->s_domain == PF_INET)
-#endif
+      switch (psock->s_domain)
         {
-          minlen = sizeof(struct sockaddr_in);
-        }
-#endif /*CONFIG_NET_IPv4 */
+#ifdef CONFIG_NET_IPv4
+        case PF_INET:
+          {
+            minlen = sizeof(struct sockaddr_in);
+          }
+          break;
+#endif
 
 #ifdef CONFIG_NET_IPv6
-#ifdef CONFIG_NET_IPv4
+        case PF_INET6:
+          {
+            minlen = sizeof(struct sockaddr_in6);
+          }
+          break;
 #endif
-        {
-          minlen = sizeof(struct sockaddr_in6);
+
+#ifdef CONFIG_NET_LOCAL
+        case PF_LOCAL:
+          {
+            minlen = sizeof(sa_family_t);
+          }
+          break;
+#endif
+
+        default:
+          DEBUGPANIC();
+          err = EINVAL;
+          goto errout;
         }
-#endif /*CONFIG_NET_IPv6 */
 
       if (*fromlen < minlen)
         {
@@ -1645,30 +1661,72 @@ ssize_t psock_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
   /* Read from the network interface driver buffer */
   /* Or perform the TCP/IP or UDP recv() operation */
 
-#if defined(CONFIG_NET_PKT)
-  if (psock->s_type == SOCK_RAW)
+  switch (psock->s_type)
     {
-      ret = pkt_recvfrom(psock, buf, len, from);
-    }
-  else
+#ifdef CONFIG_NET_PKT
+    case SOCK_RAW:
+      {
+        ret = pkt_recvfrom(psock, buf, len, from);
+      }
+      break;
+#endif /* CONFIG_NET_PKT */
+
+#if defined(CONFIG_NET_TCP) || defined(CONFIG_NET_LOCAL)
+    case SOCK_STREAM:
+      {
+#ifdef CONFIG_NET_LOCAL
+#ifdef CONFIG_NET_TCP
+        if (psock->s_domain == PF_LOCAL)
 #endif
-#if defined(CONFIG_NET_TCP)
-  if (psock->s_type == SOCK_STREAM)
-    {
-      ret = tcp_recvfrom(psock, buf, len, from);
-    }
-  else
+          {
+            ret = psock_local_recvfrom(psock, buf, len, flags,
+                                       from, fromlen);
+          }
+#endif /* CONFIG_NET_LOCAL */
+
+#ifdef CONFIG_NET_TCP
+#ifdef CONFIG_NET_LOCAL
+        else
 #endif
-#if defined(CONFIG_NET_UDP)
-  if (psock->s_type == SOCK_DGRAM)
-    {
-      ret = udp_recvfrom(psock, buf, len, from);
-    }
-  else
+          {
+            ret = tcp_recvfrom(psock, buf, len, from);
+          }
+#endif /* CONFIG_NET_TCP */
+      }
+      break;
+#endif /* CONFIG_NET_TCP || CONFIG_NET_LOCAL */
+
+#if defined(CONFIG_NET_UDP) || defined(CONFIG_NET_LOCAL)
+    case SOCK_DGRAM:
+      {
+#ifdef CONFIG_NET_LOCAL
+#ifdef CONFIG_NET_UDP
+        if (psock->s_domain == PF_LOCAL)
 #endif
-    {
-      ndbg("ERROR: Unsupported socket type: %d\n", psock->s_type);
-      ret = -ENOSYS;
+          {
+            ret = psock_local_recvfrom(psock, buf, len, flags,
+                                       from, fromlen);
+          }
+#endif /* CONFIG_NET_LOCAL */
+
+#ifdef CONFIG_NET_UDP
+#ifdef CONFIG_NET_LOCAL
+        else
+#endif
+          {
+            ret = udp_recvfrom(psock, buf, len, from);
+          }
+#endif /* CONFIG_NET_UDP */
+      }
+      break;
+#endif /* CONFIG_NET_UDP || CONFIG_NET_LOCAL */
+
+    default:
+      {
+        ndbg("ERROR: Unsupported socket type: %d\n", psock->s_type);
+        ret = -ENOSYS;
+      }
+      break;
     }
 
   /* Set the socket state to idle */

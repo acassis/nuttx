@@ -107,7 +107,7 @@
 #  ifndef CONFIG_NSH_NOMAC
 #    error "CONFIG_NSH_NOMAC must be defined for SLIP"
 #  endif
-#else
+#elif !defined(CONFIG_NET_LOCAL)
 #  error ERROR: No link layer protocol defined
 #endif
 
@@ -235,7 +235,8 @@ static void nsh_netinit_configure(void)
   /* Set the MAC address */
 
   netlib_setmacaddr(NET_DEVNAME, mac);
-#endif
+
+#endif /* CONFIG_NSH_NOMAC && CONFIG_NET_ETHERNET */
 
 #ifdef CONFIG_NET_IPv4
   /* Set up our host address */
