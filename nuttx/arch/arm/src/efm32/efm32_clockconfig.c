@@ -500,71 +500,6 @@ static inline uint32_t efm32_hfclk_config(uint32_t hfclksel, uint32_t hfclkdiv)
  *   is active.
  *
  ****************************************************************************/
-#ifdef CONFIG_EFM32_LECLOCK 
-uint32_t efm32_coreleclk_config( int frequency )
-{
-  uint32_t regval;
-
-  /* Check if the core frequency is higher than CMU_MAX_FREQ_HFLE */
-
-#ifdef CMU_CTRL_HFLE
-   if (frequency > CMU_MAX_FREQ_HFLE)
-    {
-      /* Enable HFLE */
-
-      regval = getreg32(EFM32_CMU_CTRL);
-      regval |= CMU_CTRL_HFLE;
-      putreg32(regval, EFM32_CMU_CTRL);
-
-      /* Enable DIV4 factor for peripheral clock */
-
-      regval  = getreg32(EFM32_CMU_HFCORECLKDIV);
-      regval |= CMU_HFCORECLKDIV_HFCORECLKLEDIV_DIV4;
-      putreg32(regval, EFM32_CMU_HFCORECLKDIV);
-      frequency /= 4;
-    }
-#else
-  frequency /= 2;
-#endif
-
-  /* Enable core clocking to the LE */
-
-  efm32_enable_leclocking();
-
-  return frequency;
-}
-#else
-#   define efm32_coreleclk_config 0
-#endif
-
-/****************************************************************************
- * Name: efm32_hfcoreclk_config
- *
- * Description:
- *   Configure the High Frequency Core Clock, HFCORECLK.
- *
- *   HFCORECLK is a prescaled version of HFCLK. This clock drives the Core
- *   Modules, which consists of the CPU and modules that are tightly coupled
- *   to the CPU, e.g. MSC, DMA etc. This also includes the interface to the
- *   Low Energy Peripherals. Some of the modules that are driven by this
- *   clock can be clock gated completely when not in use. This is done by
- *   clearing the clock enable bit for the specific module in
- *   CMU_HFCORECLKEN0. The frequency of HFCORECLK is set using the
- *   CMU_HFCORECLKDIV register. The setting can be changed dynamically and
- *   the new setting takes effect immediately.
- *
- *   The USB Core clock (USBC) is always undivided regardless of the
- *   HFCLKDIV setting. When the USB Core is active this clock must be
- *   switched to a 32 kHz clock (LFRCO or LFXO) when entering EM2. The USB
- *   Core uses this clock for monitoring the USB bus. The switch is done by
- *   writing USBCCLKSEL in CMU_CMD. The currently active clock can be
- *   checked by reading CMU_STATUS.  The clock switch can take up to 1.5 32
- *   kHz cycle (45 us). To avoid polling the clock selection status when
- *   switching switching from 32 kHz to HFCLK when coming up from EM2 the
- *   USBCHFCLKSEL interrupt can be used. EM3 is not supported when the USB
- *   is active.
- *
- ****************************************************************************/
 
 #ifdef CONFIG_EFM32_LECLOCK
 uint32_t efm32_coreleclk_config( int frequency )
@@ -1013,7 +948,6 @@ void efm32_clockconfig(void)
   coreleclk = efm32_coreleclk_config(hfclk);
   lfaclk    = efm32_lfaclk_config(BOARD_LFACLKSEL, BOARD_LFA_ULFCO_ENABLE, hfcoreclk);
   lfbclk    = efm32_lfbclk_config(BOARD_LFBCLKSEL, BOARD_LFB_ULFCO_ENABLE, hfcoreclk);
-
 
   efm32_pcntclk_config();
   efm32_wdogclk_config();
