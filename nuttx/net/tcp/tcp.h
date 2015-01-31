@@ -53,6 +53,12 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+/* Conditions for support TCP poll/select operations */
+
+#if !defined(CONFIG_DISABLE_POLL) && CONFIG_NSOCKET_DESCRIPTORS > 0 && \
+    defined(CONFIG_NET_TCP_READAHEAD)
+#  define HAVE_TCP_POLL
+#endif
 
 /* Allocate a new TCP data callback */
 
@@ -269,6 +275,7 @@ extern "C"
 
 struct sockaddr;  /* Forward reference */
 struct socket;    /* Forward reference */
+struct pollfd;    /* Forward reference */
 
 /****************************************************************************
  * Name: tcp_initialize
@@ -1056,6 +1063,46 @@ void tcp_wrbuffer_dump(FAR const char *msg, FAR struct tcp_wrbuffer_s *wrb,
 #  define tcp_wrbuffer_dump(msg,wrb)
 #endif
 #endif /* CONFIG_NET_TCP_WRITE_BUFFERS */
+
+/****************************************************************************
+ * Function: tcp_pollsetup
+ *
+ * Description:
+ *   Setup to monitor events on one TCP/IP socket
+ *
+ * Input Parameters:
+ *   psock - The TCP/IP socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_TCP_POLL
+int tcp_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds);
+#endif
+
+/****************************************************************************
+ * Function: tcp_pollteardown
+ *
+ * Description:
+ *   Teardown monitoring of events on an TCP/IP socket
+ *
+ * Input Parameters:
+ *   psock - The TCP/IP socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_TCP_POLL
+int tcp_pollteardown(FAR struct socket *psock, FAR struct pollfd *fds);
+#endif
 
 #undef EXTERN
 #ifdef __cplusplus

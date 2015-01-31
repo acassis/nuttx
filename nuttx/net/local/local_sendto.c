@@ -49,6 +49,7 @@
 
 #include <nuttx/net/net.h>
 
+#include "socket/socket.h"
 #include "local/local.h"
 
 /****************************************************************************
@@ -136,12 +137,15 @@ ssize_t psock_local_sendto(FAR struct socket *psock, FAR const void *buf,
 
   /* Open the sending side of the transfer */
 
-  ret = local_open_sender(conn, unaddr->sun_path);
+  ret = local_open_sender(conn, unaddr->sun_path,
+                          _SS_ISNONBLOCK(psock->s_flags));
   if (ret < 0)
     {
       ndbg("ERROR: Failed to open FIFO for %s: %d\n",
            unaddr->sun_path, ret);
-      return ret;
+
+      nsent = ret;
+      goto errout_with_halfduplex;
     }
 
   /* Send the packet */
@@ -163,6 +167,10 @@ ssize_t psock_local_sendto(FAR struct socket *psock, FAR const void *buf,
   close(conn->lc_outfd);
   conn->lc_outfd = -1;
 
+errout_with_halfduplex:
+  /* Release our reference to the half duplex FIFO*/
+
+  (void)local_release_halfduplex(conn);
   return nsent;
 }
 

@@ -1,6 +1,6 @@
 /****************************************************************************
- * net/tcp/tcp_poll.c
- * Poll for the availability of TCP TX data
+ * net/udp/udp_devpoll.c
+ * Network device poll for the availability of UDP TX data
  *
  *   Copyright (C) 2007-2009 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -43,17 +43,16 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#if defined(CONFIG_NET) && defined(CONFIG_NET_TCP)
+#if defined(CONFIG_NET) && defined(CONFIG_NET_UDP)
 
-#include <stdint.h>
 #include <debug.h>
 
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
-#include <nuttx/net/tcp.h>
+#include <nuttx/net/udp.h>
 
 #include "devif/devif.h"
-#include "tcp/tcp.h"
+#include "udp/udp.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -76,14 +75,14 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: tcp_poll
+ * Name: udp_poll
  *
  * Description:
- *   Poll a TCP connection structure for availability of TX data
+ *   Poll a UDP "connection" structure for availability of TX data
  *
  * Parameters:
- *   dev - The device driver structure to use in the send operation
- *   conn - The TCP "connection" to poll for TX data
+ *   dev  - The device driver structure to use in the send operation
+ *   conn - The UDP "connection" to poll for TX data
  *
  * Return:
  *   None
@@ -93,13 +92,11 @@
  *
  ****************************************************************************/
 
-void tcp_poll(FAR struct net_driver_s *dev, FAR struct tcp_conn_s *conn)
+void udp_poll(FAR struct net_driver_s *dev, FAR struct udp_conn_s *conn)
 {
-  uint8_t result;
+  /* Verify that the UDP connection is valid */
 
-  /* Verify that the connection is established */
-
-  if ((conn->tcpstateflags & TCP_STATE_MASK) == TCP_ESTABLISHED)
+  if (conn->lport != 0)
     {
       /* Set up for the callback.  We can't know in advance if the application
        * is going to send a IPv4 or an IPv6 packet, so this setup may not
@@ -107,28 +104,30 @@ void tcp_poll(FAR struct net_driver_s *dev, FAR struct tcp_conn_s *conn)
        */
 
 #if defined(CONFIG_NET_IPv4)
-      tcp_ipv4_select(dev);
+      udp_ipv4_select(dev);
 #else /* if defined(CONFIG_NET_IPv6) */
-      tcp_ipv6_select(dev);
+      udp_ipv6_select(dev);
 #endif
 
       dev->d_len     = 0;
       dev->d_sndlen  = 0;
 
-      /* Perform the callback */
+      /* Perform the application callback */
 
-      result = tcp_callback(dev, conn, TCP_POLL);
+      (void)udp_callback(dev, conn, UDP_POLL);
 
-      /* Handle the callback response */
+      /* If the application has data to send, setup the UDP/IP header */
 
-      tcp_appsend(dev, conn, result);
+      if (dev->d_sndlen > 0)
+        {
+          udp_send(dev, conn);
+          return;
+        }
     }
-  else
-    {
-      /* Nothing to do for this connection */
 
-      dev->d_len = 0;
-    }
+  /* Make sure that d_len is zero meaning that there is nothing to be sent */
+
+  dev->d_len   = 0;
 }
 
-#endif /* CONFIG_NET && CONFIG_NET_TCP */
+#endif /* CONFIG_NET && CONFIG_NET_UDP */

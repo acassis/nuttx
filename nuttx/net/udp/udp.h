@@ -47,11 +47,21 @@
 
 #include <nuttx/net/ip.h>
 
+#ifdef CONFIG_NET_UDP_READAHEAD
+#  include <nuttx/net/iob.h>
+#endif
+
 #ifdef CONFIG_NET_UDP
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+/* Conditions for support UDP poll/select operations */
+
+#if !defined(CONFIG_DISABLE_POLL) && CONFIG_NSOCKET_DESCRIPTORS > 0 && \
+    defined(CONFIG_NET_UDP_READAHEAD)
+#  define HAVE_UDP_POLL
+#endif
 
 /* Allocate a new UDP data callback */
 
@@ -77,6 +87,16 @@ struct udp_conn_s
   uint8_t  ttl;           /* Default time-to-live */
   uint8_t  crefs;         /* Reference counts on this instance */
 
+#ifdef CONFIG_NET_UDP_READAHEAD
+  /* Read-ahead buffering.
+   *
+   *   readahead - A singly linked list of type struct iob_qentry_s
+   *               where the UDP/IP read-ahead data is retained.
+   */
+
+  struct iob_queue_s readahead;   /* Read-ahead buffering */
+#endif
+
   /* Defines the list of UDP callbacks */
 
   FAR struct devif_callback_s *list;
@@ -101,6 +121,7 @@ extern "C"
 struct sockaddr;      /* Forward reference */
 struct socket;        /* Forward reference */
 struct net_driver_s;  /* Forward reference */
+struct pollfd;        /* Forward reference */
 
 /****************************************************************************
  * Name: udp_initialize
@@ -356,6 +377,46 @@ uint16_t udp_callback(FAR struct net_driver_s *dev,
 ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
                          size_t len, int flags, FAR const struct sockaddr *to,
                          socklen_t tolen);
+
+/****************************************************************************
+ * Function: udp_pollsetup
+ *
+ * Description:
+ *   Setup to monitor events on one UDP/IP socket
+ *
+ * Input Parameters:
+ *   psock - The UDP/IP socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_UDP_POLL
+int udp_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds);
+#endif
+
+/****************************************************************************
+ * Function: udp_pollteardown
+ *
+ * Description:
+ *   Teardown monitoring of events on an UDP/IP socket
+ *
+ * Input Parameters:
+ *   psock - The TCP/IP socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_UDP_POLL
+int udp_pollteardown(FAR struct socket *psock, FAR struct pollfd *fds);
+#endif
 
 #undef EXTERN
 #ifdef __cplusplus

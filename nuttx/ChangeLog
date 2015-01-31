@@ -9561,3 +9561,39 @@
 	  are required to do.  From David Sidrane (2015-01-29).
 	* net/local:  Extend Unix domain socket support to include support
 	  for datagram Unix domain sockets (2015-01-29).
+	* net/socket/accept.c:  Fix a major TCP bug introduced with commit
+	  e71c09ce9777ff732cb60bd07fb43d85522f79d6.  Some connection logic was
+	  reordered; setting the socket as 'connected' got moved to BEFORE the point
+	  where the check was made if the socket was already connected.  The
+	  resulting behavior was odd:  Telnet would connect, but then when you
+	  exit and reconnect, it would fail to connect.  But then if try again, it
+	  would connect okay. So the symptom was connect-fail-connect-fail-...
+	  (2015-01-29).
+	* net/socket/net_poll.c, recvfrom.c, and udp/udp_callback.c: Add UDP
+	  read-ahead support and support for poll/select on UDP sockets.  From
+	  Macs N (2015-01-30).
+	* net/local/local_netpoll.c, socket/net_poll.c, and udp/udp_netpoll.c:
+	  Separate out UDP poll logic from net_poll.c into a new udp_netpoll.c;
+	  Create a skeleton local_netpoll (2015-01-30).
+	* net/socket/net_poll.c and tcp/tcp_netpoll.c: Separate TCP poll logic
+	  out of net_poll.c and move it into the new tcp_netpoll.c (2015-01-30).
+	* arch/arm/src/efm32/efm32_clockconfig.c: Logic to unconditionally enable
+	  LE clocking. Even you don't use core clock LE as source for LFA or LFB,
+	  to read are write any register not clocked by HFPERCLK or HFCORECLK,
+	  HFCORECLKLE should be enabled.  From Pierre-noel Bouteville (2015-01-30).
+	* drivers/net/slip.c: SLIP interface improvements.  From Macs N
+	  (2015-01-30).
+	* clock_systimespec():  Fixes for compilation errors in certain
+	  configurations.  From Macs N.
+	* drivers/pipes/fifo.c, include/nuttx/fs/ioctl.h, and net/local/local_fifo.c:
+	  Fix a race condition between FIFO buffer operations and the opening and
+	  closing of FIFOs which necessary when the FIFOs are used to support
+	  Unix domain, datagram sockets.  The default policy is the deallocate
+	  FIFO buffering when the last client closes the pipe.  When when used
+	  for datagram communications, packets left in the FIFO will be lost.
+	  Some like UDP read-ahead is needed:  The buffered data in the FIFO
+	  needs to be retained until the reader gets a chance to re-open the
+	  FIFO.  Added an ioctl (PIPEIOC_POLICY) to control the buffer policy.
+	  Default (0) is the legacy behavior; Unix domain datagram logic sets
+	  the alternative policy so that the packet data persists after the FIFO
+	  is closed (2015-01-30).

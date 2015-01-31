@@ -45,6 +45,7 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/clock.h>
+#include <nuttx/rtc.h>
 
 #include "clock/clock.h"
 

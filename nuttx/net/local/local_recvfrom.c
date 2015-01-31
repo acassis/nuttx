@@ -276,11 +276,12 @@ psock_dgram_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
 
   /* Open the receiving side of the transfer */
 
-  ret = local_open_receiver(conn);
+  ret = local_open_receiver(conn, _SS_ISNONBLOCK(psock->s_flags));
   if (ret < 0)
     {
       ndbg("ERROR: Failed to open FIFO for %s: %d\n",
            conn->lc_path, ret);
+      goto errout_with_halfduplex;
       return ret;
     }
 
@@ -336,16 +337,20 @@ psock_dgram_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
 
           /* Adjust the number of bytes remaining to be read from the packet */
 
-          DEBUGASSERT(tmplen <= remain);
+          DEBUGASSERT(tmplen <= remaining);
           remaining -= tmplen;
         }
       while (remaining > 0);
     }
 
-  /* Now we can close the read-only socket descriptor */
+  /* Now we can close the read-only file descriptor */
 
   close(conn->lc_infd);
   conn->lc_infd = -1;
+
+  /* Release our reference to the half duplex FIFO*/
+
+  (void)local_release_halfduplex(conn);
 
   /* Return the address family */
 
@@ -361,8 +366,15 @@ psock_dgram_recvfrom(FAR struct socket *psock, FAR void *buf, size_t len,
   return readlen;
 
 errout_with_infd:
+  /* Close the read-only file descriptor */
+
   close(conn->lc_infd);
   conn->lc_infd = -1;
+
+errout_with_halfduplex:
+  /* Release our reference to the half duplex FIFO*/
+
+  (void)local_release_halfduplex(conn);
   return ret;
 }
 

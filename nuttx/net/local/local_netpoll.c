@@ -1,5 +1,5 @@
 /****************************************************************************
- * net/local/local_release.c
+ * net/local/local_netpoll.c
  *
  *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -38,94 +38,57 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#if defined(CONFIG_NET) && defined(CONFIG_NET_LOCAL)
-
-#include <semaphore.h>
-#include <errno.h>
-#include <queue.h>
-#include <assert.h>
-
-#include <nuttx/net/net.h>
-
-#include <arch/irq.h>
 
 #include "local/local.h"
+
+#ifdef HAVE_LOCAL_POLL
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: local_release
+ * Function: local_pollsetup
  *
  * Description:
- *   If the local, Unix domain socket is in the connected state, then
- *   disconnect it.  Release the local connection structure in any event
+ *   Setup to monitor events on one Unix domain socket
  *
  * Input Parameters:
- *   conn - A reference to local connection structure
+ *   psock - The Unix domain socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
  *
  ****************************************************************************/
 
-int local_release(FAR struct local_conn_s *conn)
+int local_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds)
 {
-  net_lock_t state;
-
-  /* There should be no references on this structure */
-
-  DEBUGASSERT(conn->lc_crefs == 0);
-  state = net_lock();
-
-  /* We should not bet here with state LOCAL_STATE_ACCEPT.  That is an
-   * internal state that should be atomic with respect to socket operations.
-   */
-
-  DEBUGASSERT(conn->lc_state != LOCAL_STATE_ACCEPT);
-
-  /* If the socket is connected (SOCK_STREAM client), then disconnect it */
-
-  if (conn->lc_state == LOCAL_STATE_CONNECTED ||
-      conn->lc_state == LOCAL_STATE_DISCONNECTED)
-    {
-      DEBUGASSERT(conn->lc_proto == SOCK_STREAM);
-
-      /* Just free the connection structure */
-    }
-
-  /* Is the socket is listening socket (SOCK_STREAM server) */
-
-  else if (conn->lc_state == LOCAL_STATE_LISTENING)
-    {
-      FAR struct local_conn_s *client;
-
-      DEBUGASSERT(conn->lc_proto == SOCK_STREAM);
-
-      /* Are there still clients waiting for a connection to the server? */
-
-      for (client = (FAR struct local_conn_s *)conn->u.server.lc_waiters.head;
-           client;
-           client = (FAR struct local_conn_s *)dq_next(&client->lc_node))
-        {
-          client->u.client.lc_result = -ENOTCONN;
-          sem_post(&client->lc_waitsem);
-        }
-
-      conn->u.server.lc_pending = 0;
-
-      /* Remove the server from the list of listeners. */
-
-      dq_rem(&conn->lc_node, &g_local_listeners);
-    }
-
-  /* For the remaining states (LOCAL_STATE_UNBOUND and LOCAL_STATE_UNBOUND),
-   * we simply free the connection structure.
-   */
-
-  /* Free the connection structure */
-
-  local_free(conn);
-  net_unlock(state);
-  return OK;
+#warning Missing logic
+  return -ENOSYS;
 }
 
-#endif /* CONFIG_NET && CONFIG_NET_LOCAL */
+/****************************************************************************
+ * Function: local_pollteardown
+ *
+ * Description:
+ *   Teardown monitoring of events on a Unix domain socket
+ *
+ * Input Parameters:
+ *   psock - The Unix domain socket of interest
+ *   fds   - The structure describing the events to be monitored, OR NULL if
+ *           this is a request to stop monitoring events.
+ *
+ * Returned Value:
+ *  0: Success; Negated errno on failure
+ *
+ ****************************************************************************/
+
+int local_pollteardown(FAR struct socket *psock, FAR struct pollfd *fds)
+{
+#warning Missing logic
+  return -ENOSYS;
+}
+
+#endif /* HAVE_LOCAL_POLL */
