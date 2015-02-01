@@ -9570,8 +9570,8 @@
 	  would connect okay. So the symptom was connect-fail-connect-fail-...
 	  (2015-01-29).
 	* net/socket/net_poll.c, recvfrom.c, and udp/udp_callback.c: Add UDP
-	  read-ahead support and support for poll/select on UDP sockets.  From
-	  Macs N (2015-01-30).
+	  read-ahead support.  This enables support for for poll/select on UDP
+	  sockets and also non-blocking UDP sockets.  From Macs N (2015-01-30).
 	* net/local/local_netpoll.c, socket/net_poll.c, and udp/udp_netpoll.c:
 	  Separate out UDP poll logic from net_poll.c into a new udp_netpoll.c;
 	  Create a skeleton local_netpoll (2015-01-30).
@@ -9597,3 +9597,20 @@
 	  Default (0) is the legacy behavior; Unix domain datagram logic sets
 	  the alternative policy so that the packet data persists after the FIFO
 	  is closed (2015-01-30).
+	* net/local:  Add configuration options so that Unix domain stream and
+	  datagram support can be separately enabled (2015-01-31).
+	* fs/vfs/fs_unlink.c and include/nuttx/fs/fs.h: Add an unlink method to
+	  both the character and block driver interface.  This is important
+	  because if the driver inode is unlinked and there are no open references
+	  to the driver, then the driver resources will be stranded.  On the unlink
+	  call, the driver has the opportunity (1) check if there an any open
+	  references, and if not, (2) free the driver resources (2015-01-31).
+	* drivers/pipes:  Implement the unlink method.  If the pipe/FIFO is
+	  unlinked, it will marked the pipe/FIFO as unlinked.  If/when all open
+	  references to the driver are closed, all of the driver resources will
+	  be freed (2015-01-31).
+	* arch/avr: Added architecture support for the Atmel AVR ATMega1284P
+	  MCU.  From Jedi Tek'Unum (2015-01-31).
+	* configs/moteino-mega: Added support for the LowPowerLab MoteinoMEGA
+	  that is based on the Atmel AVR ATMega1284P MCU.  From Jedi Tek'Unum
+	  (2015-01-31).
