@@ -210,6 +210,13 @@ void board_initialize(void)
         return;
     }
 
+    syslog(LOG_NOTICE,"Start slow polling !\n");
+    if ( efm32_slow_poll_init() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot Start slow polling\n");
+        return;
+    }
+
     syslog(LOG_NOTICE,"Board Ready !\n");
 
 }

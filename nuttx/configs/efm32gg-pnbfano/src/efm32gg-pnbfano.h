@@ -192,6 +192,8 @@
  * Public Function Prototypes
  ****************************************************************************/
 
+int efm32_slow_poll_init(void);
+
 int efm32_initialize_spi_devices(void);
 
 int up_lcdinitialize(void);

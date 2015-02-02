@@ -1,8 +1,7 @@
 /****************************************************************************
- * arch/arm/include/efm32/keypad/keypad.c
- * Driver for Stk3300 keypad hardware
+ * configs/efm32gg-pnbfano/src/efm32_slow_polling.c
  *
- *   Copyright (C) 2011 Stefan Richter. All rights reserved.
+ *   Copyright (C) 2014 Pierre-noel Bouteville. All rights reserved.
  *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -248,11 +247,6 @@ static void efm32_lcd_kbd_worker(FAR void *arg)
     int i;
     static int last_res = 0;
     efm32_lcd_kbd_t *dev = (efm32_lcd_kbd_t*)arg;
-
-    /* TODO: use arg
-     * efm32_lcd_kbd_t *p = (efm32_lcd_kbd_t*)arg, 
-     */
-    UNUSED(arg);
 
     res = lcd_read_bus_keypad();
 

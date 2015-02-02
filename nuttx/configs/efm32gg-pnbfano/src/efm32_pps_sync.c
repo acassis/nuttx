@@ -205,18 +205,55 @@ int efm32_gpio_pps_level(FAR efm32_gpio_pps_t *dev)
  *****************************************************************************/
 
 
-static void timespec_subtract (struct timespec *result, 
-                               struct timespec *x, 
-                               struct timespec *y
-                              )
+static inline bool timespec_subtract (struct timespec *result, 
+                                      struct timespec *x, 
+                                      struct timespec *y
+                                     )
 {
-	if ((x->tv_nsec - y->tv_nsec)<0) {
-		result->tv_sec = x->tv_sec - y->tv_sec-1;
-		result->tv_nsec = 1000000000+x->tv_nsec - y->tv_nsec;
-	} else {
-		result->tv_sec = x->tv_sec - y->tv_sec;
-		result->tv_nsec = x->tv_nsec - y->tv_nsec;
-	}
+    if ( x->tv_sec > y->tv_sec )
+    {
+        if (x->tv_nsec >= y->tv_nsec) 
+        {
+            result->tv_sec = x->tv_sec - y->tv_sec;
+            result->tv_nsec = x->tv_nsec - y->tv_nsec;
+        } 
+        else 
+        {
+            result->tv_sec = x->tv_sec - y->tv_sec - 1;
+            result->tv_nsec = 1000000000+x->tv_nsec - y->tv_nsec;
+        }
+        return false;
+    }
+    else if ( x->tv_sec < y->tv_sec )
+    {
+
+        if (y->tv_nsec >= x->tv_nsec) 
+        {
+            result->tv_sec = y->tv_sec - x->tv_sec;
+            result->tv_nsec = y->tv_nsec - x->tv_nsec;
+        } 
+        else 
+        {
+            result->tv_sec = y->tv_sec - x->tv_sec - 1;
+            result->tv_nsec = 1000000000+y->tv_nsec - x->tv_nsec;
+        }
+        return true;
+    }
+    else
+    {
+        result->tv_sec = 0;
+        if (x->tv_nsec >= y->tv_nsec) 
+        {
+            result->tv_nsec = x->tv_nsec - y->tv_nsec;
+            return false;
+        } 
+        else 
+        {
+            result->tv_nsec = y->tv_nsec - x->tv_nsec;
+            return true;
+        }
+    }
+
 }
  
 /****************************************************************************
@@ -226,6 +263,7 @@ int efm32_gpio_pps_irq(int irq, FAR void* context)
 {
     (void)context;
     (void)irq;
+    bool    negatif;
     struct timespec tp;
     struct timespec diff;
     pps_t *ptr;
@@ -242,11 +280,12 @@ int efm32_gpio_pps_irq(int irq, FAR void* context)
 
     dev->last_pps.tv_sec++;
 
-    timespec_subtract(&diff,&dev->last_pps,&tp);
+    negatif = timespec_subtract(&diff,&dev->last_pps,&tp);
 
-    EFM32_GPIO_PPS_LOG(LOG_DEBUG,"tp : %d.%09d last %d.%09d diff %d.%09d\n",
+    EFM32_GPIO_PPS_LOG(LOG_DEBUG,"tp : %d.%09d last %d.%09d diff %c%d.%09d\n",
                        tp.tv_sec,tp.tv_nsec,
                        dev->last_pps.tv_sec,dev->last_pps.tv_nsec,
+                       (negatif)?'-':' ',
                        diff.tv_sec,diff.tv_nsec
                       );
 
@@ -279,7 +318,11 @@ int efm32_gpio_pps_irq(int irq, FAR void* context)
 
     ptr = &dev->buf[dev->wr_idx];
 
-    ptr->shift_nsec = diff.tv_nsec;
+    if ( negatif )
+        ptr->shift_nsec = -diff.tv_nsec;
+    else
+        ptr->shift_nsec = diff.tv_nsec;
+
     ptr->pps_ok_nbr = dev->pps_ok_nbr;
     ptr->tp = tp;
 

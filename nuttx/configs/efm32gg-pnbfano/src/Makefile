@@ -38,6 +38,7 @@
 CSRCS = efm32_boot.c
 CSRCS += efm32_spi.c
 CSRCS += efm32_lcd.c
+CSRCS += efm32_slow_polling.c
 
 ifeq ($(CONFIG_PNBFANO_LCD_KEYPAD),y)
 CSRCS += efm32_lcd_keypad.c

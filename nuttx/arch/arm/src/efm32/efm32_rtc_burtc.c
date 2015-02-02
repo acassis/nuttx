@@ -38,10 +38,6 @@
  ************************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/arch.h>
-#include <nuttx/irq.h>
-#include <nuttx/rtc.h>
-#include <arch/board/board.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -49,11 +45,17 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <nuttx/arch.h>
+
+#include <arch/board/board.h>
+
 #include "up_arch.h"
 
+#include "chip.h"
 #include "chip/efm32_burtc.h"
 
 #include "efm32_rmu.h"
+#include "clock/clock.h"
 
 /************************************************************************************
  * Pre-processor Definitions
@@ -121,10 +123,19 @@
 #   error "BOARD_BURTC_CLKSRC badly setted !"
 #endif
 
+#define __SEC_OFF_REG           EFM32_BURTC_RET_REG(2)
+#define __BASETIME_SEC__OFF_REG EFM32_BURTC_RET_REG(3)
 
-#define __CNT_OFF_REG  EFM32_BURTC_RET_REG(0)
-#define __SEC_OFF_REG   EFM32_BURTC_RET_REG(1)
+#ifdef CONFIG_RTC_HIRES
+#   define __CNT_OFF_REG           EFM32_BURTC_RET_REG(0)
+#   define __BASETIME_NSEC_OFF_REG EFM32_BURTC_RET_REG(1)
+#endif
 
+#ifndef CONFIG_DEBUG
+#  define burtcdbg lldbg
+#else
+#  define burtcdbg(x...)
+#endif
 
 /************************************************************************************
  * Private Types
@@ -180,7 +191,10 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
 {
   uint32_t source = getreg32(EFM32_BURTC_IF);
 
-  ASSERT( source & BURTC_IF_LFXOFAIL );
+  if ( source & BURTC_IF_LFXOFAIL )
+  {
+      burtcdbg("BURTC_IF_LFXOFAIL");
+  }
 
 #ifdef CONFIG_RTC_HIRES
   if ( source & BURTC_IF_OF )
@@ -230,85 +244,96 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
 
 static void efm32_rtc_burtc_init(void)
 {
-    uint32_t regval;
+  uint32_t regval;
 
-    regval = g_efm32_rstcause;
+  regval = g_efm32_rstcause;
 
-    if (   !(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN )  
-        && !(regval & RMU_RSTCAUSE_BUBODREG     )
-        && !(regval & RMU_RSTCAUSE_BUBODUNREG   )
-        && !(regval & RMU_RSTCAUSE_BUBODBUVIN   ) 
-        && !(regval & RMU_RSTCAUSE_EXTRST       )
-        && !(regval & RMU_RSTCAUSE_PORST        ) 
-       )
+  if (   !(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN )  
+      && !(regval & RMU_RSTCAUSE_BUBODREG     )
+      && !(regval & RMU_RSTCAUSE_BUBODUNREG   )
+      && !(regval & RMU_RSTCAUSE_BUBODBUVIN   ) 
+      && !(regval & RMU_RSTCAUSE_EXTRST       )
+      && !(regval & RMU_RSTCAUSE_PORST        ) 
+     )
     {
-        g_efm32_burtc_reset_status = getreg32(EFM32_BURTC_STATUS);
+      g_efm32_burtc_reset_status = getreg32(EFM32_BURTC_STATUS);
 
-        /* Reset timestamp BURTC clear status */
+      /* Reset timestamp BURTC clear status */
 
-        putreg32(BURTC_CMD_CLRSTATUS,EFM32_BURTC_CMD);
-        return;
+      putreg32(BURTC_CMD_CLRSTATUS,EFM32_BURTC_CMD);
+
+      /* restore saved base time */
+
+      g_basetime.tv_sec   = __BASETIME_SEC__OFF_REG;
+#ifdef CONFIG_RTC_HIRES
+      g_basetime.tv_nsec  = __BASETIME_NSEC_OFF_REG;
+#else
+      g_basetime.tv_nsec  = 0;
+#endif
+
+      return;
     }
 
-    /* Disable reset of BackupDomain */
+  /* Disable reset of BackupDomain */
 
-    modifyreg32(EFM32_RMU_CTRL,_RMU_CTRL_BURSTEN_MASK,0);
+  modifyreg32(EFM32_RMU_CTRL,_RMU_CTRL_BURSTEN_MASK,0);
 
-    /* Make sure all registers are updated simultaneously */
+  /* Make sure all registers are updated simultaneously */
 
-    putreg32(BURTC_FREEZE_REGFREEZE_FREEZE,EFM32_BURTC_FREEZE);
+  putreg32(BURTC_FREEZE_REGFREEZE_FREEZE,EFM32_BURTC_FREEZE);
 
-    /* Restore all not setted BURTC registers to default value */
+  /* Restore all not setted BURTC registers to default value */
 
-//    putreg32(_BURTC_LPMODE_RESETVALUE,      EFM32_BURTC_LPMODE  );
-//    putreg32(_BURTC_LFXOFDET_RESETVALUE,    EFM32_BURTC_LFXOFDET);
-//    putreg32(_BURTC_COMP0_RESETVALUE,       EFM32_BURTC_COMP0   );
+//  putreg32(_BURTC_LPMODE_RESETVALUE,      EFM32_BURTC_LPMODE  );
+//  putreg32(_BURTC_LFXOFDET_RESETVALUE,    EFM32_BURTC_LFXOFDET);
+//  putreg32(_BURTC_COMP0_RESETVALUE,       EFM32_BURTC_COMP0   );
 
-    /* New configuration */
+  /* New configuration */
 
-    regval = ((BOARD_BURTC_MODE             ) |
-              (BURTC_CTRL_DEBUGRUN_DEFAULT  ) |
-              (BURTC_CTRL_COMP0TOP_DEFAULT  ) |
-              (BURTC_CTRL_LPCOMP_DEFAULT    ) |
-              (BOARD_BURTC_PRESC            ) |
-              (BOARD_BURTC_CLKSRC           ) |
-              (BURTC_CTRL_BUMODETSEN_DEFAULT));
+  regval = ((BOARD_BURTC_MODE             ) |
+            (BURTC_CTRL_DEBUGRUN_DEFAULT  ) |
+            (BURTC_CTRL_COMP0TOP_DEFAULT  ) |
+            (BURTC_CTRL_LPCOMP_DEFAULT    ) |
+            (BOARD_BURTC_PRESC            ) |
+            (BOARD_BURTC_CLKSRC           ) |
+            (BURTC_CTRL_BUMODETSEN_DEFAULT));
 
-    /* Clear interrupts */
+  /* Clear interrupts */
 
-    putreg32(0xFFFFFFFF,EFM32_BURTC_IFC);
+  putreg32(0xFFFFFFFF,EFM32_BURTC_IFC);
 
-    /* Set new configuration */
+  /* Set new configuration */
 
-    putreg32(regval|BURTC_CTRL_RSTEN,EFM32_BURTC_CTRL);
+  putreg32(regval|BURTC_CTRL_RSTEN,EFM32_BURTC_CTRL);
 
-    /* Clear freeze */
+  /* Clear freeze */
 
-    putreg32(0,EFM32_BURTC_FREEZE);
+  putreg32(0,EFM32_BURTC_FREEZE);
 
-    /* To enable BURTC counter, we need to disable reset */
+  /* To enable BURTC counter, we need to disable reset */
 
-    putreg32(regval,EFM32_BURTC_CTRL);
+  putreg32(regval,EFM32_BURTC_CTRL);
 
-    /* Enable BURTC interrupt on compare match and counter overflow */
+  /* Enable BURTC interrupt on compare match and counter overflow */
 
-    putreg32(BURTC_IF_OF|BURTC_IF_LFXOFAIL, EFM32_BURTC_IEN );
+  putreg32(BURTC_IF_OF|BURTC_IF_LFXOFAIL, EFM32_BURTC_IEN );
 
-    /* Lock BURTC to avoid modification */
+  /* Lock BURTC to avoid modification */
 
-    putreg32(BURTC_LOCK_LOCKKEY_LOCK,EFM32_BURTC_LOCK);
+  putreg32(BURTC_LOCK_LOCKKEY_LOCK,EFM32_BURTC_LOCK);
 
-    /* reset BURTC retention REG 0 used to store second offset */
+  /* reset BURTC retention REG used */
 
-    putreg32(0,__CNT_OFF_REG);
+  putreg32(0,__CNT_OFF_REG);
+  putreg32(0,__SEC_OFF_REG);
+  putreg32(0,__BASETIME_SEC__OFF_REG);
+#ifdef CONFIG_RTC_HIRES
+  putreg32(0,__BASETIME_NSEC_OFF_REG);
+#endif
 
-    /* reset BURTC retention REG 1 used to store hires value offset */
+  /* inform rest of software that BURTC was reset at boot */
 
-    putreg32(0,__SEC_OFF_REG);
-
-    /* inform rest of software that BURTC was reset at boot */
-
-    g_efm32_burtc_reseted = true;
+  g_efm32_burtc_reseted = true;
 
 }
 
@@ -468,28 +493,13 @@ int up_rtc_settime(FAR const struct timespec *tp)
 {
   irqstate_t flags;
 
-  struct timespec current_tp;
-#ifdef CONFIG_RTC_HIRES
-  up_rtc_gettime(&current_tp);
-#else
-  current_tp.tv_nsec = 0;
-  current_tp.tv_sec = up_rtc_gettime();
-#endif
-
-  /* compute difference */
-  current_tp.tv_nsec = tp->tv_nsec - current_tp.tv_nsec;
-  current_tp.tv_sec  = tp->tv_sec  - current_tp.tv_sec ;
-  if ( current_tp.tv_nsec < 0 )
-  {
-      current_tp.tv_nsec += 1000000000;
-      current_tp.tv_sec  -= 1 ;
-  }
-
   flags = irqsave();
-  putreg32(current_tp.tv_sec  + EFM32_BURTC_RET_REG(0), EFM32_BURTC_RET_REG(0));
+
+  putreg32(g_basetime.tv_sec, __BASETIME_SEC__OFF_REG);
 #ifdef CONFIG_RTC_HIRES
-  putreg32(current_tp.tv_nsec + EFM32_BURTC_RET_REG(1),EFM32_BURTC_RET_REG(1));
+  putreg32(g_basetime.tv_nsec,__BASETIME_NSEC_OFF_REG);
 #endif
+
   irqrestore(flags);
   return OK;
 }
