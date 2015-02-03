@@ -133,9 +133,9 @@ config EFM32_RMU
 	default n
 
 config EFM32_RMU_DEBUG
-    bool "Reset Management Unit (RMU) DEBUG "
-    default n
-    depends on EFM32_RMU
+	bool "Reset Management Unit (RMU) DEBUG "
+	default n
+	depends on EFM32_RMU && DEBUG
 
 config EFM32_USART0
 	bool "USART0"
@@ -584,7 +584,7 @@ config EFM32_TIMER3_CHANNEL
 		channel {0,1,2}
 
 config EFM32_RTC_BURTC
-	bool "use BURTC as rtc"
+	bool "Use BURTC as RTC"
 	default n
 	---help---
 		Enable RTC with EFM32 BURTC

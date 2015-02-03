@@ -112,7 +112,7 @@ void arp_wait_setup(in_addr_t ipaddr, FAR struct arp_notify_s *notify)
  * Function: arp_wait_cancel
  *
  * Description:
- *   Cancel any wait set after arp_wait_setup is called but before arm_wait()
+ *   Cancel any wait set after arp_wait_setup is called but before arp_wait()
  *   is called (arp_wait() will automatically cancel the wait).
  *
  * Assumptions:
@@ -166,8 +166,8 @@ int arp_wait_cancel(FAR struct arp_notify_s *notify)
  *   timeout occurs.
  *
  * Assumptions:
- *   This function is called from ARP send and executes in the normal
- *   tasking environment.
+ *   This function is called from ARP send must execute with the network
+ *   un-locked (interrupts may be disabled to keep the things stable).
  *
  ****************************************************************************/
 
@@ -220,7 +220,7 @@ int arp_wait(FAR struct arp_notify_s *notify, FAR struct timespec *timeout)
  *
  * Assumptions:
  *   This function is called from the MAC device driver indirectly through
- *   arp_arpin() and may be execute from the interrupt level.
+ *   arp_arpin() will execute with the network locked.
  *
  ****************************************************************************/
 

@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/arch.h
  *
- *   Copyright (C) 2007-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -119,14 +119,35 @@ typedef CODE void (*phy_enable_t)(bool enable);
  * Public Variables
  ****************************************************************************/
 
+#undef EXTERN
+#if defined(__cplusplus)
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
+
+#ifdef CONFIG_SCHED_TICKLESS_LIMIT_MAX_SLEEP
+/* By default, the RTOS tickless logic assumes that range of times that can
+ * be represented by the underlying hardware time is so large that no special
+ * precautions need to taken.  That is not always the case.  If there is a
+ * limit to the maximum timing interval that be represented by the timer,
+ * then that limit must be respected.
+ *
+ * If CONFIG_SCHED_TICKLESS_LIMIT_MAX_SLEEP is defined, then use a 32-bit
+ * global variable called g_oneshot_maxticks variable is enabled. This variable
+ * is initialized by platform-specific logic at runtime to the maximum delay
+ * that the timer can wait (in configured clock ticks).  The RTOS tickless
+ * logic will then limit all requested delays to this value (in ticks).
+ */
+
+EXTERN uint32_t g_oneshot_maxticks;
+#endif
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /****************************************************************************
  * These are standard interfaces that must be exported to the base RTOS
@@ -1929,6 +1950,7 @@ int up_getc(void);
 
 void up_puts(FAR const char *str);
 
+#undef EXTERN
 #ifdef __cplusplus
 }
 #endif

@@ -107,15 +107,15 @@
 #   error "BOARD_BURTC_PRESC is setted with unknown value"
 #endif
 
-#if   (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFRCO ) 
+#if   (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFRCO )
 #   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_LFRCO_FREQUENCY)
 #       error "CONFIG_RTC_FREQUENCY is not well be setted"
 #   endif
-#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFXO ) 
+#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_LFXO )
 #   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_LFXO_FREQUENCY)
 #       error "CONFIG_RTC_FREQUENCY is not well be setted"
 #   endif
-#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_ULFRCO ) 
+#elif (BOARD_BURTC_CLKSRC == BURTC_CTRL_CLKSEL_ULFRCO )
 #   if (CONFIG_RTC_FREQUENCY*BURTC_CLK_DIV != BOARD_ULFRCO_FREQUENCY)
 #       error "CONFIG_RTC_FREQUENCY is not well be setted"
 #   endif
@@ -155,7 +155,7 @@ static alarmcb_t g_alarmcb;
  * Public Data
  ************************************************************************************/
 
-/* Variable determines the state of the LSE oscilator.
+/* Variable determines the state of the LSE oscillator.
  * Possible errors:
  *   - on start-up
  *   - during operation, reported by LSE interrupt
@@ -170,7 +170,6 @@ volatile bool g_rtc_enabled = false;
 /************************************************************************************
  * Private Functions
  ************************************************************************************/
-
 
 /************************************************************************************
  * Name: efm32_rtc_interrupt
@@ -199,11 +198,11 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
 #ifdef CONFIG_RTC_HIRES
   if ( source & BURTC_IF_OF )
     {
-        int regval;
+      int regval;
 
-        regval = getreg32(__SEC_OFF_REG);
-        regval += (_BURTC_CNT_MASK+1)/CONFIG_RTC_FREQUENCY;
-        putreg32(regval,__SEC_OFF_REG);
+      regval  = getreg32(__SEC_OFF_REG);
+      regval += (_BURTC_CNT_MASK+1)/CONFIG_RTC_FREQUENCY;
+      putreg32(regval,__SEC_OFF_REG);
     }
 #endif
 
@@ -212,11 +211,10 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
     {
       if ( g_alarmcb != NULL )
         {
+          /* Alarm callback */
 
-            /* Alarm callback */
-
-            g_alarmcb();
-            g_alarmcb = NULL;
+          g_alarmcb();
+          g_alarmcb = NULL;
         }
     }
 #endif
@@ -228,17 +226,15 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
   return 0;
 }
 
-
 /************************************************************************************
  * Name: efm32_burtc_init
  *
  * Description:
- *   board initialization of burtc RTC.  
+ *   board initialization of burtc RTC.
  *   This function is called once in efm32_boardinitialize
  *
  * Note
  *   efm32_rmu_initialize should be called one since boot.
- *
  *
  ************************************************************************************/
 
@@ -248,12 +244,12 @@ static void efm32_rtc_burtc_init(void)
 
   regval = g_efm32_rstcause;
 
-  if (   !(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN )  
+  if (   !(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN )
       && !(regval & RMU_RSTCAUSE_BUBODREG     )
       && !(regval & RMU_RSTCAUSE_BUBODUNREG   )
-      && !(regval & RMU_RSTCAUSE_BUBODBUVIN   ) 
+      && !(regval & RMU_RSTCAUSE_BUBODBUVIN   )
       && !(regval & RMU_RSTCAUSE_EXTRST       )
-      && !(regval & RMU_RSTCAUSE_PORST        ) 
+      && !(regval & RMU_RSTCAUSE_PORST        )
      )
     {
       g_efm32_burtc_reset_status = getreg32(EFM32_BURTC_STATUS);
@@ -334,14 +330,11 @@ static void efm32_rtc_burtc_init(void)
   /* inform rest of software that BURTC was reset at boot */
 
   g_efm32_burtc_reseted = true;
-
 }
-
 
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
-
 
 /************************************************************************************
  * Name: up_rtcinitialize
@@ -360,7 +353,6 @@ static void efm32_rtc_burtc_init(void)
 
 int up_rtcinitialize(void)
 {
-
   efm32_rtc_burtc_init();
 
   /* Configure RTC interrupt to catch overflow and alarm interrupts. */
@@ -400,7 +392,7 @@ time_t up_rtc_time(void)
   flags = irqsave();
 
   do
-    { 
+    {
       /* pending IRQ so theat it */
 
       if ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 )
@@ -445,8 +437,7 @@ int up_rtc_gettime(FAR struct timespec *tp)
   flags = irqsave();
 
   do
-    { 
-
+    {
       /* pending IRQ so theat it */
 
       if ( getreg32(EFM32_BURTC_IF) & BURTC_IF_COMP0 )
@@ -557,6 +548,7 @@ int up_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
 
       ret = OK;
     }
+
   return ret;
 }
 #endif
@@ -599,6 +591,7 @@ int up_rtc_cancelalarm(void)
 
       ret = OK;
     }
+
   return ret;
 }
 #endif

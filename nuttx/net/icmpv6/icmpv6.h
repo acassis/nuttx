@@ -43,6 +43,7 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
+#include <semaphore.h>
 
 #include <nuttx/net/ip.h>
 
@@ -52,9 +53,37 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+/* Allocate a new ICMPv6 data callback */
+
+#define icmpv6_callback_alloc()  devif_callback_alloc(&g_icmpv6_conn.list)
+#define icmpv6_callback_free(cb) devif_callback_free(cb, &g_icmpv6_conn.list)
+
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
+
+#if defined(CONFIG_NET_ICMPv6_PING) || defined(CONFIG_NET_ICMPv6_NEIGHBOR)
+/* For symmetry with other protocols, a "connection" structure is
+ * provided.  But it is a singleton for the case of ARP packet transfers.
+ */
+
+struct icmpv6_conn_s
+{
+  FAR struct devif_callback_s *list;    /* ARP callbacks */
+};
+#endif
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+/* Used to notify a thread waiting for a particular ARP response */
+
+struct icmpv6_notify_s
+{
+  FAR struct icmpv6_notify_s *nt_flink; /* Supports singly linked list */
+  net_ipv6addr_t nt_ipaddr;             /* Waited for IP address in the mapping */
+  sem_t nt_sem;                         /* Will wake up the waiter */
+  int nt_result;                        /* The result of the wait */
+};
+#endif
 
 /****************************************************************************
  * Public Data
@@ -68,9 +97,18 @@ extern "C"
 #  define EXTERN extern
 #endif
 
+#if defined(CONFIG_NET_ICMPv6_PING) || defined(CONFIG_NET_ICMPv6_NEIGHBOR)
+/* This is the singleton "connection" structure for TX polls and echo replies */
+
+EXTERN struct icmpv6_conn_s g_icmpv6_conn;
+#endif
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
+
+struct timespec;     /* Forward reference */
+struct net_driver_s; /* Forward reference */
 
 /****************************************************************************
  * Name: icmpv6_input
@@ -93,6 +131,43 @@ extern "C"
 void icmpv6_input(FAR struct net_driver_s *dev);
 
 /****************************************************************************
+ * Name: icmpv6_neighbor
+ *
+ * Description:
+ *   The icmpv6_solicit() call may be to send an ICMPv6 Neighbor
+ *   Solicitation to resolve an IPv6 address.  This function first checks if
+ *   the IPv6 address is already in the Neighbor Table.  If so, then it
+ *   returns success immediately.
+ *
+ *   If the requested IPv6 address in not in the Neighbor Table, then this
+ *   function will send the Neighbor Solicitation, delay, then check if the
+ *   IP address is now in the Neighbor able.  It will repeat this sequence
+ *   until either (1) the IPv6 address mapping is now in the Neighbor table,
+ *   or (2) a configurable number of timeouts occur without receiving the
+ *   ICMPv6 Neighbor Advertisement.
+ *
+ * Parameters:
+ *   ipaddr   The IPv6 address to be queried.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success and the IP address mapping can now be
+ *   found in the Neighbor Table.  On error a negated errno value is returned:
+ *
+ *     -ETIMEDOUT:    The number or retry counts has been exceed.
+ *     -EHOSTUNREACH: Could not find a route to the host
+ *
+ * Assumptions:
+ *   This function is called from the normal tasking context.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+int icmpv6_neighbor(const net_ipv6addr_t ipaddr);
+#else
+#  define icmpv6_neighbor(i) (0)
+#endif
+
+/****************************************************************************
  * Name: icmpv6_poll
  *
  * Description:
@@ -109,30 +184,9 @@ void icmpv6_input(FAR struct net_driver_s *dev);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_ICMPv6_PING
+#if defined(CONFIG_NET_ICMPv6_PING) || defined(CONFIG_NET_ICMPv6_NEIGHBOR)
 void icmpv6_poll(FAR struct net_driver_s *dev);
-#endif /* CONFIG_NET_ICMPv6_PING */
-
-/****************************************************************************
- * Name: icmpv6_send
- *
- * Description:
- *   Setup to send an ICMPv6 packet
- *
- * Parameters:
- *   dev - The device driver structure to use in the send operation
- *
- * Return:
- *   None
- *
- * Assumptions:
- *   Called from the interrupt level or with interrupts disabled.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_NET_ICMPv6_PING
-void icmpv6_send(FAR struct net_driver_s *dev, FAR net_ipv6addr_t *destaddr);
-#endif /* CONFIG_NET_ICMPv6_PING */
+#endif
 
 /****************************************************************************
  * Name: icmpv6_solicit
@@ -155,6 +209,109 @@ void icmpv6_solicit(FAR struct net_driver_s *dev,
 #undef EXTERN
 #ifdef __cplusplus
 }
+#endif
+
+/****************************************************************************
+ * Function: icmpv6_wait_setup
+ *
+ * Description:
+ *   Called BEFORE an Neighbor Solicitation is sent.  This function sets up
+ *   the Neighbor Advertisement timeout before the the Neighbor Solicitation
+ *   is sent so that there is no race condition when icmpv6_wait() is called.
+ *
+ * Assumptions:
+ *   This function is called from icmpv6_neighbor() and executes in the normal
+ *   tasking environment.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+void icmpv6_wait_setup(const net_ipv6addr_t ipaddr,
+                       FAR struct icmpv6_notify_s *notify);
+#else
+#  define icmpv6_wait_setup(i,n)
+#endif
+
+/****************************************************************************
+ * Function: icmpv6_wait_cancel
+ *
+ * Description:
+ *   Cancel any wait set after icmpv6_wait_setup is called but before
+ *   icmpv6_wait()is called (icmpv6_wait() will automatically cancel the
+ *   wait).
+ *
+ * Assumptions:
+ *   This function may execute in the interrupt context when called from
+ *   icmpv6_wait().
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+int icmpv6_wait_cancel(FAR struct icmpv6_notify_s *notify);
+#else
+#  define icmpv6_wait_cancel(n) (0)
+#endif
+
+/****************************************************************************
+ * Function: icmpv6_wait
+ *
+ * Description:
+ *   Called each time that a Neighbor Solicitation is sent.  This function
+ *   will sleep until either: (1) the matching Neighbor Advertisement is
+ *   received, or (2) a timeout occurs.
+ *
+ * Assumptions:
+ *   This function is called from icmpv6_neighbor() and must execute with
+ *   the network un-locked (interrupts may be disabled to keep the things
+ *   stable).
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+int icmpv6_wait(FAR struct icmpv6_notify_s *notify,
+                FAR struct timespec *timeout);
+#else
+#  define icmpv6_wait(n,t) (0)
+#endif
+
+/****************************************************************************
+ * Function: icmpv6_notify
+ *
+ * Description:
+ *   Called each time that a Neighbor Advertisement is received in order to
+ *   wake-up any threads that may be waiting for this particular Neighbor
+ *   Advertisement.
+ *
+ * Assumptions:
+ *   This function is called from the MAC device driver indirectly through
+ *   icmpv6_icmpv6in() will execute with the network locked.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+void icmpv6_notify(net_ipv6addr_t ipaddr);
+#else
+#  define icmpv6_notify(i)
+#endif
+
+/****************************************************************************
+ * Name: icmpv6_autoconfig
+ *
+ * Description:
+ *   Perform IPv6 auto-configuration to assign an IPv6 address to this
+ *   device.
+ *
+ * Parameters:
+ *   dev - The device driver structure to assign the address to
+ *
+ * Return:
+ *   Zero (OK) is returned on success; A negated errno value is returned on
+ *   any failure.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_ICMPv6_AUTOCONF
+int icmpv6_autoconfig(FAR struct net_driver_s *dev);
 #endif
 
 #endif /* CONFIG_NET_ICMPv6 */

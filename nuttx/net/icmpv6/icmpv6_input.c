@@ -77,20 +77,14 @@
   ((struct icmpv6_neighbor_advertise_s *)&dev->d_buf[NET_LL_HDRLEN(dev) + IPv6_HDRLEN])
 
 /****************************************************************************
- * Public Variables
+ * Public Data
  ****************************************************************************/
 
-/****************************************************************************
- * Private Variables
- ****************************************************************************/
+#if defined(CONFIG_NET_ICMPv6_PING) || defined(CONFIG_NET_ICMPv6_NEIGHBOR)
+/* This is the singleton "connection" structure for TX polls and echo replies */
 
-#ifdef CONFIG_NET_ICMPv6_PING
-FAR struct devif_callback_s *g_icmpv6_echocallback = NULL;
+struct icmpv6_conn_s g_icmpv6_conn;
 #endif
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
 
 /****************************************************************************
  * Public Functions
@@ -262,6 +256,12 @@ void icmpv6_input(FAR struct net_driver_s *dev)
               neighbor_add(icmp->srcipaddr,
                            (FAR struct neighbor_addr_s *)adv->tgtlladdr);
 
+#ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+              /* Then notify any logic waiting for the Neighbor Advertisement */
+
+              icmpv6_notify(icmp->srcipaddr);
+#endif
+
               /* We consumed the packet but we don't send anything in
                * response.
                */
@@ -288,21 +288,18 @@ void icmpv6_input(FAR struct net_driver_s *dev)
       icmp->chksum = ~icmpv6_chksum(dev);
     }
 
+#ifdef CONFIG_NET_ICMPv6_PING
   /* If an ICMPv6 echo reply is received then there should also be
    * a thread waiting to received the echo response.
    */
 
-#ifdef CONFIG_NET_ICMPv6_PING
-  else if (icmp->type == ICMPv6_ECHO_REPLY && g_icmpv6_echocallback)
+  else if (icmp->type == ICMPv6_ECHO_REPLY)
     {
       uint16_t flags = ICMPv6_ECHOREPLY;
 
-      if (g_icmpv6_echocallback)
-        {
-          /* Dispatch the ECHO reply to the waiting thread */
+      /* Dispatch the ECHO reply to the waiting thread */
 
-          flags = devif_callback_execute(dev, icmp, flags, g_icmpv6_echocallback);
-        }
+      flags = devif_callback_execute(dev, icmp, flags, g_icmpv6_conn.list);
 
       /* If the ECHO reply was not handled, then drop the packet */
 
