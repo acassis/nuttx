@@ -9639,4 +9639,13 @@
 	  oneshot timer max delay is 2s. The patch adds limit of maximum ticks
 	  in sched_timer_start(). From Macs N (2015-02-03).
 	* arch/arm/src/sam34:  Add support for Tickless mode of operation for
-	  the SAM4CM platfrom.  From Macs N (2015-02-03).
+	  the SAM4CM platform.  From Macs N (2015-02-03).
+	* include/nuttx/net/icmpv6.h and net/icmpv6/Kconfig: Add support for
+	  sending ICMPv6 Router Solicitation and receiving Router advertisement.
+	  This is a part of the ICMPv6 auto-configuration logic is still not
+	  complete (2015-02-03).
+	* libnx/nxfonts/nxfonts_getfont.c and nxfonts_sans39x48.h: Fixes a
+	  problem with one of the font files.  From Pierre-noel Bouteville
+	 (2015-02-03).
+	* arch/arm/src/efm32/efm32_rtc_burtc.c:  Remove a misbehaving assertion.
+	  From Pierre-noel Bouteville (2015-02-03).
