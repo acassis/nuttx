@@ -53,6 +53,10 @@ ifeq ($(CONFIG_PNBFANO_GPIO_PPS),y)
 CSRCS += efm32_pps_sync.c
 endif
 
+ifeq ($(CONFIG_USBDEV),y)
+CSRCS += efm32_usbdev.c
+endif
+
 ifeq ($(CONFIG_PNBFANO_GPIO_PPS),y)
 CSRCS += efm32_chrono.c
 endif

@@ -60,6 +60,8 @@
 #include "up_arch.h"
 #include "up_internal.h"
 
+#include "chip/efm32_cmu.h"
+
 #include "efm32_usb.h"
 
 #if defined(CONFIG_USBDEV) && (defined(CONFIG_EFM32_OTGFS))
@@ -3505,7 +3507,10 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
 
   /* Assure that we are in device mode */
 
-  DEBUGASSERT((efm32_getreg(EFM32_USB_GINTSTS) & USB_GINTSTS_CMOD) == USB_GINTSTS_DEVMODE);
+  DEBUGASSERT(
+              (efm32_getreg(EFM32_USB_GINTSTS) & USB_GINTSTS_CURMOD
+              ) == USB_GINTSTS_CURMOD_DEVICE
+             );
 
   /* Get the state of all enabled interrupts.  We will do this repeatedly
    * some interrupts (like RXFLVL) will generate additional interrupting
@@ -3554,10 +3559,10 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
       /* Host/device mode mismatch error interrupt */
 
 #ifdef CONFIG_DEBUG_USB
-      if ((regval & USB_GINTSTS_MMIS) != 0)
+      if ((regval & USB_GINTSTS_MODEMIS) != 0)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_MISMATCH), (uint16_t)regval);
-          efm32_putreg(USB_GINTSTS_MMIS, EFM32_USB_GINTSTS);
+          efm32_putreg(USB_GINTSTS_MODEMIS, EFM32_USB_GINTSTS);
         }
 #endif
 
@@ -5184,7 +5189,14 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
    *     OUT endpoint 0, to receive a SETUP packet.
    *     - USB_DOEP0CTL.EPENA = 1"
    */
-#warning Review for missing logic
+
+  /* First Turn on USB clocking */
+
+  modifyreg32(EFM32_CMU_HFCORECLKEN0,
+              0,
+              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC
+             );
+
 
   /* At start-up the core is in FS mode. */
 
@@ -5449,7 +5461,6 @@ void up_usbinitialize(void)
    *     non-zero value. This takes approximately 20 48-MHz cycles.
    *  10. Start initializing the USB core ...
    */
-#warning Missing Logic
 
   /* Uninitialize the hardware so that we know that we are starting from a
    * known state. */
@@ -5514,6 +5525,13 @@ void up_usbuninitialize(void)
 
   usbtrace(TRACE_DEVUNINIT, 0);
 
+  /* To be sure that usb ref are writen, turn on USB clocking */
+
+  modifyreg32(EFM32_CMU_HFCORECLKEN0,
+              0,
+              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC
+             );
+
   if (priv->driver)
     {
       usbtrace(TRACE_DEVERROR(EFM32_TRACEERR_DRIVERREGISTERED), 0);
@@ -5549,6 +5567,13 @@ void up_usbuninitialize(void)
 
   efm32_txfifo_flush(USB_GRSTCTL_TXFNUM_FALL);
   efm32_rxfifo_flush();
+
+  /* Turn off USB clocking */
+
+  modifyreg32(EFM32_CMU_HFCORECLKEN0,
+              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC,
+              0
+             );
 
   /* TODO: Turn off USB power and clocking */
 
