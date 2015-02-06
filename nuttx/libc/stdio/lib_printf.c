@@ -92,7 +92,9 @@ int printf(FAR const char *fmt, ...)
   int     ret;
 
   va_start(ap, fmt);
-#if CONFIG_NFILE_STREAMS > 0
+#if (defined(CONFIG_CONSOLE_LOWPUTC) && defined(CONFIG_ARCH_LOWPUTC))
+  ret = lowvsyslog(LOG_INFO, fmt, ap);
+#elif CONFIG_NFILE_STREAMS > 0
   ret = vfprintf(stdout, fmt, ap);
 #elif CONFIG_NFILE_DESCRIPTORS > 0
   ret = vsyslog(LOG_INFO, fmt, ap);
