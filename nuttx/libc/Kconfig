@@ -262,13 +262,6 @@ config ARCH_LOWPUTC
 	---help---
 		architecture supports low-level, boot time console output
 
-config CONSOLE_LOWPUTC
-	bool "Force console on Low-level output"
-	default "n"
-	depends on ARCH_LOWPUTC
-	---help---
-		Force console output into low-level output
-
 config LIBC_LOCALTIME
 	bool "localtime API call support"
 	default "n"
