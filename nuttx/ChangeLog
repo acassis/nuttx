@@ -9649,3 +9649,33 @@
 	 (2015-02-03).
 	* arch/arm/src/efm32/efm32_rtc_burtc.c:  Remove a misbehaving assertion.
 	  From Pierre-noel Bouteville (2015-02-03).
+	* net/icmpv6:  Implemented the ICMPv6 Autonomous Auto-Configuration
+	  logic.  This is an IPv6 alternative to DHCP.  It obtains the IPv6
+	  addresses and masks using ICMPv6 Router Solicitation and
+	  Advertisement messages (2015-02-03).
+	* arch/arm/src/stm32/stm32_aes.c, stm32_aes.h, and
+	  chip/stm32l15xxx_aes.h:  Add driver for STM32L162XX AES peripheral.
+	  From Juha Niskanen (2015-02-04).
+	* net/icmpv6/icmpv6_radvertise.c, Kconfig, and other files: Add option
+	  to send Router Advertisement Messages (2015-02-05).
+	* net/icmpv6/icmpv6_input.c, arch/arm/src/tiva/tm4c_ethernet.c, and
+	  stm32/stm32_eth.c: Add logic to behave like a router (if so
+	  configured):  NuttX will not send the router advertisement message
+	  in response to any router solicitation messages (2015-02-05).
+	* configs/stm32f4discovery/ipv6 and arch/arm/src/stm32/stm32_eth.c: Add
+	  an IPv6 configuration for the STM32F4-Discovery board (with the
+	  STM32-DISCO_BB base board).  Verify that the STM32 Ethernet driver
+	  works with IPv6 (2015-02-05).
+	* net/icmpv6/icmpv6_input.c and icmpv6_rnotify.c:  With these two
+	  changes both ICMPv6 autonomous autoconfiguration and router
+	  functionality appear to be working with no problems (2015-02-05).
+	* arch/arm/src/tiva and configs/tm4c123g-launchpad:  Adds support for
+	  TM4C123G timers; integrates with the TM4C123G Launchpad.  From Calvin
+	  Maguranis (2015-02-05).
+	* arc/arc/src/tiva/tiva_adc.c and .h: Adds a Tiva ADC driver.  From
+	  Calvin Maguranis (2015-02-05).
+	* tmv4c123g-launchpad:  Add Tiva ADC support to the TM4C123G-Launchpad.
+	  From Calvin Maguranis (2015-02-05).
+	* arch/arm/src/stm32/stm32_spi.c: The source clock for SPI 4,5, and 6
+	  should be PCLK2, not PCLK1 (for F411, F427, and F429).  Per David
+	  Sidrane (2015-02-07).

@@ -108,19 +108,17 @@ void icmpv6_rsolicit(FAR struct net_driver_s *dev)
   icmp->proto   = IP_PROTO_ICMP6;          /* Next header */
   icmp->ttl     = 255;                     /* Hop limit */
 
-  /* Set the multicast destination IP address to the IPv7 all routers
-   * address: ff02::2
+  /* Set the multicast destination IP address to the IPv6 all link-
+   * loocal routers address: ff02::2
    */
 
-  icmp->destipaddr[0] = 0xff02;
-  memset(&icmp->destipaddr[0], 0, 6*sizeof(uint16_t));
-  icmp->destipaddr[7] = 0x0002;
+  net_ipv6addr_copy(icmp->destipaddr, g_ipv6_allrouters);
 
   /* Add our link local IPv6 address as the source address */
 
   net_ipv6addr_copy(icmp->srcipaddr, dev->d_ipv6addr);
 
-  /* Set up the ICMPv6 Neighbor Solicitation message */
+  /* Set up the ICMPv6 Router Solicitation message */
 
   sol           = ICMPv6RSOLICIT;
   sol->type     = ICMPV6_ROUTER_SOLICIT;   /* Message type */
@@ -139,7 +137,7 @@ void icmpv6_rsolicit(FAR struct net_driver_s *dev)
    * REVISIT:  What if the link layer is not Ethernet?
    */
 
-  memcpy(sol->srclladdr, &dev->d_mac, IFHWADDRLEN);
+  memcpy(sol->srclladdr, dev->d_mac.ether_addr_octet, sizeof(net_ipv6addr_t));
 
   /* Calculate the checksum over both the ICMP header and payload */
 
@@ -155,25 +153,12 @@ void icmpv6_rsolicit(FAR struct net_driver_s *dev)
   if (dev->d_lltype == NET_LL_ETHERNET)
 #endif
     {
-      /* Set the destination IPv6 multicast Ethernet address:
-       *
-       * For IPv6 multicast addresses, the Ethernet MAC is derived by
-       * the four low-order octets OR'ed with the MAC 33:33:00:00:00:00,
-       * so for example the IPv6 address FF02:DEAD:BEEF::1:3 would map
-       * to the Ethernet MAC address 33:33:00:01:00:03.
-        *
-       * NOTES:  This appears correct for the ICMPv6 Router Solicitation
-       * Message, but the ICMPv6 Neighbor Solicitation message seems to
-       * use 33:33:ff:01:00:03.
+      /* Set the destination IPv6 all-routers multicast Ethernet
+       * address
        */
 
-      eth          = ETHBUF;
-      eth->dest[0] = 0x33;
-      eth->dest[1] = 0x33;
-      eth->dest[2] = 0xff;
-      eth->dest[3] = dev->d_ipv6addr[6] >> 8;
-      eth->dest[4] = dev->d_ipv6addr[7] & 0xff;
-      eth->dest[5] = dev->d_ipv6addr[7] >> 8;
+      eth = ETHBUF;
+      memcpy(eth->dest, g_ipv6_ethallrouters.ether_addr_octet, ETHER_ADDR_LEN);
 
       /* Move our source Ethernet addresses into the Ethernet header */
 
@@ -206,7 +191,7 @@ void icmpv6_rsolicit(FAR struct net_driver_s *dev)
   /* SLIP has no link layer header */
 #endif
 
-  nllvdbg("Outgoing ICMPv6 Neighbor Solicitation length: %d (%d)\n",
+  nllvdbg("Outgoing ICMPv6 Router Solicitation length: %d (%d)\n",
           dev->d_len, (icmp->len[0] << 8) | icmp->len[1]);
 
 #ifdef CONFIG_NET_STATISTICS

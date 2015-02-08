@@ -39,7 +39,6 @@
 
 #include <nuttx/config.h>
 
-#include <nuttx/clock.h>
 #include <nuttx/net/ip.h>
 
 #include "utils/utils.h"
@@ -51,26 +50,12 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Function: net_timeval2dsec
+ * Function: net_ipv6addr_maskcmp
  *
  * Description:
- *   Compare two IP addresses under a netmask.  The mask is used to mask
+ *   Compare two IPv6 addresses under a netmask.  The mask is used to mask
  *   out the bits that are to be compared:  Buts within the mask much
  *   match exactly; bits outside if the mask are ignored.
- *
- * Example:
- *
- *   net_ipv6addr_t ipaddr1;
- *   net_ipv6addr_t ipaddr2;
- *   net_ipv6addr_t mask;
- *
- *   net_ipv6addr(&mask, 255,255,255,0);
- *   net_ipv6addr(&ipaddr1, 192,16,1,2);
- *   net_iv6paddr(&ipaddr2, 192,16,1,3);
- *   if (net_ipv6addr_maskcmp(ipaddr1, ipaddr2, &mask))
- *     {
- *       printf("They are the same");
- *     }
  *
  * Parameters:
  *   addr1 - The first IP address.

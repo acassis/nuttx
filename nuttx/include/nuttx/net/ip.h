@@ -209,6 +209,32 @@ struct ipv6_stats_s
 /****************************************************************************
  * Public Data
  ****************************************************************************/
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
+
+/* Well-known IP addresses */
+
+#ifdef CONFIG_NET_IPv4
+EXTERN const in_addr_t g_ipv4_alloneaddr;       /* An address of all ones */
+EXTERN const in_addr_t g_ipv4_allzeroaddr;      /* An address of all zeroes */
+#endif
+
+#ifdef CONFIG_NET_IPv6
+EXTERN const net_ipv6addr_t g_ipv6_alloneaddr;  /* An address of all ones */
+EXTERN const net_ipv6addr_t g_ipv6_allzeroaddr; /* An address of all zeroes */
+#if defined(CONFIG_NET_ICMPv6_AUTOCONF) || defined(CONFIG_NET_ICMPv6_ROUTER)
+EXTERN const net_ipv6addr_t g_ipv6_allnodes;    /* All link local nodes */
+EXTERN const net_ipv6addr_t g_ipv6_allrouters;  /* All link local routers */
+#ifdef CONFIG_NET_ICMPv6_AUTOCONF
+EXTERN const net_ipv6addr_t g_ipv6_llnetmask;   /* Netmask for local link address */
+#endif
+#endif
+#endif
 
 /****************************************************************************
  * Public Function Prototypes
@@ -339,28 +365,37 @@ struct ipv6_stats_s
    net_ipv6addr_cmp(addr1, addr2)
 #endif
 
-/* Compare two IP addresses under a netmask.  The mask is used to mask
- * out the bits that are to be compared:  Buts within the mask much
- * match exactly; bits outside if the mask are ignored.
+/****************************************************************************
+ * Function: net_ipv4addr_maskcmp and net_ipv6addr_maskcmp
  *
- * Example:
+ * Description:
+ *   Compare two IP addresses under a netmask.  The mask is used to mask
+ *   out the bits that are to be compared:  Buts within the mask much
+ *   match exactly; bits outside if the mask are ignored.
  *
- *   in_addr_t ipaddr1;
- *   in_addr_t ipaddr2;
- *   in_addr_t mask;
+ * IPv4 Example:
  *
- *   net_ipaddr(&mask, 255,255,255,0);
- *   net_ipaddr(&ipaddr1, 192,16,1,2);
- *   net_ipaddr(&ipaddr2, 192,16,1,3);
- *   if (net_ipv4addr_maskcmp(ipaddr1, ipaddr2, &mask))
+ *   net_ipv6addr_t ipaddr1;
+ *   net_ipv6addr_t ipaddr2;
+ *   net_ipv6addr_t mask;
+ *
+ *   net_ipv6addr(&mask, 255,255,255,0);
+ *   net_ipv6addr(&ipaddr1, 192,16,1,2);
+ *   net_iv6paddr(&ipaddr2, 192,16,1,3);
+ *   if (net_ipv6addr_maskcmp(ipaddr1, ipaddr2, &mask))
  *     {
  *       printf("They are the same");
  *     }
  *
- * addr1 The first IP address.
- * addr2 The second IP address.
- * mask The netmask.
- */
+ * Parameters:
+ *   addr1 - The first IP address.
+ *   addr2 - The second IP address.
+ *   mask  - The netmask.
+ *
+ * Returned Value:
+ *   True if the address under the mask are equal
+ *
+ ****************************************************************************/
 
 #ifdef CONFIG_NET_IPv4
 #  define net_ipv4addr_maskcmp(addr1, addr2, mask) \
@@ -374,28 +409,39 @@ bool net_ipv6addr_maskcmp(const net_ipv6addr_t addr1,
                           const net_ipv6addr_t mask);
 #endif
 
-/* Mask out the network part of an IP address, given the address and
- * the netmask.
+/****************************************************************************
+ * Function: net_ipaddr_mask
  *
- * Example:
+ * Description:
+ *    Mask out the network part of an IP address, given the address and
+ *    the netmask.
  *
- *   in_addr_t ipaddr1, ipaddr2, netmask;
+ *    Example:
  *
- *   net_ipaddr(&ipaddr1, 192,16,1,2);
- *   net_ipaddr(&netmask, 255,255,255,0);
- *   net_ipaddr_mask(&ipaddr2, &ipaddr1, &netmask);
+ *     in_addr_t ipaddr1, ipaddr2, netmask;
  *
- * In the example above, the variable "ipaddr2" will contain the IP
- * address 192.168.1.0.
+ *     net_ipaddr(&ipaddr1, 192,16,1,2);
+ *     net_ipaddr(&netmask, 255,255,255,0);
+ *     net_ipaddr_mask(&ipaddr2, &ipaddr1, &netmask);
  *
- * dest Where the result is to be placed.
- * src The IP address.
- * mask The netmask.
- */
+ *   In the example above, the variable "ipaddr2" will contain the IP
+ *   address 192.168.1.0.
+ *
+ * Parameters:
+ *   dest Where the result is to be placed.
+ *   src The IP address.
+ *   mask The netmask.
+ *
+ ****************************************************************************/
 
 #define net_ipaddr_mask(dest, src, mask) \
   do { \
     (in_addr_t)(dest) = (in_addr_t)(src) & (in_addr_t)(mask); \
   } while (0)
+
+#undef EXTERN
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __INCLUDE_NUTTX_NET_IP_H */

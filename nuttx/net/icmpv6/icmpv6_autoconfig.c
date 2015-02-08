@@ -38,7 +38,6 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#ifdef CONFIG_NET_ICMPv6_AUTOCONF
 
 #include <stdint.h>
 #include <string.h>
@@ -52,7 +51,10 @@
 #include <nuttx/net/netdev.h>
 
 #include "devif/devif.h"
+#include "netdev/netdev.h"
 #include "icmpv6/icmpv6.h"
+
+#ifdef CONFIG_NET_ICMPv6_AUTOCONF
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -76,6 +78,7 @@ struct icmpv6_router_s
   FAR struct devif_callback_s *snd_cb; /* Reference to callback instance */
   sem_t snd_sem;                       /* Used to wake up the waiting thread */
   volatile bool snd_sent;              /* True: if request sent */
+  bool snd_advertise;                  /* True: Send Neighbor Advertisement */
 #ifdef CONFIG_NETDEV_MULTINIC
   uint8_t snd_ifname[IFNAMSIZ];        /* Interface name */
 #endif
@@ -133,7 +136,18 @@ static uint16_t icmpv6_router_interrupt(FAR struct net_driver_s *dev,
       /* It looks like we are good to send the data */
       /* Copy the packet data into the device packet buffer and send it */
 
-      icmpv6_rsolicit(dev);
+      if (state->snd_advertise)
+        {
+          /* Send the ICMPv6 Neighbor Advertisement message */
+
+          icmpv6_advertise(dev, g_ipv6_allnodes);
+        }
+      else
+        {
+          /* Send the ICMPv6 Router Solicitation message */
+
+          icmpv6_rsolicit(dev);
+        }
 
       /* Make sure no additional Router Solicitation overwrites this one.
        * This flag will be cleared in icmpv6_out().
@@ -157,13 +171,14 @@ static uint16_t icmpv6_router_interrupt(FAR struct net_driver_s *dev,
 }
 
 /****************************************************************************
- * Name: icmpv6_send_rsolicit
+ * Name: icmpv6_send_message
  *
  * Description:
  *   Send an ICMPv6 Router Solicitation to resolve an IPv6 address.
  *
  * Parameters:
- *   dev - The device to use to send the solicitation
+ *   dev       - The device to use to send the solicitation
+ *   advertise - True: Send the Neighbor Advertisement message
  *
  * Returned Value:
  *   Zero (OK) is returned on success; On error a negated errno value is
@@ -174,7 +189,7 @@ static uint16_t icmpv6_router_interrupt(FAR struct net_driver_s *dev,
  *
  ****************************************************************************/
 
-int icmpv6_send_rsolicit(FAR struct net_driver_s *dev)
+static int icmpv6_send_message(FAR struct net_driver_s *dev, bool advertise)
 {
   struct icmpv6_router_s state;
   int ret;
@@ -208,6 +223,7 @@ int icmpv6_send_rsolicit(FAR struct net_driver_s *dev)
   /* Arm the callback */
 
   state.snd_sent      = false;
+  state.snd_advertise = advertise;
   state.snd_cb->flags = ICMPv6_POLL;
   state.snd_cb->priv  = (FAR void *)&state;
   state.snd_cb->event = icmpv6_router_interrupt;
@@ -229,6 +245,7 @@ int icmpv6_send_rsolicit(FAR struct net_driver_s *dev)
   while (!state.snd_sent);
 
   icmpv6_callback_free(state.snd_cb);
+  ret = OK;
 
 errout_with_semaphore:
   sem_destroy(&state.snd_sem);
@@ -239,7 +256,7 @@ errout_with_semaphore:
  * Name: icmpv6_wait_radvertise
  *
  * Description:
- *   Wait for the receipt of the Router Advertisment matching the Router
+ *   Wait for the receipt of the Router Advertisement matching the Router
  *   Solicitation that we just sent.
  *
  * Parameters:
@@ -256,9 +273,9 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-int icmpv6_wait_radvertise(FAR struct net_driver_s *dev,
-                           FAR struct icmpv6_rnotify_s *notify,
-                           net_lock_t *save)
+static int icmpv6_wait_radvertise(FAR struct net_driver_s *dev,
+                                  FAR struct icmpv6_rnotify_s *notify,
+                                  net_lock_t *save)
 {
   struct timespec delay;
 #ifdef CONFIG_NET_NOINTS
@@ -327,7 +344,7 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
   ndbg("ERROR: Only Ethernet is supported\n");
   return -ENOSYS;
 
-#else
+#else /* CONFIG_NET_ETHERNET */
   struct icmpv6_rnotify_s notify;
   net_ipv6addr_t lladdr;
   net_lock_t save;
@@ -348,6 +365,11 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
       return -ENOSYS;
     }
 #endif
+  /* The interface should be in the down state */
+
+ save = net_lock();
+ netdev_ifdown(dev);
+ net_unlock(save);
 
   /* IPv6 Stateless Autoconfiguration
    * Reference: http://www.tcpipguide.com/free/t_IPv6AutoconfiguratinoandRenumbering.htm
@@ -374,11 +396,22 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
    *    fe80 0000 0000 0000  0000 xxxx xxxx xxxx
    */
 
-  lladdr[0] = 0xfe80;                                        /* 10-bit address + 6 zeroes */
-  memset(&lladdr[1], 0, 4* sizeof(uint16_t));                /* 64 more zeroes */
-  memcpy(&lladdr[5], dev->d_mac.ether_addr_octet, sizeof(struct ether_addr)); /* 48-bit Ethernet address */
+  lladdr[0] = HTONS(0xfe80);                        /* 10-bit address + 6 zeroes */
+  memset(&lladdr[1], 0, 4* sizeof(uint16_t));       /* 64 more zeroes */
+  memcpy(&lladdr[5], dev->d_mac.ether_addr_octet,
+        sizeof(struct ether_addr));                 /* 48-bit Ethernet address */
+
+  nvdbg("lladdr=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x\n",
+        lladdr[0], lladdr[1], lladdr[2], lladdr[3],
+        lladdr[4], lladdr[6], lladdr[6], lladdr[7]);
 
 #ifdef CONFIG_NET_ICMPv6_NEIGHBOR
+  /* Bring the interface up with no IP address */
+
+  save = net_lock();
+  netdev_ifup(dev);
+  net_unlock(save);
+
   /* 2. Link-Local Address Uniqueness Test: The node tests to ensure that
    *    the address it generated isn't for some reason already in use on the
    *    local network. (This is very unlikely to be an issue if the link-local
@@ -392,12 +425,20 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
    */
 
   ret = icmpv6_neighbor(lladdr);
+
+  /* Take the interface back down */
+
+  save = net_lock();
+  netdev_ifdown(dev);
+  net_unlock(save);
+
   if (ret == OK)
     {
       /* Hmmm... someone else responded to our Neighbor Solicitation.  We
        * have not back-up plan in place.  Just bail.
        */
 
+      ndbg("ERROR: IP conflict\n");
       return -EEXIST;
     }
 #endif
@@ -408,7 +449,12 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
    *    on the wider Internet (since link-local addresses are not routed).
    */
 
+  save = net_lock();
   net_ipv6addr_copy(dev->d_ipv6addr, lladdr);
+
+  /* Bring the interface up with the new, temporary IP address */
+
+  netdev_ifup(dev);
 
   /* 4. Router Contact: The node next attempts to contact a local router for
    *    more information on continuing the configuration. This is done either
@@ -417,7 +463,6 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
    *    for information on what to do next.
    */
 
-  save = net_lock();
   for (retries = 0; retries < CONFIG_ICMPv6_AUTOCONF_MAXTRIES; retries++)
     {
       /* Set up the Router Advertisement BEFORE we send the Router
@@ -428,7 +473,7 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
 
       /* Send the ICMPv6 Router solicitation message */
 
-      ret = icmpv6_send_rsolicit(dev);
+      ret = icmpv6_send_message(dev, false);
       if (ret < 0)
         {
           ndbg("ERROR: Failed send router solicitation: %d\n", ret);
@@ -447,17 +492,42 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
           break;
         }
 
-      nvdbg("Timed out... retrying\n");
+      nvdbg("Timed out... retrying %d\n", retries + 1);
     }
 
-  net_unlock(save);
-
-  /* Check for failures */
+  /* Check for failures.  Note:  On successful return, the network will be 
+   * in the down state, but not in the event of failures.
+   */
 
   if (ret < 0)
     {
       ndbg("ERROR: Failed to get the router advertisement: %d (retries=%d)\n",
            ret, retries);
+
+      /* Claim the link local address as ours by sending the ICMPv6 Neighbor
+       * Advertisement message.
+       */
+
+      ret = icmpv6_send_message(dev, true);
+      if (ret < 0)
+        {
+          ndbg("ERROR: Failed send neighbor advertisement: %d\n", ret);
+          netdev_ifdown(dev);
+        }
+
+      /* No off-link communications; No router address. */
+
+      net_ipv6addr_copy(dev->d_ipv6draddr, g_ipv6_allzeroaddr);
+
+      /* Set a netmask for the local link address */
+
+      net_ipv6addr_copy(dev->d_ipv6netmask, g_ipv6_llnetmask);
+
+      /* Leave the network up and return success (even though things did not
+       * work out quite the way we wanted).
+       */
+
+      net_unlock(save);
       return ret;
     }
 
@@ -466,20 +536,23 @@ int icmpv6_autoconfig(FAR struct net_driver_s *dev)
    *    network "stateful" auto-configuration is in use, and tell it the
    *    address of a DHCP server to use. Alternately, it will tell the host
    *    how to determine its global Internet address.
-   */
-#warning Missing logic
-
-  /* 6. Global Address Configuration: Assuming that stateless auto-
+   *
+   * 6. Global Address Configuration: Assuming that stateless auto-
    *    configuration is in use on the network, the host will configure
    *    itself with its globally-unique Internet address. This address is
    *    generally formed from a network prefix provided to the host by the
    *    router, combined with the device's identifier as generated in the
    *    first step.
    */
-#warning Missing logic
 
-  return ret;
-#endif
+   /* On success, the new address was already set (in icmpv_rnotify()).  We
+    * need only to bring the network back to the up state and return success.
+    */
+
+  netdev_ifup(dev);
+  net_unlock(save);
+  return OK;
+#endif /* CONFIG_NET_ETHERNET */
 }
 
 #endif /* CONFIG_NET_ICMPv6_AUTOCONF */

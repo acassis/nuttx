@@ -2129,9 +2129,17 @@ static int stm32_ifup(struct net_driver_s *dev)
   FAR struct stm32_ethmac_s *priv = (FAR struct stm32_ethmac_s *)dev->d_private;
   int ret;
 
+#ifdef CONFIG_NET_IPv4
   ndbg("Bringing up: %d.%d.%d.%d\n",
        dev->d_ipaddr & 0xff, (dev->d_ipaddr >> 8) & 0xff,
        (dev->d_ipaddr >> 16) & 0xff, dev->d_ipaddr >> 24);
+#endif
+#ifdef CONFIG_NET_IPv4
+  ndbg("Bringing up: %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x\n",
+       dev->d_ipv6addr[0], dev->d_ipv6addr[1], dev->d_ipv6addr[2],
+       dev->d_ipv6addr[3], dev->d_ipv6addr[4], dev->d_ipv6addr[5],
+       dev->d_ipv6addr[6], dev->d_ipv6addr[7]);
+#endif
 
   /* Configure the Ethernet interface for DMA operation. */
 
@@ -2263,7 +2271,7 @@ static int stm32_txavail(struct net_driver_s *dev)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NET_IGMP
+#if defined(CONFIG_NET_IGMP) || defined(CONFIG_NET_ICMPv6)
 static uint32_t stm32_calcethcrc(const uint8_t *data, size_t length)
 {
   uint32_t crc = 0xffffffff;
@@ -3527,6 +3535,25 @@ static void stm32_ipv6multicast(FAR struct stm32_ethmac_s *priv)
         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
   (void)stm32_addmac(dev, mac);
+
+#ifdef CONFIG_NET_ICMPv6_AUTOCONF
+  /* Add the IPv6 all link-local nodes Ethernet address.  This is the
+   * address that we expect to receive ICMPv6 Router Advertisement
+   * packets.
+   */
+
+  (void)stm32_addmac(dev, g_ipv6_ethallnodes.ether_addr_octet);
+
+#endif /* CONFIG_NET_ICMPv6_AUTOCONF */
+#ifdef CONFIG_NET_ICMPv6_ROUTER
+  /* Add the IPv6 all link-local routers Ethernet address.  This is the
+   * address that we expect to receive ICMPv6 Router Solicitation
+   * packets.
+   */
+
+  (void)stm32_addmac(dev, g_ipv6_ethallrouters.ether_addr_octet);
+
+#endif /* CONFIG_NET_ICMPv6_ROUTER */
 }
 #endif /* CONFIG_NET_ICMPv6 */
 

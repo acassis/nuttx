@@ -47,7 +47,6 @@
  * Pre-Processor Definitions
  ****************************************************************************/
 
-
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -62,19 +61,31 @@
 
 int tm4c_bringup(void)
 {
-#ifdef HAVE_AT24
+#if defined (HAVE_AT24) || defined (CONFIG_TIVA_TIMER)
   int ret;
+#endif /* defined (HAVE_AT24) || defined (CONFIG_TIVA_TIMER) */
 
+#ifdef HAVE_AT24
   /* Initialize the AT24 driver */
 
   ret = tm4c_at24_automount(AT24_MINOR);
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: tm4c_at24_automount failed: %d\n", ret);
+      return ret;
     }
-
-  return ret;
-#else
-  return OK;
 #endif /* HAVE_AT24 */
+
+#ifdef CONFIG_TIVA_TIMER
+  /* Initialize the timer driver */
+
+  ret = tiva_timer_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize timer driver: %d\n", ret);
+      return ret;
+    }
+#endif /* CONFIG_TIVA_TIMER */
+
+  return OK;
 }

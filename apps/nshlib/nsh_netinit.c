@@ -111,6 +111,16 @@
 #  error ERROR: No link layer protocol defined
 #endif
 
+/* We need a valid IP domain (any domain) to create a socket that we can use
+ * to comunicate with the network device.
+ */
+
+#if defined(CONFIG_NET_IPv4)
+#  define AF_INETX AF_INET
+#elif defined(CONFIG_NET_IPv6)
+#  define AF_INETX AF_INET6
+#endif
+
 /* While the network is up, the network monitor really does nothing.  It
  * will wait for a very long time while waiting, it can be awakened by a
  * signal indicating a change in network status.
@@ -131,8 +141,7 @@
 static sem_t g_notify_sem;
 #endif
 
-#ifdef CONFIG_NET_IPv6
-#ifndef CONFIG_NET_ICMPv6_AUTOCONF
+#if defined(CONFIG_NET_IPv6) && !defined(CONFIG_NET_ICMPv6_AUTOCONF)
 /* Host IPv6 address */
 
 static const uint16_t g_ipv6_hostaddr[8] =
@@ -146,7 +155,6 @@ static const uint16_t g_ipv6_hostaddr[8] =
   HTONS(CONFIG_NSH_IPv6ADDR_7),
   HTONS(CONFIG_NSH_IPv6ADDR_8),
 };
-#endif /* CONFIG_NET_ICMPv6_AUTOCONF */
 
 /* Default routine IPv6 address */
 
@@ -175,7 +183,7 @@ static const uint16_t g_ipv6_netmask[8] =
   HTONS(CONFIG_NSH_IPv6NETMASK_7),
   HTONS(CONFIG_NSH_IPv6NETMASK_8),
 };
-#endif /* CONFIG_NET_IPv6 */
+#endif /* CONFIG_NET_IPv6 && !CONFIG_NET_ICMPv6_AUTOCONF*/
 
 /****************************************************************************
  * Private Function Prototypes
@@ -260,13 +268,12 @@ static void nsh_netinit_configure(void)
 
   netlib_icmpv6_autoconfiguration(NET_DEVNAME);
 
-#else
+#else /* CONFIG_NET_ICMPv6_AUTOCONF */
 
   /* Set up our fixed host address */
 
   netlib_set_ipv6addr(NET_DEVNAME,
                       (FAR const struct in6_addr *)g_ipv6_hostaddr);
-#endif
 
   /* Set up the default router address */
 
@@ -277,7 +284,9 @@ static void nsh_netinit_configure(void)
 
   netlib_set_ipv6netmask(NET_DEVNAME,
                         (FAR const struct in6_addr *)g_ipv6_netmask);
-#endif
+
+#endif /* CONFIG_NET_ICMPv6_AUTOCONF */
+#endif /* CONFIG_NET_IPv6 */
 
 #if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
   /* Set up the resolver */
@@ -389,7 +398,7 @@ static int nsh_netinit_monitor(void)
    * interface driver.
    */
 
-  sd = socket(AF_INET, SOCK_DGRAM, 0);
+  sd = socket(AF_INETX, SOCK_DGRAM, 0);
   if (sd < 0)
     {
       ret = -errno;
