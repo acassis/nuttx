@@ -206,7 +206,7 @@ void board_initialize(void)
     }
 
     syslog(LOG_NOTICE,"initialize usbdev !\n");
-	//if ( efm32_usbdev_init() < 0 )
+	if ( efm32_usbdev_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize usbdev\n");
     }

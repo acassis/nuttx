@@ -2651,7 +2651,7 @@ static inline void efm32_epout_interrupt(FAR struct efm32_usbdev_s *priv)
           /* Yes.. get the OUT endpoint interrupt status */
 
           doepint  = efm32_getreg(EFM32_USB_DOEPINT(epno));
-          doepint &= efm32_getreg(EFM32_USB_DOEPMSK);
+//pnb          doepint &= efm32_getreg(EFM32_USB_DOEPMSK);
 
           /* Transfer completed interrupt.  This interrupt is trigged when
            * efm32_rxinterrupt() removes the last packet data from the RxFIFO.
