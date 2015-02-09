@@ -51,7 +51,7 @@
  * Definitions
  ****************************************************************************/
 
-/* The architecture must provide up_putc for this driver */
+/* The architecture must provide syslog_putc for this driver */
 
 #if defined(CONFIG_SYSLOG)
 
@@ -59,11 +59,11 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static ssize_t syslog_console_read(struct file *filep, char *buffer, 
+static ssize_t syslog_console_read(FAR struct file *filep, FAR char *buffer, 
                                    size_t buflen);
-static ssize_t syslog_console_write(struct file *filep, const char *buffer, 
-                                    size_t buflen);
-static int     syslog_console_ioctl(struct file *filep, int cmd, 
+static ssize_t syslog_console_write(FAR struct file *filep,
+                                    FAR const char *buffer, size_t buflen);
+static int     syslog_console_ioctl(FAR struct file *filep, int cmd, 
                                     unsigned long arg);
 
 /****************************************************************************
@@ -91,7 +91,8 @@ static const struct file_operations g_consoleops =
  * Name: syslog_console_ioctl
  ****************************************************************************/
 
-static int syslog_console_ioctl(struct file *filep, int cmd, unsigned long arg)
+static int syslog_console_ioctl(FAR struct file *filep, int cmd,
+                                unsigned long arg)
 {
   return -ENOTTY;
 }
@@ -100,7 +101,7 @@ static int syslog_console_ioctl(struct file *filep, int cmd, unsigned long arg)
  * Name: syslog_console_read
  ****************************************************************************/
 
-static ssize_t syslog_console_read(struct file *filep, char *buffer, 
+static ssize_t syslog_console_read(FAR struct file *filep, FAR char *buffer, 
                                    size_t buflen)
 {
   return 0;
@@ -110,8 +111,8 @@ static ssize_t syslog_console_read(struct file *filep, char *buffer,
  * Name: syslog_console_write
  ****************************************************************************/
 
-static ssize_t syslog_console_write(struct file *filep, const char *buffer, 
-                                    size_t buflen)
+static ssize_t syslog_console_write(FAR struct file *filep,
+                                    FAR const char *buffer, size_t buflen)
 {
   ssize_t ret = buflen;
 
