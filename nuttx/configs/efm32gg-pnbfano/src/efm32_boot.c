@@ -169,21 +169,18 @@ void board_initialize(void)
 	if ( board_init_pwm() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize PWMs\n");
-        return;
     }
 
     syslog(LOG_NOTICE,"initialize CHRONO !\n");
 	if ( efm32_gpio_chrono_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize Chrono\n");
-        return;
     }
 
     syslog(LOG_NOTICE,"initialize PPS !\n");
 	if ( efm32_gpio_pps_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize PPS\n");
-        return;
     }
 
     syslog(LOG_NOTICE,"initialize LCD !\n");
@@ -201,20 +198,23 @@ void board_initialize(void)
     if ( efm32_initialize_spi_devices() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize SDcard\n");
-        return;
     }
 
     if ( mount("/dev/mmcsd0","/mnt","vfat",0,NULL) < 0 )
     {
         syslog(LOG_ERR,"Cannot Mount SDcard\n");
-        return;
+    }
+
+    syslog(LOG_NOTICE,"initialize usbdev !\n");
+	//if ( efm32_usbdev_init() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize usbdev\n");
     }
 
     syslog(LOG_NOTICE,"Start slow polling !\n");
     if ( efm32_slow_poll_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot Start slow polling\n");
-        return;
     }
 
     syslog(LOG_NOTICE,"Board Ready !\n");

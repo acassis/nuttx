@@ -68,9 +68,9 @@ static void efm32_slow_poll_worker(FAR void *arg);
 /****************************************************************************
  * Name: efm32_slow_poll_next_poll
  ****************************************************************************/
-static void efm32_slow_poll_next_poll(void)
+static int efm32_slow_poll_next_poll(void)
 {
-    if ( work_queue(LPWORK, 
+    if ( work_queue(HPWORK, 
                     &work, 
                     efm32_slow_poll_worker,
                     NULL, 
@@ -78,8 +78,9 @@ static void efm32_slow_poll_next_poll(void)
                     ) != OK )
     {
         EFM32_SLOW_POLL_LOG("Cannot register slow poll work !\n");
-        return;
+        return -1;
     }
+    return 0;
 }
 
 /****************************************************************************
@@ -89,7 +90,9 @@ static void efm32_slow_poll_worker(FAR void *arg)
 {
     UNUSED(arg);
 
-    //EFM32_SLOW_POLL_LOG("slow poll work...\n");
+    EFM32_SLOW_POLL_LOG("slow poll work...\n");
+
+    efm32_usbdev_printtrace();
 
     efm32_slow_poll_next_poll();
 
@@ -108,9 +111,9 @@ static void efm32_slow_poll_worker(FAR void *arg)
 int efm32_slow_poll_init( void )
 {
 
-    efm32_slow_poll_next_poll();
-
-    return OK;
+    if ( efm32_slow_poll_next_poll() < 0 )
+        return -1;
+    return 0;
 }
 
 

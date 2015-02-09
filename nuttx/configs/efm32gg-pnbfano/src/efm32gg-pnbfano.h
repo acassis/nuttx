@@ -210,4 +210,13 @@ int efm32_gpio_pps_init( void );
 int efm32_gpio_chrono_init( void );
 #endif
 
+#if CONFIG_USBMSC
+int  efm32_usbdev_init(void);
+#   if CONFIG_USBDEV_TRACE
+void efm32_usbdev_printtrace(void);
+#   else
+#       define efm32_usbdev_printtrace()
+#   endif
+#endif
+
 #endif /* __CONFIGS_EFM32_DK3650_INCLUDE_BOARD_H */

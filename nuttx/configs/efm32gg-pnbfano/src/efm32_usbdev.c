@@ -49,20 +49,303 @@
 
 #include "up_arch.h"
 
-/************************************************************************************
- * Definitions
- ************************************************************************************/
+#ifdef speLOG_EFM32_USBDEV
+#   undef  speLOG
+#   define speLOG speLOG_EFM32_USBDEV
+#endif
 
-/************************************************************************************
+#ifndef speLOG
+#   define speLOG syslog
+#endif
+
+#ifdef CONFIG_USBDEV
+#   include <nuttx/usb/usbdev.h>
+#endif
+
+#ifdef CONFIG_USBDEV_TRACE
+#   include <nuttx/usb/usbdev_trace.h>
+
+#ifndef TRACE_BITSET
+#  define TRACE_BITSET              (TRACE_ALLBITS)
+#endif
+
+#endif
+
+
+/******************************************************************************\
+ * Definitions
+ ******************************************************************************/
+
+/* Configuration **************************************************************/
+#define __USBMSC_NLUNS      1
+#define __USBMSC_DEVPATH1   "/dev/mmcsd0"
+
+/******************************************************************************\
  * Private Functions
- ************************************************************************************/
+ ******************************************************************************/
+
+/******************************************************************************\
+ * Private Data
+ ******************************************************************************/
+
+static void *handle;
+
+/******************************************************************************\
+ * Name: usbmsc_enumerate
+ ******************************************************************************/
+
+#if CONFIG_USBDEV_TRACE
+static int usbmsc_enumerate(struct usbtrace_s *trace, void *arg)
+{
+  switch (trace->event)
+    {
+    case TRACE_DEVINIT:
+      speLOG(LOG_DEBUG,"USB controller initialization: %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVUNINIT:
+      speLOG(LOG_DEBUG,"USB controller un-initialization: %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVREGISTER:
+      speLOG(LOG_DEBUG,"usbdev_register(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVUNREGISTER:
+      speLOG(LOG_DEBUG,"usbdev_unregister(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPCONFIGURE:
+      speLOG(LOG_DEBUG,"Endpoint configure(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPDISABLE:
+      speLOG(LOG_DEBUG,"Endpoint disable(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPALLOCREQ:
+      speLOG(LOG_DEBUG,"Endpoint allocreq(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPFREEREQ:
+      speLOG(LOG_DEBUG,"Endpoint freereq(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPALLOCBUFFER:
+      speLOG(LOG_DEBUG,"Endpoint allocbuffer(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPFREEBUFFER:
+      speLOG(LOG_DEBUG,"Endpoint freebuffer(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPSUBMIT:
+      speLOG(LOG_DEBUG,"Endpoint submit(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPCANCEL:
+      speLOG(LOG_DEBUG,"Endpoint cancel(): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPSTALL:
+      speLOG(LOG_DEBUG,"Endpoint stall(true): %04x\n", trace->value);
+      break;
+
+    case TRACE_EPRESUME:
+      speLOG(LOG_DEBUG,"Endpoint stall(false): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVALLOCEP:
+      speLOG(LOG_DEBUG,"Device allocep(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVFREEEP:
+      speLOG(LOG_DEBUG,"Device freeep(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVGETFRAME:
+      speLOG(LOG_DEBUG,"Device getframe(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVWAKEUP:
+      speLOG(LOG_DEBUG,"Device wakeup(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVSELFPOWERED:
+      speLOG(LOG_DEBUG,"Device selfpowered(): %04x\n", trace->value);
+      break;
+
+    case TRACE_DEVPULLUP:
+      speLOG(LOG_DEBUG,"Device pullup(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSBIND:
+      speLOG(LOG_DEBUG,"Class bind(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSUNBIND:
+      speLOG(LOG_DEBUG,"Class unbind(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSDISCONNECT:
+      speLOG(LOG_DEBUG,"Class disconnect(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSSETUP:
+      speLOG(LOG_DEBUG,"Class setup(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSSUSPEND:
+      speLOG(LOG_DEBUG,"Class suspend(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSRESUME:
+      speLOG(LOG_DEBUG,"Class resume(): %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSRDCOMPLETE:
+      speLOG(LOG_DEBUG,"Class RD request complete: %04x\n", trace->value);
+      break;
+
+    case TRACE_CLASSWRCOMPLETE:
+      speLOG(LOG_DEBUG,"Class WR request complete: %04x\n", trace->value);
+      break;
+
+    default:
+      switch (TRACE_ID(trace->event))
+        {
+        case TRACE_CLASSAPI_ID:        /* Other class driver system API calls */
+          speLOG(LOG_DEBUG,"Class API call %d: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_CLASSSTATE_ID:      /* Track class driver state changes */
+          speLOG(LOG_DEBUG,"Class state %d: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_INTENTRY_ID:        /* Interrupt handler entry */
+          speLOG(LOG_DEBUG,"Interrupt %d entry: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_INTDECODE_ID:       /* Decoded interrupt trace->event */
+          speLOG(LOG_DEBUG,"Interrupt decode %d: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_INTEXIT_ID:         /* Interrupt handler exit */
+          speLOG(LOG_DEBUG,"Interrupt %d exit: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_OUTREQQUEUED_ID:    /* Request queued for OUT endpoint */
+          speLOG(LOG_DEBUG,"EP%d OUT request queued: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_INREQQUEUED_ID:     /* Request queued for IN endpoint */
+          speLOG(LOG_DEBUG,"EP%d IN request queued: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_READ_ID:            /* Read (OUT) action */
+          speLOG(LOG_DEBUG,"EP%d OUT read: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_WRITE_ID:           /* Write (IN) action */
+          speLOG(LOG_DEBUG,"EP%d IN write: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_COMPLETE_ID:        /* Request completed */
+          speLOG(LOG_DEBUG,"EP%d request complete: %04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_DEVERROR_ID:        /* USB controller driver error event */
+          speLOG(LOG_DEBUG,"Controller error: %02x:%04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        case TRACE_CLSERROR_ID:        /* USB class driver error event */
+          speLOG(LOG_DEBUG,"Class error: %02x:%04x\n",
+                 TRACE_DATA(trace->event), trace->value);
+          break;
+
+        default:
+          speLOG(LOG_DEBUG,"Unrecognized event: %02x:%02x:%04x\n",
+                  TRACE_ID(trace->event) >> 8,
+                  TRACE_DATA(trace->event), trace->value);
+          break;
+        }
+    }
+  return OK;
+}
+#endif
 
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
+int efm32_usbdev_init(void)
+{
+#ifdef CONFIG_USBMSC
+    int ret;
+
+    usbtrace_enable(TRACE_BITSET);
+
+    speLOG(LOG_INFO,"Configuring with NLUNS=%d\n", __USBMSC_NLUNS);
+    ret = usbmsc_configure(__USBMSC_NLUNS, &handle);
+    if (ret < 0)
+    {
+        speLOG(LOG_ERR,"usbmsc_configure failed: %d\n", -ret);
+        usbmsc_uninitialize(handle);
+        return -1;
+    }
+
+    speLOG(LOG_INFO,"Bind LUN=0 to %s\n", __USBMSC_DEVPATH1);
+    ret = usbmsc_bindlun(handle, __USBMSC_DEVPATH1, 0, 0, 0, false);
+    if (ret < 0)
+    {
+        speLOG(LOG_ERR,"usbmsc_bindlun failed for LUN 0 using %s: %d\n",
+               __USBMSC_DEVPATH1, -ret);
+        usbmsc_uninitialize(handle);
+        return -1;
+    }
+
+    speLOG(LOG_INFO,"export luns\n");
+    ret = usbmsc_exportluns(handle);
+    if (ret < 0)
+    {
+        speLOG(LOG_ERR,"usbmsc_exportluns failed: %d\n", -ret);
+        usbmsc_uninitialize(handle);
+        return -1;
+    }
+#endif
+
+    return OK;
+}
+
+
+
+#ifdef CONFIG_USBDEV_TRACE
+void efm32_usbdev_printtrace(void)
+{
+    int ret;
+
+    speLOG(LOG_DEBUG,"USB TRACE DATA:\n");
+    ret = usbtrace_enumerate(usbmsc_enumerate, NULL);
+
+    if ( ret < 0 )
+        speLOG(LOG_ERR,"USB TRACE DATA Failed %d\n",ret);
+
+}
+#endif
+
 
 /************************************************************************************
- * Name:  stm32_usbsuspend
+ * Name:  efm32_usbsuspend
  *
  * Description:
  *   Board logic must provide the stm32_usbsuspend logic if the USBDEV driver is
