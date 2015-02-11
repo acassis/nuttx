@@ -5192,11 +5192,8 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
 
   /* First Turn on USB clocking */
 
-  modifyreg32(EFM32_CMU_HFCORECLKEN0,
-              0,
-              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC
-             );
-
+  modifyreg32(EFM32_CMU_HFCORECLKEN0,0,
+              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC);
 
   /* At start-up the core is in FS mode. */
 
@@ -5205,7 +5202,17 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
    * interrupts will occur when the TxFIFO is truly empty (not just half full).
    */
 
-  efm32_putreg(USB_GAHBCFG_NPTXFEMPLVL_EMPTY, EFM32_USB_GAHBCFG);
+  /* I never saw this in original EFM32 lib
+   * and in refrence manual I found:
+   *    "Non-periodic TxFIFO Empty Level (can be enabled only when the core is
+   *    operating in Slave mode as a host.)"
+   */
+  //efm32_putreg(USB_GAHBCFG_NPTXFEMPLVL_EMPTY, EFM32_USB_GAHBCFG);
+  efm32_putreg(0, EFM32_USB_GAHBCFG);
+
+  /* Enable PHY USB */
+
+  efm32_putreg(USB_ROUTE_PHYPEN, EFM32_USB_ROUTE);
 
   /* Common USB OTG core initialization */
   /* Reset after a PHY select and set Host mode.  First, wait for AHB master
@@ -5241,7 +5248,7 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
   /* Force Device Mode */
 
   regval  = efm32_getreg(EFM32_USB_GUSBCFG);
-  regval &= ~_USB_GUSBCFG_FORCEHSTMODE_MASK;
+  regval &= ~(_USB_GUSBCFG_FORCEHSTMODE_MASK|_USB_GUSBCFG_CORRUPTTXPKT_MASK);
   regval |= USB_GUSBCFG_FORCEDEVMODE;
   efm32_putreg(regval, EFM32_USB_GUSBCFG);
   up_mdelay(50);
@@ -5265,9 +5272,32 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
   regval |= USB_DCFG_DEVSPD_FS;
   efm32_putreg(regval, EFM32_USB_DCFG);
 
+  /* Stall on non-zero len status OUT packets (ctrl transfers). */
+
+  regval  = efm32_getreg(EFM32_USB_DCFG);
+  regval &= USB_DCFG_NZSTSOUTHSHK;
+  efm32_putreg(regval, EFM32_USB_DCFG);
+
+  regval  = efm32_getreg(EFM32_USB_GAHBCFG);
+  regval  &= ~_USB_GAHBCFG_HBSTLEN_MASK;
+  regval  |= USB_GAHBCFG_DMAEN | USB_GAHBCFG_HBSTLEN_INCR;
+  efm32_putreg(regval, EFM32_USB_GAHBCFG);
+
   /* Set Rx FIFO size */
 
-  efm32_putreg(EFM32_RXFIFO_WORDS, EFM32_USB_GRXFSIZ);
+  address = EFM32_RXFIFO_WORDS;
+  efm32_putreg(address<<_USB_GRXFSIZ_RXFDEP_SHIFT,
+               EFM32_USB_GRXFSIZ);
+
+  /* Set Tx EP0 FIFO size */
+
+  regval = EFM32_EP0_TXFIFO_WORDS;
+  regval = ( ( ( regval << _USB_GNPTXFSIZ_NPTXFINEPTXF0DEP_SHIFT ) &
+               _USB_GNPTXFSIZ_NPTXFINEPTXF0DEP_MASK              ) |
+             ( ( address << _USB_GNPTXFSIZ_NPTXFSTADDR_SHIFT     ) &
+               _USB_GNPTXFSIZ_NPTXFSTADDR_MASK                   )
+           );
+  efm32_putreg( regval,EFM32_USB_GNPTXFSIZ);
 
   /* EP0 TX */
 

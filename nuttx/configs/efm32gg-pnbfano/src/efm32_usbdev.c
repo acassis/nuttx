@@ -44,6 +44,7 @@
 #include <stdbool.h>
 #include <debug.h>
 
+#include <chip/efm32_usb.h>
 #include <nuttx/usb/usbdev.h>
 #include <nuttx/usb/usbdev_trace.h>
 
@@ -83,6 +84,9 @@
 /******************************************************************************\
  * Private Functions
  ******************************************************************************/
+
+static int efm32_usbmsc_connect(void);
+static int efm32_usbmsc_discon(void);
 
 /******************************************************************************\
  * Private Data
@@ -281,67 +285,129 @@ static int usbmsc_enumerate(struct usbtrace_s *trace, void *arg)
           break;
         }
     }
-  return OK;
+  return 0;
 }
 #endif
 
-/************************************************************************************
- * Public Functions
- ************************************************************************************/
-int efm32_usbdev_init(void)
+
+static int efm32_usbmsc_connect(void)
 {
 #ifdef CONFIG_USBMSC
-    int ret;
+    int ret = 0;
 
-    usbtrace_enable(TRACE_BITSET);
-
-    speLOG(LOG_INFO,"Configuring with NLUNS=%d\n", __USBMSC_NLUNS);
-    ret = usbmsc_configure(__USBMSC_NLUNS, &handle);
-    if (ret < 0)
+    if ( ret >= 0 )
     {
-        speLOG(LOG_ERR,"usbmsc_configure failed: %d\n", -ret);
-        usbmsc_uninitialize(handle);
+        speLOG(LOG_INFO,"Configuring with NLUNS=%d\n", __USBMSC_NLUNS);
+        ret = usbmsc_configure(__USBMSC_NLUNS, &handle);
+        if (ret < 0)
+        {
+            speLOG(LOG_ERR,"usbmsc_configure failed: %d\n", -ret);
+        }
+    }
+
+    if ( ret >= 0 )
+    {
+        speLOG(LOG_INFO,"Bind LUN=0 to %s\n", __USBMSC_DEVPATH1);
+        ret = usbmsc_bindlun(handle, __USBMSC_DEVPATH1, 0, 0, 0, false);
+        if (ret < 0)
+        {
+            speLOG(LOG_ERR,"usbmsc_bindlun failed for LUN 0 using %s: %d\n",
+                   __USBMSC_DEVPATH1, -ret);
+        }
+    }
+
+    if ( ret >= 0 )
+    {
+        speLOG(LOG_INFO,"export luns\n");
+        ret = usbmsc_exportluns(handle);
+        if (ret < 0)
+        {
+            speLOG(LOG_ERR,"usbmsc_exportluns failed: %d\n", -ret);
+        }
+    }
+
+
+
+#endif
+
+    if ( ret < 0 )
+    {
+        efm32_usbmsc_discon();
         return -1;
     }
 
-    speLOG(LOG_INFO,"Bind LUN=0 to %s\n", __USBMSC_DEVPATH1);
-    ret = usbmsc_bindlun(handle, __USBMSC_DEVPATH1, 0, 0, 0, false);
-    if (ret < 0)
-    {
-        speLOG(LOG_ERR,"usbmsc_bindlun failed for LUN 0 using %s: %d\n",
-               __USBMSC_DEVPATH1, -ret);
-        usbmsc_uninitialize(handle);
-        return -1;
-    }
+    return 0;
+}
 
-    speLOG(LOG_INFO,"export luns\n");
-    ret = usbmsc_exportluns(handle);
-    if (ret < 0)
+static int efm32_usbmsc_discon(void)
+{
+#ifdef CONFIG_USBMSC
+    if ( handle )
     {
-        speLOG(LOG_ERR,"usbmsc_exportluns failed: %d\n", -ret);
+        speLOG(LOG_ERR,"USB uninitialization\n");
         usbmsc_uninitialize(handle);
-        return -1;
+        handle = NULL;
     }
 #endif
 
-    return OK;
+    return 0;
+}
+/******************************************************************************
+ * Public Functions
+ *****************************************************************************/
+
+int efm32_usbdev_init(void)
+{
+#ifdef CONFIG_USBDEV_TRACE
+    usbtrace_enable(TRACE_BITSET);
+#endif
+
+    /* Enable voltage regulator output sensing to detect usb plug/unplug */
+
+    modifyreg32(EFM32_USB_CTRL,0,_USB_CTRL_VREGOSEN_MASK);
+
+    return 0;
 }
 
-
-
-#ifdef CONFIG_USBDEV_TRACE
-void efm32_usbdev_printtrace(void)
+void efm32_usbdev_slow_poll(void)
 {
     int ret;
 
+    /* check USB regulator output sensing only if Active */
+
+    if ( getreg32(EFM32_USB_CTRL) & _USB_CTRL_VREGOSEN_MASK )
+    {
+        /* Check regulator output */
+        if ( getreg32(EFM32_USB_STATUS) & _USB_STATUS_VREGOS_MASK )
+        {
+            if ( handle == NULL )
+            {
+                efm32_usbmsc_connect();
+            }
+        }
+        else
+        {
+            if ( handle != NULL )
+            {
+                efm32_usbmsc_discon();
+            }
+        }
+    }
+    else
+    {
+        speLOG(LOG_WARNING,"USB regulator output sensing disabled !\n");
+    }
+
+#ifdef CONFIG_USBDEV_TRACE
     speLOG(LOG_DEBUG,"USB TRACE DATA:\n");
     ret = usbtrace_enumerate(usbmsc_enumerate, NULL);
 
     if ( ret < 0 )
         speLOG(LOG_ERR,"USB TRACE DATA Failed %d\n",ret);
+#endif
 
 }
-#endif
+
 
 
 /************************************************************************************

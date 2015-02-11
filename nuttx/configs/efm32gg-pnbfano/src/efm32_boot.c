@@ -205,17 +205,18 @@ void board_initialize(void)
         syslog(LOG_ERR,"Cannot Mount SDcard\n");
     }
 
-    syslog(LOG_NOTICE,"initialize usbdev !\n");
-	if ( efm32_usbdev_init() < 0 )
-    {
-        syslog(LOG_ERR,"Cannot initialize usbdev\n");
-    }
-
     syslog(LOG_NOTICE,"Start slow polling !\n");
     if ( efm32_slow_poll_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot Start slow polling\n");
     }
+
+    syslog(LOG_NOTICE,"initialize usbdev !\n");
+    if ( efm32_usbdev_init() < 0 )
+    {
+        syslog(LOG_ERR,"Cannot initialize usbdev\n");
+    }
+
 
     syslog(LOG_NOTICE,"Board Ready !\n");
 
