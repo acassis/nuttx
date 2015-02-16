@@ -65,10 +65,41 @@ uint32_t g_neighbor_polltime;
  ****************************************************************************/
 
 /****************************************************************************
+ * Name: neighbor_setup
+ *
+ * Description:
+ *   Initialize Neighbor table data structures.  This function is called
+ *   prior to platform-specific driver initialization so that the networking
+ *   subsystem is prepared to deal with network driver initialization
+ *   actions.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+void neighbor_setup(void)
+{
+  int i;
+
+  for (i = 0; i < CONFIG_NET_IPv6_NCONF_ENTRIES; ++i)
+    {
+      g_neighbors[i].ne_time = NEIGHBOR_MAXTIME;
+    }
+}
+
+/****************************************************************************
  * Name: neighbor_initialize
  *
  * Description:
- *  Initialize Neighbor table support
+ *  Initialize Neighbor ageing.  This function is called from the OS
+ *  initialization logic at power-up reset AFTER initialization of hardware
+ *  facilities such as timers and interrupts.  This logic completes the
+ *  initialization started by neighbor_setup.
+ *
  *
  * Input Parameters:
  *   None
@@ -80,13 +111,6 @@ uint32_t g_neighbor_polltime;
 
 void neighbor_initialize(void)
 {
-  int i;
-
-  for (i = 0; i < CONFIG_NET_IPv6_NCONF_ENTRIES; ++i)
-    {
-      g_neighbors[i].ne_time = NEIGHBOR_MAXTIME;
-    }
-
   /* Initialize the time of the last poll */
 
    g_neighbor_polltime = clock_systimer();

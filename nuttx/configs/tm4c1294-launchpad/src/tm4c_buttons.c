@@ -1,7 +1,7 @@
 /****************************************************************************
- * sched/clock/clock_gettimeofday.c
+ * configs/tm4c1294-launchpad/src/tm4c_buttons.c
  *
- *   Copyright (C) 2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,35 +39,32 @@
 
 #include <nuttx/config.h>
 
-#include <sys/time.h>
-#include <errno.h>
-#include <debug.h>
+#include <stdint.h>
 
-#include "clock/clock.h"
+#include <nuttx/arch.h>
+
+#include <arch/irq.h>
+#include <arch/board/board.h>
+
+#include "tm4c1294-launchpad.h"
+
+#ifdef CONFIG_ARCH_BUTTONS
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
 
 /****************************************************************************
- * Private Type Declarations
+ * Private Data
  ****************************************************************************/
+/* Pin configuration for each STM3210E-EVAL button.  This array is indexed by
+ * the BUTTON_* and JOYSTICK_* definitions in board.h
+ */
 
-/****************************************************************************
- * Private Function Prototypes
- ****************************************************************************/
-
-/**************************************************************************
- * Public Constant Data
- **************************************************************************/
-
-/****************************************************************************
- * Public Variables
- ****************************************************************************/
-
-/**************************************************************************
- * Private Variables
- **************************************************************************/
+static const uint32_t g_buttons[NUM_BUTTONS] =
+{
+  GPIO_SW1, GPIO_SW2
+};
 
 /****************************************************************************
  * Private Functions
@@ -78,36 +75,53 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: gettimeofday
+ * Name: board_button_initialize
  *
  * Description:
- *  Get the current time
+ *   board_button_initialize() must be called to initialize button resources.
+ *   After that, board_buttons() may be called to collect the current state
+ *   of all buttons or board_button_irq() may be called to register button
+ *   interrupt handlers.
  *
  ****************************************************************************/
 
-int gettimeofday(struct timeval *tp, void *tzp)
+void board_button_initialize(void)
 {
-  struct timespec ts;
-  int ret;
+  int i;
 
-#ifdef CONFIG_DEBUG
-  if (!tp)
+  /* Configure the GPIO pins as inputs. */
+
+  for (i = 0; i < NUM_BUTTONS; i++)
     {
-      set_errno(EINVAL);
-      return ERROR;
+      tiva_configgpio(g_buttons[i]);
     }
-#endif
+}
 
-  /* Let clock_gettime do most of the work */
+/****************************************************************************
+ * Name: board_buttons
+ ****************************************************************************/
 
-  ret = clock_gettime(CLOCK_REALTIME, &ts);
-  if (ret == OK)
+uint8_t board_buttons(void)
+{
+  uint8_t ret = 0;
+  int i;
+
+  /* Check that state of each key */
+
+  for (i = 0; i < NUM_BUTTONS; i++)
     {
-       /* Convert the struct timespec to a struct timeval */
+      /* A LOW value means that the key is pressed. */
 
-       tp->tv_sec  = ts.tv_sec;
-       tp->tv_usec = ts.tv_nsec / NSEC_PER_USEC;
+      bool released = tiva_gpioread(g_buttons[i]);
+
+      /* Accumulate the set of depressed (not released) keys */
+
+      if (!released)
+        {
+          ret |= (1 << i);
+        }
     }
 
   return ret;
 }
+#endif /* CONFIG_ARCH_BUTTONS */

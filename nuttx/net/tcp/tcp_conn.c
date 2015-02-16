@@ -104,7 +104,7 @@ static uint16_t g_last_tcp_port;
  ****************************************************************************/
 
 #if defined(CONFIG_NET_IPv4) && defined(CONFIG_NETDEV_MULTINIC)
-static inline FAR struct tcp_conn_s *tcp_ipv4_listener(inaddr_t ipaddr,
+static inline FAR struct tcp_conn_s *tcp_ipv4_listener(in_addr_t ipaddr,
                                                        uint16_t portno)
 {
   FAR struct tcp_conn_s *conn;
@@ -155,8 +155,8 @@ static inline FAR struct tcp_conn_s *tcp_ipv4_listener(inaddr_t ipaddr,
  ****************************************************************************/
 
 #if defined(CONFIG_NET_IPv6) && defined(CONFIG_NETDEV_MULTINIC)
-static inline FAR struct tcp_conn_s *tcp_ipv6_ listener(net_ipv6addr_t ipaddr,
-                                                        uint16_t portno)
+static inline FAR struct tcp_conn_s *
+tcp_ipv6_listener(const net_ipv6addr_t ipaddr, uint16_t portno)
 {
   FAR struct tcp_conn_s *conn;
   int i;
@@ -207,7 +207,7 @@ static inline FAR struct tcp_conn_s *tcp_ipv6_ listener(net_ipv6addr_t ipaddr,
 
 #ifdef CONFIG_NETDEV_MULTINIC
 static FAR struct tcp_conn_s *
-  tcp_listener(uint8_t domain, FAR const union ip_binding_u *ipaddr,
+  tcp_listener(uint8_t domain, FAR const union ip_addr_u *ipaddr,
                uint16_t portno)
 {
 #ifdef CONFIG_NET_IPv4
@@ -436,7 +436,7 @@ static inline FAR struct tcp_conn_s *
   FAR struct tcp_conn_s *conn;
   net_ipv6addr_t *srcipaddr;
 #ifdef CONFIG_NETDEV_MULTINIC
-  net_ipv6addr_t destipaddr;
+  net_ipv6addr_t *destipaddr;
 #endif
 
   conn       = (FAR struct tcp_conn_s *)g_active_tcp_connections.head;
@@ -521,7 +521,7 @@ static inline int tcp_ipv4_bind(FAR struct tcp_conn_s *conn,
 
 #ifdef CONFIG_NETDEV_MULTINIC
   port = tcp_selectport(PF_INET,
-                       (FAR const union ip_addr_u ipaddr *)&addr->sin_addr.s_addr,
+                       (FAR const union ip_addr_u *)&addr->sin_addr.s_addr,
                         ntohs(addr->sin_port));
 #else
   port = tcp_selectport(ntohs(addr->sin_port));
@@ -539,7 +539,7 @@ static inline int tcp_ipv4_bind(FAR struct tcp_conn_s *conn,
   conn->lport = addr->sin_port;
 
 #ifdef CONFIG_NETDEV_MULTINIC
-  net_ipv4addr_copy(conn->u.ipv4.laddr, ipaddr);
+  net_ipv4addr_copy(conn->u.ipv4.laddr, addr->sin_addr.s_addr);
 #endif
 
   return OK;
@@ -575,10 +575,16 @@ static inline int tcp_ipv6_bind(FAR struct tcp_conn_s *conn,
   /* Verify or select a local port */
 
 #ifdef CONFIG_NETDEV_MULTINIC
+  /* The port number must be unique for this address binding */
+
   port = tcp_selectport(PF_INET6,
-                        (FAR const union ip_addr_u ipaddr *)addr->sin6_addr.in6_u.u6_addr16,
+                        (FAR const union ip_addr_u *)addr->sin6_addr.in6_u.u6_addr16,
                         ntohs(addr->sin6_port));
 #else
+  /* There is only one network device; the port number can be globally
+   * unique.
+   */
+
   port = tcp_selectport(ntohs(addr->sin6_port));
 #endif
 
@@ -1099,12 +1105,55 @@ int tcp_connect(FAR struct tcp_conn_s *conn, FAR const struct sockaddr *addr)
    */
 
   flags = net_lock();
+
 #ifdef CONFIG_NETDEV_MULTINIC
-  port = tcp_selectport(conn->domain, &conn->u, ntohs(conn->lport));
-#else
-  port = tcp_selectport(ntohs(conn->lport));
+  /* If there are multiple network devices, then we need to pass the local,
+   * bound address.  This is needed because port unique-ness is only for a
+   * given network.
+   *
+   * This is complicated by the fact that the local address may be either an
+   * IPv4 or an IPv6 address.
+   */
+
+#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_NET_IPv6
+  if (conn->domain == PF_INET)
 #endif
+    {
+      /* Select a port that is unique for this IPv4 local address */
+
+      port = tcp_selectport(PF_INET,
+                            (FAR const union ip_addr_u *)&conn->u.ipv4.laddr,
+                            ntohs(conn->lport));
+    }
+#endif /* CONFIG_NET_IPv4 */
+
+#ifdef CONFIG_NET_IPv6
+#ifdef CONFIG_NET_IPv4
+  else
+#endif
+    {
+      /* Select a port that is unique for this IPv6 local address */
+
+      port = tcp_selectport(PF_INET6,
+                            (FAR const union ip_addr_u *)conn->u.ipv6.laddr,
+                            ntohs(conn->lport));
+    }
+#endif /* CONFIG_NET_IPv6 */
+
+#else /* CONFIG_NETDEV_MULTINIC */
+  /* Select the next available port number.  This is only one network device
+   * so we do not have to bother with all of the IPv4/IPv6 local address
+   * silliness.
+   */
+
+  port = tcp_selectport(ntohs(conn->lport));
+
+#endif /* CONFIG_NETDEV_MULTINIC */
+
   net_unlock(flags);
+
+  /* Did we have a port assignment? */
 
   if (port < 0)
     {

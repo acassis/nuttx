@@ -40,10 +40,10 @@
 #include <nuttx/config.h>
 
 #include <sys/select.h>
+#include <sys/time.h>
 
 #include <string.h>
 #include <poll.h>
-#include <time.h>
 #include <errno.h>
 #include <assert.h>
 #include <debug.h>

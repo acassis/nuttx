@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/armv7-a/arm_doirq.c
  *
- *   Copyright (C) 2013-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2013-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,10 +87,6 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
 
   current_regs = regs;
 
-  /* Mask and acknowledge the interrupt */
-
-  up_maskack_irq(irq);
-
   /* Deliver the IRQ */
 
   irq_dispatch(irq, regs);
@@ -129,10 +125,6 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
 
   regs         = (uint32_t *)current_regs;
   current_regs = NULL;
-
-  /* Unmask the last interrupt (global interrupts are still disabled) */
-
-  up_enable_irq(irq);
 #endif
 
   board_led_off(LED_INIRQ);

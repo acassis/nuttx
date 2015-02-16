@@ -9513,7 +9513,7 @@
 	  lpc4357-evb. These changes are required to get USART 2 and 3 working
 	  on the Embest development board.  From Toby Duckworth.
 
-7.8 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+7.8 2015-02-11 Gregory Nutt <gnutt@nuttx.org>
 
 	* include/nuttx/math.h and libc/math: Add support for inverse
 	  hyperbolic functions.  From Brennan Ashton (2015-01-26).
@@ -9617,7 +9617,7 @@
 	* EFM32 RTC:  RTC driver using BURTC. From Pierre-Noel Bouteville
 	  (2015-02-01).
 	* drivers/ramdisk.c, include/nuttx/fs/ramdisk.h, and other files:  Add
-	  logic to dispose of the drvier and RAM buffer when the RAM disk has
+	  logic to dispose of the driver and RAM buffer when the RAM disk has
 	  been unlinked and all open references to the RAM disk have been
 	  closed.  Add new parameters to romdisk() to specify what should be
 	  done with the RAM/ROM buffer -- Should it be freed or not?  Changed
@@ -9629,7 +9629,7 @@
 	  with a Neighbor Solicitation) (2015-01-02).
 	* net/arp/arp.h, arp_notify.c, and arp_send.c: Fixes another
 	  CONFIG_NET_NOINTS issues.  When called sem_timedwait() with the
-	  network locked, the network stays logcked while we wait which is not
+	  network locked, the network stays locked while we wait which is not
 	  what we want (without CONFIG_NET_NOINTS, interrupts are re-enabled
 	  while we wait and all is well) (2015-02-02).
 	* net/icmpv6/icmpv6.h, icmpv6_neighbor.c, icmpv6_notify.c: Apply the
@@ -9681,7 +9681,7 @@
 	  Sidrane (2015-02-07).
 	* drivers/syslog/syslog_console.c, include/nuttx/syslog/syslog_console.h,
 	  and the console device initialization logic for all architectures: Add
-	  an option to use the syslog'ing device as the system consolution.  This
+	  an option to use the syslog'ing device as the system console.  This
 	  option enables a low-level, write-only console device at /dev/console
 	  (similar to the low-level UART console device).  From Pierre-noel
 	  Bouteville (2015-02-08).
@@ -9702,3 +9702,116 @@
 	  matching and IPv6 in the SAMA5D4 Ethernet driver (2015-02-09).
 	* configs/sama5d4-ek/ipv6: Add a configuration for testing IPv6 with
 	  the SAMA5D4-EK (2015-02-09).
+	* arch/arm/src/armv7-a/arm_doirq.c: ARMv7-A interrupt handler should not
+	  automatically re-enable interrupts on interrupt return.  That
+	  interferes with the driver's ability to manage interrupts (2015-02-09).
+	* arch/arm/src/sama5/sam_emacb.c: Add support for CONFIG_NET_NOTINTS in
+	  the SAMA5D4 Ethernet driver so that the driver can operate from the
+	  work queue thread instead of doing everything from the interrupt level
+	  (2015-02-09).
+	* SAMA5D4-EK: CONFIG_NET_NOINTS is now enabled in the nsh and ipv6
+	  configurations (2015-02-09).
+	* arch/arm/src/a1x, arm, c5471, common, dm320, imx, lpc2378, lpc31xx,
+	  sama5, str71x, hc/src.common, sh/src/common, x86/src/common,
+	  z16/src/common, z16f, z80/src/z8: Big, very risky change:  Remove all
+	  occurrences of up_maskack_irq() that disable and enable interrupts
+	  with up_ack_irq() that only acknowledges the interrupts.  This is only
+	  used in interrupt decoding logic.  Also remove the logic that
+	  unconditionally re-enables interrupts with the interrupt exits.  This
+	  interferes with the drivers ability to control the interrupt state.
+	  This is a necessary, sweeping, global change and unfortunately 
+	  to test (2015-02-09).
+	* mtd/ramtron.c:  Table of parts is not terminated properly if
+	  CONFIG_RAMTRON_FRAM_NON_JEDEC is not defined.  Noted by David
+	  Sidrane (2015-02-09).
+	* arch/arm/src/sam34/sam_emac.c, sama5/sam_emaca.c, and sama5/sam_gmac.c:
+	  Clone the SAMA5D4 IPv6 support to the SAM4E EMAC and SAMAd3 EMAC and
+	  GMAC drivers  (2015-02-09).
+	* net/:  Lots of build problems introduced into multiple NIC support.
+	  Many places where conditional logic based on CONFIG_NETDEV_MULTINIC is
+	  confused with CONFIG_NET_MULTILINK.  Lots of code changed with IPv6
+	  that was never compiled with MULTINIC enabled.  Still some problem
+	  with parameter passing in the MULTINIC configuration(2015-02-09).
+	* net/iob/Kconfig: In IOB Configuration, the default number of IOB
+	  chains must be more than zero is UDP read-ahead is enabled (2015-02-10).
+	* net/tcp/tcp_conn.c and udp/udp_conn.c: Fix several build errors/warning
+	  with IPv4 + IPv6 + multiple networks are enabled (2015-02-10).
+	* arch/arm/src/sam34/sam_emac.c: SAM4 Ethernet driver bow supports
+	  operation using the high priority work queue so that packet processing
+	  can occur outside of interrupt level processing (2015-02-10).
+	* SAM4E-EK: The nsh configuration now configures the Ethernet driver
+	  for execution on the HP work thread (2015-02-10).
+	* arch/arm/src/lpc17xx/lpc17_ethernet.c: Add IPv6 support to the LPC17
+	  Ethernet driver.  Untested... I no longer have a proper environment
+	  for LPC17 debug (2015-02-10).
+	* include/netinet/in.h and libc/net/lib_addrconfig.c: Some extensions
+	  to netinet/in.h adding some Linux compatible definitions.  From Macs N
+	  (2015-02-11).
+	* arch/arm/src/kl:  Add architectural support for the K26Z128VLH4 chip.
+	  From Derek B. Noonburg (2015-02-11).
+	* configs/freedom-kl26z: Add board support for the Freedom KL26Z board.
+	  From Derek B. Noonburg (2015-02-11).
+
+7.9 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+
+	* arch/arm/src/tiva:  Add support for the TM4C1294.  Contributed by
+	  Frank Sautter (2015-02-11).
+	* configs/tm4c1294-launchpad:  Add support for the TM4C1294 Launchpad.
+	  Contributed by Frank Sautter (2015-02-11).
+	* gettimeofday():  Move gettimeofdady() from sched/clock to libc/time.
+	  Remove gettimeofday() from NuttX system calls.  It is only a wrapper
+	  around clock_settime() and does not need a trap.  gettimeofday() is
+	  no longer treated as a core OS interface (2015-02-12).
+	* settimeofday(): gettimeofday has been decrecated in POSIX 2008.
+	  settimeofday() was never part of POSIX, but I decided to add it to
+	  libc as well just for symmetry (2015-02-12).
+	* drivers/sensors/mpl115a.c and include/nuttx/sensors/mpl115a.h: Add
+	  driver for the Feescale MPL115A baramoter.  From Alan Carvalho de
+	  Assis (2015-02-12).
+	* configs/viewtool-stm32f107:  Add support for an optional, add-on
+	  Freescale MPL115A baramoter.  From Alan Carvalho de Assis
+	  (2015-02-12).
+	* sched/clock/clock_systimer.c: Fix a problem in clock_systimer64 that
+	  occurs when (1) the 64-bit system time is enabled, and (2) the value
+	  of CONFIG_USEC_PER_TICK is less than 1 milliseconds (such as when using
+	  the tickless mode of operation).  In that case, the conversion of time
+	  to 64-bit millisecond value in clock_systmer64() causes some bad times
+	  to be returned.  Time was converted to milliseconds, then to configured
+	  ticks.  Precision was lost in the millisecond conversion. The fix is
+	  to first convert time to a 64-bit microsecond value, then to the
+	  configured tick value. Noted by David Sidrane (2015-02-13).
+	* include/nuttx/rtc.h, arch.h, and arch/*/src/*_rtc.h: Removed all of the
+	  old, malformed RTC interface definitions from include/nuttx/rtc.h.  The
+	  necessary prototypes have been removed, renamed, scattered to the wind,
+	  hidden under rocks, -- whatever it takes to make it clear that there is
+	  no RTC interface callable from application code (2015-02-13).
+	* include/nuttx/rtc.h and fs/ioctl.h:  Begin the definition of a proper,
+	  driver based RTC interfaces that is better suited to the architectural
+	  goals of nuttx (2015-02-13).
+	* drivers/timers/timer.c and watchdog.c: Move timer-related drivers from
+	  drivers/ to drivers/timers (2015-02-13).
+	* drivers/timers/rtc.c:  Add an RTC upper half driver.  This is the driver
+	  that is documented in include/nutt/rtc.h (2015-02-13).
+	* arch/arm/src/stm32/stm32_rtcc.c and stm32_rtc.h: Break out a new internal
+	  interface, stm32_rtc_setdatetime().  This eliminates some un-necessary
+	  time conversions.  From Freddie Chopin (2015-02-13).
+	* arch/arm/src/stm32/stm32_rtc_lowerhalf.c, Make.defs, and stm32_rtc.h: Add
+	  a skeleton implementation of the RTC lower half interface at
+	  arch/arm/src/stm32/stm32_rtc_lowerhalf.c.  This is just the framework for
+	  the RTC lower half.  None of the interface methods have yet been
+	  implemented (2015-02-13).
+	* net/icmpv6/icmpv6_advertise.c and icmpv6_solicit.c:  Add inclusion of
+	  nuttx/net.h to two files.  Without these there can be compilation errors
+	  in certain configurations.  From Max Neklyudov (2015-02-13).
+	* net/net_initialize.c, sched/init/os_start.c, and a few other files:
+	  Divide net_intiialize() into net_setup() and net_initialize() to solve
+	  a chicken-and-egg problem.  net_setup() must be called before
+	  up_initialize() is called so that networking data structures are ready
+	  to register new network devices.  net_initialize() now does only timer
+	  related operations and is called AFTER up_initialize() where the timers
+	  are configured.  Problem note by Max Neklyudov (2015-02-14).
+	* include/time.h and sys/time.h: Move struct timeval from include/time.h
+	  to include/sys/time.h where it belongs (2015-02-15).
+	* arch/arm/src/stm32/stm32_rtcc.c, stm32_rtc.h, and Kconfig: Extend the
+	  RTC interface to support reading subseconds.  From Jussi Kivilinna
+	  (2015-02-16).

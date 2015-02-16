@@ -39,13 +39,12 @@
 
 #include <nuttx/config.h>
 
-#include <nuttx/arch.h>
-#include <nuttx/irq.h>
-#include <nuttx/rtc.h>
-
 #include <time.h>
 #include <errno.h>
 #include <debug.h>
+
+#include <nuttx/arch.h>
+#include <nuttx/irq.h>
 
 #include <arch/board/board.h>
 
@@ -742,7 +741,7 @@ int up_rtcinitialize(void)
 }
 
 /************************************************************************************
- * Name: up_rtc_getdatetime
+ * Name: stm32_rtc_getdatetime_with_subseconds
  *
  * Description:
  *   Get the current date and time from the date/time RTC.  This interface
@@ -752,20 +751,26 @@ int up_rtcinitialize(void)
  *   are selected (and CONFIG_RTC_HIRES is not).
  *
  *   NOTE: Some date/time RTC hardware is capability of sub-second accuracy.  That
- *   sub-second accuracy is lost in this interface.  However, since the system time
- *   is reinitialized on each power-up/reset, there will be no timing inaccuracy in
- *   the long run.
+ *   sub-second accuracy is returned through 'nsec'.
  *
  * Input Parameters:
  *   tp - The location to return the high resolution time value.
+ *   nsec - The location to return the subsecond time value.
  *
  * Returned Value:
  *   Zero (OK) on success; a negated errno on failure
  *
  ************************************************************************************/
 
+#ifdef CONFIG_STM32_HAVE_RTC_SUBSECONDS
+int stm32_rtc_getdatetime_with_subseconds(FAR struct tm *tp, FAR long *nsec)
+#else
 int up_rtc_getdatetime(FAR struct tm *tp)
+#endif
 {
+#ifdef CONFIG_STM32_HAVE_RTC_SUBSECONDS
+  uint32_t ssr;
+#endif
   uint32_t dr;
   uint32_t tr;
   uint32_t tmp;
@@ -779,6 +784,9 @@ int up_rtc_getdatetime(FAR struct tm *tp)
     {
       dr  = getreg32(STM32_RTC_DR);
       tr  = getreg32(STM32_RTC_TR);
+#ifdef CONFIG_STM32_HAVE_RTC_SUBSECONDS
+      ssr = getreg32(STM32_RTC_SSR);
+#endif
       tmp = getreg32(STM32_RTC_DR);
     }
   while (tmp != dr);
@@ -817,16 +825,71 @@ int up_rtc_getdatetime(FAR struct tm *tp)
   tmp = (dr & (RTC_DR_YU_MASK|RTC_DR_YT_MASK)) >> RTC_DR_YU_SHIFT;
   tp->tm_year = rtc_bcd2bin(tmp) + 100;
 
+#ifdef CONFIG_STM32_HAVE_RTC_SUBSECONDS
+  /* Return RTC sub-seconds if no configured and if a non-NULL value
+   * of nsec has been provided to receive the sub-second value.
+   */
+
+  if (nsec)
+    {
+      uint32_t prediv_s;
+      uint32_t usecs;
+
+      prediv_s   = getreg32(STM32_RTC_PRER) & RTC_PRER_PREDIV_S_MASK;
+      prediv_s >>= RTC_PRER_PREDIV_S_SHIFT;
+
+      ssr &= RTC_SSR_MASK;
+
+      /* Maximum prediv_s is 0x7fff, thus we can multiply by 100000 and
+       * still fit 32-bit unsigned integer.
+       */
+
+      usecs = (((prediv_s - ssr) * 100000) / (prediv_s + 1)) * 10;
+      *nsec = usecs * 1000;
+    }
+#endif /* CONFIG_STM32_HAVE_RTC_SUBSECONDS */
+
   rtc_dumptime(tp, "Returning");
   return OK;
 }
 
 /************************************************************************************
- * Name: up_rtc_settime
+ * Name: up_rtc_getdatetime
  *
  * Description:
- *   Set the RTC to the provided time.  All RTC implementations must be able to
- *   set their time based on a standard timespec.
+ *   Get the current date and time from the date/time RTC.  This interface
+ *   is only supported by the date/time RTC hardware implementation.
+ *   It is used to replace the system timer.  It is only used by the RTOS during
+ *   initialization to set up the system time when CONFIG_RTC and CONFIG_RTC_DATETIME
+ *   are selected (and CONFIG_RTC_HIRES is not).
+ *
+ *   NOTE: Some date/time RTC hardware is capability of sub-second accuracy.  That
+ *   sub-second accuracy is lost in this interface.  However, since the system time
+ *   is reinitialized on each power-up/reset, there will be no timing inaccuracy in
+ *   the long run.
+ *
+ * Input Parameters:
+ *   tp - The location to return the high resolution time value.
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno on failure
+ *
+ ************************************************************************************/
+
+#ifdef CONFIG_STM32_HAVE_RTC_SUBSECONDS
+int up_rtc_getdatetime(FAR struct tm *tp)
+{
+  return stm32_rtc_getdatetime_with_subseconds(tp, NULL);
+}
+#endif
+
+/************************************************************************************
+ * Name: stm32_rtc_setdatetime
+ *
+ * Description:
+ *   Set the RTC to the provided time. RTC implementations which provide
+ *   up_rtc_getdatetime() (CONFIG_RTC_DATETIME is selected) should provide this
+ *   function.
  *
  * Input Parameters:
  *   tp - the time to use
@@ -836,17 +899,13 @@ int up_rtc_getdatetime(FAR struct tm *tp)
  *
  ************************************************************************************/
 
-int up_rtc_settime(FAR const struct timespec *tp)
+int stm32_rtc_setdatetime(FAR const struct tm *tp)
 {
-  FAR struct tm newtime;
   uint32_t tr;
   uint32_t dr;
   int ret;
 
-  /* Break out the time values (not that the time is set only to units of seconds) */
-
-  (void)gmtime_r(&tp->tv_sec, &newtime);
-  rtc_dumptime(&newtime, "Setting time");
+  rtc_dumptime(tp, "Setting time");
 
   /* Then write the broken out values to the RTC */
 
@@ -855,9 +914,9 @@ int up_rtc_settime(FAR const struct timespec *tp)
    * register.
    */
 
-  tr = (rtc_bin2bcd(newtime.tm_sec)  << RTC_TR_SU_SHIFT) |
-       (rtc_bin2bcd(newtime.tm_min)  << RTC_TR_MNU_SHIFT) |
-       (rtc_bin2bcd(newtime.tm_hour) << RTC_TR_HU_SHIFT);
+  tr = (rtc_bin2bcd(tp->tm_sec)  << RTC_TR_SU_SHIFT) |
+       (rtc_bin2bcd(tp->tm_min)  << RTC_TR_MNU_SHIFT) |
+       (rtc_bin2bcd(tp->tm_hour) << RTC_TR_HU_SHIFT);
   tr &= ~RTC_TR_RESERVED_BITS;
 
   /* Now convert the fields in struct tm format to the RTC date register fields:
@@ -869,9 +928,9 @@ int up_rtc_settime(FAR const struct timespec *tp)
    * years 2000-2099?  I'll assume so.
    */
 
-  dr = (rtc_bin2bcd(newtime.tm_mday) << RTC_DR_DU_SHIFT) |
-       ((rtc_bin2bcd(newtime.tm_mon + 1))  << RTC_DR_MU_SHIFT) |
-       ((rtc_bin2bcd(newtime.tm_year - 100)) << RTC_DR_YU_SHIFT);
+  dr = (rtc_bin2bcd(tp->tm_mday) << RTC_DR_DU_SHIFT) |
+       ((rtc_bin2bcd(tp->tm_mon + 1))  << RTC_DR_MU_SHIFT) |
+       ((rtc_bin2bcd(tp->tm_year - 100)) << RTC_DR_YU_SHIFT);
   dr &= ~RTC_DR_RESERVED_BITS;
 
   /* Disable the write protection for RTC registers */
@@ -904,7 +963,32 @@ int up_rtc_settime(FAR const struct timespec *tp)
 }
 
 /************************************************************************************
- * Name: up_rtc_setalarm
+ * Name: up_rtc_settime
+ *
+ * Description:
+ *   Set the RTC to the provided time.  All RTC implementations must be able to
+ *   set their time based on a standard timespec.
+ *
+ * Input Parameters:
+ *   tp - the time to use
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno on failure
+ *
+ ************************************************************************************/
+
+int up_rtc_settime(FAR const struct timespec *tp)
+{
+  FAR struct tm newtime;
+
+  /* Break out the time values (not that the time is set only to units of seconds) */
+
+  (void)gmtime_r(&tp->tv_sec, &newtime);
+  return stm32_rtc_setdatetime(&newtime);
+}
+
+/************************************************************************************
+ * Name: stm32_rtc_setalarm
  *
  * Description:
  *   Set up an alarm.  Up to two alarms can be supported (ALARM A and ALARM B).
@@ -919,7 +1003,7 @@ int up_rtc_settime(FAR const struct timespec *tp)
  ************************************************************************************/
 
 #ifdef CONFIG_RTC_ALARM
-int up_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
+int stm32_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
 {
   irqstate_t flags;
   int ret = -EBUSY;
@@ -940,6 +1024,7 @@ int up_rtc_setalarm(FAR const struct timespec *tp, alarmcb_t callback)
 
       ret = OK;
     }
+
   return ret;
 }
 #endif

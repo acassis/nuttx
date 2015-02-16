@@ -596,7 +596,7 @@ int udp_bind(FAR struct udp_conn_s *conn, FAR const struct sockaddr *addr)
        * interfaces for receiving (Sending will use the default port).
        */
 
-      net_ipv4addr_copy(conn->u.ipv4.laddr, inaddr->sin_addr.s_addr;);
+      net_ipv4addr_copy(conn->u.ipv4.laddr, inaddr->sin_addr.s_addr);
 #endif /* CONFIG_NETDEV_MULTINIC */
     }
 #endif /* CONFIG_NET_IPv4 */
@@ -619,7 +619,7 @@ int udp_bind(FAR struct udp_conn_s *conn, FAR const struct sockaddr *addr)
        * interfaces for receiving (Sending will use the default port).
        */
 
-      net_ipv6addr_copy(conn->u.ipv6.laddr, ipaddr->sin6_addr.in6_u.u6_addr16);
+      net_ipv6addr_copy(conn->u.ipv6.laddr, inaddr->sin6_addr.in6_u.u6_addr16);
 #endif /* CONFIG_NETDEV_MULTINIC */
     }
 #endif /* CONFIG_NET_IPv6 */
@@ -646,7 +646,7 @@ int udp_bind(FAR struct udp_conn_s *conn, FAR const struct sockaddr *addr)
       /* Is any other UDP connection already bound to this address and port? */
 
 #ifdef CONFIG_NETDEV_MULTINIC
-      if (!udp_find_conn(conn->domain, &config->u, portno))
+      if (!udp_find_conn(conn->domain, &conn->u, portno))
 #else
       if (!udp_find_conn(portno))
 #endif

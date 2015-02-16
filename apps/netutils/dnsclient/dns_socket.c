@@ -48,15 +48,15 @@
 
 #include <nuttx/config.h>
 
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
 #include <errno.h>
 #include <debug.h>
 #include <assert.h>
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 

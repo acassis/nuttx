@@ -1154,9 +1154,11 @@ nuttx
  |   |   |- ostest/README.txt
  |   |   |- poll/README.txt
  |   |   `- README.txt
- |   |-  fire-stm32v2/
+ |   |- fire-stm32v2/
  |   |   `- README.txt
- |   |-  freedom-kl25z/
+ |   |- freedom-kl25z/
+ |   |   `- README.txt
+ |   |- freedom-kl26z/
  |   |   `- README.txt
  |   |- galileo/
  |   |   `- README.txt
@@ -1292,6 +1294,8 @@ nuttx
  |   |- teensy/
  |   |   `- README.txt
  |   |- tm4c123g-launchpad/
+ |   |   `- README.txt
+ |   |- tm4c1294-launchpad/
  |   |   `- README.txt
  |   |- twr-k60n512/
  |   |   `- README.txt
