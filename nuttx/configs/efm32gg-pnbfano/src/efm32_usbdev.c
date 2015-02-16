@@ -356,6 +356,13 @@ static int efm32_usbmsc_discon(void)
  * Public Functions
  *****************************************************************************/
 
+/************************************************************************************
+ * Name:  efm32_usbdev_init
+ *
+ * Description:
+ *   initialization of usbdev board specifique part
+ *
+ ************************************************************************************/
 int efm32_usbdev_init(void)
 {
 #ifdef CONFIG_USBDEV_TRACE
@@ -369,6 +376,14 @@ int efm32_usbdev_init(void)
     return 0;
 }
 
+/************************************************************************************
+ * Name:  efm32_usbdev_slow_poll
+ *
+ * Description:
+ *   Check VBUS to detect usb connection/disconnection and enable/disable 
+ *   usbmsc
+ *
+ ************************************************************************************/
 void efm32_usbdev_slow_poll(void)
 {
     int ret;

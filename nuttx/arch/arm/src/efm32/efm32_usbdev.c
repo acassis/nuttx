@@ -239,7 +239,7 @@
 
 /* Number of endpoints */
 
-#define EFM32_NENDPOINTS             (4)          /* ep0-3 x 2 for IN and OUT */
+#define EFM32_NENDPOINTS             (7)          /* ep0-6 x 2 for IN and OUT */
 
 /* Odd physical endpoint numbers are IN; even are OUT */
 
@@ -2576,6 +2576,7 @@ static inline void efm32_epout(FAR struct efm32_usbdev_s *priv, uint8_t epno)
     }
 }
 
+
 /*******************************************************************************
  * Name: efm32_epout_interrupt
  *
@@ -2651,7 +2652,7 @@ static inline void efm32_epout_interrupt(FAR struct efm32_usbdev_s *priv)
           /* Yes.. get the OUT endpoint interrupt status */
 
           doepint  = efm32_getreg(EFM32_USB_DOEPINT(epno));
-//pnb          doepint &= efm32_getreg(EFM32_USB_DOEPMSK);
+          doepint &= efm32_getreg(EFM32_USB_DOEPMSK);
 
           /* Transfer completed interrupt.  This interrupt is trigged when
            * efm32_rxinterrupt() removes the last packet data from the RxFIFO.
@@ -2721,7 +2722,7 @@ static inline void efm32_epout_interrupt(FAR struct efm32_usbdev_s *priv)
 static inline void efm32_epin_runtestmode(FAR struct efm32_usbdev_s *priv)
 {
   uint32_t regval = efm32_getreg(EFM32_USB_DCTL);
-  regval &= _USB_DCTL_TSTCTL_MASK;
+  regval &= ~_USB_DCTL_TSTCTL_MASK;
   regval |= (uint32_t)priv->testmode << _USB_DCTL_TSTCTL_SHIFT;
   efm32_putreg(regval , EFM32_USB_DCTL);
 
@@ -3542,7 +3543,6 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_EPOUT), (uint16_t)regval);
           efm32_epout_interrupt(priv);
-          efm32_putreg(USB_GINTSTS_OEPINT, EFM32_USB_GINTSTS);
         }
 
       /* IN endpoint interrupt.  The core sets this bit to indicate that
@@ -3553,7 +3553,6 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_EPIN), (uint16_t)regval);
           efm32_epin_interrupt(priv);
-          efm32_putreg(USB_GINTSTS_IEPINT, EFM32_USB_GINTSTS);
         }
 
       /* Host/device mode mismatch error interrupt */
@@ -3602,7 +3601,6 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_RXFIFO), (uint16_t)regval);
           efm32_rxinterrupt(priv);
-          efm32_putreg(USB_GINTSTS_RXFLVL, EFM32_USB_GINTSTS);
         }
 
       /* USB reset interrupt */
@@ -3663,20 +3661,19 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
       /* Session request/new session detected interrupt */
 
 #ifdef CONFIG_USBDEV_VBUSSENSING
-      if ((regval & USB_GINTSTS_SRQ) != 0)
+      if ((regval & USB_GINTSTS_SESSREQINT) != 0)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_SRQ), (uint16_t)regval);
           efm32_sessioninterrupt(priv);
-          efm32_putreg(USB_GINTSTS_SRQ, EFM32_USB_GINTSTS);
+          efm32_putreg(USB_GINTSTS_SESSREQINT, EFM32_USB_GINTSTS);
         }
 
       /* OTG interrupt */
 
-      if ((regval & USB_GINTSTS_OTG) != 0)
+      if ((regval & USB_GINTSTS_OTGINT) != 0)
         {
           usbtrace(TRACE_INTDECODE(EFM32_TRACEINTID_OTG), (uint16_t)regval);
           efm32_otginterrupt(priv);
-          efm32_putreg(USB_GINTSTS_OTG, EFM32_USB_GINTSTS);
         }
 #endif
     }
@@ -3924,7 +3921,8 @@ static int efm32_epin_configure(FAR struct efm32_ep_s *privep, uint8_t eptype,
           regval |= USB_DIEPCTL_CNAK;
         }
 
-      regval &= ~(_USB_DIEPCTL_MPS_MASK | _USB_DIEPCTL_EPTYPE_MASK | _USB_DIEPCTL_TXFNUM_MASK);
+      regval &= ~(_USB_DIEPCTL_MPS_MASK | _USB_DIEPCTL_EPTYPE_MASK |
+                  _USB_DIEPCTL_TXFNUM_MASK);
       regval |= mpsiz;
       regval |= (eptype << _USB_DIEPCTL_EPTYPE_SHIFT);
       regval |= (eptype << _USB_DIEPCTL_TXFNUM_SHIFT);
@@ -5207,8 +5205,8 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
    *    "Non-periodic TxFIFO Empty Level (can be enabled only when the core is
    *    operating in Slave mode as a host.)"
    */
-  //efm32_putreg(USB_GAHBCFG_NPTXFEMPLVL_EMPTY, EFM32_USB_GAHBCFG);
-  efm32_putreg(0, EFM32_USB_GAHBCFG);
+  efm32_putreg(USB_GAHBCFG_NPTXFEMPLVL_EMPTY, EFM32_USB_GAHBCFG);
+  //efm32_putreg(0, EFM32_USB_GAHBCFG);
 
   /* Enable PHY USB */
 
@@ -5272,32 +5270,9 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
   regval |= USB_DCFG_DEVSPD_FS;
   efm32_putreg(regval, EFM32_USB_DCFG);
 
-  /* Stall on non-zero len status OUT packets (ctrl transfers). */
-
-  regval  = efm32_getreg(EFM32_USB_DCFG);
-  regval &= USB_DCFG_NZSTSOUTHSHK;
-  efm32_putreg(regval, EFM32_USB_DCFG);
-
-  regval  = efm32_getreg(EFM32_USB_GAHBCFG);
-  regval  &= ~_USB_GAHBCFG_HBSTLEN_MASK;
-  regval  |= USB_GAHBCFG_DMAEN | USB_GAHBCFG_HBSTLEN_INCR;
-  efm32_putreg(regval, EFM32_USB_GAHBCFG);
-
   /* Set Rx FIFO size */
 
-  address = EFM32_RXFIFO_WORDS;
-  efm32_putreg(address<<_USB_GRXFSIZ_RXFDEP_SHIFT,
-               EFM32_USB_GRXFSIZ);
-
-  /* Set Tx EP0 FIFO size */
-
-  regval = EFM32_EP0_TXFIFO_WORDS;
-  regval = ( ( ( regval << _USB_GNPTXFSIZ_NPTXFINEPTXF0DEP_SHIFT ) &
-               _USB_GNPTXFSIZ_NPTXFINEPTXF0DEP_MASK              ) |
-             ( ( address << _USB_GNPTXFSIZ_NPTXFSTADDR_SHIFT     ) &
-               _USB_GNPTXFSIZ_NPTXFSTADDR_MASK                   )
-           );
-  efm32_putreg( regval,EFM32_USB_GNPTXFSIZ);
+  efm32_putreg(EFM32_RXFIFO_WORDS<<_USB_GRXFSIZ_RXFDEP_SHIFT,EFM32_USB_GRXFSIZ);
 
   /* EP0 TX */
 

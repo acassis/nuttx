@@ -189,7 +189,8 @@ void board_initialize(void)
         syslog(LOG_ERR,"Cannot initialize LCD !\n");
     }
 
-#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || defined(CONFIG_PNBFANO_LCD_KEYPAD) 
+#if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || \
+    defined(CONFIG_PNBFANO_LCD_KEYPAD ) 
     keypad_kbdinit();
 #endif
 
