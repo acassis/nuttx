@@ -67,7 +67,8 @@
 #   include <nuttx/usb/usbdev_trace.h>
 
 #ifndef TRACE_BITSET
-#  define TRACE_BITSET              (TRACE_ALLBITS)
+//#  define TRACE_BITSET              (TRACE_ALLBITS)
+#  define TRACE_BITSET              (0)
 #endif
 
 #endif
@@ -108,7 +109,7 @@ static int usbmsc_enumerate(struct usbtrace_s *trace, void *arg)
       break;
 
     case TRACE_DEVUNINIT:
-      speLOG(LOG_DEBUG,"USB controller un-initialization: %04x\n", trace->value);
+      speLOG(LOG_DEBUG,"USB controller un-initialization: %04x\n",trace->value);
       break;
 
     case TRACE_DEVREGISTER:
@@ -356,13 +357,13 @@ static int efm32_usbmsc_discon(void)
  * Public Functions
  *****************************************************************************/
 
-/************************************************************************************
+/*******************************************************************************
  * Name:  efm32_usbdev_init
  *
  * Description:
  *   initialization of usbdev board specifique part
  *
- ************************************************************************************/
+ ******************************************************************************/
 int efm32_usbdev_init(void)
 {
 #ifdef CONFIG_USBDEV_TRACE
@@ -376,14 +377,14 @@ int efm32_usbdev_init(void)
     return 0;
 }
 
-/************************************************************************************
+/*******************************************************************************
  * Name:  efm32_usbdev_slow_poll
  *
  * Description:
  *   Check VBUS to detect usb connection/disconnection and enable/disable 
  *   usbmsc
  *
- ************************************************************************************/
+ ******************************************************************************/
 void efm32_usbdev_slow_poll(void)
 {
     int ret;
@@ -425,16 +426,17 @@ void efm32_usbdev_slow_poll(void)
 
 
 
-/************************************************************************************
+/*******************************************************************************
  * Name:  efm32_usbsuspend
  *
  * Description:
  *   Board logic must provide the stm32_usbsuspend logic if the USBDEV driver is
- *   used.  This function is called whenever the USB enters or leaves suspend mode.
+ *   used.  This function is called whenever the USB enters or leaves suspend 
+ *   mode.
  *   This is an opportunity for the board logic to shutdown clocks, power, etc.
  *   while the USB is suspended.
  *
- ************************************************************************************/
+ ******************************************************************************/
 
 void efm32_usbsuspend(FAR struct usbdev_s *dev, bool resume)
 {
