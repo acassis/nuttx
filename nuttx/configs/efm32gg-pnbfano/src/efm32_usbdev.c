@@ -387,7 +387,6 @@ int efm32_usbdev_init(void)
  ******************************************************************************/
 void efm32_usbdev_slow_poll(void)
 {
-    int ret;
 
     /* check USB regulator output sensing only if Active */
 
@@ -415,11 +414,14 @@ void efm32_usbdev_slow_poll(void)
     }
 
 #ifdef CONFIG_USBDEV_TRACE
-    speLOG(LOG_DEBUG,"USB TRACE DATA:\n");
-    ret = usbtrace_enumerate(usbmsc_enumerate, NULL);
+    {
+        int ret;
+        speLOG(LOG_DEBUG,"USB TRACE DATA:\n");
+        ret = usbtrace_enumerate(usbmsc_enumerate, NULL);
 
-    if ( ret < 0 )
-        speLOG(LOG_ERR,"USB TRACE DATA Failed %d\n",ret);
+        if ( ret < 0 )
+            speLOG(LOG_ERR,"USB TRACE DATA Failed %d\n",ret);
+    }
 #endif
 
 }
