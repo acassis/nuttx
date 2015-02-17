@@ -3508,10 +3508,8 @@ static int efm32_usbinterrupt(int irq, FAR void *context)
 
   /* Assure that we are in device mode */
 
-  DEBUGASSERT(
-              (efm32_getreg(EFM32_USB_GINTSTS) & USB_GINTSTS_CURMOD
-              ) == USB_GINTSTS_CURMOD_DEVICE
-             );
+  DEBUGASSERT((efm32_getreg(EFM32_USB_GINTSTS) & USB_GINTSTS_CURMOD) ==
+              USB_GINTSTS_CURMOD_DEVICE);
 
   /* Get the state of all enabled interrupts.  We will do this repeatedly
    * some interrupts (like RXFLVL) will generate additional interrupting
@@ -5205,6 +5203,7 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
    *    "Non-periodic TxFIFO Empty Level (can be enabled only when the core is
    *    operating in Slave mode as a host.)"
    */
+
   efm32_putreg(USB_GAHBCFG_NPTXFEMPLVL_EMPTY, EFM32_USB_GAHBCFG);
   //efm32_putreg(0, EFM32_USB_GAHBCFG);
 
@@ -5246,7 +5245,7 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
   /* Force Device Mode */
 
   regval  = efm32_getreg(EFM32_USB_GUSBCFG);
-  regval &= ~(_USB_GUSBCFG_FORCEHSTMODE_MASK|_USB_GUSBCFG_CORRUPTTXPKT_MASK);
+  regval &= ~(_USB_GUSBCFG_FORCEHSTMODE_MASK | _USB_GUSBCFG_CORRUPTTXPKT_MASK);
   regval |= USB_GUSBCFG_FORCEDEVMODE;
   efm32_putreg(regval, EFM32_USB_GUSBCFG);
   up_mdelay(50);
@@ -5272,7 +5271,7 @@ static void efm32_hwinitialize(FAR struct efm32_usbdev_s *priv)
 
   /* Set Rx FIFO size */
 
-  efm32_putreg(EFM32_RXFIFO_WORDS<<_USB_GRXFSIZ_RXFDEP_SHIFT,EFM32_USB_GRXFSIZ);
+  efm32_putreg(EFM32_RXFIFO_WORDS << _USB_GRXFSIZ_RXFDEP_SHIFT,EFM32_USB_GRXFSIZ);
 
   /* EP0 TX */
 
@@ -5532,10 +5531,8 @@ void up_usbuninitialize(void)
 
   /* To be sure that usb ref are writen, turn on USB clocking */
 
-  modifyreg32(EFM32_CMU_HFCORECLKEN0,
-              0,
-              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC
-             );
+  modifyreg32(EFM32_CMU_HFCORECLKEN0, 0,
+              CMU_HFCORECLKEN0_USB | CMU_HFCORECLKEN0_USBC);
 
   if (priv->driver)
     {
@@ -5576,9 +5573,7 @@ void up_usbuninitialize(void)
   /* Turn off USB clocking */
 
   modifyreg32(EFM32_CMU_HFCORECLKEN0,
-              CMU_HFCORECLKEN0_USB|CMU_HFCORECLKEN0_USBC,
-              0
-             );
+              CMU_HFCORECLKEN0_USB | CMU_HFCORECLKEN0_USBC, 0);
 
   /* TODO: Turn off USB power and clocking */
 
