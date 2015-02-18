@@ -293,6 +293,24 @@
 #define BOARD_PWM_TIMER0_PINLOC     _TIMER_ROUTE_LOCATION_LOC4
 #define BOARD_PWM_TIMER0_CLKIN      BOARD_SYSTEM_FREQUENCY
 
+
+/* IC1:
+ *
+ * The pnbfano board one I2C. 
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * PC7                   For external spi (WIFI)
+ * PC8                   for SDCARD
+ * --------------------- ---------------------
+ */
+
+#define BOARD_I2C1_SDA   (GPIO_PORTC|GPIO_PIN4|GPIO_OUTPUT_WIREDAND|GPIO_OUTPUT_SET)
+#define BOARD_I2C1_SCL   (GPIO_PORTC|GPIO_PIN5|GPIO_OUTPUT_WIREDAND|GPIO_OUTPUT_SET)
+#define BOARD_I2C1_ROUTE_LOCATION _I2C_ROUTE_LOCATION_LOC0
+
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/

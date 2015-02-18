@@ -172,13 +172,14 @@
  * --------------------- ---------------------
  * PIN                   CONNECTIONS
  * --------------------- ---------------------
- * PC7                   For external spi (WIFI)
- * PC8                   for SDCARD
+ * PC4                   For external spi (WIFI)
+ * PC5                   for SDCARD
  * --------------------- ---------------------
  */
 
 #define GPIO_EXT_SPI_CS     (GPIO_OUTPUT_PUSHPULL|GPIO_PORTC|GPIO_PIN7|GPIO_OUTPUT_SET)
 #define GPIO_SDCARD_SPI_CS  (GPIO_OUTPUT_PUSHPULL|GPIO_PORTC|GPIO_PIN8|GPIO_OUTPUT_SET)
+
 
 #define PNBFANO_SDCARD_EXT_SPINO  0
 
