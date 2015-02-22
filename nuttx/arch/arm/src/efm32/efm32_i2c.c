@@ -166,14 +166,14 @@
 
 enum efm32_result_e
 {
-  I2CRESULT_SWFAULT    = -5    /* SW fault. */
+  I2CRESULT_SWFAULT    = -5,   /* SW fault. */
   I2CRESULT_USAGEFAULT = -4,   /* Usage fault. */
   I2CRESULT_ARBLOST    = -3,   /* Arbitration lost during transfer. */
   I2CRESULT_BUSERR     = -2,   /* Bus error during transfer (misplaced START/STOP). */
   I2CRESULT_NACK       = -1,   /* NACK received during transfer. */
   I2CRESULT_INPROGRESS =  0,   /* Transfer in progress. */
   I2CRESULT_DONE       =  1,   /* Transfer completed successfully. */
-  I2CRESULT_NONE       =  2,   /* Nothing. */
+  I2CRESULT_NONE       =  2    /* Nothing. */
 };
 
 enum efm32_i2cstate_e
@@ -188,7 +188,7 @@ enum efm32_i2cstate_e
   I2CSTATE_DATAWFACKNACK,   /* Wait for ACK/NACK on data sent. */
   I2CSTATE_WFDATA,          /* Wait for data. */
   I2CSTATE_WFSTOPSENT,      /* Wait for STOP to have been transmitted. */
-  I2CSTATE_Done             /* Transfer completed successfully. */
+  I2CSTATE_DONE             /* Transfer completed successfully. */
 };
 
 /* Trace data */
@@ -235,11 +235,12 @@ struct efm32_i2c_priv_s
   uint32_t i2c_reg_if;          /* Current state of I2Cx_IF register. */
   uint32_t i2c_reg_state;       /* Current state of I2Cx_STATES register. */
 
-  uint8_t msgc;                 /* Message count */
+  int       addr;               /* Message address */
+  uint8_t   msgc;               /* Message count */
   struct i2c_msg_s *msgv;       /* Message list */
-  uint8_t *ptr;                 /* Current message buffer */
-  int dcnt;                     /* Current message length */
-  uint32_t flags;               /* Current message flags */
+  uint8_t * ptr;                /* Current message buffer */
+  int       dcnt;               /* Current message length */
+  uint32_t  flags;              /* Current message flags */
 
   /* I2C trace support */
 
@@ -332,7 +333,7 @@ static int efm32_i2c_transfer(FAR struct i2c_dev_s *dev,
                               FAR struct i2c_msg_s *msgs, int count);
 #endif /* CONFIG_I2C_TRANSFER */
 
-static int efm32_i2c_state_str(int i2c_state);
+static const char* efm32_i2c_state_str(int i2c_state);
 
 /*******************************************************************************
  * Private Data
@@ -340,22 +341,6 @@ static int efm32_i2c_state_str(int i2c_state);
 
 /* Trace events strings */
 
-#ifdef CONFIG_I2C_TRACE
-static const char *g_trace_names[] =
-{
-  "NONE      ",
-  "SENDADDR  ",
-  "SENDBYTE  ",
-  "ITBUFEN   ",
-  "RCVBYTE   ",
-  "REITBUFEN ",
-  "DISITBUFEN",
-  "BTFNOSTART",
-  "BTFRESTART",
-  "BTFSTOP   ",
-  "ERROR     "
-};
-#endif
 
 /* I2C device structures */
 
@@ -489,7 +474,7 @@ static inline void efm32_i2c_modifyreg(FAR struct efm32_i2c_priv_s *priv,
  *
  ******************************************************************************/
 
-static int efm32_i2c_state_str(int i2c_state)
+static const char* efm32_i2c_state_str(int i2c_state)
 {
     switch(i2c_state)
     {
@@ -779,9 +764,9 @@ static void efm32_i2c_tracenew(FAR struct efm32_i2c_priv_s *priv)
 
   /* Is the current entry uninitialized?  Has the states changed? */
 
-  if ( ( trace->count == 0                              ) || \
-       ( priv->i2c_reg_if    != trace->i2c_reg_if       ) || \
-       ( priv->i2c_reg_state != trace->i2c_reg_state    ) || \
+  if ( ( trace->count == 0                              ) ||
+       ( priv->i2c_reg_if    != trace->i2c_reg_if       ) ||
+       ( priv->i2c_reg_state != trace->i2c_reg_state    ) ||
        ( priv->i2c_state     != trace->i2c_state        ) )
     {
       /* Yes.. Was it the states changed?  */
@@ -904,6 +889,7 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
 {
     for (;; )
     {
+        int regval;
 
         priv->i2c_reg_if      = efm32_i2c_getreg(priv, EFM32_I2C_IF_OFFSET);
         priv->i2c_reg_state   = efm32_i2c_getreg(priv, EFM32_I2C_STATE_OFFSET);
@@ -923,7 +909,7 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                  * supported by this SW. 
                  */
 
-                priv->result = i2cTransferArbLost;
+                priv->result = I2CRESULT_ARBLOST;
             }
             else if (priv->i2c_reg_if & I2C_IF_BUSERR)
             {
@@ -931,7 +917,7 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                  * not occur in master mode controlled by this SW. 
                  */
 
-                priv->result = i2cTransferBusErr;
+                priv->result = I2CRESULT_BUSERR;
             }
 
             /* If error situation occurred, it is difficult to know
@@ -939,274 +925,292 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
              * to determine how to handle a fault/recovery if possible.
              */
 
-            transfer->state = i2cStateDone;
+            priv->i2c_state = I2CSTATE_DONE;
             goto done;
         }
 
-        switch (transfer->state)
+        switch (priv->i2c_state)
         {
-            /***************************************************/
-            /* Send first start+address (first byte if 10 bit) */
-            /***************************************************/
-            case i2cStateStartAddrSend:
-                if (seq->flags & I2C_FLAG_10BIT_ADDR)
-                {
-                    tmp = (((uint32_t)(seq->addr) >> 8) & 0x06) | 0xf0;
+            /***************************************************
+             * Send first start+address (first byte if 10 bit) 
+             */
 
-                    /* In 10 bit address mode, the address following the first */
-                    /* start always indicate write. */
+            case I2CSTATE_STARTADDRSEND:
+                if (priv->flags & I2C_M_TEN)
+                {
+                    if (priv->flags & I2C_M_READ)
+                        regval = I2C_READADDR10H(priv->addr);
+                    else
+                        regval = I2C_WRITEADDR10H(priv->addr);
                 }
                 else
                 {
-                    tmp = (uint32_t)(seq->addr) & 0xfe;
+                    if (priv->flags & I2C_M_READ)
+                        regval = I2C_READADDR8(priv->addr);
+                    else
+                        regval = I2C_WRITEADDR8(priv->addr);
 
-                    if (seq->flags & I2C_FLAG_READ)
-                    {
-                        /* Indicate read request */
-                        tmp |= 1;
-                    }
                 }
 
-                transfer->state = i2cStateAddrWFAckNack;
-                i2c->TXDATA     = tmp; /* Data not transmitted until START sent */
-                i2c->CMD        = I2C_CMD_START;
+                /* Data not transmitted until START sent */
+
+                efm32_i2c_putreg(priv,EFM32_I2C_TXDATA_OFFSET,regval);
+                efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_START);
+                priv->i2c_state = I2CSTATE_ADDRWFACKNACK;
+
                 goto done;
 
-                /*******************************************************/
-                /* Wait for ACK/NACK on address (first byte if 10 bit) */
-                /*******************************************************/
-            case i2cStateAddrWFAckNack:
+                /*******************************************************
+                 * Wait for ACK/NACK on address (first byte if 10 bit)
+                 */
+
+            case I2CSTATE_ADDRWFACKNACK:
                 if (priv->i2c_reg_if & I2C_IF_NACK)
                 {
-                    i2c->IFC         = I2C_IFC_NACK;
-                    transfer->result = i2cTransferNack;
-                    transfer->state  = i2cStateWFStopSent;
-                    i2c->CMD         = I2C_CMD_STOP;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET,I2C_IFC_NACK);
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_STOP);
+                    priv->result    = I2CRESULT_NACK;
+                    priv->i2c_state = I2CSTATE_WFSTOPSENT;
+
                 }
                 else if (priv->i2c_reg_if & I2C_IF_ACK)
                 {
-                    i2c->IFC = I2C_IFC_ACK;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET,I2C_IFC_ACK);
 
                     /* If 10 bit address, send 2nd byte of address. */
-                    if (seq->flags & I2C_FLAG_10BIT_ADDR)
+                    if (priv->flags & I2C_M_TEN)
                     {
-                        transfer->state = i2cStateAddrWF2ndAckNack;
-                        i2c->TXDATA     = (uint32_t)(seq->addr) & 0xff;
+                        if (priv->flags & I2C_M_READ)
+                            regval = I2C_READADDR10L(priv->addr);
+                        else
+                            regval = I2C_WRITEADDR10L(priv->addr);
+
+                        efm32_i2c_putreg(priv,EFM32_I2C_TXDATA_OFFSET, regval);
+                        priv->i2c_state = I2CSTATE_ADDRWF2NDACKNACK;
                     }
                     else
                     {
                         /* Determine whether receiving or sending data */
-                        if (seq->flags & I2C_FLAG_READ)
+                        if (priv->flags & I2C_M_READ)
                         {
-                            transfer->state = i2cStateWFData;
-                            if(seq->buf[transfer->bufIndx].len==1)
+                            if(priv->dcnt==1)
                             {
-                                i2c->CMD  = I2C_CMD_NACK;
+                                efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET, 
+                                                 I2C_CMD_NACK);
                             }
+                            priv->i2c_state = I2CSTATE_WFDATA;
                         }
                         else
                         {
-                            transfer->state = i2cStateDataSend;
+                            priv->i2c_state = I2CSTATE_DATASEND;
                             continue;
                         }
                     }
                 }
                 goto done;
 
-                /******************************************************/
-                /* Wait for ACK/NACK on second byte of 10 bit address */
-                /******************************************************/
-            case i2cStateAddrWF2ndAckNack:
+                /******************************************************
+                 * Wait for ACK/NACK on second byte of 10 bit address
+                 */
+            case I2CSTATE_ADDRWF2NDACKNACK:
                 if (priv->i2c_reg_if & I2C_IF_NACK)
                 {
-                    i2c->IFC         = I2C_IFC_NACK;
-                    transfer->result = i2cTransferNack;
-                    transfer->state  = i2cStateWFStopSent;
-                    i2c->CMD         = I2C_CMD_STOP;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_NACK);
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_STOP);
+                    priv->result    = I2CRESULT_NACK;
+                    priv->i2c_state = I2CSTATE_WFSTOPSENT;
                 }
                 else if (priv->i2c_reg_if & I2C_IF_ACK)
                 {
-                    i2c->IFC = I2C_IFC_ACK;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_ACK);
 
-                    /* If using plain read sequence with 10 bit address, switch to send */
-                    /* repeated start. */
-                    if (seq->flags & I2C_FLAG_READ)
+                    /* If using plain read sequence with 10 bit address, switch 
+                     * to send repeated start. 
+                     */
+                    if (priv->flags & I2C_M_READ)
                     {
-                        transfer->state = i2cStateRStartAddrSend;
+                        priv->i2c_state = I2CSTATE_RSTARTADDRSEND;
                     }
                     /* Otherwise expected to write 0 or more bytes */
                     else
                     {
-                        transfer->state = i2cStateDataSend;
+                        priv->i2c_state = I2CSTATE_DATASEND;
                     }
                     continue;
                 }
                 goto done;
 
-                /*******************************/
-                /* Send repeated start+address */
-                /*******************************/
-            case i2cStateRStartAddrSend:
-                if (seq->flags & I2C_FLAG_10BIT_ADDR)
+                /*******************************
+                 * Send repeated start+address 
+                 */
+            case I2CSTATE_RSTARTADDRSEND:
+                if (priv->flags & I2C_M_TEN)
                 {
-                    tmp = ((seq->addr >> 8) & 0x06) | 0xf0;
+                    if (priv->flags & I2C_M_READ)
+                        regval = I2C_READADDR10H(priv->addr);
+                    else
+                        regval = I2C_WRITEADDR10H(priv->addr);
                 }
                 else
                 {
-                    tmp = seq->addr & 0xfe;
+                    if (priv->flags & I2C_M_READ)
+                        regval = I2C_READADDR8(priv->addr);
+                    else
+                        regval = I2C_WRITEADDR8(priv->addr);
+
                 }
 
-                /* If this is a write+read combined sequence, then read is about to start */
-                if (seq->flags & I2C_FLAG_WRITE_READ)
-                {
-                    /* Indicate read request */
-                    tmp |= 1;
-                }
-
-                transfer->state = i2cStateRAddrWFAckNack;
-                /* We have to write START cmd first since repeated start, otherwise */
-                /* data would be sent first. */
-                i2c->CMD    = I2C_CMD_START;
-                i2c->TXDATA = tmp;
+                priv->i2c_state = I2CSTATE_RADDRWFACKNACK;
+                /* We have to write START cmd first since repeated start, 
+                 * otherwise data would be sent first. 
+                 */
+                efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_START);
+                efm32_i2c_putreg(priv,EFM32_I2C_TXDATA_OFFSET,regval);
                 goto done;
 
-                /**********************************************************************/
-                /* Wait for ACK/NACK on repeated start+address (first byte if 10 bit) */
-                /**********************************************************************/
-            case i2cStateRAddrWFAckNack:
+                /***********************************************
+                 * Wait for ACK/NACK on repeated start+address
+                 * (first byte if 10 bit)
+                 */
+            case I2CSTATE_RADDRWFACKNACK:
                 if (priv->i2c_reg_if & I2C_IF_NACK)
                 {
-                    i2c->IFC         = I2C_IFC_NACK;
-                    transfer->result = i2cTransferNack;
-                    transfer->state  = i2cStateWFStopSent;
-                    i2c->CMD         = I2C_CMD_STOP;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_NACK);
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_STOP);
+                    priv->result    = I2CRESULT_NACK;
+                    priv->i2c_state = I2CSTATE_WFSTOPSENT;
                 }
                 else if (priv->i2c_reg_if & I2C_IF_ACK)
                 {
-                    i2c->IFC = I2C_IFC_ACK;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_ACK);
 
                     /* Determine whether receiving or sending data */
-                    if (seq->flags & I2C_FLAG_WRITE_READ)
+                    if (priv->flags & I2C_M_READ)
                     {
-                        transfer->state = i2cStateWFData;
+                        priv->i2c_state = I2CSTATE_WFDATA;
                     }
                     else
                     {
-                        transfer->state = i2cStateDataSend;
+                        priv->i2c_state = I2CSTATE_DATASEND;
                         continue;
                     }
                 }
                 goto done;
 
-                /*****************************/
-                /* Send a data byte to slave */
-                /*****************************/
-            case i2cStateDataSend:
+                /*****************************
+                 * Send a data byte to slave
+                 */
+            case I2CSTATE_DATASEND:
                 /* Reached end of data buffer? */
-                if (transfer->offset >= seq->buf[transfer->bufIndx].len)
+                if (priv->dcnt == 0)
                 {
-                    /* Move to next message part */
-                    transfer->offset = 0;
-                    transfer->bufIndx++;
 
-                    /* Send repeated start when switching to read mode on 2nd buffer */
-                    if (seq->flags & I2C_FLAG_WRITE_READ)
+                    if ( priv->msgc == 0 ) 
                     {
-                        transfer->state = i2cStateRStartAddrSend;
-                        continue;
-                    }
-
-                    /* Only writing from one buffer, or finished both buffers */
-                    if ((seq->flags & I2C_FLAG_WRITE) || (transfer->bufIndx > 1))
-                    {
-                        transfer->state = i2cStateWFStopSent;
-                        i2c->CMD        = I2C_CMD_STOP;
+                        /* No more message part */
+                        efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,
+                                         I2C_CMD_STOP);
+                        priv->i2c_state = I2CSTATE_WFSTOPSENT;
                         goto done;
                     }
 
-                    /* Reprocess in case next buffer is empty */
-                    continue;
+                    /* Move to next message part */
+                    priv->ptr   = priv->msgv->buffer;
+                    priv->dcnt  = priv->msgv->length;
+                    priv->flags = priv->msgv->flags;
+                    priv->addr  = priv->msgv->addr;
+                    priv->msgv++;
+                    priv->msgc--;
+
+                    /* Send byte continue with/without restart ? */
+                    if ( ! ( priv->flags & I2C_M_NORESTART ) )
+                    {
+                        priv->i2c_state = I2CSTATE_RSTARTADDRSEND;
+                        continue;
+                    }
                 }
 
                 /* Send byte */
-                i2c->TXDATA     = (uint32_t)(seq->buf[transfer->bufIndx].data[transfer->offset++]);
-                transfer->state = i2cStateDataWFAckNack;
+                efm32_i2c_putreg(priv,EFM32_I2C_TXDATA_OFFSET,*priv->ptr++);
+                priv->dcnt--;
+                priv->i2c_state = I2CSTATE_DATAWFACKNACK;
                 goto done;
 
-                /*********************************************************/
-                /* Wait for ACK/NACK from slave after sending data to it */
-                /*********************************************************/
-            case i2cStateDataWFAckNack:
+                /*********************************************************
+                 * Wait for ACK/NACK from slave after sending data to it
+                 */
+            case I2CSTATE_DATAWFACKNACK:
                 if (priv->i2c_reg_if & I2C_IF_NACK)
                 {
-                    i2c->IFC         = I2C_IFC_NACK;
-                    transfer->result = i2cTransferNack;
-                    transfer->state  = i2cStateWFStopSent;
-                    i2c->CMD         = I2C_CMD_STOP;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_NACK);
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_STOP);
+                    priv->result    = I2CRESULT_NACK;
+                    priv->i2c_state = I2CSTATE_WFSTOPSENT;
                 }
                 else if (priv->i2c_reg_if & I2C_IF_ACK)
                 {
-                    i2c->IFC        = I2C_IFC_ACK;
-                    transfer->state = i2cStateDataSend;
+                    efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET, I2C_IFC_ACK);
+                    priv->i2c_state = I2CSTATE_DATASEND;
                     continue;
                 }
                 goto done;
 
-                /****************************/
-                /* Wait for data from slave */
-                /****************************/
-            case i2cStateWFData:
+                /****************************
+                 * Wait for data from slave
+                 */
+            case I2CSTATE_WFDATA:
                 if (priv->i2c_reg_if & I2C_IF_RXDATAV)
                 {
-                    uint8_t       data;
-                    unsigned int  rxLen = seq->buf[transfer->bufIndx].len;
+                    /* Must read out data in order to not block further 
+                     * progress 
+                     */
+                    regval = efm32_i2c_getreg(priv, EFM32_I2C_RXDATA_OFFSET);
 
-                    /* Must read out data in order to not block further progress */
-                    data = (uint8_t)(i2c->RXDATA);
-
-                    /* Make sure not storing beyond end of buffer just in case */
-                    if (transfer->offset < rxLen)
+                    /* Make sure not storing beyond end of buffer just in case 
+                     */
+                    if (priv->dcnt > 0)
                     {
-                        seq->buf[transfer->bufIndx].data[transfer->offset++] = data;
+                        *(priv->ptr++) = regval;
+                        priv->dcnt--;
                     }
 
-                    /* If we have read all requested data, then the sequence should end */
-                    if (transfer->offset >= rxLen)
+                    /* If we have read all requested data, then the sequence 
+                     * should end 
+                     */
+                    if (priv->dcnt == 0)
                     {
-                        /* If there is only one byte to receive we need to transmit the
-                           NACK now, before the stop. */
-                        if (1 == rxLen)
-                        {
-                            i2c->CMD  = I2C_CMD_NACK;
-                        }
+                        priv->i2c_state = I2CSTATE_WFSTOPSENT;
+                        efm32_i2c_putreg(priv, EFM32_I2C_CMD_OFFSET,
+                                         I2C_CMD_STOP);
 
-                        transfer->state = i2cStateWFStopSent;
-                        i2c->CMD        = I2C_CMD_STOP;
+                    }
+                    else if (priv->dcnt == 1)
+                    {
+                        /* If there is only one byte to receive we need to 
+                         * transmit the
+                         * NACK now, before the stop. 
+                         */
+                        efm32_i2c_putreg(priv, EFM32_I2C_CMD_OFFSET,
+                                         I2C_CMD_NACK);
                     }
                     else
                     {
                         /* Send ACK and wait for next byte */
-                        i2c->CMD = I2C_CMD_ACK;
-
-                        if ( (1<rxLen) && (transfer->offset == (rxLen-1)) )
-                        {
-                            /* If there is more than one byte to receive and this is the next
-                               to last byte we need to transmit the NACK now, before receiving
-                               the last byte. */
-                            i2c->CMD  = I2C_CMD_NACK;
-                        }
+                        efm32_i2c_putreg(priv, EFM32_I2C_CMD_OFFSET,
+                                         I2C_CMD_ACK);
                     }
                 }
                 goto done;
 
-                /***********************************/
-                /* Wait for STOP to have been sent */
-                /***********************************/
-            case i2cStateWFStopSent:
+                /***********************************
+                 * Wait for STOP to have been sent
+                 */
+            case I2CSTATE_WFSTOPSENT:
                 if (priv->i2c_reg_if & I2C_IF_MSTOP)
                 {
-                    i2c->IFC        = I2C_IFC_MSTOP;
-                    transfer->state = i2cStateDone;
+                    efm32_i2c_putreg(priv, EFM32_I2C_IFC_OFFSET,
+                                     I2C_IFC_MSTOP);
+                    priv->i2c_state = I2CSTATE_DONE;
                 }
                 goto done;
 
@@ -1214,243 +1218,28 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                 /* Unexpected state, SW fault */
                 /******************************/
             default:
-                transfer->result = i2cTransferSwFault;
-                transfer->state  = i2cStateDone;
+                priv->result    = I2CRESULT_SWFAULT;
+                priv->i2c_state = I2CSTATE_DONE;
                 goto done;
         }
     }
 
 done:
 
-    if (transfer->state == i2cStateDone)
+    if (priv->i2c_state == I2CSTATE_DONE)
     {
+#ifndef CONFIG_I2C_POLLED
+        sem_post(&priv->sem_isr);
+#endif
         /* Disable interrupt sources when done */
-        i2c->IEN = 0;
+        efm32_i2c_putreg(priv,EFM32_I2C_IEN_OFFSET,0);
 
         /* Update result unless some fault already occurred */
-        if (transfer->result == i2cTransferInProgress)
+        if (priv->result == I2CRESULT_INPROGRESS)
         {
-            transfer->result = i2cTransferDone;
+            priv->result = I2CRESULT_DONE;
         }
     }
-    /* Until transfer is done keep returning i2cTransferInProgress */
-    else
-    {
-        return(i2cTransferInProgress);
-    }
-
-    return transfer->result;
-
-
-
-#if 0
-
-
-    /* Was start bit sent */
-
-    if ((status & I2C_SR1_SB) != 0)
-    {
-    }
-
-    /* In 10-bit addressing mode, was first byte sent */
-
-    else if ((status & I2C_SR1_ADD10) != 0)
-    {
-        /* TODO: Finish 10-bit mode addressing.
-         *
-         * For now just clear ISR by writing to DR register. As we don't do
-         * 10 bit addressing this must be a spurious ISR
-         */
-
-        efm32_i2c_putreg(priv, EFM32_I2C_DR_OFFSET, 0);
-    }
-
-    /* Was address sent, continue with either sending or reading data */
-
-    else if ((priv->flags & I2C_M_READ) == 0 && \
-             (status & (I2C_SR1_ADDR | I2C_SR1_TXE)) != 0)
-    {
-        if (priv->dcnt > 0)
-        {
-            /* Send a byte */
-
-            efm32_i2c_traceevent(priv, I2CEVENT_SENDBYTE, priv->dcnt);
-            efm32_i2c_putreg(priv, EFM32_I2C_DR_OFFSET, *priv->ptr++);
-            priv->dcnt--;
-        }
-    }
-
-    else if ((priv->flags & I2C_M_READ) != 0 && (status & I2C_SR1_ADDR) != 0)
-    {
-        /* Enable RxNE and TxE buffers in order to receive one or multiple 
-         * bytes 
-         */
-
-#ifndef CONFIG_I2C_POLLED
-        efm32_i2c_traceevent(priv, I2CEVENT_ITBUFEN, 0);
-        efm32_i2c_modifyreg(priv, EFM32_I2C_CR2_OFFSET, 0, I2C_CR2_ITBUFEN);
-#endif
-    }
-
-    /* More bytes to read */
-
-    else if ((status & I2C_SR1_RXNE) != 0)
-    {
-        /* Read a byte, if dcnt goes < 0, then read dummy bytes to ack ISRs */
-
-        if (priv->dcnt > 0)
-        {
-            efm32_i2c_traceevent(priv, I2CEVENT_RCVBYTE, priv->dcnt);
-
-            /* No interrupts or context switches may occur in the following
-             * sequence.  Otherwise, additional bytes may be sent by the
-             * device.
-             */
-
-#ifdef CONFIG_I2C_POLLED
-            irqstate_t state = irqsave();
-#endif
-            /* Receive a byte */
-
-            *priv->ptr++ = efm32_i2c_getreg(priv, EFM32_I2C_DR_OFFSET);
-
-            /* Disable acknowledge when last byte is to be received */
-
-            priv->dcnt--;
-            if (priv->dcnt == 1)
-            {
-                efm32_i2c_modifyreg(priv, EFM32_I2C_CR1_OFFSET, I2C_CR1_ACK, 0);
-            }
-
-#ifdef CONFIG_I2C_POLLED
-            irqrestore(state);
-#endif
-        }
-        else
-        {
-            /* Throw away the unexpected byte */
-
-            efm32_i2c_getreg(priv, EFM32_I2C_DR_OFFSET);
-        }
-    }
-    else if (status & I2C_SR1_TXE)
-    {
-        /* This should never happen, but it does happen occasionally with lots
-         * of noise on the bus. It means the peripheral is expecting more data
-         * bytes, but we don't have any to give.
-         */
-
-        efm32_i2c_putreg(priv, EFM32_I2C_DR_OFFSET, 0);
-    }
-    else if (status & I2C_SR1_BTF)
-    {
-        /* We should have handled all cases where this could happen above, but
-         * just to ensure it gets ACKed, lets clear it here
-         */
-
-        efm32_i2c_getreg(priv, EFM32_I2C_DR_OFFSET);
-    }
-    else if (status & I2C_SR1_STOPF)
-    {
-        /* We should never get this, as we are a master not a slave. Write CR1
-         * with its current value to clear the error
-         */
-
-        efm32_i2c_modifyreg(priv, EFM32_I2C_CR1_OFFSET, 0, 0);
-    }
-
-    /* Do we have more bytes to send, enable/disable buffer interrupts
-     * (these ISRs could be replaced by DMAs)
-     */
-
-#ifndef CONFIG_I2C_POLLED
-    if (priv->dcnt > 0)
-    {
-        efm32_i2c_traceevent(priv, I2CEVENT_REITBUFEN, 0);
-        efm32_i2c_modifyreg(priv, EFM32_I2C_CR2_OFFSET, 0, I2C_CR2_ITBUFEN);
-    }
-    else if (priv->dcnt == 0)
-    {
-        efm32_i2c_traceevent(priv, I2CEVENT_DISITBUFEN, 0);
-        efm32_i2c_modifyreg(priv, EFM32_I2C_CR2_OFFSET, I2C_CR2_ITBUFEN, 0);
-    }
-#endif
-
-    /* Was last byte received or sent?  Hmmm... the F2 and F4 seems to differ from
-     * the F1 in that BTF is not set after data is received (only RXNE).
-     */
-
-#if defined(CONFIG_EFM32_EFM32F20XX) || defined(CONFIG_EFM32_EFM32F40XX) || \
-    defined(CONFIG_EFM32_EFM32L15XX)
-    if (priv->dcnt <= 0 && (status & (I2C_SR1_BTF|I2C_SR1_RXNE)) != 0)
-#else
-        if (priv->dcnt <= 0 && (status & I2C_SR1_BTF) != 0)
-#endif
-        {
-            efm32_i2c_getreg(priv, EFM32_I2C_DR_OFFSET);    /* ACK ISR */
-
-            /* Do we need to terminate or restart after this byte?
-             * If there are more messages to send, then we may:
-             *
-             *  - continue with repeated start
-             *  - or just continue sending writeable part
-             *  - or we close down by sending the stop bit
-             */
-
-            if (priv->msgc > 0)
-            {
-                if (priv->msgv->flags & I2C_M_NORESTART)
-                {
-                    efm32_i2c_traceevent(priv, I2CEVENT_BTFNOSTART, priv->msgc);
-                    priv->ptr   = priv->msgv->buffer;
-                    priv->dcnt  = priv->msgv->length;
-                    priv->flags = priv->msgv->flags;
-                    priv->msgv++;
-                    priv->msgc--;
-
-                    /* Restart this ISR! */
-
-#ifndef CONFIG_I2C_POLLED
-                    efm32_i2c_modifyreg(priv, EFM32_I2C_CR2_OFFSET, 0, 
-                                        I2C_CR2_ITBUFEN);
-#endif
-                }
-                else
-                {
-                    efm32_i2c_traceevent(priv, I2CEVENT_BTFRESTART, priv->msgc);
-                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET,I2C_CMD_START);
-                }
-            }
-            else if (priv->msgv)
-            {
-                efm32_i2c_traceevent(priv, I2CEVENT_BTFSTOP, 0);
-                efm32_i2c_sendstop(priv);
-
-                /* Is there a thread waiting for this event (there should be) */
-
-#ifndef CONFIG_I2C_POLLED
-                if (priv->intstate == INTSTATE_WAITING)
-                {
-                    /* Yes.. inform the thread that the transfer is complete
-                     * and wake it up.
-                     */
-
-                    sem_post(&priv->sem_isr);
-                    priv->intstate = INTSTATE_DONE;
-                }
-#else
-                priv->intstate = INTSTATE_DONE;
-#endif
-
-                /* Mark that we have stopped with this transaction */
-
-                priv->msgv = NULL;
-            }
-        }
-end:
-#endif
-
-
 
     return OK;
 }
