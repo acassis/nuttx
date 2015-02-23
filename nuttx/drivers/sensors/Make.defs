@@ -41,6 +41,10 @@ ifeq ($(CONFIG_SENSORS_ADXL345),y)
   CSRCS += adxl345_base.c
 endif
 
+ifeq ($(CONFIG_SENSORS_MPU9250),y)
+  CSRCS += mpu9250_base.c
+endif
+
 # These drivers depend on I2C support
 
 ifeq ($(CONFIG_I2C),y)
@@ -56,6 +60,11 @@ endif
 ifeq ($(CONFIG_I2C_LM75),y)
   CSRCS += lm75.c
 endif
+
+ifeq ($(CONFIG_MPU9250_I2C),y)
+  CSRCS += mpu9250_i2c.c
+endif
+
 endif # CONFIG_I2C
 
 # These drivers depend on SPI support
@@ -68,6 +77,11 @@ endif
 ifeq ($(CONFIG_MPL115A),y)
   CSRCS += mpl115a.c
 endif
+
+ifeq ($(CONFIG_MPU9250_SPI),y)
+  CSRCS += mpu9250_SPI.c
+endif
+
 endif # CONFIG_SPI
 
 # Quadrature encoder upper half

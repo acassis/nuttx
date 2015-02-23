@@ -75,3 +75,44 @@ config LM75
 config QENCODER
 	bool "Qencoder"
 	default n
+
+config SENSORS_MPU9250
+	bool "Invensense MPU9250 Driver (9Axes sensors)"
+	default n
+	---help---
+		Enables support for the MPU9250 driver.
+		This is a device that in integrate:
+		3 axes accelerometer.
+		3 axes gyroscope.
+		3 axes Magnetometer.
+		This driver may also works with MPU6500/MPU6515 and MPU9150
+		but is was never tested with theses.
+
+if SENSORS_MPU9250
+
+choice
+	prompt "MPU9250 Interface"
+	default MPU9250_I2C
+
+config MPU9250_SPI
+	bool "MPU9250 SPI Interface"
+	select SPI
+	---help---
+		Enables support for the SPI interface.
+
+config MPU9250_I2C
+	bool "MPU9250 I2C Interface"
+	select I2C
+	---help---
+		Enables support for the I2C interface
+
+endchoice
+
+config MPU9250_REGDEBUG
+	bool "Enable Register-Level MPU9250 Debug"
+	default n
+	depends on DEBUG
+	---help---
+		Enable very low register-level debug output.
+
+endif # SENSORS_MPU9250
