@@ -41,8 +41,13 @@ ifeq ($(CONFIG_SENSORS_ADXL345),y)
   CSRCS += adxl345_base.c
 endif
 
-ifeq ($(CONFIG_SENSORS_MPU9250),y)
-  CSRCS += mpu9250_base.c
+ifeq ($(CONFIG_SENSORS_INVENSENSE),y)
+  CSRCS += inv_mpu_base.c
+  CSRCS += inv_mpu_fileops.c
+endif
+
+ifeq ($(CONFIG_INVENSENSE_DMP),y)
+  CSRCS += inv_mpu_dmp_motion_driver.c
 endif
 
 # These drivers depend on I2C support
@@ -61,9 +66,9 @@ ifeq ($(CONFIG_I2C_LM75),y)
   CSRCS += lm75.c
 endif
 
-ifeq ($(CONFIG_MPU9250_I2C),y)
-  CSRCS += mpu9250_i2c.c
-endif
+ifeq ($(CONFIG_INVENSENSE_I2C),y)
+  CSRCS += inv_mpu_i2c.c
+endif # CONFIG_INVENSENSE_I2C
 
 endif # CONFIG_I2C
 
@@ -78,9 +83,9 @@ ifeq ($(CONFIG_MPL115A),y)
   CSRCS += mpl115a.c
 endif
 
-ifeq ($(CONFIG_MPU9250_SPI),y)
-  CSRCS += mpu9250_SPI.c
-endif
+ifeq ($(CONFIG_INVENSENSE_SPI),y)
+  CSRCS += inv_mpu_spi.c
+endif # CONFIG_INVENSENSE_SPI
 
 endif # CONFIG_SPI
 
@@ -89,6 +94,7 @@ endif # CONFIG_SPI
 ifeq ($(CONFIG_QENCODER),y)
   CSRCS += qencoder.c
 endif
+
 
 # Include sensor driver build support
 
