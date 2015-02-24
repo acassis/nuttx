@@ -44,8 +44,8 @@
 #include <debug.h>
 
 #include <nuttx/kmalloc.h>
-#include <nuttx/sensors/mpu9250.h>
-#include <nuttx/sensors/mpu9250_reg.h>
+//#include <nuttx/sensors/mpu9250.h>
+//#include <nuttx/sensors/mpu9250_reg.h>
 
 #include "mpu9250.h"
 

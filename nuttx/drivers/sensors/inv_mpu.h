@@ -1,25 +1,40 @@
-/*
- $License:
-    Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
-    See included License.txt for License information.
- $
- */
-/**
- *  @addtogroup  DRIVERS Sensor Driver Layer
- *  @brief       Hardware drivers to communicate with sensors via I2C.
+/****************************************************************************
+ * drivers/sensors/inv_mpu.h
  *
- *  @{
- *      @file       inv_mpu.h
- *      @brief      An I2C-based driver for Invensense gyroscopes.
- *      @details    This driver currently works for the following devices:
- *                  MPU6050
- *                  MPU6500
- *                  MPU9150 (or MPU6050 w/ AK8975 on the auxiliary bus)
- *                  MPU9250 (or MPU6500 w/ AK8963 on the auxiliary bus)
- */
+ *   Copyright (C) 2015 Pierre-noel Bouteville . All rights reserved.
+ *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
 
-#ifndef _INV_MPU_H_
-#define _INV_MPU_H_
+#ifndef _DRIVERS_SENSOR_INV_MPU_H_
+#define _DRIVERS_SENSOR_INV_MPU_H_
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)
@@ -27,19 +42,6 @@
 #define INV_XYZ_GYRO    (INV_X_GYRO | INV_Y_GYRO | INV_Z_GYRO)
 #define INV_XYZ_ACCEL   (0x08)
 #define INV_XYZ_COMPASS (0x01)
-
-struct int_param_s {
-#if defined EMPL_TARGET_MSP430 || defined MOTION_DRIVER_TARGET_MSP430
-    void (*cb)(void);
-    unsigned short pin;
-    unsigned char lp_exit;
-    unsigned char active_low;
-#elif defined EMPL_TARGET_UC3L0
-    unsigned long pin;
-    void (*cb)(volatile void*);
-    void *arg;
-#endif
-};
 
 #define MPU_INT_STATUS_DATA_READY       (0x0001)
 #define MPU_INT_STATUS_DMP              (0x0002)
@@ -55,6 +57,94 @@ struct int_param_s {
 #define MPU_INT_STATUS_DMP_3            (0x0800)
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
+
+/* Hardware registers needed by driver. */
+struct inv_mpu {
+    struct regs {
+        unsigned char who_am_i;
+        unsigned char rate_div;
+        unsigned char lpf;
+        unsigned char prod_id;
+        unsigned char user_ctrl;
+        unsigned char fifo_en;
+        unsigned char gyro_cfg;
+        unsigned char accel_cfg;
+        unsigned char accel_cfg2;
+        unsigned char lp_accel_odr;
+        unsigned char motion_thr;
+        unsigned char motion_dur;
+        unsigned char fifo_count_h;
+        unsigned char fifo_r_w;
+        unsigned char raw_gyro;
+        unsigned char raw_accel;
+        unsigned char temp;
+        unsigned char int_enable;
+        unsigned char dmp_int_status;
+        unsigned char int_status;
+        unsigned char accel_intel;
+        unsigned char pwr_mgmt_1;
+        unsigned char pwr_mgmt_2;
+        unsigned char int_pin_cfg;
+        unsigned char mem_r_w;
+        unsigned char accel_offs;
+        unsigned char i2c_mst;
+        unsigned char bank_sel;
+        unsigned char mem_start_addr;
+        unsigned char prgm_start_h;
+    };
+    struct hw{
+        unsigned char addr;
+        unsigned short max_fifo;
+        unsigned char num_reg;
+        unsigned short temp_sens;
+        short temp_offset;
+        unsigned short bank_size;
+    };
+    struct self_test {
+        unsigned long gyro_sens;
+        unsigned long accel_sens;
+        unsigned char reg_rate_div;
+        unsigned char reg_lpf;
+        unsigned char reg_gyro_fsr;
+        unsigned char reg_accel_fsr;
+        unsigned short wait_ms;
+        unsigned char packet_thresh;
+        float min_dps;
+        float max_dps;
+        float max_gyro_var;
+        float min_g;
+        float max_g;
+        float max_accel_var;
+#if defined CONFIG_SENSOR_MPU6500
+        float max_g_offset;
+        unsigned short sample_wait_ms;
+#endif
+    };
+};
+
+#if defined CONFIG_SENSOR_AK89XX_SECONDARY
+struct inv_compass {
+    struct regs {
+    unsigned char s0_addr;
+    unsigned char s0_reg;
+    unsigned char s0_ctrl;
+    unsigned char s1_addr;
+    unsigned char s1_reg;
+    unsigned char s1_ctrl;
+    unsigned char s4_ctrl;
+    unsigned char s0_do;
+    unsigned char s1_do;
+    unsigned char i2c_delay_ctrl;
+    unsigned char raw_compass;
+    /* The I2C_MST_VDDIO bit is in this register. */
+    unsigned char yg_offs_tc;
+    };
+    struct hw {
+        unsigned short fsr;
+    };
+};
+#endif
+
 
 /* Set up APIs */
 int mpu_init(struct int_param_s *int_param);
