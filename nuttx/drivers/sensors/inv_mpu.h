@@ -145,9 +145,14 @@ struct inv_compass {
 };
 #endif
 
+struct inv_mpu_lowlevel {
+    void *priv;
+    int (*write)(void * priv,int reg, uint8_t*buf, int size);
+    int (*read )(void * priv,int reg, uint8_t*buf, int size);
+};
 
 /* Set up APIs */
-int mpu_init(struct int_param_s *int_param);
+int mpu_init(struct inv_mpu_lowlevel* lowlevel);
 int mpu_init_slave(void);
 int mpu_set_bypass(unsigned char bypass_on);
 

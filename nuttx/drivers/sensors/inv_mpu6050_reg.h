@@ -36,132 +36,66 @@
 #ifndef _DRIVERS_SENSOR_INV_MPU6050_H_
 #define _DRIVERS_SENSOR_INV_MPU6050_H_
 
-/* Hardware registers needed by driver. */
-struct gyro_reg_s {
-    unsigned char who_am_i;
-    unsigned char rate_div;
-    unsigned char lpf;
-    unsigned char prod_id;
-    unsigned char user_ctrl;
-    unsigned char fifo_en;
-    unsigned char gyro_cfg;
-    unsigned char accel_cfg;
-    unsigned char accel_cfg2;
-    unsigned char lp_accel_odr;
-    unsigned char motion_thr;
-    unsigned char motion_dur;
-    unsigned char fifo_count_h;
-    unsigned char fifo_r_w;
-    unsigned char raw_gyro;
-    unsigned char raw_accel;
-    unsigned char temp;
-    unsigned char int_enable;
-    unsigned char dmp_int_status;
-    unsigned char int_status;
-    unsigned char accel_intel;
-    unsigned char pwr_mgmt_1;
-    unsigned char pwr_mgmt_2;
-    unsigned char int_pin_cfg;
-    unsigned char mem_r_w;
-    unsigned char accel_offs;
-    unsigned char i2c_mst;
-    unsigned char bank_sel;
-    unsigned char mem_start_addr;
-    unsigned char prgm_start_h;
-#if defined AK89xx_SECONDARY
-    unsigned char s0_addr;
-    unsigned char s0_reg;
-    unsigned char s0_ctrl;
-    unsigned char s1_addr;
-    unsigned char s1_reg;
-    unsigned char s1_ctrl;
-    unsigned char s4_ctrl;
-    unsigned char s0_do;
-    unsigned char s1_do;
-    unsigned char i2c_delay_ctrl;
-    unsigned char raw_compass;
-    /* The I2C_MST_VDDIO bit is in this register. */
-    unsigned char yg_offs_tc;
-#endif
-};
+#define INV_MPU_WHO_AM_I        0X75
+#define INV_MPU_RATE_DIV        0X19
+#define INV_MPU_LPF             0X1A
+#define INV_MPU_PROD_ID         0X0C
+#define INV_MPU_USER_CTRL       0X6A
+#define INV_MPU_FIFO_EN         0X23
+#define INV_MPU_GYRO_CFG        0X1B
+#define INV_MPU_ACCEL_CFG       0X1C
+#define INV_MPU_MOTION_THR      0X1F
+#define INV_MPU_MOTION_DUR      0X20
+#define INV_MPU_FIFO_COUNT_H    0X72
+#define INV_MPU_FIFO_R_W        0X74
+#define INV_MPU_RAW_GYRO        0X43
+#define INV_MPU_RAW_ACCEL       0X3B
+#define INV_MPU_TEMP            0X41
+#define INV_MPU_INT_ENABLE      0X38
+#define INV_MPU_DMP_INT_STATUS  0X39
+#define INV_MPU_INT_STATUS      0X3A
+#define INV_MPU_PWR_MGMT_1      0X6B
+#define INV_MPU_PWR_MGMT_2      0X6C
+#define INV_MPU_INT_PIN_CFG     0X37
+#define INV_MPU_MEM_R_W         0X6F
+#define INV_MPU_ACCEL_OFFS      0X06
+#define INV_MPU_I2C_MST         0X24
+#define INV_MPU_BANK_SEL        0X6D
+#define INV_MPU_MEM_START_ADDR  0X6E
+#define INV_MPU_PRGM_START_H    0X70
 
-const struct gyro_reg_s reg = {
-    .who_am_i       = 0x75,
-    .rate_div       = 0x19,
-    .lpf            = 0x1A,
-    .prod_id        = 0x0C,
-    .user_ctrl      = 0x6A,
-    .fifo_en        = 0x23,
-    .gyro_cfg       = 0x1B,
-    .accel_cfg      = 0x1C,
-    .motion_thr     = 0x1F,
-    .motion_dur     = 0x20,
-    .fifo_count_h   = 0x72,
-    .fifo_r_w       = 0x74,
-    .raw_gyro       = 0x43,
-    .raw_accel      = 0x3B,
-    .temp           = 0x41,
-    .int_enable     = 0x38,
-    .dmp_int_status = 0x39,
-    .int_status     = 0x3A,
-    .pwr_mgmt_1     = 0x6B,
-    .pwr_mgmt_2     = 0x6C,
-    .int_pin_cfg    = 0x37,
-    .mem_r_w        = 0x6F,
-    .accel_offs     = 0x06,
-    .i2c_mst        = 0x24,
-    .bank_sel       = 0x6D,
-    .mem_start_addr = 0x6E,
-    .prgm_start_h   = 0x70
-#ifdef AK89xx_SECONDARY
-    ,.raw_compass   = 0x49,
-    .yg_offs_tc     = 0x01,
-    .s0_addr        = 0x25,
-    .s0_reg         = 0x26,
-    .s0_ctrl        = 0x27,
-    .s1_addr        = 0x28,
-    .s1_reg         = 0x29,
-    .s1_ctrl        = 0x2A,
-    .s4_ctrl        = 0x34,
-    .s0_do          = 0x63,
-    .s1_do          = 0x64,
-    .i2c_delay_ctrl = 0x67
-#endif
-};
-const struct hw_s hw = {
-    .addr           = 0x68,
-    .max_fifo       = 1024,
-    .num_reg        = 118,
-    .temp_sens      = 340,
-    .temp_offset    = -521,
-    .bank_size      = 256
-#if defined AK89xx_SECONDARY
-    ,.compass_fsr    = AK89xx_FSR
-#endif
-};
+/* Hardware Value *****************************************************************/
 
-const struct test_s test = {
-    .gyro_sens      = 32768/250,
-    .accel_sens     = 32768/16,
-    .reg_rate_div   = 0,    /* 1kHz. */
-    .reg_lpf        = 1,    /* 188Hz. */
-    .reg_gyro_fsr   = 0,    /* 250dps. */
-    .reg_accel_fsr  = 0x18, /* 16g. */
-    .wait_ms        = 50,
-    .packet_thresh  = 5,    /* 5% */
-    .min_dps        = 10.f,
-    .max_dps        = 105.f,
-    .max_gyro_var   = 0.14f,
-    .min_g          = 0.3f,
-    .max_g          = 0.95f,
-    .max_accel_var  = 0.14f
-};
+#define INV_MPU_MAX_FIFO    0x1024
+#define INV_MPU_NUM_REG     118
+#define INV_MPU_TEMP_SENS   340
+#define INV_MPU_TEMP_OFFSET -521
+#define INV_MPU_BANK_SIZE   256
 
-static struct gyro_state_s st = {
-    .reg = &reg,
-    .hw = &hw,
-    .test = &test
-};
+/* TEST Value *****************************************************************/
+
+#define INV_MPU_GYRO_SENS       (32768/250)
+#define INV_MPU_ACCEL_SENS      (32768/16)
+#define INV_MPU_REG_RATE_DIV    (0)    /* 1kHz. */
+#define INV_MPU_REG_LPF         (1)    /* 188Hz. */
+#define INV_MPU_REG_GYRO_FSR    (0)    /* 250dps. */
+#define INV_MPU_REG_ACCEL_FSR   (0x18) /* 16g. */
+#define INV_MPU_PACKET_THRESH   (5)    /* 5% */
+#define INV_MPU_WAIT_MS         (50)
+
+/* Criteria A */
+#define INV_MPU_MAX_ACCEL_VAR   (0.14f)
+#define INV_MPU_MAX_GYRO_VAR    (0.14f)
+
+/* Criteria B */
+#define INV_MPU_MIN_ACCEL_G     (0.3f)
+#define INV_MPU_MAX_ACCEL_G     (0.95f)
+#define INV_MPU_MAX_GYRO_DPS    (105.f)
+
+/* Criteria C */
+#define INV_MPU_MIN_DPS         (10.f)
+
+#define HWST_MAX_PACKET_LENGTH  (512)
 
 #endif  /* _DRIVERS_SENSOR_INV_MPU6050_H_ */
 

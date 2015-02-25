@@ -149,4 +149,10 @@ config INVENSENSE_DMP
 	---help---
 		Enables support of motion coprocessor driver.
 
+config INVENSENSE_DEBUG
+	bool "Enable Invensense debug."
+	default n
+	---help---
+		Enables debug of Invensense driver.
+
 endif # SENSORS
