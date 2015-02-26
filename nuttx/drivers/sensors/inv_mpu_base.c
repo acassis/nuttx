@@ -219,8 +219,9 @@ struct motion_int_cache_s {
     unsigned char fifo_sensors;
     unsigned char dmp_on;
 };
-/* Debug **********************************************************************/^M
-/* CONFIG_DEBUG_I2C + CONFIG_DEBUG enables general I2C debug output. */^M
+
+/* Debug **********************************************************************/
+/* CONFIG_DEBUG_I2C + CONFIG_DEBUG enables general I2C debug output. */
 
 /* Cached chip configuration data.
  * TODO: A lot of these can be handled with a bitmask.
@@ -273,7 +274,7 @@ struct chip_cfg_s {
 
 /* Gyro driver state variables. */
 struct inv_mpu_inst_s {
-    struct inv_mpu_lowlevel*    low;
+    struct inv_mpu_lowlevel     low;
     struct chip_cfg_s           chip_cfg;
 };
 
@@ -312,10 +313,10 @@ const struct test_s test = {
  ******************************************************************************/
 
 #define __WRITE(inst,reg_name,buf,size)\
-        (inst)->low.write((inst)->low.priv,inst->reg->reg_name,buf,size);
+        (inst)->low.write((inst)->low.priv,reg_name,buf,size)
 
 #define __READ(inst,reg_name,buf,size)\
-        (inst)->low.read((inst)->low.priv,inst->reg->reg_name,buf,size);
+        (inst)->low.read((inst)->low.priv,reg_name,buf,size)
 
 
 /*******************************************************************************
@@ -342,7 +343,7 @@ static int inv_mpu_set_int_enable(struct inv_mpu_inst_s* inst, bool enable)
             tmp = BIT_DMP_INT_EN;
         else
             tmp = 0x00;
-        if (__WRITE(inst,int_enable,1,&tmp) < 0  < 0 )
+        if (__WRITE(inst,INV_MPU_INT_ENABLE,&tmp,1) < 0  < 0 )
             return -1;
         inst->chip_cfg.int_enable = tmp;
     } else {
@@ -354,7 +355,7 @@ static int inv_mpu_set_int_enable(struct inv_mpu_inst_s* inst, bool enable)
             tmp = BIT_DATA_RDY_EN;
         else
             tmp = 0x00;
-        if (__WRITE(inst,int_enable, 1, &tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_ENABLE,&tmp,1) < 0 )
             return -1;
         inst->chip_cfg.int_enable = tmp;
     }
@@ -423,13 +424,13 @@ int mpu_init(struct int_param_s *int_param)
 
     /* Reset device. */
     data[0] = BIT_RESET;
-    if (__WRITE(inst,pwr_mgmt_1, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data1,) < 0 )
         return -1;
     delay_ms(100);
 
     /* Wake up chip. */
     data[0] = 0x00;
-    if (__WRITE(inst,pwr_mgmt_1, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data1,) < 0 )
         return -1;
 
     inst->chip_cfg.accel_half = 0;
@@ -439,7 +440,7 @@ int mpu_init(struct int_param_s *int_param)
      * first 3kB are needed by the DMP, we'll use the last 1kB for the FIFO.
      */
     data[0] = BIT_FIFO_SIZE_1024 | 0x8;
-    if (__WRITE(inst,accel_cfg2, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_ACCEL_CFG2,data,1) < 0 )
         return -1;
 #endif
 
@@ -517,7 +518,7 @@ int mpu_lp_accel_mode(unsigned char rate)
         mpu_set_int_latched(0);
         tmp[0] = 0;
         tmp[1] = BIT_STBY_XYZG;
-        if (__WRITE(inst,pwr_mgmt_1, 2, tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_PWR_MGMT_1,tmp,2) < 0 )
             return -1;
         inst->chip_cfg.lp_accel_mode = 0;
         return 0;
@@ -546,7 +547,7 @@ int mpu_lp_accel_mode(unsigned char rate)
         mpu_set_lpf(20);
     }
     tmp[1] = (tmp[1] << 6) | BIT_STBY_XYZG;
-    if (__WRITE(inst,pwr_mgmt_1, 2, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,tmp,2) < 0 )
         return -1;
 #elif defined MPU6500
     /* Set wake frequency. */
@@ -570,10 +571,10 @@ int mpu_lp_accel_mode(unsigned char rate)
         tmp[0] = INV_LPA_320HZ;
     else
         tmp[0] = INV_LPA_640HZ;
-    if (__WRITE(inst,lp_accel_odr, 1, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_LP_ACCEL_ODR,tmp,1) < 0 )
         return -1;
     tmp[0] = BIT_LPA_CYCLE;
-    if (__WRITE(inst,pwr_mgmt_1, 1, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,tmp,1) < 0 )
         return -1;
 #endif
     inst->chip_cfg.sensors = INV_XYZ_ACCEL;
@@ -854,50 +855,50 @@ int mpu_reset_fifo(void)
         return -1;
 
     data = 0;
-    if (__WRITE(inst,int_enable, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_INT_ENABLE,&data,1) < 0 )
         return -1;
-    if (__WRITE(inst,fifo_en, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,&data,1) < 0 )
         return -1;
-    if (__WRITE(inst,user_ctrl, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,&data,1) < 0 )
         return -1;
 
     if (inst->chip_cfg.dmp_on) {
         data = BIT_FIFO_RST | BIT_DMP_RST;
-        if (__WRITE(inst,user_ctrl, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&data,1) < 0 )
             return -1;
         delay_ms(50);
         data = BIT_DMP_EN | BIT_FIFO_EN;
         if (inst->chip_cfg.sensors & INV_XYZ_COMPASS)
             data |= BIT_AUX_IF_EN;
-        if (__WRITE(inst,user_ctrl, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&data,1) < 0 )
             return -1;
         if (inst->chip_cfg.int_enable)
             data = BIT_DMP_INT_EN;
         else
             data = 0;
-        if (__WRITE(inst,int_enable, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_ENABLE,&data,1) < 0 )
             return -1;
         data = 0;
-        if (__WRITE(inst,fifo_en, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_FIFO_EN,&data,1) < 0 )
             return -1;
     } else {
         data = BIT_FIFO_RST;
-        if (__WRITE(inst,user_ctrl, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&data,1) < 0 )
             return -1;
         if (inst->chip_cfg.bypass_mode || !(inst->chip_cfg.sensors & INV_XYZ_COMPASS))
             data = BIT_FIFO_EN;
         else
             data = BIT_FIFO_EN | BIT_AUX_IF_EN;
-        if (__WRITE(inst,user_ctrl, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&data,1) < 0 )
             return -1;
         delay_ms(50);
         if (inst->chip_cfg.int_enable)
             data = BIT_DATA_RDY_EN;
         else
             data = 0;
-        if (__WRITE(inst,int_enable, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_ENABLE,&data,1) < 0 )
             return -1;
-        if (__WRITE(inst,fifo_en, 1, &inst->chip_cfg.fifo_enable) < 0 )
+        if (__WRITE(inst,INV_MPU_FIFO_EN,&inst->chip_cfg.fifo_enable,1) < 0 )
             return -1;
     }
     return 0;
@@ -961,7 +962,7 @@ int mpu_set_gyro_fsr(unsigned short fsr)
 
     if (inst->chip_cfg.gyro_fsr == (data >> 3))
         return 0;
-    if (__WRITE(inst,gyro_cfg, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_GYRO_CFG,&data,1) < 0 )
         return -1;
     inst->chip_cfg.gyro_fsr = data >> 3;
     return 0;
@@ -1026,7 +1027,7 @@ int mpu_set_accel_fsr(unsigned char fsr)
 
     if (inst->chip_cfg.accel_fsr == (data >> 3))
         return 0;
-    if (__WRITE(inst,accel_cfg, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_ACCEL_CFG,&data,1) < 0 )
         return -1;
     inst->chip_cfg.accel_fsr = data >> 3;
     return 0;
@@ -1095,7 +1096,7 @@ int mpu_set_lpf(unsigned short lpf)
 
     if (inst->chip_cfg.lpf == data)
         return 0;
-    if (__WRITE(inst,lpf, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_LPF,&data,1) < 0 )
         return -1;
     inst->chip_cfg.lpf = data;
     return 0;
@@ -1148,7 +1149,7 @@ int mpu_set_sample_rate(unsigned short rate)
             rate = 1000;
 
         data = 1000 / rate - 1;
-        if (__WRITE(inst,rate_div, 1, &data) < 0 )
+        if (__WRITE(inst,INV_MPU_RATE_DIV,&data,1) < 0 )
             return -1;
 
         inst->chip_cfg.sample_rate = 1000 / (1 + data);
@@ -1198,7 +1199,7 @@ int mpu_set_compass_sample_rate(unsigned short rate)
         return -1;
 
     div = inst->chip_cfg.sample_rate / rate - 1;
-    if (__WRITE(inst,s4_ctrl, 1, &div) < 0 )
+    if (__WRITE(inst,INV_MPU_S4_CTRL,&div,1) < 0 )
         return -1;
     inst->chip_cfg.compass_sample_rate = inst->chip_cfg.sample_rate / (div + 1);
     return 0;
@@ -1359,7 +1360,7 @@ int mpu_set_sensors(unsigned char sensors)
         data = 0;
     else
         data = BIT_SLEEP;
-    if (__WRITE(inst,pwr_mgmt_1, 1, &data)) {
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,&data,1)) {
         inst->chip_cfg.sensors = 0;
         return -1;
     }
@@ -1374,7 +1375,7 @@ int mpu_set_sensors(unsigned char sensors)
         data |= BIT_STBY_ZG;
     if (!(sensors & INV_XYZ_ACCEL))
         data |= BIT_STBY_XYZA;
-    if (__WRITE(inst,pwr_mgmt_2, 1, &data)) {
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_2,&data,1)) {
         inst->chip_cfg.sensors = 0;
         return -1;
     }
@@ -1398,10 +1399,10 @@ int mpu_set_sensors(unsigned char sensors)
         user_ctrl |= BIT_DMP_EN;
     else
         user_ctrl &= ~BIT_DMP_EN;
-    if (__WRITE(inst,s1_do, 1, &data) < 0 )
+    if (__WRITE(inst,INV_MPU_S1_DO,&data,1) < 0 )
         return -1;
     /* Enable/disable I2C master mode. */
-    if (__WRITE(inst,user_ctrl, 1, &user_ctrl) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,&user_ctrl,1) < 0 )
         return -1;
 #endif
 
@@ -1575,7 +1576,7 @@ int mpu_set_bypass(unsigned char bypass_on)
         if (__READ(inst,user_ctrl, 1, &tmp) < 0 )
             return -1;
         tmp &= ~BIT_AUX_IF_EN;
-        if (__WRITE(inst,user_ctrl, 1, &tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&tmp,1) < 0 )
             return -1;
         delay_ms(3);
         tmp = BIT_BYPASS_EN;
@@ -1583,7 +1584,7 @@ int mpu_set_bypass(unsigned char bypass_on)
             tmp |= BIT_ACTL;
         if (inst->chip_cfg.latched_int)
             tmp |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
-        if (__WRITE(inst,int_pin_cfg, 1, &tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_PIN_CFG,&tmp,1) < 0 )
             return -1;
     } else {
         /* Enable I2C master mode if compass is being used. */
@@ -1593,7 +1594,7 @@ int mpu_set_bypass(unsigned char bypass_on)
             tmp |= BIT_AUX_IF_EN;
         else
             tmp &= ~BIT_AUX_IF_EN;
-        if (__WRITE(inst,user_ctrl, 1, &tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,&tmp,1) < 0 )
             return -1;
         delay_ms(3);
         if (inst->chip_cfg.active_low_int)
@@ -1602,7 +1603,7 @@ int mpu_set_bypass(unsigned char bypass_on)
             tmp = 0;
         if (inst->chip_cfg.latched_int)
             tmp |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
-        if (__WRITE(inst,int_pin_cfg, 1, &tmp) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_PIN_CFG,&tmp,1) < 0 )
             return -1;
     }
     inst->chip_cfg.bypass_mode = bypass_on;
@@ -1640,7 +1641,7 @@ int mpu_set_int_latched(unsigned char enable)
         tmp |= BIT_BYPASS_EN;
     if (inst->chip_cfg.active_low_int)
         tmp |= BIT_ACTL;
-    if (__WRITE(inst,int_pin_cfg, 1, &tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_INT_PIN_CFG,&tmp,1) < 0 )
         return -1;
     inst->chip_cfg.latched_int = enable;
     return 0;
@@ -1795,60 +1796,60 @@ static int get_st_biases(long *gyro, long *accel, unsigned char hw_test)
 
     data[0] = 0x01;
     data[1] = 0;
-    if (__WRITE(inst,pwr_mgmt_1, 2, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data,2) < 0 )
         return -1;
     delay_ms(200);
     data[0] = 0;
-    if (__WRITE(inst,int_enable, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_INT_ENABLE,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,pwr_mgmt_1, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,i2c_mst, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_I2C_MST,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
     data[0] = BIT_FIFO_RST | BIT_DMP_RST;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
     delay_ms(15);
     data[0] = inst->test->reg_lpf;
-    if (__WRITE(inst,lpf, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_LPF,data,1) < 0 )
         return -1;
     data[0] = inst->test->reg_rate_div;
-    if (__WRITE(inst,rate_div, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_RATE_DIV,data,1) < 0 )
         return -1;
     if (hw_test)
         data[0] = inst->test->reg_gyro_fsr | 0xE0;
     else
         data[0] = inst->test->reg_gyro_fsr;
-    if (__WRITE(inst,gyro_cfg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_GYRO_CFG,data,1) < 0 )
         return -1;
 
     if (hw_test)
         data[0] = inst->test->reg_accel_fsr | 0xE0;
     else
         data[0] = teinst->reg_accel_fsr;
-    if (__WRITE(inst,accel_cfg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_ACCEL_CFG,data,1) < 0 )
         return -1;
     if (hw_test)
         delay_ms(200);
 
     /* Fill FIFO for teinst->wait_ms milliseconds. */
     data[0] = BIT_FIFO_EN;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
 
     data[0] = INV_XYZ_GYRO | INV_XYZ_ACCEL;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
     delay_ms(teinst->wait_ms);
     data[0] = 0;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
 
-    if (__READ(inst,fifo_count_h, 2, data) < 0 )
+    if (__READ(inst,fifo_count_h,data,2) < 0 )
         return -1;
 
     fifo_count = (data[0] << 8) | data[1];
@@ -2113,52 +2114,52 @@ static int get_st_6500_biases(long *gyro, long *accel, unsigned char hw_test)
 
     data[0] = 0x01;
     data[1] = 0;
-    if (__WRITE(inst,pwr_mgmt_1, 2, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data,2) < 0 )
         return -1;
     delay_ms(200);
     data[0] = 0;
-    if (__WRITE(inst,int_enable, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_INT_ENABLE,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,pwr_mgmt_1, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,i2c_mst, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_I2C_MST,data,1) < 0 )
         return -1;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
     data[0] = BIT_FIFO_RST | BIT_DMP_RST;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
     delay_ms(15);
     data[0] = inst->test->reg_lpf;
-    if (__WRITE(inst,lpf, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_LPF,data,1) < 0 )
         return -1;
     data[0] = inst->test->reg_rate_div;
-    if (__WRITE(inst,rate_div, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_RATE_DIV,data,1) < 0 )
         return -1;
     if (hw_test)
         data[0] = inst->test->reg_gyro_fsr | 0xE0;
     else
         data[0] = inst->test->reg_gyro_fsr;
-    if (__WRITE(inst,gyro_cfg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_GYRO_CFG,data,1) < 0 )
         return -1;
 
     if (hw_test)
         data[0] = inst->test->reg_accel_fsr | 0xE0;
     else
         data[0] = teinst->reg_accel_fsr;
-    if (__WRITE(inst,accel_cfg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_ACCEL_CFG,data,1) < 0 )
         return -1;
 
     delay_ms(teinst->wait_ms);  //wait 200ms for sensors to stabilize
 
     /* Enable FIFO */
     data[0] = BIT_FIFO_EN;
-    if (__WRITE(inst,user_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_USER_CTRL,data,1) < 0 )
         return -1;
     data[0] = INV_XYZ_GYRO | INV_XYZ_ACCEL;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
 
     //initialize the bias return values
@@ -2205,7 +2206,7 @@ static int get_st_6500_biases(long *gyro, long *accel, unsigned char hw_test)
 
     //stop FIFO
     data[0] = 0;
-    if (__WRITE(inst,fifo_en, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
 
     gyro[0] = (long)(((long long)gyro[0]<<16) / teinst->gyro_sens / s);
@@ -2486,9 +2487,9 @@ int mpu_write_mem(unsigned short mem_addr, unsigned short length,
     if (tmp[1] + length > inst->hw->bank_size)
         return -1;
 
-    if (__WRITE(inst,bank_sel, 2, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_BANK_SEL,tmp,2) < 0 )
         return -1;
-    if (__WRITE(inst,mem_r_w, length, data) < 0 )
+    if (__WRITE(inst,INV_MPU_MEM_R_W,data,length) < 0 )
         return -1;
     return 0;
 }
@@ -2519,7 +2520,7 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
     if (tmp[1] + length > inst->hw->bank_size)
         return -1;
 
-    if (__WRITE(inst,bank_sel, 2, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_BANK_SEL,tmp,2) < 0 )
         return -1;
     if (__READ(inst,mem_r_w, length, data) < 0 )
         return -1;
@@ -2562,7 +2563,7 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
     /* Set program start address. */
     tmp[0] = start_addr >> 8;
     tmp[1] = start_addr & 0xFF;
-    if (__WRITE(inst,prgm_start_h, 2, tmp) < 0 )
+    if (__WRITE(inst,INV_MPU_PRGM_START_H,tmp,2) < 0 )
         return -1;
 
     inst->chip_cfg.dmp_loaded = 1;
@@ -2670,53 +2671,53 @@ static int setup_compass(void)
 
     /* Set up master mode, master clock, and ES bit. */
     data[0] = 0x40;
-    if (__WRITE(inst,i2c_mst, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_I2C_MST,data,1) < 0 )
         return -1;
 
     /* Slave 0 reads from AKM data registers. */
     data[0] = BIT_I2C_READ | inst->chip_cfg.compass_addr;
-    if (__WRITE(inst,s0_addr, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S0_ADDR,data,1) < 0 )
         return -1;
 
     /* Compass reads start at this register. */
     data[0] = AKM_REG_ST1;
-    if (__WRITE(inst,s0_reg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S0_REG,data,1) < 0 )
         return -1;
 
     /* Enable slave 0, 8-byte reads. */
     data[0] = BIT_SLAVE_EN | 8;
-    if (__WRITE(inst,s0_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S0_CTRL,data,1) < 0 )
         return -1;
 
     /* Slave 1 changes AKM measurement mode. */
     data[0] = inst->chip_cfg.compass_addr;
-    if (__WRITE(inst,s1_addr, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S1_ADDR,data,1) < 0 )
         return -1;
 
     /* AKM measurement mode register. */
     data[0] = AKM_REG_CNTL;
-    if (__WRITE(inst,s1_reg, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S1_REG,data,1) < 0 )
         return -1;
 
     /* Enable slave 1, 1-byte writes. */
     data[0] = BIT_SLAVE_EN | 1;
-    if (__WRITE(inst,s1_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S1_CTRL,data,1) < 0 )
         return -1;
 
     /* Set slave 1 data. */
     data[0] = AKM_SINGLE_MEASUREMENT;
-    if (__WRITE(inst,s1_do, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_S1_DO,data,1) < 0 )
         return -1;
 
     /* Trigger slave 0 and slave 1 actions at each sample. */
     data[0] = 0x03;
-    if (__WRITE(inst,i2c_delay_ctrl, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_I2C_DELAY_CTRL,data,1) < 0 )
         return -1;
 
 #ifdef MPU9150
     /* For the MPU9150, the auxiliary I2C bus needs to be set to VDD. */
     data[0] = BIT_I2C_MST_VDDIO;
-    if (__WRITE(inst,yg_offs_tc, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_YG_OFFS_TC,data,1) < 0 )
         return -1;
 #endif
 
@@ -2878,12 +2879,12 @@ int mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         data[0] = 0;
         data[1] = 0;
         data[2] = BIT_STBY_XYZG;
-        if (__WRITE(inst,user_ctrl, 3, data) < 0 )
+        if (__WRITE(inst,INV_MPU_USER_CTRL,data,3) < 0 )
             goto lp_int_restore;
 
         /* Set motion threshold. */
         data[0] = thresh_hw;
-        if (__WRITE(inst,motion_thr, 1, data) < 0 )
+        if (__WRITE(inst,INV_MPU_MOTION_THR,data,1) < 0 )
             goto lp_int_restore;
 
         /* Set wake frequency. */
@@ -2907,22 +2908,22 @@ int mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
             data[0] = INV_LPA_320HZ;
         else
             data[0] = INV_LPA_640HZ;
-        if (__WRITE(inst,lp_accel_odr, 1, data) < 0 )
+        if (__WRITE(inst,INV_MPU_LP_ACCEL_ODR,data,1) < 0 )
             goto lp_int_restore;
 
         /* Enable motion interrupt (MPU6500 version). */
         data[0] = BITS_WOM_EN;
-        if (__WRITE(inst,accel_intel, 1, data) < 0 )
+        if (__WRITE(inst,INV_MPU_ACCEL_INTEL,data,1) < 0 )
             goto lp_int_restore;
 
         /* Enable cycle mode. */
         data[0] = BIT_LPA_CYCLE;
-        if (__WRITE(inst,pwr_mgmt_1, 1, data) < 0 )
+        if (__WRITE(inst,INV_MPU_PWR_MGMT_1,data,1) < 0 )
             goto lp_int_restore;
 
         /* Enable interrupt. */
         data[0] = BIT_MOT_INT_EN;
-        if (__WRITE(inst,int_enable, 1, data) < 0 )
+        if (__WRITE(inst,INV_MPU_INT_ENABLE,data,1) < 0 )
             goto lp_int_restore;
 
         inst->chip_cfg.int_motion_only = 1;
@@ -2961,7 +2962,7 @@ lp_int_restore:
 #ifdef MPU6500
     /* Disable motion interrupt (MPU6500 version). */
     data[0] = 0;
-    if (__WRITE(inst,accel_intel, 1, data) < 0 )
+    if (__WRITE(inst,INV_MPU_ACCEL_INTEL,data,1) < 0 )
         goto lp_int_restore;
 #endif
 
