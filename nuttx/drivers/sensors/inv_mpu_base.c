@@ -61,17 +61,30 @@
 /* is equivalent to.. */
 #   define CONFIG_SENSOR_MPU6050
 #   define CONFIG_SENSOR_AK8975_SECONDARY
-#elif defined MPU9250  j      
+#endif                         
+
+#if defined CONFIG_SENSOR_MPU9250        
 /* is equivalent to.. */
 #   define CONFIG_SENSOR_MPU6500
 #   define CONFIG_SENSOR_AK8963_SECONDARY
 #endif                         
 
-#if ( (defined CONFIG_SENSOR_AK8975_SECONDARY ) || \
-      (defined CONFIG_SENSOR_AK8963_SECONDARY ) )
-#define CONFIG_SENSOR_AK89XX_SECONDARY
-#else
-/* #warning "No compass = less profit for Invensense. Lame." */
+#if (defined CONFIG_SENSOR_AK8975_SECONDARY )
+#   define CONFIG_SENSOR_AK89XX_SECONDARY
+#   include "inv_ak8975_reg.h"
+#endif
+
+#if (defined CONFIG_SENSOR_AK8963_SECONDARY )
+#   define CONFIG_SENSOR_AK89XX_SECONDARY
+#   include "inv_ak8963_reg.h"
+#endif
+
+#if defined CONFIG_SENSOR_MPU9150
+#   include "inv_mpu6050_reg.h"
+#endif
+
+#if defined CONFIG_SENSOR_MPU9250        
+#   include "inv_mpu6050_reg.h"
 #endif
 
 /* Debug **********************************************************************/
@@ -131,6 +144,7 @@
 
 
 #define MAX_PACKET_LENGTH (12)
+#define HWST_MAX_PACKET_LENGTH (512)
 
 
 /*******************************************************************************

@@ -64,7 +64,7 @@
 #define INV_MPU_MEM_START_ADDR  0X6E
 #define INV_MPU_PRGM_START_H    0X70
 
-/* Hardware Value *****************************************************************/
+/* Hardware Value *************************************************************/
 
 #define INV_MPU_MAX_FIFO    0x1024
 #define INV_MPU_NUM_REG     118

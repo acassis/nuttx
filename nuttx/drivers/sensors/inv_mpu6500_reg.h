@@ -67,9 +67,8 @@
 #define INV_MPU_MEM_START_ADDR  0x6E
 #define INV_MPU_PRGM_START_H    0x70
 
-/* Hardware Value *****************************************************************/
+/* Hardware Value *************************************************************/
 
-#define INV_MPU_ADDR            0x68
 #define INV_MPU_MAX_FIFO        1024
 #define INV_MPU_NUM_REG         128
 #define INV_MPU_TEMP_SENS       321
@@ -84,9 +83,9 @@
 #define INV_MPU_REG_LPF         (2)     /* 92Hz low pass filter*/
 #define INV_MPU_REG_GYRO_FSR    (0)     /* 250dps. */
 #define INV_MPU_REG_ACCEL_FSR   (0x0)   /* Accel FSR setting = 2g. */
-#define INV_MPU_WAIT_MS         (200)   /* 200ms stabilization time */
 #define INV_MPU_PACKET_THRESH   (200)   /* 200 samples */
 #define INV_MPU_SAMPLE_WAIT_MS  (10)    /* 10ms sample time wait */
+#define INV_MPU_WAIT_MS         (200)   /* 200ms stabilization time */
 
 /* Criteria A */
 #define INV_MPU_MAX_ACCEL_VAR   (.5f)   /* Accel must be within 50% variation */
@@ -98,10 +97,8 @@
 #define INV_MPU_MAX_GYRO_DPS    (60.f)  /* Must exceed 60 dps threshold */
 
 /* Criteria C */
-#define INV_MPU_min_GYRO_DPS        (20.f)  /* 20 dps for Gyro */
-#define INV_MPU_max_ACCEL_G_OFFSET  (.5f)   /* 500 mg for Accel */
-
-#define HWST_MAX_PACKET_LENGTH (512)
+#define INV_MPU_MIN_GYRO_DPS        (20.f)  /* 20 dps for Gyro */
+#define INV_MPU_MAX_ACCEL_G_OFFSET  (.5f)   /* 500 mg for Accel */
 
 #endif  /* _DRIVERS_SENSOR_INV_MPU6500_H_ */
 
