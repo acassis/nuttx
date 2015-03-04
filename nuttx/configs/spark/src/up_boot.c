@@ -1,7 +1,7 @@
 /************************************************************************************
  * configs/spark/src/up_boot.c
  *
- *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2013, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *           Librae <librae8226@gmail.com>
  *
@@ -42,13 +42,14 @@
 #include <nuttx/spi/spi.h>
 #include <debug.h>
 
+#include <nuttx/board.h>
 #include <arch/board/board.h>
 
 #include "up_arch.h"
 #include "spark.h"
 
 /************************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ************************************************************************************/
 
 /************************************************************************************
@@ -77,7 +78,7 @@ void stm32_boardinitialize(void)
   board_led_initialize();
 #endif
 
-#ifdef CONFIG_ARCH_HAVE_BUTTONS
+#ifdef CONFIG_ARCH_BUTTONS
   board_button_initialize();
 #endif
 
@@ -127,9 +128,11 @@ void board_initialize(void)
   nsh_archinitialize();
 #endif
 
-  /* CC3000 wireless initialization */
+  /* CC3000 wireless initialization
+   * Avoid Double registration if CONFIG_EXAMPLES_CC3000BASIC is defined
+   */
 
-#ifdef CONFIG_WL_CC3000
+#if defined(CONFIG_WL_CC3000) && !defined(CONFIG_EXAMPLES_CC3000BASIC)
   wireless_archinitialize(0);
 #endif
 }

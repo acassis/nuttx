@@ -1,8 +1,7 @@
 /************************************************************************************
  * configs/avr32dev1/src/up_boot.c
- * arch/avr/src/board/up_boot.c
  *
- *   Copyright (C) 2010 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2010, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +41,7 @@
 
 #include <debug.h>
 
+#include <nuttx/board.h>
 #include <arch/board/board.h>
 
 #include "up_arch.h"
@@ -51,7 +51,7 @@
 #include "avr32dev1_internal.h"
 
 /************************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ************************************************************************************/
 
 /************************************************************************************
@@ -63,16 +63,16 @@
  ************************************************************************************/
 
 /************************************************************************************
- * Name: up_boardinitialize
+ * Name: at32uc3_boardinitialize
  *
  * Description:
- *   All AVR32 architectures must provide the following entry point.  This entry point
- *   is called early in the intitialization -- after all memory has been configured
- *   and mapped but before any devices have been initialized.
+ *   All AVR32 AT32UC3 architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization -- after all memory has been
+ *   configured and mapped but before any devices have been initialized.
  *
  ************************************************************************************/
 
-void up_boardinitialize(void)
+void at32uc3_boardinitialize(void)
 {
   /* Configure SPI chip selects */
 

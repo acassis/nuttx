@@ -1233,9 +1233,11 @@ nuttx
  |   |   `- README.txt
  |   |- pcduino-a10/
  |   |   `- README.txt
- |   |- pic32-starterkit/
+ |   |- pic32mx-starterkit/
  |   |   `- README.txt
  |   |- pic32mx7mmb/
+ |   |   `- README.txt
+ |   |- pic32mz-starterkit/
  |   |   `- README.txt
  |   |- pirelli_dpl10/
  |   |   `- README.txt

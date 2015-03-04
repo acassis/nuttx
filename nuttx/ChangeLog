@@ -9817,3 +9817,105 @@
 	  (2015-02-16).
 	* arch/arm/src/efm32/efm32_usbdev.c: EFM32 USB Device is now basically
 	  functional with this change.  From Pierre-noel Bouteville (2015-02-16).
+	* include/nuttx/net/ip.h:  Move macros and common logic for IPv4-mapped
+	  IPv6 addresses from files in net/ to include/nuttx/ip.h.  These are
+	  currently only used for UDP, but will need to be be used in many places
+	  in the future (2015-02-17).
+	* includes/nuttx/compiler.h:  Add support for the restrict keyword
+	  (2015-02-17).
+	* include/netdb.h:  Add a mostly-commented-out version of the standard
+	  netdb.h header file (2015-02-17).
+	* arch/arm/src/tiva/:  Updated files to allow for ADC triggering by the
+	  timer. I’ve cleaned up some parts of the ADC code, too, and fleshed
+	  out the PWM triggering ioctl.  From Calvin Maguranis (2015-02-17).
+	* configs/tm4c123g-launchpad: Add ADC suppport.  From Calvin Maguranis
+	  (2015-02-17).
+	* fs/fat/fs_mkfatfs.c:  Use DMA memory for mkfatfs when needed. This makes
+	  mkfatfs use fat_dma_alloc() when CONFIG_FAT_DMAMEMORY is set. This is
+	  needed to ensure mkfatfs operates with boards that use DMA for microSD.
+	  From Andrew Tridgell via the PX4/NuttX repository (2015-02-17).
+	* include/nuttx/rtc.h, fs/fs.h, drivers/ramdisk.c, pipes/, and
+	  timers/rtc.c: The inode unlink method should not be support if
+	  operations on the root pseudo-filesystem are disabled (2015-02-18).
+	* include/nuttx/sched timing functions:  Fix some nanosecond comparisons.
+	  Comparisons should be greate than OR EQUAL TO 1000000000 for maximum
+	  value of nanoseconds in struct tm.  From Juha Niskanen (2015-02-20).
+	* tm4c123g-launchpad: Add board button interrupt logic.  From Calvin
+	  Maguranis (2015-02-20).
+	* "Tiva: Move GPIIO prototypes out of arch/arm/include/tiva/irq.h to
+	  arch/arm/tiva/tiva_gpio.h where they belong (2015-02-20).
+	* arch/arm/src/tiva: Tiva GPIO clean-up by Calvin Maguranis (2015-02-20).
+	* arch/arm/src/stm32/stm32_pwr.c, stm32_pwr.h, and stm32_rtcc.c: Changes
+	  to support fully write protecting the backup domain. N.B.
+	  stm32_pwr_enablebkp did not account for the delay from enable to the
+	  domain being writable. The KISS solution is a up_udelay. A more
+	  complex solution would be a negated write test with restore.  From
+	  David Sidrane (2015-02-21).
+	* arch/arm/src/stm32/stm32_bbsram.c, stm32_bbsram.h, Kconfig, and
+	  Make.defs: Adds the ability to use the STM32F2 and STM32F4 Battery
+	  Backedup SRAM in the file system. With an option to Save Panic
+	  context to one of the files. From David Sidrane (2015-02-21).
+	* configs/pic32mx-starterkit:  Rename from pic32-starterkit to make
+	  room on the namespace for a pic3mz-starterkit.  Update src/ directory
+	  file naming to match currnet standard.  Refresh configurations.  Move
+	  linker scripts to a new scripts/directory.  Make sure that it builds
+	  using the Pinquino toolchain (2015-02-21).
+	* arch/mips/src/mips32/Toolchain.mk: Current Pinguino toolchain uses
+	  the prefix p32- instead of mips- (2015-02-21).
+	* configs/pic32mz-starterkit: Add basic board support for the PIC32MZ
+	  (can't build yet of course because there is not yet any PIC32MZ
+	  support) (2015-02-22).
+	* arch/mips/src/pic32mz and include/pic32mz:  Add some PIC32MZ header
+	  file definitions and just enough logic in the source directory so
+	  that we can run 'make menuconfig'.  Still a very long way from being
+	  complete (2015-02-22).
+	* libc/time/lib/lib_sfrtime.c:  Missing implementation of %C in
+	  sfrtime() C (was being treated as %y).  From Freddie Chopin
+	  (2015-02-23).
+	* drivers/can.c: In the can_open function: this line
+	  'dev->cd_ocount = tmp;' needs to be moved a few lines down otherwise
+	  the open count will only be incremented from 0 to 1. This causes
+	  problems when trying to open the can bus from two different tasks.
+	  SourceForge Patch #46 from Anonymous (2015-02-23).
+	* Tiva TM4c1294: Updates from Frank Sautter (2015-02-24).
+	* fs/aio: Corrrect some backward tests in aio_read() and aio_write():
+	  Socket descriptors have higher numbers than file descriptors.  In
+	  aio_contain(),  Copy u.ptr (void *) when initializing aioc and not
+	  the case specific u.aioc_filep.  From Michal Ulianko (2015-02-24).
+	* include/pthread.h: Fix PTHREAD_COND_INITIALIZER (2015-02-24).
+	* sched/clock/clock_systimespec.c:  When an RTC is used clock_systimespec()
+	  must subtract the basetime from the returned time.  It needs to
+	  return the time since power up, no the current time.  Issue noted
+	  by Max Neklyudov (2015-02-25).
+	* fs/vfs/fs_select.c and sched/semaphore/sem_timedwait.c: Fix places
+	  where the errno value was being overwritten by subsequent actions so
+	  that the returned errno value was incorrect.  From Max Neklyudov
+	  (2015-02-25).
+	* include/sys/select.h: Extend the fd_set type definition so that it
+	  can handle more than 32 descriptors (if so configured).  From Max
+	  Neklyudov (2015-02-25).
+	* net/netdev/netdev_unregister.c:  Fix a list handling error in
+	  netdev_unregister().  From Max Neklyudov (2015-02-27).
+	* net/netdev/netdev_register.c: Improve the network device registration
+	  logic.  When multiple link types are used, modify how each interface
+	  number is assigned to the device name by incrementing the device
+	  number individually for each interface link type.  From Max Neklyudov
+	  (2015-02-27).
+	* include/nuttx/board.h:  Remove common board function prototypes from
+	  other files and consolidate them in this new header file (2015-02-27).
+	* arch/mips/src/pic32mz/: Implement support IO port interrupts
+	  (2015-03-01).
+	* configs/pic32mz-starterkit/src: Add support for on-board buttons
+	  (2015-03-01).
+	* include/nuttx/spi/spi.h:  Add an SPIDEV_USER so that there can be
+	  board-specific definitions of SPI devices (2015-03-01).
+	* arch/arm/src/stm32 and arch/arm/src/stm32: Adds architecture support
+	  for the STM32F372 and F373 (no board support yet). Only tested on
+	  STM32F373CC, but should work on the rest.  Contributed by  Marten
+	  Svanfeldt (2015-03-01).
+	* arch/mips/src/pic32mz/pic32mz-spi.c and chip/pic32mz-spi.h:  Add
+	  support for a basic SPI driver for the PIC32MZ (2015-03-03).
+	* include/nuttx/i2c.h:  Add a user provided void * argument to the
+	  I2C callback method for the I2C slave interface.  Suggested by
+	  Nate Weibley (2015-03-03).
+
