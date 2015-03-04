@@ -61,16 +61,29 @@
 #define INV_MPU_PWR_MGMT_2      0x6C
 #define INV_MPU_INT_PIN_CFG     0x37
 #define INV_MPU_MEM_R_W         0x6F
+
+#define INV_MPU_I2C_MST         0x24
+#define INV_MPU_BANK_SEL        0x6D
+#define INV_MPU_MEM_START_ADDR  0x6E
+#define INV_MPU_PRGM_START_H    0x70
+
+/* Gyroscope offset */
+
+#define INV_MPU_XG_OFFSET_H     0x13
+#define INV_MPU_XG_OFFSET_L     0x14
+#define INV_MPU_YG_OFFSET_H     0x15
+#define INV_MPU_YG_OFFSET_L     0x16
+#define INV_MPU_ZG_OFFSET_H     0x17
+#define INV_MPU_ZG_OFFSET_L     0x18
+
+/* Accelerometer offset */
+
 #define INV_MPU_XA_OFFSET_H     0x77
 #define INV_MPU_XA_OFFSET_L     0x78
 #define INV_MPU_YA_OFFSET_H     0x7A
 #define INV_MPU_YA_OFFSET_L     0x7B
 #define INV_MPU_ZA_OFFSET_H     0x7D
 #define INV_MPU_ZA_OFFSET_L     0x7E
-#define INV_MPU_I2C_MST         0x24
-#define INV_MPU_BANK_SEL        0x6D
-#define INV_MPU_MEM_START_ADDR  0x6E
-#define INV_MPU_PRGM_START_H    0x70
 
 /* Hardware Value *************************************************************/
 

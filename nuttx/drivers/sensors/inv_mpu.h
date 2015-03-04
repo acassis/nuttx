@@ -67,66 +67,84 @@ struct mpu_lowlevel_s {
 struct mpu_inst_s;
 
 /* Set up APIs */
-struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low, int devno)
+struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low, int devno);
 int mpu_reset_default(struct mpu_inst_s* inst);
-int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
 
-/* Configuration APIs */
+/* Low Power mode */
+
 int mpu_lp_accel_mode(struct mpu_inst_s* inst, uint8_t rate);
 int mpu_lp_motion_interrupt(struct mpu_inst_s* inst,uint16_t thresh, 
                             uint8_t time, uint8_t lpa_freq);
-int mpu_set_int_level(struct mpu_inst_s* inst, uint8_t active_low);
-int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
-
-int mpu_set_dmp_state(struct mpu_inst_s* inst,bool enable);
-int mpu_get_dmp_state(struct mpu_inst_s* inst,bool *enabled);
 
 int mpu_get_lpf(struct mpu_inst_s* inst,uint16_t *lpf);
 int mpu_set_lpf(struct mpu_inst_s* inst,uint16_t lpf);
 
-int mpu_get_gyro_fsr(struct mpu_inst_s* inst,uint16_t *fsr);
-int mpu_set_gyro_fsr(struct mpu_inst_s* inst,uint16_t fsr);
+/* DMP */
 
-int mpu_get_accel_fsr(struct mpu_inst_s* inst,uint8_t *fsr);
-int mpu_set_accel_fsr(struct mpu_inst_s* inst,uint8_t fsr);
+int mpu_set_dmp_state(struct mpu_inst_s* inst,bool enable);
+int mpu_get_dmp_state(struct mpu_inst_s* inst,bool *enabled);
+
+/* FSR */
+
+int mpu_get_accel_fsr(  struct mpu_inst_s* inst,uint8_t  *fsr);
+int mpu_set_accel_fsr(  struct mpu_inst_s* inst,uint8_t   fsr);
+
+int mpu_get_gyro_fsr(   struct mpu_inst_s* inst,uint16_t *fsr);
+int mpu_set_gyro_fsr(   struct mpu_inst_s* inst,uint16_t  fsr);
 
 int mpu_get_compass_fsr(struct mpu_inst_s* inst,uint16_t *fsr);
 
-int mpu_get_gyro_sens(struct mpu_inst_s* inst,float *sens);
-int mpu_get_accel_sens(struct mpu_inst_s* inst,uint16_t *sens);
+/* sensibility */
+
+int mpu_get_accel_sensibilty(   struct mpu_inst_s* inst, uint16_t *sens);
+int mpu_get_gyro_sensibilty(    struct mpu_inst_s* inst, float *sens);
+
+/* sample rate */
 
 int mpu_get_sample_rate(struct mpu_inst_s* inst,uint16_t *rate);
 int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate);
+
 int mpu_get_compass_sample_rate(struct mpu_inst_s* inst,uint16_t *rate);
 int mpu_set_compass_sample_rate(struct mpu_inst_s* inst,uint16_t rate);
 
-int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
-int mpu_configure_fifo(struct mpu_inst_s* inst,uint8_t sensors);
+/* power */
 
-int mpu_get_power_state(struct mpu_inst_s* inst,uint8_t *power_on);
-int mpu_set_sensors(struct mpu_inst_s* inst,uint8_t sensors);
+int mpu_get_sensors_enable(struct mpu_inst_s* inst,uint8_t * sensors);
+int mpu_set_sensors_enable(struct mpu_inst_s* inst,uint8_t   sensors);
 
-int mpu_read_6500_accel_bias(struct mpu_inst_s* inst,long *accel_bias);
-int mpu_set_gyro_bias_reg(struct mpu_inst_s* inst,long * gyro_bias);
-int mpu_set_accel_bias_6500_reg(struct mpu_inst_s* inst,const long *accel_bias);
-int mpu_read_6050_accel_bias(struct mpu_inst_s* inst,long *accel_bias);
-int mpu_set_accel_bias_6050_reg(struct mpu_inst_s* inst,const long *accel_bias);
+/* offset */
 
-/* Data getter/setter APIs */
-int mpu_get_gyro_reg(struct mpu_inst_s* inst,int16_t *data, 
-                     uint32_t *timestamp);
-int mpu_get_accel_reg(struct mpu_inst_s* inst,int16_t *data, 
-                      uint32_t *timestamp);
-int mpu_get_compass_reg(struct mpu_inst_s* inst,int16_t *data, 
-                        uint32_t *timestamp);
-int mpu_get_temperature(struct mpu_inst_s* inst,long *data, 
-                        uint32_t *timestamp);
+int mpu_get_accel_off(  struct mpu_inst_s* inst,      int16_t *accel_off);
+int mpu_set_accel_off(  struct mpu_inst_s* inst,const int16_t *accel_off);
+
+int mpu_get_gyro_off(   struct mpu_inst_s* inst,      int16_t *gyro_off);
+int mpu_set_gyro_off(   struct mpu_inst_s* inst,const int16_t *gyro_off);
+
+/* read only */
+
+int mpu_get_accel_raw(  struct mpu_inst_s* inst,      int16_t *data);
+int mpu_get_gyro_raw(   struct mpu_inst_s* inst,      int16_t *data);
+int mpu_get_compass_raw(struct mpu_inst_s* inst,      int16_t *data);
+int mpu_get_temperature(struct mpu_inst_s* inst,      long    *data);
+
+/* interrupt */
 
 int mpu_get_int_status(struct mpu_inst_s* inst,int16_t *status);
-int mpu_read_fifo(struct mpu_inst_s* inst,int16_t *gyro, int16_t *accel, 
-                  uint32_t *timestamp, uint8_t *sensors, uint8_t *more);
-int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data,
-                         uint8_t *more);
+int mpu_set_int_level(struct mpu_inst_s* inst, uint8_t active_low);
+int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
+
+/* fifo */
+
+int mpu_set_fifo_config(struct mpu_inst_s* inst,uint8_t sensors);
+int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
+
+int mpu_read_fifo(struct mpu_inst_s* inst, int16_t *accel,int16_t *gyro, 
+                  uint8_t *sensors, uint8_t *more, 
+                  struct timespec *tp);
+
+int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, 
+                         uint8_t *data, uint8_t *more);
+
 int mpu_reset_fifo(struct mpu_inst_s* inst);
 
 int mpu_write_mem(struct mpu_inst_s* inst,uint16_t mem_addr, uint16_t length,
@@ -139,6 +157,9 @@ int mpu_load_firmware(struct mpu_inst_s* inst,uint16_t length,
 
 int mpu_reg_dump(struct mpu_inst_s* inst);
 int mpu_read_reg(struct mpu_inst_s* inst,uint8_t reg, uint8_t *data);
+
+int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
+
 int mpu_run_self_test(struct mpu_inst_s* inst,long *gyro, long *accel);
 int mpu_run_6500_self_test(struct mpu_inst_s* inst,long *gyro, long *accel, 
                            uint8_t debug);

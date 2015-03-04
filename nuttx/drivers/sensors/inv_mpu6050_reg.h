@@ -64,6 +64,17 @@
 #define INV_MPU_MEM_START_ADDR  0X6E
 #define INV_MPU_PRGM_START_H    0X70
 
+/* Gyroscope offset */
+
+#define INV_MPU_XG_OFFSET_H     0x13
+#define INV_MPU_XG_OFFSET_L     0x14
+#define INV_MPU_YG_OFFSET_H     0x15
+#define INV_MPU_YG_OFFSET_L     0x16
+#define INV_MPU_ZG_OFFSET_H     0x17
+#define INV_MPU_ZG_OFFSET_L     0x18
+
+/* Accelerometer offset */
+
 #define INV_MPU_XA_OFFSET_H     0x06
 #define INV_MPU_XA_OFFSET_L     0x07
 #define INV_MPU_YA_OFFSET_H     0x08
