@@ -64,6 +64,13 @@
 #define INV_MPU_MEM_START_ADDR  0X6E
 #define INV_MPU_PRGM_START_H    0X70
 
+#define INV_MPU_XA_OFFSET_H     0x06
+#define INV_MPU_XA_OFFSET_L     0x07
+#define INV_MPU_YA_OFFSET_H     0x08
+#define INV_MPU_YA_OFFSET_L     0x09
+#define INV_MPU_ZA_OFFSET_H     0x0A
+#define INV_MPU_ZA_OFFSET_L     0x0B
+
 /* Hardware Value *************************************************************/
 
 #define INV_MPU_MAX_FIFO    0x1024
