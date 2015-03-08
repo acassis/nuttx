@@ -45,9 +45,8 @@
 #include <stdio.h>
 
 #include <nuttx/kmalloc.h>
-#include <nuttx/sensors/mpu9250.h>
 
-#include "mpu9250.h"
+#include "inv_mpu.h"
 
 #if defined(CONFIG_SENSORS_MPU9250)
 

@@ -36,6 +36,12 @@
 #ifndef _DRIVERS_SENSOR_INV_MPU6050_H_
 #define _DRIVERS_SENSOR_INV_MPU6050_H_
 
+
+#define INV_MPU_SELFTEST_X      0x0D
+#define INV_MPU_SELFTEST_Y      0x0E
+#define INV_MPU_SELFTEST_Z      0x0F
+#define INV_MPU_SELFTEST_A      0x10
+
 #define INV_MPU_WHO_AM_I        0X75
 #define INV_MPU_RATE_DIV        0X19
 #define INV_MPU_LPF             0X1A
@@ -84,7 +90,7 @@
 
 /* Hardware Value *************************************************************/
 
-#define INV_MPU_MAX_FIFO    0x1024
+#define INV_MPU_MAX_FIFO    1024
 #define INV_MPU_NUM_REG     118
 #define INV_MPU_TEMP_SENS   340
 #define INV_MPU_TEMP_OFFSET -521

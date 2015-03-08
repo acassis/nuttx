@@ -60,14 +60,21 @@
 
 struct mpu_lowlevel_s {
     void *priv;
-    int (*write)(void * priv,int reg, uint8_t*buf, int size);
-    int (*read )(void * priv,int reg, uint8_t*buf, int size);
+    int (*write)(void * priv,int reg, const uint8_t*buf, int size);
+    int (*read )(void * priv,int reg,       uint8_t*buf, int size);
+};
+
+struct mpu_axes_s {
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
 };
 
 struct mpu_inst_s;
 
 /* Set up APIs */
-struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low, int devno);
+struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low_mpu,
+                                   struct mpu_lowlevel_s* low_akm, int devno);
 int mpu_reset_default(struct mpu_inst_s* inst);
 
 /* Low Power mode */
@@ -114,23 +121,25 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst,uint8_t   sensors);
 
 /* offset */
 
-int mpu_get_accel_off(  struct mpu_inst_s* inst,      int16_t *accel_off);
-int mpu_set_accel_off(  struct mpu_inst_s* inst,const int16_t *accel_off);
+int mpu_get_accel_off(  struct mpu_inst_s* inst,struct mpu_axes_s *accel_off);
+int mpu_set_accel_off(  struct mpu_inst_s* inst,struct mpu_axes_s *accel_off);
 
-int mpu_get_gyro_off(   struct mpu_inst_s* inst,      int16_t *gyro_off);
-int mpu_set_gyro_off(   struct mpu_inst_s* inst,const int16_t *gyro_off);
+int mpu_get_gyro_off(   struct mpu_inst_s* inst,struct mpu_axes_s *gyro_off);
+int mpu_set_gyro_off(   struct mpu_inst_s* inst,struct mpu_axes_s *gyro_off);
 
 /* read only */
 
-int mpu_get_accel_raw(  struct mpu_inst_s* inst,      int16_t *data);
-int mpu_get_gyro_raw(   struct mpu_inst_s* inst,      int16_t *data);
-int mpu_get_compass_raw(struct mpu_inst_s* inst,      int16_t *data);
-int mpu_get_temperature(struct mpu_inst_s* inst,      long    *data);
+int mpu_get_accel_raw(  struct mpu_inst_s* inst,struct mpu_axes_s *data);
+int mpu_get_gyro_raw(   struct mpu_inst_s* inst,struct mpu_axes_s *data);
+int mpu_get_compass_raw(struct mpu_inst_s* inst,struct mpu_axes_s *data);
+
+int mpu_get_temperature(struct mpu_inst_s* inst, int32_t *temp_degre);
 
 /* interrupt */
 
-int mpu_get_int_status(struct mpu_inst_s* inst,int16_t *status);
-int mpu_set_int_level(struct mpu_inst_s* inst, uint8_t active_low);
+int mpu_get_int_status( struct mpu_inst_s* inst, uint8_t *mpu_int_status, 
+                       uint8_t *dmp_int_status);
+int mpu_set_int_level(  struct mpu_inst_s* inst,bool active_low);
 int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
 
 /* fifo */
@@ -138,8 +147,8 @@ int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
 int mpu_set_fifo_config(struct mpu_inst_s* inst,uint8_t sensors);
 int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
 
-int mpu_read_fifo(struct mpu_inst_s* inst, int16_t *accel,int16_t *gyro, 
-                  uint8_t *sensors, uint8_t *more, 
+int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
+                  struct mpu_axes_s *gyro, uint8_t *sensors, uint8_t *more, 
                   struct timespec *tp);
 
 int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, 
@@ -148,9 +157,9 @@ int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length,
 int mpu_reset_fifo(struct mpu_inst_s* inst);
 
 int mpu_write_mem(struct mpu_inst_s* inst,uint16_t mem_addr, uint16_t length,
-    uint8_t *data);
+                  const uint8_t *data);
 int mpu_read_mem(struct mpu_inst_s* inst,uint16_t mem_addr, uint16_t length,
-    uint8_t *data);
+                 uint8_t *data);
 int mpu_load_firmware(struct mpu_inst_s* inst,uint16_t length, 
                       const uint8_t *firmware, uint16_t start_addr, 
                       uint16_t sample_rate);
@@ -160,9 +169,12 @@ int mpu_read_reg(struct mpu_inst_s* inst,uint8_t reg, uint8_t *data);
 
 int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
 
+/* TODO Sorry, not implemented */
+#if 0
 int mpu_run_self_test(struct mpu_inst_s* inst,long *gyro, long *accel);
 int mpu_run_6500_self_test(struct mpu_inst_s* inst,long *gyro, long *accel, 
                            uint8_t debug);
+#endif
 
 #endif  /* #ifndef _INV_MPU_H_ */
 

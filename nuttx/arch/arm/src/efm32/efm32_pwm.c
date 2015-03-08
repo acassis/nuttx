@@ -552,10 +552,10 @@ static int pwm_interrupt(struct efm32_pwmtimer_s *priv)
 #endif
 
 /****************************************************************************
- * Name: pwm_timer0/3_interrupt
+ * Name: pwm_timer1/3_interrupt
  *
  * Description:
- *   Handle timer 0..3 interrupts.
+ *   Handle timer 1..3 interrupts.
  *
  * Input parameters:
  *   Standard NuttX interrupt inputs

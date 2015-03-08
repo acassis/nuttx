@@ -36,6 +36,14 @@
 #ifndef _DRIVERS_SENSOR_INV_MPU6500_H_
 #define _DRIVERS_SENSOR_INV_MPU6500_H_
 
+#define INV_MPU_SELFTEST_X_GYRO     0x00
+#define INV_MPU_SELFTEST_Y_GYRO     0x01
+#define INV_MPU_SELFTEST_Z_GYRO     0x02
+
+#define INV_MPU_SELFTEST_X_ACCEL    0x0D
+#define INV_MPU_SELFTEST_Y_ACCEL    0x0E
+#define INV_MPU_SELFTEST_Z_ACCEL    0x0F
+
 #define INV_MPU_WHO_AM_I        0x75
 #define INV_MPU_RATE_DIV        0x19
 #define INV_MPU_LPF             0x1A
@@ -87,11 +95,12 @@
 
 /* Hardware Value *************************************************************/
 
-#define INV_MPU_MAX_FIFO        1024
-#define INV_MPU_NUM_REG         128
-#define INV_MPU_TEMP_SENS       321
-#define INV_MPU_TEMP_OFFSET     0
-#define INV_MPU_BANK_SIZE       256
+#define INV_MPU_MAX_FIFO            1024
+#define INV_MPU_NUM_REG             128
+#define INV_MPU_TEMP_SENSIBILITY    321
+/* offset of 0 at 21°C => offset of 0+(21*(sensiblity)) */
+#define INV_MPU_TEMP_RAW_OFFSET     (0+(21*INV_MPU_TEMP_SENSIBILITY))
+#define INV_MPU_BANK_SIZE           256
 
 /* TEST Value *****************************************************************/
 

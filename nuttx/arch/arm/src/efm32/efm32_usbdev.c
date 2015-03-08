@@ -2576,7 +2576,6 @@ static inline void efm32_epout(FAR struct efm32_usbdev_s *priv, uint8_t epno)
     }
 }
 
-
 /*******************************************************************************
  * Name: efm32_epout_interrupt
  *

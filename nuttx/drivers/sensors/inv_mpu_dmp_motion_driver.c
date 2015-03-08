@@ -54,8 +54,7 @@
  * Pre-processor Definitions
  ******************************************************************************/
 
-/* These defines are copied from dmpDefaultMPU6050.c in the general MPL
- * releases. These defines may change for each DMP image, so be sure to modify
+/* These defines may change for each DMP image, so be sure to modify
  * these values when switching to a new image.
  */
 #define CFG_LP_QUAT             (2712)
@@ -528,8 +527,7 @@ static const unsigned char dmp_memory[DMP_CODE_SIZE] = {
 
 static const unsigned short sStartAddress = 0x0400;
 
-/* E
-   ND OF SECTION COPIED FROM dmpDefaultMPU6050.c */
+/* END OF SECTION COPIED FROM dmpDefaultMPU6050.c */
 
 #define INT_SRC_TAP             (0x01)
 #define INT_SRC_ANDROID_ORIENT  (0x08)

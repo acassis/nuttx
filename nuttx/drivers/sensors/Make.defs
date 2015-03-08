@@ -46,10 +46,6 @@ ifeq ($(CONFIG_SENSORS_INVENSENSE),y)
   CSRCS += inv_mpu_fileops.c
 endif
 
-ifeq ($(CONFIG_INVENSENSE_DMP),y)
-  CSRCS += inv_mpu_dmp_motion_driver.c
-endif
-
 # These drivers depend on I2C support
 
 ifeq ($(CONFIG_I2C),y)
