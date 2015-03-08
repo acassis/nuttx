@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/common/sam_allocateheap.c
+ * arch/arm/src/sam34/sam_allocateheap.c
  *
  *   Copyright (C) 2010, 2013, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>

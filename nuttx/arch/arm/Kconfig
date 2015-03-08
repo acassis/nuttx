@@ -161,10 +161,21 @@ config ARCH_CHIP_SAMD
 
 config ARCH_CHIP_SAM34
 	bool "Atmel SAM3/SAM4"
+	select ARCH_HAVE_CMNVECTOR
 	select ARCH_HAVE_MPU
 	select ARCH_HAVE_RAMFUNCS
 	---help---
 		Atmel SAM3 (ARM Cortex-M3) and SAM4 (ARM Cortex-M4) architectures
+
+config ARCH_CHIP_SAMV7
+	bool "Atmel SAMV7"
+	select ARCH_HAVE_CMNVECTOR
+	select ARMV7M_CMNVECTOR
+	select ARCH_CORTEXM7
+	select ARCH_HAVE_MPU
+	select ARCH_HAVE_RAMFUNCS
+	---help---
+		Atmel SAMV7 (ARM Cortex-M7) architectures
 
 config ARCH_CHIP_STM32
 	bool "STMicro STM32"
@@ -219,6 +230,13 @@ config ARCH_CORTEXM4
 	select ARCH_HAVE_RAMVECTORS
 	select ARCH_HAVE_HIPRI_INTERRUPT
 
+config ARCH_CORTEXM7
+	bool
+	default n
+	select ARCH_HAVE_IRQPRIO
+	select ARCH_HAVE_RAMVECTORS
+	select ARCH_HAVE_HIPRI_INTERRUPT
+
 config ARCH_CORTEXA5
 	bool
 	default n
@@ -240,7 +258,7 @@ config ARCH_FAMILY
 	default "arm"		if ARCH_ARM7TDMI || ARCH_ARM926EJS || ARCH_ARM920T
 	default "armv6-m"	if ARCH_CORTEXM0
 	default "armv7-a"	if ARCH_CORTEXA5 || ARCH_CORTEXA8
-	default "armv7-m"	if ARCH_CORTEXM3 || ARCH_CORTEXM4
+	default "armv7-m"	if ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7
 
 config ARCH_CHIP
 	string
@@ -262,13 +280,14 @@ config ARCH_CHIP
 	default "sama5"		if ARCH_CHIP_SAMA5
 	default "samd"		if ARCH_CHIP_SAMD
 	default "sam34"		if ARCH_CHIP_SAM34
+	default "samv7"		if ARCH_CHIP_SAMV7
 	default "stm32"		if ARCH_CHIP_STM32
 	default "str71x"	if ARCH_CHIP_STR71X
 
 config ARMV7M_USEBASEPRI
 	bool "Use BASEPRI Register"
 	default n
-	depends on ARCH_CORTEXM3 || ARCH_CORTEXM4
+	depends on ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7
 	---help---
 		Use the BASEPRI register to enable and disable interrupts. By
 		default, the PRIMASK register is used for this purpose. This
@@ -290,6 +309,40 @@ config ARMV7M_CMNVECTOR
 		the common vector logic.  Some can use either their own built-in vector
 		logic or the common vector logic.  This applies only to ARMv7-M
 		architectures.
+
+config ARMV7M_LAZYFPU
+	bool "Lazy FPU storage"
+	default n
+	depends on ARCH_HAVE_CMNVECTOR
+	---help---
+		There are two forms of the common vector logic.  There are pros and
+		cons to each option:
+
+		1) The standard common vector logic exploits features of the ARMv7-M
+		   architecture to save the all of floating registers on entry into
+		   each interrupt and then to restore the floating registers when
+		   the interrupt returns.  The primary advantage to this approach is
+		   that floating point operations are available in interrupt
+		   handling logic.  Since the volatile registers are preserved,
+		   operations on the floating point registers by interrupt handling
+		   logic has no ill effect.  The downside is, of course, that more
+		   stack operations are required on each interrupt to save and store
+		   the floating point registers.  Because of the some special
+		   features of the ARMv-M, this is not as much overhead as you might
+		   expect, but overhead nonetheless.
+
+		2) The lazy FPU common vector logic does not save or restore
+		   floating point registers on entry and exit from the interrupt
+		   handler. Rather, the floating point registers are not restored
+		   until it is absolutely necessary to do so when a context switch
+		   occurs and the interrupt handler will be returning to a different
+		   floating point context.  Since floating point registers are not
+		   protected, floating point operations must not be performed in
+		   interrupt handling logic.  Better interrupt performance is be
+		   expected, however.
+
+		By default, the "standard" common vector logic is build.  This
+		option selects the alternate lazy FPU common vector logic.
 
 config ARCH_HAVE_FPU
 	bool
@@ -339,7 +392,7 @@ config ARCH_ROMPGTABLE
 config DEBUG_HARDFAULT
 	bool "Verbose Hard-Fault Debug"
 	default n
-	depends on DEBUG && (ARCH_CORTEXM3 || ARCH_CORTEXM4)
+	depends on DEBUG && (ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7)
 	---help---
 		Enables verbose debug output when a hard fault is occurs.  This verbose
 		output is sometimes helpful when debugging difficult hard fault problems,
@@ -351,7 +404,7 @@ endif
 if ARCH_CORTEXA5 || ARCH_CORTEXA8
 source arch/arm/src/armv7-a/Kconfig
 endif
-if ARCH_CORTEXM3 || ARCH_CORTEXM4
+if ARCH_CORTEXM3 || ARCH_CORTEXM4 || ARCH_CORTEXM7
 source arch/arm/src/armv7-m/Kconfig
 endif
 if ARCH_ARM7TDMI || ARCH_ARM926EJS
@@ -410,6 +463,9 @@ source arch/arm/src/samd/Kconfig
 endif
 if ARCH_CHIP_SAM34
 source arch/arm/src/sam34/Kconfig
+endif
+if ARCH_CHIP_SAMV7
+source arch/arm/src/samv7/Kconfig
 endif
 if ARCH_CHIP_STM32
 source arch/arm/src/stm32/Kconfig
