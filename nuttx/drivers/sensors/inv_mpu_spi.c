@@ -1,5 +1,5 @@
 /****************************************************************************
- * drivers/sensors/mpu9250_spi.c
+ * drivers/sensors/inv_mpu_spi.c
  *
  *   Copyright (C) 2015 Pierre-noel Bouteville . All rights reserved.
  *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
@@ -42,27 +42,58 @@
 #include <unistd.h>
 #include <errno.h>
 #include <debug.h>
+#include <time.h>
+#include <nuttx/spi/spi.h>
 
-#include <nuttx/kmalloc.h>
-#include <nuttx/sensors/mpu9250.h>
+#include "inv_mpu.h"
 
-#include "mpu9250.h"
+#if defined(CONFIG_INVENSENSE_SPI)
 
-#if defined(CONFIG_SENSORS_MPU9250) && defined(CONFIG_MPU9250_SPI)
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+struct mpu_spi_low_s
+{
+    struct mpu_low_s *low;
+    int akm_addr;
+    int spi_dev_s* spi;
+};
+
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+static int mpu_spi_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int mpu_spi_read( FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int akm_spi_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int akm_spi_read( FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+
+/****************************************************************************
+ * Private data
+ ****************************************************************************/
+
+static struct mpu_low_s mpu_i2c_low = 
+{
+    .mpu_write = mpu_spi_write,
+    .mpu_read  = mpu_spi_read,
+    .akm_write = akm_spi_write,
+    .akm_read  = akm_spi_read
+};
+
+struct mpu_spi_low_s g_mpu_spi;
+
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: mpu9250_configspi
- *
- * Description:
- *
- ****************************************************************************/
-
 #ifndef CONFIG_SPI_OWNBUS
-static inline void mpu9250_configspi(FAR struct spi_dev_s *spi)
+static inline void mpu_spi_configspi(FAR struct spi_dev_s *spi)
 {
   /* Configure SPI for the MPU9250 */
 
@@ -76,17 +107,9 @@ static inline void mpu9250_configspi(FAR struct spi_dev_s *spi)
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: mpu9250_getreg8
- *
- * Description:
- *   Read from an 8-bit MPU9250 register
- *
- ****************************************************************************/
-
-uint8_t mpu9250_getreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
+static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
+                                uint8_t reg_off, uint8_t buf, int size)
 {
-  uint8_t regval;
 
   /* If SPI bus is shared then lock and configure it */
 
@@ -102,7 +125,14 @@ uint8_t mpu9250_getreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
   /* Send register to read and get the next byte */
 
   (void)SPI_SEND(priv->spi, regaddr);
-  SPI_RECVBLOCK(priv->spi, &regval, 1);
+  if ( read )
+  {
+      SPI_RECVBLOCK(priv->spi, buf, size);
+  }
+  else
+  {
+      SPI_SEND(     priv->spi, buf, size);
+  }
 
   /* Deselect the MPU9250 */
 
@@ -114,96 +144,78 @@ uint8_t mpu9250_getreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
   (void)SPI_LOCK(priv->spi, false);
 #endif
 
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x->%02x\n", regaddr, regval);
-#endif
-  return regval;
+  return 0;
 }
+
+
+/* MPU Write access */
+
+static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+
+  return mpu_i2c_trans(priv,priv->mpu_addr,false,reg_off,buf,size);
+}
+
+/* MPU read access */
+
+static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  return mpu_i2c_trans(priv,priv->mpu_addr,true,reg_off,buf,size);
+}
+
+/* AKM Write access */
+
+static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  /* TODO use internal I2C MASTER of MPU */
+#warning 'not implemented"
+
+  return -1;
+}
+
+/* AKM read access */
+
+static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  /* TODO use internal I2C MASTER of MPU */
+#warning 'not implemented"
+
+  return -1;
+}
+
 
 /****************************************************************************
- * Name: mpu9250_putreg8
- *
- * Description:
- *   Write a value to an 8-bit MPU9250 register
- *
+ * Public Functions
  ****************************************************************************/
-
-void mpu9250_putreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr,
-                     uint8_t regval)
+struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
+                                   FAR struct spi_dev_s* spi)
 {
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x<-%02x\n", regaddr, regval);
-#endif
+    struct mpu_spi_low_s* mpu_spi;
 
-  /* If SPI bus is shared then lock and configure it */
+    /* only one device supported */
 
-#ifndef CONFIG_SPI_OWNBUS
-  (void)SPI_LOCK(priv->spi, true);
-  mpu9250_configspi(priv->spi);
-#endif
+    if ( devno != 0 )
+        return NULL;
 
-  /* Select the MPU9250 */
+    mpu_spi = &g_mpu_spi;
 
-  SPI_SELECT(priv->spi, SPIDEV_ACCELEROMETER, true);
-  
-  /* Send register address and set the value */
+    mpu_spi->low = mpu_i2c_low;
+    mpu_spi->mpu_addr = mpu_addr;
+    mpu_spi->akm_addr = akm_addr;
+    mpu_spi->i2c;
 
-  (void)SPI_SEND(priv->spi, regaddr);
-  (void)SPI_SEND(priv->spi, regval);
+    return mpu_i2c;
 
-  /* Deselect the MPU9250 */
-
-  SPI_SELECT(priv->spi, SPIDEV_ACCELEROMETER, false);
-
-  /* Unlock bus */
-#ifndef CONFIG_SPI_OWNBUS
-  (void)SPI_LOCK(priv->spi, false);
-#endif
 }
 
-/****************************************************************************
- * Name: mpu9250_getreg16
- *
- * Description:
- *   Read 16-bits of data from an MPU9250 register
- *
- ****************************************************************************/
-
-uint16_t mpu9250_getreg16(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
-{
-  uint16_t regval;
-
-  /* If SPI bus is shared then lock and configure it */
-
-#ifndef CONFIG_SPI_OWNBUS
-  (void)SPI_LOCK(priv->spi, true);
-  mpu9250_configspi(priv->spi);
-#endif
-
-  /* Select the MPU9250 */
-
-  SPI_SELECT(priv->spi, SPIDEV_ACCELEROMETER, true);
-  
-  /* Send register to read and get the next 2 bytes */
-
-  (void)SPI_SEND(priv->spi, regaddr);
-  SPI_RECVBLOCK(priv->spi, &regval, 2);
-
-  /* Deselect the MPU9250 */
-
-  SPI_SELECT(priv->spi, SPIDEV_ACCELEROMETER, false);
-
-  /* Unlock bus */
-
-#ifndef CONFIG_SPI_OWNBUS
-  (void)SPI_LOCK(priv->spi, false);
-#endif
-
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x->%04x\n", regaddr, regval);
-#endif
-
-  return regval;
-}
-
-#endif /* CONFIG_SENSORS_MPU9250 && CONFIG_MPU9250_SPI*/
+#endif /* CONFIG_INVENSENSE_SPI */

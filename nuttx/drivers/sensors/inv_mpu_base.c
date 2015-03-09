@@ -284,9 +284,8 @@ struct chip_cfg_s {
 
 /* Gyro driver state variables. */
 struct mpu_inst_s {
-    struct mpu_lowlevel_s *     low_mpu;
-    struct mpu_lowlevel_s *     low_akm;
-    struct chip_cfg_s           chip_cfg;
+    struct mpu_low_s*   low;
+    struct chip_cfg_s   chip_cfg;
 };
 
 /****************************************************************************
@@ -318,18 +317,18 @@ struct mpu_inst_s g_dev_inst;
 static inline int mpu_write(struct mpu_inst_s* inst,int reg_off, 
                             const uint8_t *buf, int size)
 {
-    return (inst)->low_mpu->write((inst)->low_mpu->priv,reg_off,buf,size);
+    return inst->low->mpu_write(inst->low,reg_off,buf,size);
 }
 
 static inline int mpu_write8(struct mpu_inst_s* inst,int reg_off,uint8_t val)
 {
-    return (inst)->low_mpu->write((inst)->low_mpu->priv,reg_off,&val,1);
+    return inst->low->mpu_write(inst->low,reg_off,&val,1);
 }
 
 static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return (inst)->low_mpu->read((inst)->low_mpu->priv,reg_off,buf,size);
+    return inst->low->mpu_read(inst->low,reg_off,buf,size);
 }
 
 /* Low Level access to AK89xx IC */
@@ -337,13 +336,13 @@ static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
 static inline int akm_write(struct mpu_inst_s* inst,int reg_off,
                             const uint8_t *buf, int size)
 {
-    return (inst)->low_akm->write((inst)->low_akm->priv,reg_off,buf,size);
+    return inst->low->akm_write(inst->low,reg_off,buf,size);
 }
 
 static inline int akm_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return (inst)->low_akm->read((inst)->low_akm->priv,reg_off,buf,size);
+    return inst->low->akm_read(inst->low,reg_off,buf,size);
 }
 
 /*******************************************************************************
@@ -467,20 +466,13 @@ int mpu_read_reg(struct mpu_inst_s* inst, uint8_t reg, uint8_t *data)
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low_mpu,
-                                   struct mpu_lowlevel_s* low_akm, int devno)
+struct mpu_inst_s* mpu_instantiate(FAR struct mpu_low_s* low)
 {
     struct mpu_inst_s* inst;
 
-    /* We support only one device */
-
-    if ( devno != 0 )
-        return NULL;
-
     inst = &g_dev_inst;
 
-    inst->low_mpu = low_mpu;
-    inst->low_akm = low_akm;
+    inst->low = low;
 
     if ( mpu_reset_default(inst) < 0 )
         return NULL;

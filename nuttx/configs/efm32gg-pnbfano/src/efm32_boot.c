@@ -45,11 +45,13 @@
 #include "efm32_pwm.h"
 #include "efm32gg-pnbfano.h"
 
+#include <inv_mpu.h>
 #include <nuttx/input/keypad.h>
 #include <nuttx/pwm.h>
 #include <nuttx/nx/nx.h>
 #include <syslog.h>
 
+#include <time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,7 +132,7 @@ int board_init_pwm(void)
 
     if (!pwm)
     {
-        adbg("Failed to get the EFM32 PWM lower half\n");
+        syslog(LOG_ERR,"Failed to get the EFM32 PWM lower half\n");
         return -ENODEV;
     }
 
@@ -139,7 +141,7 @@ int board_init_pwm(void)
     ret = pwm_register("/dev/pwm0", pwm);
     if (ret < 0)
     {
-        adbg("pwm_register failed: %d\n", ret);
+        syslog(LOG_ERR,"pwm_register failed: %d\n", ret);
         return ret;
     }
 
@@ -147,6 +149,37 @@ int board_init_pwm(void)
     return 0;
 }
 
+int efm32_initialize_mpu(int devno)
+{
+    struct mpu_low_s * low;
+    struct i2c_dev_s * i2c;
+    struct mpu_inst_s* mpu_inst;
+
+    /* i2c port 1 */
+
+    i2c = up_i2cinitialize(1);
+
+    if ( i2c == NULL )
+    {
+        syslog(LOG_ERR,"Cannot initialize I2C !\n");
+        return -1;
+    }
+
+    low = mpu_low_i2c_init(devno, 0x0D, 0x0C, );
+    if ( low ) 
+    {
+        syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
+        return -1;
+    }
+
+    mpu_inst = mpu_instantiate(low);
+    if ( mpu_inst == NULL ) 
+    {
+        syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
+        return -1;
+    }
+
+}
 
 /****************************************************************************
  * Name: board_initialize
@@ -194,7 +227,14 @@ void board_initialize(void)
     keypad_kbdinit();
 #endif
 
-  /* Mount the SDIO-based MMC/SD block driver */
+    /* initialise MPU9250 */
+
+    if ( efm32_initialize_mpu(0) )
+    {
+        syslog(LOG_ERR,"Cannot initialize MPU\n");
+    }
+
+    /* Mount the SDIO-based MMC/SD block driver */
 
     if ( efm32_initialize_spi_devices() < 0 )
     {

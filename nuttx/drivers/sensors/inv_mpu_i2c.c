@@ -1,5 +1,5 @@
 /****************************************************************************
- * drivers/sensors/mpu9250_i2c.c
+ * drivers/sensors/inv_mpu_i2c.c
  *
  *   Copyright (C) 2015 Pierre-noel Bouteville . All rights reserved.
  *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
@@ -42,49 +42,80 @@
 #include <unistd.h>
 #include <errno.h>
 #include <debug.h>
+#include <time.h>
 
-#include <nuttx/kmalloc.h>
-
+#include <nuttx/i2c.h>
 #include "inv_mpu.h"
 
-#if defined(CONFIG_SENSORS_MPU9250)
+#if defined(CONFIG_INVENSENSE_I2C)
 
 /****************************************************************************
- * Name: mpu9250_getreg8
- *
- * Description:
- *   Read from an 8-bit MPU9250 register
- *
+ * Private Types
  ****************************************************************************/
 
-#ifdef CONFIG_MPU9250_I2C
-uint8_t mpu9250_getreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
+struct mpu_i2c_low_s
 {
-  /* 8-bit data read sequence:
-   *
-   *  Start - I2C_Write_Address - MPU9250_Reg_Address -
-   *    Repeated_Start - I2C_Read_Address  - MPU9250_Read_Data - STOP
-   */
+    struct mpu_low_s *low;
+    int mpu_addr;
+    int akm_addr;
+    struct i2c_dev_s* i2c;
+};
 
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size);
+
+/****************************************************************************
+ * Private data
+ ****************************************************************************/
+
+static struct mpu_low_s mpu_i2c_low = 
+{
+    .mpu_write = mpu_i2c_write,
+    .mpu_read  = mpu_i2c_read,
+    .akm_write = akm_i2c_write,
+    .akm_read  = akm_i2c_read
+};
+
+struct mpu_i2c_low_s g_mpu_i2c;
+
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+static int mpu_i2c_trans(FAR struct mpu_low_s* low, int i2c_addr, 
+                         bool read, int reg_off, uint8_t *buf, int size);
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
   struct i2c_msg_s msg[2];
-  uint8_t regval;
   int ret;
 
-  /* Setup 8-bit MPU9250 address write message */
+  /* Setup 8-bit MPU address write message */
 
-  msg[0].addr   = priv->config->address; /* 7-bit address */
-  msg[0].flags  = 0;                     /* Write transaction, beginning with START */
-  msg[0].buffer = &regaddr;              /* Transfer from this address */
-  msg[0].length = 1;                     /* Send one byte following the address
-                                          * (no STOP) */
+  msg[0].addr   = i2c_addr;             /* 7-bit address                */
+  msg[0].flags  = 0;                    /* Write transaction            */
+  msg[0].buffer = &reg_off;             /* Transfer from this address   */
+  msg[0].length = 1;                    /* Send one byte address        */
 
-  /* Set up the 8-bit MPU9250 data read message */
+  /* Set up the data written message */
 
-  msg[1].addr   = priv->config->address; /* 7-bit address */
-  msg[1].flags  = I2C_M_READ;            /* Read transaction, beginning with Re-START */
-  msg[1].buffer = &regval;               /* Transfer to this address */
-  msg[1].length = 1;                     /* Receive one byte following the address
-                                          * (then STOP) */
+  msg[1].addr   = i2c_addr;             /* 7-bit address                */
+  if (read)
+      msg[1].flags  = I2C_M_READ;       /* Read transaction             */
+  else
+      msg[1].flags  = 0;                /* write transaction            */
+  msg[1].buffer = &buf;                 /* Transfer to this address     */
+  msg[1].length = size;                 /* Receive/Send data buffer     */
 
   /* Perform the transfer */
 
@@ -92,118 +123,75 @@ uint8_t mpu9250_getreg8(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
   if (ret < 0)
     {
       sndbg("I2C_TRANSFER failed: %d\n", ret);
-      return 0;
+      return -1;
     }
 
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x->%02x\n", regaddr, regval);
-#endif
-  return regval;
+  return 0;
+
 }
-#endif
+
+/* MPU Write access */
+
+static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+
+  return mpu_i2c_trans(priv,priv->mpu_addr,false,reg_off,buf,size);
+}
+
+/* MPU read access */
+
+static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  return mpu_i2c_trans(priv,priv->mpu_addr,true,reg_off,buf,size);
+}
+
+/* AKM Write access */
+
+static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  return mpu_i2c_trans(priv,priv->akm_addr,false,reg_off,buf,size);
+}
+
+/* AKM read access */
+
+static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+                                const uint8_t *buf, int size)
+{
+  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+
+  return mpu_i2c_trans(priv,priv->akm_addr,true,reg_off,buf,size);
+}
+
 
 /****************************************************************************
- * Name: mpu9250_putreg8
- *
- * Description:
- *   Write a value to an 8-bit MPU9250 register
- *
+ * Public Functions
  ****************************************************************************/
-
-#ifdef CONFIG_MPU9250_I2C
-void mpu9250_putreg8(FAR struct mpu9250_dev_s *priv,
-                      uint8_t regaddr, uint8_t regval)
+struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr, 
+                                   FAR struct i2c_dev_s* i2c)
 {
-  /* 8-bit data read sequence:
-   *
-   *  Start - I2C_Write_Address - MPU9250_Reg_Address - MPU9250_Write_Data - STOP
-   */
+    struct mpu_i2c_low_s* mpu_i2c;
 
-  struct i2c_msg_s msg;
-  uint8_t txbuffer[2];
-  int ret;
+    /* only one device supported */
 
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x<-%02x\n", regaddr, regval);
-#endif
+    if ( devno != 0 )
+        return NULL;
 
-  /* Setup to the data to be transferred.  Two bytes:  The MPU9250 register
-   * address followed by one byte of data.
-   */
+    mpu_i2c = &g_mpu_i2c;
 
-  txbuffer[0] = regaddr;
-  txbuffer[1] = regval;
+    mpu_i2c->low = mpu_i2c_low;
+    mpu_i2c->mpu_addr = mpu_addr;
+    mpu_i2c->akm_addr = akm_addr;
+    mpu_i2c->i2c;
 
-  /* Setup 8-bit MPU9250 address write message */
+    return mpu_i2c;
 
-  msg.addr   = priv->config->address; /* 7-bit address */
-  msg.flags  = 0;                     /* Write transaction, beginning with START */
-  msg.buffer = txbuffer;              /* Transfer from this address */
-  msg.length = 2;                     /* Send two byte following the address
-                                       * (then STOP) */
-
-  /* Perform the transfer */
-
-  ret = I2C_TRANSFER(priv->i2c, &msg, 1);
-  if (ret < 0)
-    {
-      sndbg("I2C_TRANSFER failed: %d\n", ret);
-    }
 }
-#endif
 
-/****************************************************************************
- * Name: mpu9250_getreg16
- *
- * Description:
- *   Read 16-bits of data from an STMPE-11 register
- *
- ****************************************************************************/
-
-#ifdef CONFIG_MPU9250_I2C
-uint16_t mpu9250_getreg16(FAR struct mpu9250_dev_s *priv, uint8_t regaddr)
-{
-  /* 16-bit data read sequence:
-   *
-   *  Start - I2C_Write_Address - MPU9250_Reg_Address -
-   *    Repeated_Start - I2C_Read_Address  - MPU9250_Read_Data_1 -
-   *      MPU9250_Read_Data_2 - STOP
-   */
-
-  struct i2c_msg_s msg[2];
-  uint8_t rxbuffer[2];
-  int ret;
-
-  /* Setup 8-bit MPU9250 address write message */
-
-  msg[0].addr   = priv->config->address; /* 7-bit address */
-  msg[0].flags  = 0;                     /* Write transaction, beginning with START */
-  msg[0].buffer = &regaddr;              /* Transfer from this address */
-  msg[0].length = 1;                     /* Send one byte following the address
-                                          * (no STOP) */
-
-  /* Set up the 8-bit MPU9250 data read message */
-
-  msg[1].addr   = priv->config->address; /* 7-bit address */
-  msg[1].flags  = I2C_M_READ;            /* Read transaction, beginning with Re-START */
-  msg[1].buffer = rxbuffer;              /* Transfer to this address */
-  msg[1].length = 2;                     /* Receive two bytes following the address
-                                          * (then STOP) */
-
-  /* Perform the transfer */
-
-  ret = I2C_TRANSFER(priv->i2c, msg, 2);
-  if (ret < 0)
-    {
-      sndbg("I2C_TRANSFER failed: %d\n", ret);
-      return 0;
-    }
-
-#ifdef CONFIG_MPU9250_REGDEBUG
-  dbg("%02x->%02x%02x\n", regaddr, rxbuffer[0], rxbuffer[1]);
-#endif
-  return (uint16_t)rxbuffer[0] << 8 | (uint16_t)rxbuffer[1];
-}
-#endif
-
-#endif /* CONFIG_SENSORS_MPU9250 */
+#endif /* CONFIG_INVENSENSE_I2C */

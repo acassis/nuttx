@@ -58,11 +58,6 @@
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
-struct mpu_lowlevel_s {
-    void *priv;
-    int (*write)(void * priv,int reg, const uint8_t*buf, int size);
-    int (*read )(void * priv,int reg,       uint8_t*buf, int size);
-};
 
 struct mpu_axes_s {
     uint16_t x;
@@ -70,12 +65,33 @@ struct mpu_axes_s {
     uint16_t z;
 };
 
-struct mpu_inst_s;
+struct mpu_low_s {
+    /* Low Level access to mpu IC */
+    int (*mpu_write)(FAR struct mpu_low_s* low,int reg_off, const uint8_t *buf, 
+                     int size);
+    int (*mpu_read )(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
+                     int size);
+    /* Low Level access to AK89xx IC */
+    int (*akm_write)(FAR struct mpu_low_s* low,int reg_off, const uint8_t *buf, 
+                     int size);
+    int (*akm_read )(FAR struct mpu_low_s* low,int reg_off,uint8_t *buf, 
+                     int size);
+};
+
+
+/* low level APIs */
+struct spi_dev_s; /* See nuttx/spi/spi.h */
+struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
+                                   FAR struct spi_dev_s* spi);
+
+struct i2c_dev_s; /* See nuttx/i2c/i2c.h */
+struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr, 
+                                   FAR struct i2c_dev_s* i2c);
 
 /* Set up APIs */
-struct mpu_inst_s* mpu_instantiate(struct mpu_lowlevel_s* low_mpu,
-                                   struct mpu_lowlevel_s* low_akm, int devno);
-int mpu_reset_default(struct mpu_inst_s* inst);
+struct mpu_inst_s; /* See inv_mpu_base.c */
+struct mpu_inst_s* mpu_instantiate(FAR struct mpu_low_s* low);
+int mpu_reset_default(FAR struct mpu_inst_s* inst);
 
 /* Low Power mode */
 
