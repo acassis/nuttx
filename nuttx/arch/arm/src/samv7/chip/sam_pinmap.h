@@ -1,7 +1,7 @@
 /************************************************************************************
- * arch/arm/src/samv7/sam_clockconfig.h
+ * arch/arm/src/samv7/chip/sam_pinmap.h
  *
- *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,8 @@
  *
  ************************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_SAMV7_SAM_CLOCKCONFIG_H
-#define __ARCH_ARM_SRC_SAMV7_SAM_CLOCKCONFIG_H
+#ifndef __ARCH_ARM_SRC_SAMV7_CHIP_SAM_PINMAP_H
+#define __ARCH_ARM_SRC_SAMV7_CHIP_SAM_PINMAP_H
 
 /************************************************************************************
  * Included Files
@@ -42,53 +42,11 @@
 
 #include <nuttx/config.h>
 
-/************************************************************************************
- * Pre-processor Definitions
- ************************************************************************************/
-
-/************************************************************************************
- * Public Types
- ************************************************************************************/
-
-/************************************************************************************
- * Inline Functions
- ************************************************************************************/
-
-#ifndef __ASSEMBLY__
-
-/************************************************************************************
- * Public Data
- ************************************************************************************/
-
-#undef EXTERN
-#if defined(__cplusplus)
-#define EXTERN extern "C"
-extern "C"
-{
+#if defined(CONFIG_ARCH_CHIP_SAMV71)
+#  include "chip/samv71_pinmap.h"
 #else
-#define EXTERN extern
+#  error Unrecognized SAMV7 architecture
 #endif
 
-/************************************************************************************
- * Public Function Prototypes
- ************************************************************************************/
+#endif /* __ARCH_ARM_SRC_SAMV7_CHIP_SAM_PINMAP_H */
 
-/************************************************************************************
- * Name: sam_clockconfig
- *
- * Description:
- *   Called to initialize the SAMV7.  This does whatever setup is needed to put the
- *   SoC in a usable state.  This includes the initialization of clocking using the
- *   settings in board.h.
- *
- ************************************************************************************/
-
-void sam_clockconfig(void);
-
-#undef EXTERN
-#if defined(__cplusplus)
-}
-#endif
-
-#endif /* __ASSEMBLY__ */
-#endif /* __ARCH_ARM_SRC_SAMV7_SAM_CLOCKCONFIG_H */
