@@ -41,13 +41,13 @@
  ********************************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/arch.h>
 
 #include <nuttx/i2c.h>
 #include <nuttx/spi/spi.h>
 
 #include <nuttx/irq.h>
 
-#if defined(CONFIG_SENSORS_ADXL345)
 /********************************************************************************************
  * Pre-Processor Definitions
  ********************************************************************************************/
@@ -114,14 +114,14 @@ struct mpu_axes_s {
 
 struct mpu_low_s {
     /* Low Level access to mpu IC */
-    int (*mpu_write)(FAR struct mpu_low_s* low,int reg_off, const uint8_t *buf, 
+    int (*mpu_write)(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
                      int size);
     int (*mpu_read )(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
                      int size);
     /* Low Level access to AK89xx IC */
-    int (*akm_write)(FAR struct mpu_low_s* low,int reg_off, const uint8_t *buf, 
+    int (*akm_write)(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
                      int size);
-    int (*akm_read )(FAR struct mpu_low_s* low,int reg_off,uint8_t *buf, 
+    int (*akm_read )(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
                      int size);
 };
 
@@ -135,7 +135,7 @@ extern "C" {
 #define EXTERN extern
 #endif
 
-/* low level APIs */
+/* low level function */
 #ifdef CONFIG_INVENSENSE_SPI
 struct spi_dev_s; /* See nuttx/spi/spi.h */
 struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
@@ -148,9 +148,14 @@ struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr,
                                    FAR struct i2c_dev_s* i2c);
 #endif
 
-/* Set up APIs */
+/* Setup function */
 struct mpu_inst_s; /* See inv_mpu_base.c */
 struct mpu_inst_s* mpu_instantiate(FAR struct mpu_low_s* low);
+
+/* device driver setup function */
+int mpu_register(struct mpu_inst_s* inst,const char *path ,int minor);
+
+/* Reset to default function */
 int mpu_reset_default(FAR struct mpu_inst_s* inst);
 
 /* Low Power mode */
@@ -227,8 +232,8 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
                   struct mpu_axes_s *gyro, uint8_t *sensors, uint8_t *more, 
                   struct timespec *tp);
 
-int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, 
-                         uint8_t *data, uint8_t *more);
+int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data,
+                         int *more);
 
 int mpu_reset_fifo(struct mpu_inst_s* inst);
 

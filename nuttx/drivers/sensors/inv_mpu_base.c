@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/arch.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -45,8 +46,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <nuttx/kmalloc.h>
-#include "inv_mpu.h"
+#include "nuttx/sensors/inv_mpu.h"
 
 
 /*******************************************************************************
@@ -317,7 +317,7 @@ struct mpu_inst_s g_dev_inst;
 static inline int mpu_write(struct mpu_inst_s* inst,int reg_off, 
                             const uint8_t *buf, int size)
 {
-    return inst->low->mpu_write(inst->low,reg_off,buf,size);
+    return inst->low->mpu_write(inst->low,reg_off,(uint8_t*)buf,size);
 }
 
 static inline int mpu_write8(struct mpu_inst_s* inst,int reg_off,uint8_t val)
@@ -336,7 +336,7 @@ static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
 static inline int akm_write(struct mpu_inst_s* inst,int reg_off,
                             const uint8_t *buf, int size)
 {
-    return inst->low->akm_write(inst->low,reg_off,buf,size);
+    return inst->low->akm_write(inst->low,reg_off,(uint8_t*)buf,size);
 }
 
 static inline int akm_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
@@ -1986,7 +1986,7 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
  ******************************************************************************/
 
 int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data, 
-                         uint8_t *more)
+                         int *more)
 {
     uint8_t tmp[2];
     uint16_t fifo_count;

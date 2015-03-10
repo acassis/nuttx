@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/arch.h>
 
 #include <sys/mount.h>
 
@@ -45,7 +46,7 @@
 #include "efm32_pwm.h"
 #include "efm32gg-pnbfano.h"
 
-#include <inv_mpu.h>
+#include <nuttx/sensors/inv_mpu.h>
 #include <nuttx/input/keypad.h>
 #include <nuttx/pwm.h>
 #include <nuttx/nx/nx.h>
@@ -165,7 +166,7 @@ int efm32_initialize_mpu(int devno)
         return -1;
     }
 
-    low = mpu_low_i2c_init(devno, 0x0D, 0x0C, );
+    low = mpu_low_i2c_init(devno, 0x0D, 0x0C, i2c );
     if ( low ) 
     {
         syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
@@ -175,10 +176,17 @@ int efm32_initialize_mpu(int devno)
     mpu_inst = mpu_instantiate(low);
     if ( mpu_inst == NULL ) 
     {
-        syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
+        syslog(LOG_ERR,"Cannot initialize mpu instance !\n");
         return -1;
     }
 
+    if ( mpu_register(mpu_inst, "/dev/invmpu0", 0 ) < 0 )
+    {
+        syslog(LOG_ERR,"Cannot register mpu device !\n");
+        return -1;
+    }
+
+    return OK;
 }
 
 /****************************************************************************

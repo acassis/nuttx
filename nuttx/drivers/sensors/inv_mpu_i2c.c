@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/arch.h>
 
 #include <unistd.h>
 #include <errno.h>
@@ -45,7 +46,7 @@
 #include <time.h>
 
 #include <nuttx/i2c.h>
-#include "inv_mpu.h"
+#include "nuttx/sensors/inv_mpu.h"
 
 #if defined(CONFIG_INVENSENSE_I2C)
 
@@ -65,14 +66,14 @@ struct mpu_i2c_low_s
  * Private Function Prototypes
  ****************************************************************************/
 
-static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size);
-static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size);
-static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size);
-static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size);
+static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf,
+                         int size);
+static int mpu_i2c_read( FAR struct mpu_low_s* low, int reg_off, uint8_t *buf,
+                         int size);
+static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf,
+                         int size);
+static int akm_i2c_read( FAR struct mpu_low_s* low, int reg_off, uint8_t *buf,
+                         int size);
 
 /****************************************************************************
  * Private data
@@ -93,10 +94,9 @@ struct mpu_i2c_low_s g_mpu_i2c;
  * Private Functions
  ****************************************************************************/
 
-static int mpu_i2c_trans(FAR struct mpu_low_s* low, int i2c_addr, 
-                         bool read, int reg_off, uint8_t *buf, int size);
+static int mpu_i2c_trans(FAR struct mpu_i2c_low_s* i2c_low, int i2c_addr, bool read, 
+                         uint8_t reg_off, uint8_t *buf, int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
   struct i2c_msg_s msg[2];
   int ret;
 
@@ -114,12 +114,12 @@ static int mpu_i2c_trans(FAR struct mpu_low_s* low, int i2c_addr,
       msg[1].flags  = I2C_M_READ;       /* Read transaction             */
   else
       msg[1].flags  = 0;                /* write transaction            */
-  msg[1].buffer = &buf;                 /* Transfer to this address     */
+  msg[1].buffer = buf;                  /* Transfer to this address     */
   msg[1].length = size;                 /* Receive/Send data buffer     */
 
   /* Perform the transfer */
 
-  ret = I2C_TRANSFER(priv->i2c, msg, 2);
+  ret = I2C_TRANSFER(i2c_low->i2c, msg, 2);
   if (ret < 0)
     {
       sndbg("I2C_TRANSFER failed: %d\n", ret);
@@ -132,39 +132,40 @@ static int mpu_i2c_trans(FAR struct mpu_low_s* low, int i2c_addr,
 
 /* MPU Write access */
 
-static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size)
+static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
+                         int size)
 {
+  struct mpu_i2c_low_s* priv = (struct mpu_i2c_low_s*)low;
 
   return mpu_i2c_trans(priv,priv->mpu_addr,false,reg_off,buf,size);
 }
 
 /* MPU read access */
 
-static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size)
+static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
+                        int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_i2c_low_s* priv = (struct mpu_i2c_low_s*)low;
 
   return mpu_i2c_trans(priv,priv->mpu_addr,true,reg_off,buf,size);
 }
 
 /* AKM Write access */
 
-static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size)
+static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
+                         int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_i2c_low_s* priv = (struct mpu_i2c_low_s*)low;
 
   return mpu_i2c_trans(priv,priv->akm_addr,false,reg_off,buf,size);
 }
 
 /* AKM read access */
 
-static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
-                                const uint8_t *buf, int size)
+static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
+                        int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_i2c_low_s* priv = (struct mpu_i2c_low_s*)low;
 
   return mpu_i2c_trans(priv,priv->akm_addr,true,reg_off,buf,size);
 }
@@ -185,12 +186,12 @@ struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr,
 
     mpu_i2c = &g_mpu_i2c;
 
-    mpu_i2c->low = mpu_i2c_low;
+    mpu_i2c->low = &mpu_i2c_low;
     mpu_i2c->mpu_addr = mpu_addr;
     mpu_i2c->akm_addr = akm_addr;
-    mpu_i2c->i2c;
+    mpu_i2c->i2c = i2c;
 
-    return mpu_i2c;
+    return (struct mpu_low_s*)mpu_i2c;
 
 }
 
