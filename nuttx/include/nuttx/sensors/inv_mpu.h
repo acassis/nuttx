@@ -33,8 +33,49 @@
  *
  ****************************************************************************/
 
-#ifndef _DRIVERS_SENSOR_INV_MPU_H_
-#define _DRIVERS_SENSOR_INV_MPU_H_
+#ifndef __INCLUDE_NUTTX_INPUT_INV_MPU_H
+#define __INCLUDE_NUTTX_INPUT_INV_MPU_H
+
+/********************************************************************************************
+ * Included Files
+ ********************************************************************************************/
+
+#include <nuttx/config.h>
+
+#include <nuttx/i2c.h>
+#include <nuttx/spi/spi.h>
+
+#include <nuttx/irq.h>
+
+#if defined(CONFIG_SENSORS_ADXL345)
+/********************************************************************************************
+ * Pre-Processor Definitions
+ ********************************************************************************************/
+/* Configuration ****************************************************************************/
+/* Prerequisites:
+ *
+ * Settings that effect the driver: CONFIG_DISABLE_POLL
+ *
+ * CONFIG_INVENSENSE_SPI
+ *   Enables support for the SPI interface (not currenly supported)
+ * CONFIG_INVENSENSE_I2C
+ *   Enables support for the I2C interface
+ */
+
+/* The Invensence interfaces with the target CPU via a I2C or SPI interface. 
+ */
+
+#if !defined(CONFIG_INVENSENSE_I2C) && !defined(CONFIG_INVENSENSE_SPI)
+#  error "One of CONFIG_INVENSENSE_I2C or CONFIG_INVENSENSE_SPI must be defined"
+#endif
+
+#if defined(CONFIG_INVENSENSE_I2C) && defined(CONFIG_INVENSENSE_SPI)
+#  error "Only one of CONFIG_INVENSENSE_I2C or CONFIG_INVENSENSE_SPI can be defined"
+#endif
+
+/* Register bit definitions */
+
+/* Enable bit fields */
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)
@@ -42,6 +83,8 @@
 #define INV_XYZ_GYRO    (INV_X_GYRO | INV_Y_GYRO | INV_Z_GYRO)
 #define INV_XYZ_ACCEL   (0x08)
 #define INV_XYZ_COMPASS (0x01)
+
+/* Interrupt bit fields */
 
 #define MPU_INT_STATUS_DATA_READY       (0x0001)
 #define MPU_INT_STATUS_DMP              (0x0002)
@@ -58,6 +101,10 @@
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
+
+/********************************************************************************************
+ * Public Types
+ ********************************************************************************************/
 
 struct mpu_axes_s {
     uint16_t x;
@@ -78,15 +125,28 @@ struct mpu_low_s {
                      int size);
 };
 
+/********************************************************************************************
+ * Public Function Prototypes
+ ********************************************************************************************/
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C" {
+#else
+#define EXTERN extern
+#endif
 
 /* low level APIs */
+#ifdef CONFIG_INVENSENSE_SPI
 struct spi_dev_s; /* See nuttx/spi/spi.h */
 struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
                                    FAR struct spi_dev_s* spi);
+#endif
 
+#ifdef CONFIG_INVENSENSE_I2C
 struct i2c_dev_s; /* See nuttx/i2c/i2c.h */
 struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr, 
                                    FAR struct i2c_dev_s* i2c);
+#endif
 
 /* Set up APIs */
 struct mpu_inst_s; /* See inv_mpu_base.c */
@@ -192,5 +252,10 @@ int mpu_run_6500_self_test(struct mpu_inst_s* inst,long *gyro, long *accel,
                            uint8_t debug);
 #endif
 
-#endif  /* #ifndef _INV_MPU_H_ */
+#undef EXTERN
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* #ifndef __INCLUDE_NUTTX_INPUT_INV_MPU_H */
 
