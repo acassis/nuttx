@@ -172,3 +172,92 @@ NOTES:
 
 Configurations
 ==============
+
+  Information Common to All Configurations
+  ----------------------------------------
+  Each SAMV71-XULT configuration is maintained in a sub-directory and
+  can be selected as follow:
+
+    cd tools
+    ./configure.sh samv71-xult/<subdir>
+    cd -
+    . ./setenv.sh
+
+  Before sourcing the setenv.sh file above, you should examine it and perform
+  edits as necessary so that TOOLCHAIN_BIN is the correct path to the directory
+  than holds your toolchain binaries.
+
+  And then build NuttX by simply typing the following.  At the conclusion of
+  the make, the nuttx binary will reside in an ELF file called, simply, nuttx.
+
+    make oldconfig
+    make
+
+  The <subdir> that is provided above as an argument to the tools/configure.sh
+  must be is one of the following.
+
+  NOTES:
+
+  1. These configurations use the mconf-based configuration tool.  To
+    change any of these configurations using that tool, you should:
+
+    a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+       and misc/tools/
+
+    b. Execute 'make menuconfig' in nuttx/ in order to start the
+       reconfiguration process.
+
+  2. Unless stated otherwise, all configurations generate console
+     output on USART3 (i.e., for the Arduino serial shield).
+
+  3. All of these configurations are set up to build under Windows using the
+     devkitARM toolchain (unless stated otherwise in the description of
+     the configuration).  That build selection can easily be reconfigured
+     using 'make menuconfig'.  Here are the relevant current settings:
+
+     Build Setup:
+       CONFIG_HOST_WINDOWS=y               : Window environment
+       CONFIG_WINDOWS_CYGWIN=y             : Cywin under Windows
+
+     System Type -> Toolchain:
+       CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y : devkitARM toolchain
+
+    You an get the free devkitARM toolchain from http://devkitpro.org/ or
+    http://sourceforge.net/projects/devkitpro/
+
+  Configuration sub-directories
+  -----------------------------
+
+  nsh:
+
+    Configures the NuttShell (nsh) located at examples/nsh.
+    NOTES:
+
+    1. The serial console is configured by default for use with and Arduino
+       serial shield (UART3).  You will need to reconfigure if you will
+       to use a different U[S]ART.
+
+    2. Default stack sizes are large and should really be tuned to reduce
+       the RAM footprint:
+
+         CONFIG_ARCH_INTERRUPTSTACK=2048
+         CONFIG_IDLETHREAD_STACKSIZE=1024
+         CONFIG_USERMAIN_STACKSIZE=2048
+         CONFIG_PTHREAD_STACK_DEFAULT=2048
+         ... and others ...
+
+    3. NSH built-in applications are supported.
+
+       Binary Formats:
+         CONFIG_BUILTIN=y                    : Enable support for built-in programs
+
+       Application Configuration:
+         CONFIG_NSH_BUILTIN_APPS=y           : Enable starting apps from NSH command line
+
+    4. Performance-related Configuration settings:
+
+       # CONFIG_ARMV7M_ICACHE is not set     : Can be enabled, not verified
+       # CONFIG_ARMV7M_DCACHE is not set     : Can be enabled, not verified
+       # CONFIG_ARCH_FPU is not set          : Can be enabled, not verified
+       # CONFIG_ARMV7M_ITCM is not set       : Support not yet in place
+       # CONFIG_ARMV7M_DTCM is not set       : Support not yet in place

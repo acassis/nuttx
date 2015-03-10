@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/armv7-m/cache.h
+ * arch/arm/src/armv7-m/up_dcache.c
  *
  *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -38,187 +38,25 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_ARMV7_M_CACHE_H
-#define __ARCH_ARM_SRC_ARMV7_M_CACHE_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-#include "up_arch.h"
-#include "nvic.h"
+#include "cache.h"
+
+#ifdef CONFIG_ARMV7M_DCACHE
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Cache Size ID (CCSIDR) register macros used by inline function s*/
-
-#define CCSIDR_WAYS(n) \
-  (((n) & NVIC_CCSIDR_ASSOCIATIVITY_MASK) >> NVIC_CCSIDR_ASSOCIATIVITY_SHIFT)
-#define CCSIDR_SETS(n) \
-  (((n) & NVIC_CCSIDR_NUMSETS_MASK) >> NVIC_CCSIDR_NUMSETS_SHIFT)
-#define CCSIDR_LSSHIFT(n) \
-  (((n) & NVIC_CCSIDR_LINESIZE_MASK) >> NVIC_CCSIDR_LINESIZE_SHIFT)
-
-/* intrinsics are used in these inline functions */
-
-#define arm_isb(n) __asm__ __volatile__ ("isb " #n : : : "memory")
-#define arm_dsb(n) __asm__ __volatile__ ("dsb " #n : : : "memory")
-
-#define ARM_DSB()  arm_dsb(15)
-#define ARM_ISB()  arm_isb(15)
-
 /****************************************************************************
- * Inline Functions
+ * Public Functions
  ****************************************************************************/
 
-#ifndef __ASSEMBLY__
-
 /****************************************************************************
- * Name: arm_clz
- *
- * Description:
- *   Access to CLZ instructions
- *
- * Input Parameters:
- *   value - The value to perform the CLZ operation on
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-static inline uint32_t arm_clz(unsigned int value)
-{
-  uint32_t ret;
-
-  __asm__ __volatile__ ("clz %0, %1" : "=r"(ret) : "r"(value));
-  return ret;
-}
-
-/****************************************************************************
- * Name: arch_enable_icache
- *
- * Description:
- *   Enable the I-Cache
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-static inline void arch_enable_icache(void)
-{
-#ifdef CONFIG_ARMV7M_ICACHE
-  uint32_t regval;
-
-  ARM_DSB();
-  ARM_ISB();
-
-  /* Invalidate the entire I-Cache */
-
-  putreg32(0, NVIC_ICIALLU);
-
-  /* Enable the I-Cache */
-
-  regval  = getreg32(NVIC_CFGCON);
-  regval |= NVIC_CFGCON_IC;
-  putreg32(regval, NVIC_CFGCON);
-
-  ARM_DSB();
-  ARM_ISB();
-#endif
-}
-
-/****************************************************************************
- * Name: arch_disable_icache
- *
- * Description:
- *   Disable the I-Cache
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-static inline void arch_disable_icache(void)
-{
-#ifdef CONFIG_ARMV7M_ICACHE
-  uint32_t regval;
-
-  ARM_DSB();
-  ARM_ISB();
-
-  /* Disable the I-Cache */
-
-  regval  = getreg32(NVIC_CFGCON);
-  regval &= ~NVIC_CFGCON_IC;
-  putreg32(regval, NVIC_CFGCON);
-
-  /* Invalidate the entire I-Cache */
-
-  putreg32(0, NVIC_ICIALLU);
-
-  ARM_DSB();
-  ARM_ISB();
-#endif
-}
-
-/****************************************************************************
- * Name: arch_invalidate_icache_all
- *
- * Description:
- *   Invalidate the entire contents of I cache.
- *
- * Input Parameters:
- *   None
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-static inline void arch_invalidate_icache_all(void)
-{
-#ifdef CONFIG_ARMV7M_ICACHE
-  ARM_DSB();
-  ARM_ISB();
-
-  /* Invalidate the entire I-Cache */
-
-  putreg32(0, NVIC_ICIALLU);
-
-  ARM_DSB();
-  ARM_ISB();
-#endif
-}
-
-/****************************************************************************
- * Public Variables
- ****************************************************************************/
-
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
- /****************************************************************************
  * Name: arch_enable_dcache
  *
  * Description:
@@ -232,11 +70,50 @@ extern "C"
  *
  ****************************************************************************/
 
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_enable_dcache(void);
-#else
-#  define arch_enable_dcache()
-#endif
+void arch_enable_dcache(void)
+{
+  uint32_t ccsidr;
+  uint32_t ccr;
+  uint32_t sshift;
+  uint32_t wshift;
+  uint32_t sw;
+  uint32_t sets;
+  uint32_t ways;
+
+  /* Get the characteristics of the D-Cache */
+
+  ccsidr  = getreg32(NVIC_CCSIDR);
+  sets    = CCSIDR_SETS(ccsidr);
+  sshift  = CCSIDR_LSSHIFT(ccsidr) + 4;
+  ways    = CCSIDR_WAYS(ccsidr);
+  wshift  = arm_clz(ways) & 0x1f;
+
+  /* Invalidate the D-Cache */
+
+  ARM_DSB();
+  do
+    {
+      int32_t tmpways = ways;
+
+      do
+        {
+          sw = ((tmpways << wshift) | (sets << sshift));
+          putreg32(sw, NVIC_DCISW);
+        }
+      while (tmpways--);
+    }
+  while(sets--);
+  ARM_DSB();
+
+  /* Enable the D-Cache */
+
+  ccr  = getreg32(NVIC_CFGCON);
+  ccr |= NVIC_CFGCON_DC;
+  putreg32(ccr, NVIC_CFGCON);
+
+  ARM_DSB();
+  ARM_ISB();
+}
 
 /****************************************************************************
  * Name: arch_disable_dcache
@@ -252,11 +129,50 @@ void arch_enable_dcache(void);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_disable_dcache(void);
-#else
-#  define arch_disable_dcache()
-#endif
+void arch_disable_dcache(void)
+{
+  uint32_t ccsidr;
+  uint32_t ccr;
+  uint32_t sshift;
+  uint32_t wshift;
+  uint32_t sw;
+  uint32_t sets;
+  uint32_t ways;
+
+  /* Get the characteristics of the D-Cache */
+
+  ccsidr  = getreg32(NVIC_CCSIDR);
+  sets    = CCSIDR_SETS(ccsidr);
+  sshift  = CCSIDR_LSSHIFT(ccsidr) + 4;
+  ways    = CCSIDR_WAYS(ccsidr);
+  wshift  = arm_clz(ways) & 0x1f;
+
+  ARM_DSB();
+
+  /* Disable the D-Cache */
+
+  ccr = getreg32(NVIC_CFGCON);
+  ccr &= ~NVIC_CFGCON_DC;
+  putreg32(ccr, NVIC_CFGCON);
+
+  /* Clean and invalidate the D-Cache */
+
+  do
+    {
+      int32_t tmpways = ways;
+
+      do
+        {
+          sw = ((tmpways << wshift) | (sets << sshift));
+          putreg32(sw, NVIC_DCCISW);
+        }
+      while (tmpways--);
+    }
+  while (sets--);
+
+  ARM_DSB();
+  ARM_ISB();
+}
 
 /****************************************************************************
  * Name: arch_invalidate_dcache
@@ -281,11 +197,10 @@ void arch_disable_dcache(void);
  ****************************************************************************/
 
 #if 0 /* Not implemented */
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_invalidate_dcache(uintptr_t start, uintptr_t end);
-#else
-#  define arch_invalidate_dcache(s,e)
-#endif
+void arch_invalidate_dcache(uintptr_t start, uintptr_t end)
+{
+#warning Missing logic
+}
 #endif
 
 /****************************************************************************
@@ -302,11 +217,43 @@ void arch_invalidate_dcache(uintptr_t start, uintptr_t end);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_invalidate_dcache_all(void);
-#else
-#  define arch_invalidate_dcache_all()
-#endif
+void arch_invalidate_dcache_all(void)
+{
+  uint32_t ccsidr;
+  uint32_t sshift;
+  uint32_t wshift;
+  uint32_t sw;
+  uint32_t sets;
+  uint32_t ways;
+
+  /* Get the characteristics of the D-Cache */
+
+  ccsidr  = getreg32(NVIC_CCSIDR);
+  sets    = CCSIDR_SETS(ccsidr);
+  sshift  = CCSIDR_LSSHIFT(ccsidr) + 4;
+  ways    = CCSIDR_WAYS(ccsidr);
+  wshift  = arm_clz(ways) & 0x1f;
+
+  ARM_DSB();
+
+  /* Invalidate D-Cache */
+
+  do
+    {
+      int32_t tmpways = ways;
+
+      do
+        {
+          sw = ((tmpways << wshift) | (sets << sshift));
+          putreg32(sw, NVIC_DCISW);
+        }
+      while (tmpways--);
+    }
+  while (sets--);
+
+  ARM_DSB();
+  ARM_ISB();
+}
 
 /****************************************************************************
  * Name: arch_clean_dcache
@@ -330,11 +277,10 @@ void arch_invalidate_dcache_all(void);
  ****************************************************************************/
 
 #if 0 /* Not implemented */
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_clean_dcache(uintptr_t start, uintptr_t end);
-#else
-#  define arch_clean_dcache(s,e)
-#endif
+void arch_clean_dcache(uintptr_t start, uintptr_t end)
+{
+#warning Missing logic
+}
 #endif
 
 /****************************************************************************
@@ -357,11 +303,43 @@ void arch_clean_dcache(uintptr_t start, uintptr_t end);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_clean_dcache_all(void);
-#else
-#  define arch_clean_dcache_all()
-#endif
+void arch_clean_dcache_all(void)
+{
+  uint32_t ccsidr;
+  uint32_t sshift;
+  uint32_t wshift;
+  uint32_t sw;
+  uint32_t sets;
+  uint32_t ways;
+
+  /* Get the characteristics of the D-Cache */
+
+  ccsidr  = getreg32(NVIC_CCSIDR);
+  sets    = CCSIDR_SETS(ccsidr);
+  sshift  = CCSIDR_LSSHIFT(ccsidr) + 4;
+  ways    = CCSIDR_WAYS(ccsidr);
+  wshift  = arm_clz(ways) & 0x1f;
+
+  ARM_DSB();
+
+  /* Clean D-Cache */
+
+  do
+    {
+      int32_t tmpways = ways;
+
+      do
+        {
+          sw = ((tmpways << wshift) | (sets << sshift));
+          putreg32(sw, NVIC_DCCSW);
+        }
+      while (tmpways--);
+    }
+  while(sets--);
+
+  ARM_DSB();
+  ARM_ISB();
+}
 
 /****************************************************************************
  * Name: arch_flush_dcache
@@ -385,11 +363,10 @@ void arch_clean_dcache_all(void);
  ****************************************************************************/
 
 #if 0 /* Not implemented */
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_flush_dcache(uintptr_t start, uintptr_t end);
-#else
-#  define arch_flush_dcache(s,e)
-#endif
+void arch_flush_dcache(uintptr_t start, uintptr_t end)
+{
+#warning Missing logic
+}
 #endif
 
 /****************************************************************************
@@ -411,16 +388,42 @@ void arch_flush_dcache(uintptr_t start, uintptr_t end);
  *
  ****************************************************************************/
 
-#ifdef CONFIG_ARMV7M_DCACHE
-void arch_flush_dcache_all(void);
-#else
-#  define arch_flush_dcache_all()
-#endif
+void arch_flush_dcache_all(void)
+{
+  uint32_t ccsidr;
+  uint32_t sshift;
+  uint32_t wshift;
+  uint32_t sw;
+  uint32_t sets;
+  uint32_t ways;
 
-#undef EXTERN
-#ifdef __cplusplus
+  /* Get the characteristics of the D-Cache */
+
+  ccsidr  = getreg32(NVIC_CCSIDR);
+  sets    = CCSIDR_SETS(ccsidr);
+  sshift  = CCSIDR_LSSHIFT(ccsidr) + 4;
+  ways    = CCSIDR_WAYS(ccsidr);
+  wshift  = arm_clz(ways) & 0x1f;
+
+  ARM_DSB();
+
+  /* Clean and invalidate D-Cache */
+
+  do
+    {
+      int32_t tmpways = ways;
+
+      do
+        {
+          sw = ((tmpways << wshift) | (sets << sshift));
+          putreg32(sw, NVIC_DCCISW);
+        }
+      while (tmpways--);
+    }
+  while (sets--);
+
+  ARM_DSB();
+  ARM_ISB();
 }
-#endif
-#endif /* __ASSEMBLY__ */
 
-#endif  /* __ARCH_ARM_SRC_ARMV7_M_CACHE_H */
+#endif  /* CONFIG_ARMV7M_DCACHE */
