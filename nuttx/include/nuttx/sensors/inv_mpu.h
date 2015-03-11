@@ -112,17 +112,33 @@ struct mpu_axes_s {
     uint16_t z;
 };
 
-struct mpu_low_s {
+struct mpu_low_s;
+struct mpu_low_ops_s {
     /* Low Level access to mpu IC */
-    int (*mpu_write)(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
+    CODE int (*mpu_write)(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
                      int size);
-    int (*mpu_read )(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
+    CODE int (*mpu_read )(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
                      int size);
     /* Low Level access to AK89xx IC */
-    int (*akm_write)(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
+    CODE int (*akm_write)(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
                      int size);
-    int (*akm_read )(FAR struct mpu_low_s* low,int reg_off, uint8_t *buf, 
+    CODE int (*akm_read )(FAR struct mpu_low_s* low, int reg_off, uint8_t *buf, 
                      int size);
+};
+
+/* This structure is the generic form of state structure used by lower mpu
+ * access driver.  
+ *
+ * Normally that timer logic will have its own, custom state structure
+ * that is simply cast to struct pwm_lowerhalf_s.  In order to perform such casts,
+ * the initial fields of the custom state structure match the initial fields
+ * of the following generic PWM state structure.
+ */
+struct mpu_low_s {
+  /* The first field of this state structure must be a pointer to the lowlevel
+   * operations structure:
+   */
+    FAR const struct mpu_low_ops_s *ops;
 };
 
 /********************************************************************************************

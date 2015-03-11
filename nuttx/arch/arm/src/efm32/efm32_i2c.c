@@ -639,7 +639,6 @@ static inline int efm32_i2c_sem_waitdone(FAR struct efm32_i2c_priv_s *priv)
   uint32_t timeout;
   uint32_t start;
   uint32_t elapsed;
-  int ret;
 
   /* Get the timeout value */
 
@@ -679,7 +678,10 @@ static inline int efm32_i2c_sem_waitdone(FAR struct efm32_i2c_priv_s *priv)
           efm32_i2c_state_str(priv->i2c_state), priv->i2c_reg_state, 
           priv->i2c_reg_if);
 
-  return ret;
+  if ( elapsed < timeout )
+      return OK;
+
+  return -1;
 }
 #endif
 

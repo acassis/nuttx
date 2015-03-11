@@ -56,7 +56,7 @@
 
 struct mpu_i2c_low_s
 {
-    struct mpu_low_s *low;
+    const struct mpu_low_ops_s *ops;
     int mpu_addr;
     int akm_addr;
     struct i2c_dev_s* i2c;
@@ -79,7 +79,7 @@ static int akm_i2c_read( FAR struct mpu_low_s* low, int reg_off, uint8_t *buf,
  * Private data
  ****************************************************************************/
 
-static struct mpu_low_s mpu_i2c_low = 
+static const struct mpu_low_ops_s g_mpu_i2c_low_ops = 
 {
     .mpu_write = mpu_i2c_write,
     .mpu_read  = mpu_i2c_read,
@@ -186,7 +186,7 @@ struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr,
 
     mpu_i2c = &g_mpu_i2c;
 
-    mpu_i2c->low = &mpu_i2c_low;
+    mpu_i2c->ops = &g_mpu_i2c_low_ops;
     mpu_i2c->mpu_addr = mpu_addr;
     mpu_i2c->akm_addr = akm_addr;
     mpu_i2c->i2c = i2c;

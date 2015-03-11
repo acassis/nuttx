@@ -317,18 +317,18 @@ struct mpu_inst_s g_dev_inst;
 static inline int mpu_write(struct mpu_inst_s* inst,int reg_off, 
                             const uint8_t *buf, int size)
 {
-    return inst->low->mpu_write(inst->low,reg_off,(uint8_t*)buf,size);
+    return inst->low->ops->mpu_write(inst->low,reg_off,(uint8_t*)buf,size);
 }
 
 static inline int mpu_write8(struct mpu_inst_s* inst,int reg_off,uint8_t val)
 {
-    return inst->low->mpu_write(inst->low,reg_off,&val,1);
+    return inst->low->ops->mpu_write(inst->low,reg_off,&val,1);
 }
 
 static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return inst->low->mpu_read(inst->low,reg_off,buf,size);
+    return inst->low->ops->mpu_read(inst->low,reg_off,buf,size);
 }
 
 /* Low Level access to AK89xx IC */
@@ -336,13 +336,13 @@ static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
 static inline int akm_write(struct mpu_inst_s* inst,int reg_off,
                             const uint8_t *buf, int size)
 {
-    return inst->low->akm_write(inst->low,reg_off,(uint8_t*)buf,size);
+    return inst->low->ops->akm_write(inst->low,reg_off,(uint8_t*)buf,size);
 }
 
 static inline int akm_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return inst->low->akm_read(inst->low,reg_off,buf,size);
+    return inst->low->ops->akm_read(inst->low,reg_off,buf,size);
 }
 
 /*******************************************************************************
