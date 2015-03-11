@@ -85,7 +85,11 @@
 #if defined(CONFIG_EFM32_I2C0) || defined(CONFIG_EFM32_I2C1) 
 
 #if ! defined(CONFIG_EFM32_EFM32GG) 
-#   warning "Not tested"
+#   warning "Tested only on EFM32GG family"
+#endif
+
+#ifndef CONFIG_I2C_POLLED
+#   warning "Not tested with interrupt"
 #endif
 
 /*******************************************************************************
