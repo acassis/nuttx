@@ -1317,6 +1317,7 @@ static void efm32_i2c_reset(FAR struct efm32_i2c_priv_s *priv)
 
 static int efm32_i2c_init(FAR struct efm32_i2c_priv_s *priv, int frequency )
 {
+  int regval;
   /* Power-up and configure GPIOs */
 
 
@@ -1341,6 +1342,18 @@ static int efm32_i2c_init(FAR struct efm32_i2c_priv_s *priv, int frequency )
     {
       return ERROR;
     }
+
+  /* set Route */
+
+  regval = priv->config->route << _I2C_ROUTE_LOCATION_SHIFT;
+
+  /* and enable pins */
+
+  regval |= I2C_ROUTE_SDAPEN | I2C_ROUTE_SCLPEN;
+
+  /* Apply it */
+
+  efm32_i2c_putreg(priv,EFM32_I2C_ROUTE_OFFSET,regval);
 
   /* Attach ISRs */
 
@@ -1493,6 +1506,7 @@ static int efm32_i2c_process(FAR struct i2c_dev_s *dev,
   priv->ptr   = priv->msgv->buffer;
   priv->dcnt  = priv->msgv->length;
   priv->flags = priv->msgv->flags;
+  priv->addr  = priv->msgv->addr;
 
   /* Ensure buffers are empty */
 

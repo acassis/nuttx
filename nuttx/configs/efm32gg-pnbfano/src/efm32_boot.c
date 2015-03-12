@@ -166,7 +166,7 @@ int efm32_initialize_mpu(int devno)
         return -1;
     }
 
-    low = mpu_low_i2c_init(devno, 0xD0, 0xC0, i2c );
+    low = mpu_low_i2c_init(devno, 0xD0>>1, 0xC0>>1, i2c );
     if ( low == NULL )
     {
         syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
