@@ -317,18 +317,29 @@ struct mpu_inst_s g_dev_inst;
 static inline int mpu_write(struct mpu_inst_s* inst,int reg_off, 
                             const uint8_t *buf, int size)
 {
-    return inst->low->ops->mpu_write(inst->low,reg_off,(uint8_t*)buf,size);
+    int ret;
+    ret = inst->low->ops->mpu_write(inst->low,reg_off,(uint8_t*)buf,size);
+    invvdbg("MPU Write %d bytes in 0x%02X. First is 0x%02X => return %d.\n",
+            size,reg_off,*buf,ret);
+    return ret;
 }
 
 static inline int mpu_write8(struct mpu_inst_s* inst,int reg_off,uint8_t val)
 {
-    return inst->low->ops->mpu_write(inst->low,reg_off,&val,1);
+    int ret;
+    ret = inst->low->ops->mpu_write(inst->low,reg_off,&val,1);
+    invvdbg("MPU Write in 0x%02X <= 0x%02X => return %d.\n",reg_off,val,ret);
+    return ret;
 }
 
 static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return inst->low->ops->mpu_read(inst->low,reg_off,buf,size);
+    int ret;
+    ret = inst->low->ops->mpu_read(inst->low,reg_off,buf,size);
+    invvdbg("MPU Read  %d bytes in 0x%02X. First is 0x%02X => return %d.\n",
+            size,reg_off,*buf,ret);
+    return ret;
 }
 
 /* Low Level access to AK89xx IC */
@@ -336,13 +347,21 @@ static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
 static inline int akm_write(struct mpu_inst_s* inst,int reg_off,
                             const uint8_t *buf, int size)
 {
-    return inst->low->ops->akm_write(inst->low,reg_off,(uint8_t*)buf,size);
+    int ret;
+    ret = inst->low->ops->akm_write(inst->low,reg_off,(uint8_t*)buf,size);
+    invvdbg("AKM Write %d bytes in 0x%02X. First is 0x%02X => return %d.\n",
+            size,reg_off,*buf,ret);
+    return ret;
 }
 
 static inline int akm_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
                             int size)
 {
-    return inst->low->ops->akm_read(inst->low,reg_off,buf,size);
+    int ret;
+    ret = inst->low->ops->akm_read(inst->low,reg_off,buf,size);
+    invvdbg("AKM Read  %d bytes in 0x%02X. First is 0x%02X => return %d.\n",
+            size,reg_off,*buf,ret);
+    return ret;
 }
 
 /*******************************************************************************
@@ -577,7 +596,7 @@ int mpu_reset_default(struct mpu_inst_s* inst)
 
     /* Already disabled by mpu_setup_compass. */
 
-    if ( mpu_set_bypass(inst,0) < 0 )
+    if ( mpu_set_bypass(inst,false) < 0 )
         return -1;
 #endif
 
@@ -2456,7 +2475,8 @@ static int mpu_setup_compass(struct mpu_inst_s* inst)
 {
     uint8_t regval;
 
-    mpu_set_bypass(inst,1);
+    if ( mpu_set_bypass(inst,true) < 0 )
+        return -1;
 
     if ( akm_read(inst, AKM_REG_WHOAMI, &regval, 1) < 0 )
         return -1;
@@ -2482,7 +2502,8 @@ static int mpu_setup_compass(struct mpu_inst_s* inst)
 
     up_mdelay(1);
 
-    mpu_set_bypass(inst,0);
+    if ( mpu_set_bypass(inst,false) < 0 )
+        return -1;
 
     /* Set up master mode, master clock, and ES bit. */
 
@@ -2892,7 +2913,7 @@ static int compass_self_test(void)
     int result = 0x07;
     int16_t data;
 
-    if ( mpu_set_bypass(inst,1) < 0 )
+    if ( mpu_set_bypass(inst,true) < 0 )
         return -1;
 
     tmp[0] = AKM_POWER_DOWN;
@@ -2947,7 +2968,7 @@ AKM_restore:
     i2c_write(inst->chip_cfg.compass_addr, AKM_REG_ASTC, 1, tmp);
     tmp[0] = INV_AK89_HIGH_SENS;
     i2c_write(inst->chip_cfg.compass_addr, AKM_REG_CNTL, 1, tmp);
-    mpu_set_bypass(inst,0);
+    mpu_set_bypass(inst,false);
     return result;
 }
 #endif

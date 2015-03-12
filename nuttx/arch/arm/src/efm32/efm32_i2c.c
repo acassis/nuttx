@@ -1121,12 +1121,12 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                     }
 
                     /* Move to next message part */
+                    priv->msgv++;
+                    priv->msgc--;
                     priv->ptr   = priv->msgv->buffer;
                     priv->dcnt  = priv->msgv->length;
                     priv->flags = priv->msgv->flags;
                     priv->addr  = priv->msgv->addr;
-                    priv->msgv++;
-                    priv->msgc--;
 
                     /* Send byte continue with/without restart ? */
                     if ( ! ( priv->flags & I2C_M_NORESTART ) )
