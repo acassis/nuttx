@@ -33,7 +33,7 @@
  *
  ****************************************************************************/
 
-/* The SAMV71Q21 has 2048Kb of FLASH beginning at address 0x0400:0000 and
+/* The SAMV71Q21 has 2048Kb of FLASH beginning at address 0x0040:0000 and
  * 384Kb of SRAM beginining at 0x2040:0000
  *
  * When booting from FLASH, FLASH memory is aliased to address 0x0000:0000
@@ -73,8 +73,8 @@ MEMORY
 {
     /* 2048KiB of internal FLASH */
 
-    kflash (rx)      : ORIGIN = 0x04000000, LENGTH = 1M
-    uflash (rx)      : ORIGIN = 0x04100000, LENGTH = 1M
+    kflash (rx)      : ORIGIN = 0x00400000, LENGTH = 1M
+    uflash (rx)      : ORIGIN = 0x00500000, LENGTH = 1M
 
     /* 384Kb of internal SRAM */
 
