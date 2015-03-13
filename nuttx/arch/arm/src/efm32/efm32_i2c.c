@@ -984,6 +984,7 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                     efm32_i2c_putreg(priv,EFM32_I2C_IFC_OFFSET,I2C_IFC_ACK);
 
                     /* If 10 bit address, send 2nd byte of address. */
+
                     if (priv->flags & I2C_M_TEN)
                     {
                         if (priv->flags & I2C_M_READ)
@@ -997,6 +998,7 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                     else
                     {
                         /* Determine whether receiving or sending data */
+
                         if (priv->flags & I2C_M_READ)
                         {
                             if(priv->dcnt==1)
