@@ -958,6 +958,12 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
 
                 }
 
+                if ( (priv->flags & I2C_M_READ) && (priv->dcnt==1) )
+                {
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET, 
+                                     I2C_CMD_NACK);
+                }
+
                 /* Data not transmitted until START sent */
 
                 efm32_i2c_putreg(priv,EFM32_I2C_TXDATA_OFFSET,regval);
@@ -1001,11 +1007,6 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
 
                         if (priv->flags & I2C_M_READ)
                         {
-                            if(priv->dcnt==1)
-                            {
-                                efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET, 
-                                                 I2C_CMD_NACK);
-                            }
                             priv->i2c_state = I2CSTATE_WFDATA;
                         }
                         else
@@ -1068,6 +1069,12 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
 
                 }
 
+                if ( (priv->flags & I2C_M_READ) && (priv->dcnt==1) )
+                {
+                    efm32_i2c_putreg(priv,EFM32_I2C_CMD_OFFSET, 
+                                     I2C_CMD_NACK);
+                }
+
                 priv->i2c_state = I2CSTATE_RADDRWFACKNACK;
                 /* We have to write START cmd first since repeated start, 
                  * otherwise data would be sent first. 
@@ -1123,12 +1130,12 @@ static int efm32_i2c_isr(struct efm32_i2c_priv_s *priv)
                     }
 
                     /* Move to next message part */
-                    priv->msgv++;
-                    priv->msgc--;
                     priv->ptr   = priv->msgv->buffer;
                     priv->dcnt  = priv->msgv->length;
                     priv->flags = priv->msgv->flags;
                     priv->addr  = priv->msgv->addr;
+                    priv->msgv++;
+                    priv->msgc--;
 
                     /* Send byte continue with/without restart ? */
                     if ( ! ( priv->flags & I2C_M_NORESTART ) )
@@ -1509,6 +1516,8 @@ static int efm32_i2c_process(FAR struct i2c_dev_s *dev,
   priv->dcnt  = priv->msgv->length;
   priv->flags = priv->msgv->flags;
   priv->addr  = priv->msgv->addr;
+  priv->msgv++;
+  priv->msgc--;
 
   /* Ensure buffers are empty */
 
