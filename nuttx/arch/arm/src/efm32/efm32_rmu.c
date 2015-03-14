@@ -58,26 +58,6 @@
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
-/* Configuration ********************************************************************/
-
-
-#ifndef CONFIG_DEBUG
-#  undef CONFIG_DEBUG_VERBOSE
-#  undef CONFIG_EFM32_RMU_DEBUG
-#endif
-
-#ifdef CONFIG_EFM32_RMU_DEBUG
-#  define rmudbg lldbg
-#  ifdef CONFIG_DEBUG_VERBOSE
-#    define rmuvdbg lldbg
-#  else
-#    define rmuvdbg(x...)
-#  endif
-#else
-#  define rmudbg(x...)
-#  define rmuvdbg(x...)
-#endif
-
 
 /************************************************************************************
  * Private Types
