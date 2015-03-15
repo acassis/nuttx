@@ -1,7 +1,7 @@
 /****************************************************************************
  * fs/fat/fs_fat32.c
  *
- *   Copyright (C) 2007-2009, 2011-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * References:
@@ -97,7 +97,8 @@ static int     fat_rewinddir(struct inode *mountpt, struct fs_dirent_s *dir);
 
 static int     fat_bind(FAR struct inode *blkdriver, const void *data,
                         void **handle);
-static int     fat_unbind(void *handle, FAR struct inode **blkdriver);
+static int     fat_unbind(void *handle, FAR struct inode **blkdriver,
+                          unsigned int flags);
 static int     fat_statfs(struct inode *mountpt, struct statfs *buf);
 
 static int     fat_unlink(struct inode *mountpt, const char *relpath);
@@ -116,7 +117,7 @@ static int     fat_stat(struct inode *mountpt, const char *relpath, struct stat 
  * Public Variables
  ****************************************************************************/
 
-/* See fs_mount.c -- this structure is explicitly externed there.
+/* See fs_mount.c -- this structure is explicitly extern'ed there.
  * We use the old-fashioned kind of initializers so that this will compile
  * with any compiler.
  */
@@ -197,7 +198,7 @@ static int fat_open(FAR struct file *filep, const char *relpath,
 
   ret = fat_finddirentry(fs, &dirinfo, relpath);
 
-  /* Three possibililities: (1) a node exists for the relpath and
+  /* Three possibilities: (1) a node exists for the relpath and
    * dirinfo describes the directory entry of the entity, (2) the
    * node does not exist, or (3) some error occurred.
    */
@@ -352,7 +353,7 @@ static int fat_open(FAR struct file *filep, const char *relpath,
    */
 
   ff->ff_next = fs->fs_head;
-  fs->fs_head = ff->ff_next;
+  fs->fs_head = ff;
 
   fat_semgive(fs);
 
@@ -390,6 +391,8 @@ static int fat_close(FAR struct file *filep)
 {
   struct inode         *inode;
   struct fat_file_s    *ff;
+  struct fat_file_s    *currff;
+  struct fat_file_s    *prevff;
   struct fat_mountpt_s *fs;
   int                   ret;
 
@@ -411,6 +414,26 @@ static int fat_close(FAR struct file *filep)
 
   ret = fat_sync(filep);
 
+  /* Remove the file structure from the list of open files in the mountpoint
+   * structure.
+   */
+
+  for (prevff = NULL, currff = fs->fs_head; 
+       currff && currff != ff;
+       prevff = currff, currff = currff->ff_next);
+
+  if (currff)
+    {
+      if (prevff)
+        {
+          prevff->ff_next = ff->ff_next;
+        }
+      else
+        {
+          fs->fs_head = ff->ff_next;
+        }
+    }
+
   /* Then deallocate the memory structures created when the open method
    * was called.
    *
@@ -419,7 +442,6 @@ static int fat_close(FAR struct file *filep)
 
   if (ff->ff_buffer)
     {
-      (void)fs; /* Unused if fat_io_free == free(). */
       fat_io_free(ff->ff_buffer, fs->fs_hwsectorsize);
     }
 
@@ -1407,7 +1429,7 @@ static int fat_dup(FAR const struct file *oldp, FAR struct file *newp)
    */
 
   newff->ff_next = fs->fs_head;
-  fs->fs_head = newff->ff_next;
+  fs->fs_head = newff;
 
   fat_semgive(fs);
   return OK;
@@ -1795,7 +1817,8 @@ static int fat_bind(FAR struct inode *blkdriver, const void *data,
  *
  ****************************************************************************/
 
-static int fat_unbind(void *handle, FAR struct inode **blkdriver)
+static int fat_unbind(FAR void *handle, FAR struct inode **blkdriver,
+                      unsigned int flags)
 {
   struct fat_mountpt_s *fs = (struct fat_mountpt_s*)handle;
   int ret;
@@ -1811,9 +1834,13 @@ static int fat_unbind(void *handle, FAR struct inode **blkdriver)
   fat_semtake(fs);
   if (fs->fs_head)
     {
-      /* We cannot unmount now.. there are open files */
+      /* We cannot unmount now.. there are open files
+       *
+       * This implementation currently only supports unmounting if there are
+       * no open file references.
+       */
 
-      ret = -EBUSY;
+      ret = (flags != 0) ? -ENOSYS : -EBUSY;
     }
   else
     {
