@@ -731,7 +731,7 @@ int mpu_lp_accel_mode(struct mpu_inst_s* inst, uint8_t rate)
         return -1;
 #endif
 
-    inst->chip_cfg.sensors = INV_XYZ_ACCEL;
+    inst->chip_cfg.sensors = MPU_XYZ_ACCEL;
     inst->chip_cfg.clk_src = 0;
     inst->chip_cfg.lp_accel_mode = 1;
 
@@ -759,7 +759,7 @@ int mpu_get_accel_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data)
 {
     uint8_t tmp[6];
 
-    if (!(inst->chip_cfg.sensors & INV_XYZ_ACCEL))
+    if (!(inst->chip_cfg.sensors & MPU_XYZ_ACCEL))
         return -1;
 
     if ( mpu_read(inst,INV_MPU_RAW_ACCEL, tmp, 6) < 0 )
@@ -790,7 +790,7 @@ int mpu_get_gyro_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data )
 {
     uint8_t tmp[6];
 
-    if (!(inst->chip_cfg.sensors & INV_XYZ_GYRO))
+    if (!(inst->chip_cfg.sensors & MPU_XYZ_GYRO))
         return -1;
 
     if ( mpu_read(inst,INV_MPU_RAW_GYRO, tmp, 6) < 0 )
@@ -822,7 +822,7 @@ int mpu_get_compass_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data)
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
     uint8_t tmp[9];
 
-    if (!(inst->chip_cfg.sensors & INV_XYZ_COMPASS))
+    if (!(inst->chip_cfg.sensors & MPU_XYZ_COMPASS))
         return -1;
 
     if ( mpu_read(inst,INV_AK89_RAW_COMPASS, tmp, 8) < 0 )
@@ -1095,7 +1095,7 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
         up_mdelay(50);
 
         regval = BIT_DMP_EN | BIT_FIFO_EN;
-        if (inst->chip_cfg.sensors & INV_XYZ_COMPASS)
+        if (inst->chip_cfg.sensors & MPU_XYZ_COMPASS)
             regval |= BIT_AUX_IF_EN;
 
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,regval) < 0 )
@@ -1119,7 +1119,7 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
             return -1;
 
         if (  (inst->chip_cfg.bypass_mode                   ) || 
-              ( !(inst->chip_cfg.sensors & INV_XYZ_COMPASS  ) ) )
+              ( !(inst->chip_cfg.sensors & MPU_XYZ_COMPASS  ) ) )
         {
             regval = BIT_FIFO_EN;
         }
@@ -1655,7 +1655,7 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
 
     /* Compass data isn't going into the FIFO. Stop trying. */
 
-    sensors &= ~INV_XYZ_COMPASS;
+    sensors &= ~MPU_XYZ_COMPASS;
 
     if (inst->chip_cfg.dmp_on)
         return 0;
@@ -1746,7 +1746,7 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
     uint8_t user_ctrl;
 #endif
 
-    if (sensors & INV_XYZ_GYRO)
+    if (sensors & MPU_XYZ_GYRO)
         regval = MPU_CLK_PLL;
     else if (sensors)
         regval = 0;
@@ -1762,13 +1762,13 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
     inst->chip_cfg.clk_src = regval & ~BIT_SLEEP;
 
     regval = 0;
-    if (!(sensors & INV_X_GYRO))
+    if (!(sensors & MPU_X_GYRO))
         regval |= BIT_STBY_XG;
-    if (!(sensors & INV_Y_GYRO))
+    if (!(sensors & MPU_Y_GYRO))
         regval |= BIT_STBY_YG;
-    if (!(sensors & INV_Z_GYRO))
+    if (!(sensors & MPU_Z_GYRO))
         regval |= BIT_STBY_ZG;
-    if (!(sensors & INV_XYZ_ACCEL))
+    if (!(sensors & MPU_XYZ_ACCEL))
         regval |= BIT_STBY_XYZA;
 
     if ( mpu_write8(inst,INV_MPU_PWR_MGMT_2,regval) < 0 ) 
@@ -1779,7 +1779,7 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
 
     /* Latched interrupts only used in LP accel mode. */
 
-    if ((sensors) && (sensors != INV_XYZ_ACCEL))
+    if ((sensors) && (sensors != MPU_XYZ_ACCEL))
     {
 
         mpu_set_int_latched(inst,false);
@@ -1791,7 +1791,7 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
 
     /* Handle AKM power management. */
 
-    if (sensors & INV_XYZ_COMPASS) 
+    if (sensors & MPU_XYZ_COMPASS) 
     {
         regval = AKM_SINGLE_MEASUREMENT;
         user_ctrl |= BIT_AUX_IF_EN;
@@ -1907,13 +1907,13 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
     if (!inst->chip_cfg.fifo_enable)
         return -1;
 
-    if (inst->chip_cfg.fifo_enable & INV_X_GYRO)
+    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & INV_Y_GYRO)
+    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & INV_Z_GYRO)
+    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & INV_XYZ_ACCEL)
+    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL)
         packet_size += 6;
 
     if ( mpu_read(inst,INV_MPU_FIFO_COUNT_H, data, 2) < 0 )
@@ -1956,31 +1956,31 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
     *more = fifo_count / packet_size - 1;
     *sensors = 0;
 
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & INV_XYZ_ACCEL) 
+    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL) 
     {
         accel->x = (data[index+0] << 8) | data[index+1];
         accel->y = (data[index+2] << 8) | data[index+3];
         accel->z = (data[index+4] << 8) | data[index+5];
-        *sensors |= INV_XYZ_ACCEL;
+        *sensors |= MPU_XYZ_ACCEL;
         index += 6;
     }
 
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & INV_X_GYRO) 
+    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_X_GYRO) 
     {
         gyro->x = (data[index+0] << 8) | data[index+1];
-        *sensors |= INV_X_GYRO;
+        *sensors |= MPU_X_GYRO;
         index += 2;
     }
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & INV_Y_GYRO) 
+    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_Y_GYRO) 
     {
         gyro->y = (data[index+0] << 8) | data[index+1];
-        *sensors |= INV_Y_GYRO;
+        *sensors |= MPU_Y_GYRO;
         index += 2;
     }
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & INV_Z_GYRO) 
+    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_Z_GYRO) 
     {
         gyro->z = (data[index+0] << 8) | data[index+1];
-        *sensors |= INV_Z_GYRO;
+        *sensors |= MPU_Z_GYRO;
         index += 2;
     }
 
@@ -2092,7 +2092,7 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on)
     else 
     {
 
-        if (inst->chip_cfg.sensors & INV_XYZ_COMPASS)
+        if (inst->chip_cfg.sensors & MPU_XYZ_COMPASS)
             regval |= BIT_AUX_IF_EN;
 
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,regval) < 0 )

@@ -77,12 +77,12 @@
 
 /* Enable bit fields */
 
-#define INV_X_GYRO      (0x40)
-#define INV_Y_GYRO      (0x20)
-#define INV_Z_GYRO      (0x10)
-#define INV_XYZ_GYRO    (INV_X_GYRO | INV_Y_GYRO | INV_Z_GYRO)
-#define INV_XYZ_ACCEL   (0x08)
-#define INV_XYZ_COMPASS (0x01)
+#define MPU_X_GYRO      (0x40)
+#define MPU_Y_GYRO      (0x20)
+#define MPU_Z_GYRO      (0x10)
+#define MPU_XYZ_GYRO    (MPU_X_GYRO | MPU_Y_GYRO | MPU_Z_GYRO)
+#define MPU_XYZ_ACCEL   (0x08)
+#define MPU_XYZ_COMPASS (0x01)
 
 /* Interrupt bit fields */
 
@@ -101,6 +101,32 @@
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
+/* IOCTL Commands ***********************************************************/
+/* Invensence MPU IOCTL commands. 
+ */
+
+/* MPU_ENABLE Enable sensors
+ *
+ * Argument: enable bit fields.
+ */
+
+#define MPU_ENABLE          _SNIOC(0x0001)
+
+/* MPU_FREQUENCY set sensors acquisition frequency.
+ *
+ * Argument: frequency in Hz.
+ */
+
+#define MPU_FREQUENCY       _SNIOC(0x0002)
+
+/* MPU_LOAD_FIRMWARE returns load firmware
+ *
+ * Argument: A reference to a firmware binary, with specific context header 
+ * struct mpu_firmware_s.
+ */
+
+#define MPU_LOAD_FIRMWARE   _SNIOC(0x0003)
+
 
 /********************************************************************************************
  * Public Types
@@ -112,6 +138,25 @@ enum mpu_axes_e
     MPU_AXES_GYRO,
     MPU_AXES_COMP,
     MPU_AXES_NBR
+};
+
+struct mpu_firmware_s {
+
+    /* address in invensense IC */
+
+    uint32_t start_addr;
+
+    /* sample rate of firmware */
+
+    uint32_t sample_rate;
+
+    /* size of data in byte */
+
+    uint32_t size;
+
+    /* firmware data bytes */
+
+    uint8_t  data[];
 };
 
 struct mpu_axes_s {
