@@ -106,6 +106,14 @@
  * Public Types
  ********************************************************************************************/
 
+enum mpu_axes_e
+{
+    MPU_AXES_ACC,
+    MPU_AXES_GYRO,
+    MPU_AXES_COMP,
+    MPU_AXES_NBR
+};
+
 struct mpu_axes_s {
     uint16_t x;
     uint16_t y;
