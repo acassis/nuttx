@@ -118,16 +118,12 @@
 #  endif
 #endif
 
-/* There is some unresolved issue with the SAMV7D3 DMA.  TX DMA is currently
+/* There is some unresolved issue with the SAMV7 DMA.  TX DMA is currently
  * disabled.
  */
 
-#undef HSCMI_NORXDMA             /* Define to disable RX DMA */
-#undef HSCMI_NOTXDMA             /* Define to disable TX DMA */
-
-#ifdef ATSAMV7D3
-#  define HSCMI_NOTXDMA 1        /* Disabled */
-#endif
+#undef  HSCMI_NORXDMA              /* Define to disable RX DMA */
+#define HSCMI_NOTXDMA            1 /* Define to disable TX DMA */
 
 /* Timing */
 
@@ -2935,8 +2931,9 @@ static int sam_dmasendsetup(FAR struct sdio_dev_s *dev,
    */
 
   regval    = sam_getreg(priv, SAM_HSMCI_BLKR_OFFSET);
-  nblocks   = ((regval &  HSMCI_BLKR_BCNT_SHIFT) >> HSMCI_BLKR_BCNT_SHIFT);
+  nblocks   = ((regval &  HSMCI_BLKR_BCNT_MASK) >> HSMCI_BLKR_BCNT_SHIFT);
   blocksize = ((regval &  HSMCI_BLKR_BLKLEN_MASK) >> HSMCI_BLKR_BLKLEN_SHIFT);
+
   DEBUGASSERT(nblocks > 0 && blocksize > 0 && (blocksize & 3) == 0);
 
   /* Physical address of the HSCMI source register, either the TDR (for

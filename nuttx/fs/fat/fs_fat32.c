@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <sys/mount.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -78,36 +79,43 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int     fat_open(FAR struct file *filep, const char *relpath,
-                        int oflags, mode_t mode);
+static int     fat_open(FAR struct file *filep, FAR const char *relpath,
+                 int oflags, mode_t mode);
 static int     fat_close(FAR struct file *filep);
-static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen);
-static ssize_t fat_write(FAR struct file *filep, const char *buffer,
-                         size_t buflen);
+static ssize_t fat_read(FAR struct file *filep, FAR char *buffer,
+                 size_t buflen);
+static ssize_t fat_write(FAR struct file *filep, FAR const char *buffer,
+                 size_t buflen);
 static off_t   fat_seek(FAR struct file *filep, off_t offset, int whence);
-static int     fat_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
+static int     fat_ioctl(FAR struct file *filep, int cmd,
+                 unsigned long arg);
 
 static int     fat_sync(FAR struct file *filep);
 static int     fat_dup(FAR const struct file *oldp, FAR struct file *newp);
 
-static int     fat_opendir(struct inode *mountpt, const char *relpath,
-                           struct fs_dirent_s *dir);
-static int     fat_readdir(struct inode *mountpt, struct fs_dirent_s *dir);
-static int     fat_rewinddir(struct inode *mountpt, struct fs_dirent_s *dir);
+static int     fat_opendir(FAR struct inode *mountpt,
+                 FAR const char *relpath, FAR struct fs_dirent_s *dir);
+static int     fat_readdir(FAR struct inode *mountpt,
+                 FAR struct fs_dirent_s *dir);
+static int     fat_rewinddir(FAR struct inode *mountpt,
+                 FAR struct fs_dirent_s *dir);
 
-static int     fat_bind(FAR struct inode *blkdriver, const void *data,
-                        void **handle);
-static int     fat_unbind(void *handle, FAR struct inode **blkdriver,
-                          unsigned int flags);
-static int     fat_statfs(struct inode *mountpt, struct statfs *buf);
+static int     fat_bind(FAR struct inode *blkdriver, FAR const void *data,
+                 FAR void **handle);
+static int     fat_unbind(FAR void *handle,
+                 FAR struct inode **blkdriver, unsigned int flags);
+static int     fat_statfs(FAR struct inode *mountpt,
+                 FAR struct statfs *buf);
 
-static int     fat_unlink(struct inode *mountpt, const char *relpath);
-static int     fat_mkdir(struct inode *mountpt, const char *relpath,
-                         mode_t mode);
-static int     fat_rmdir(struct inode *mountpt, const char *relpath);
-static int     fat_rename(struct inode *mountpt, const char *oldrelpath,
-                          const char *newrelpath);
-static int     fat_stat(struct inode *mountpt, const char *relpath, struct stat *buf);
+static int     fat_unlink(FAR struct inode *mountpt,
+                 FAR const char *relpath);
+static int     fat_mkdir(FAR struct inode *mountpt, FAR const char *relpath,
+                 mode_t mode);
+static int     fat_rmdir(FAR struct inode *mountpt, FAR const char *relpath);
+static int     fat_rename(FAR struct inode *mountpt,
+                 FAR const char *oldrelpath, FAR const char *newrelpath);
+static int     fat_stat(struct inode *mountpt, const char *relpath,
+                 FAR struct stat *buf);
 
 /****************************************************************************
  * Private Variables
@@ -158,15 +166,15 @@ const struct mountpt_operations fat_operations =
  * Name: fat_open
  ****************************************************************************/
 
-static int fat_open(FAR struct file *filep, const char *relpath,
+static int fat_open(FAR struct file *filep, FAR const char *relpath,
                     int oflags, mode_t mode)
 {
-  struct fat_dirinfo_s  dirinfo;
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  struct fat_file_s    *ff;
-  uint8_t              *direntry;
-  int                   ret;
+  struct fat_dirinfo_s dirinfo;
+  FAR struct inode *inode;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_file_s *ff;
+  uint8_t *direntry;
+  int ret;
 
   /* Sanity checks */
 
@@ -244,7 +252,7 @@ static int fat_open(FAR struct file *filep, const char *relpath,
 
       /* If O_TRUNC is specified and the file is opened for writing,
        * then truncate the file.  This operation requires that the file is
-       * writable, but we have already checked that. O_TRUNC without write
+       * writeable, but we have already checked that. O_TRUNC without write
        * access is ignored.
        */
 
@@ -262,9 +270,8 @@ static int fat_open(FAR struct file *filep, const char *relpath,
       /* fall through to finish the file open operations */
     }
 
-  /* ENOENT would be returned by fat_finddirentry() if the full
-   * directory path was found, but the file was not found in the
-   * final directory.
+  /* ENOENT would be returned by fat_finddirentry() if the full directory
+   * path was found, but the file was not found in the final directory.
    */
 
   else if (ret == -ENOENT)
@@ -389,12 +396,12 @@ errout_with_semaphore:
 
 static int fat_close(FAR struct file *filep)
 {
-  struct inode         *inode;
-  struct fat_file_s    *ff;
-  struct fat_file_s    *currff;
-  struct fat_file_s    *prevff;
-  struct fat_mountpt_s *fs;
-  int                   ret;
+  FAR struct inode *inode;
+  FAR struct fat_file_s *ff;
+  FAR struct fat_file_s *currff;
+  FAR struct fat_file_s *prevff;
+  FAR struct fat_mountpt_s *fs;
+  int ret = OK;
 
   /* Sanity checks */
 
@@ -402,35 +409,43 @@ static int fat_close(FAR struct file *filep)
 
   /* Recover our private data from the struct file instance */
 
-  ff    = filep->f_priv;
-  inode = filep->f_inode;
-  fs    = inode->i_private;
+  ff = filep->f_priv;
 
-  /* Do not check if the mount is healthy.  We must support closing of
-   * the file even when there is healthy mount.
-   */
+  /* Check for the forced mount condition */
 
-  /* Synchronize the file buffers and disk content; update times */
-
-  ret = fat_sync(filep);
-
-  /* Remove the file structure from the list of open files in the mountpoint
-   * structure.
-   */
-
-  for (prevff = NULL, currff = fs->fs_head; 
-       currff && currff != ff;
-       prevff = currff, currff = currff->ff_next);
-
-  if (currff)
+  if ((ff->ff_bflags & UMOUNT_FORCED) == 0)
     {
-      if (prevff)
+      inode = filep->f_inode;
+      fs    = inode->i_private;
+
+      DEBUGASSERT(fs != NULL);
+
+      /* Do not check if the mount is healthy.  We must support closing of
+       * the file even when there is healthy mount.
+       */
+
+      /* Synchronize the file buffers and disk content; update times */
+
+      ret = fat_sync(filep);
+
+      /* Remove the file structure from the list of open files in the
+       * mountpoint structure.
+       */
+
+      for (prevff = NULL, currff = fs->fs_head;
+           currff && currff != ff;
+           prevff = currff, currff = currff->ff_next);
+
+      if (currff)
         {
-          prevff->ff_next = ff->ff_next;
-        }
-      else
-        {
-          fs->fs_head = ff->ff_next;
+          if (prevff)
+            {
+              prevff->ff_next = ff->ff_next;
+            }
+          else
+            {
+              fs->fs_head = ff->ff_next;
+            }
         }
     }
 
@@ -456,20 +471,21 @@ static int fat_close(FAR struct file *filep)
  * Name: fat_read
  ****************************************************************************/
 
-static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
+static ssize_t fat_read(FAR struct file *filep, FAR char *buffer,
+                        size_t buflen)
 {
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  struct fat_file_s    *ff;
-  unsigned int          bytesread;
-  unsigned int          readsize;
-  unsigned int          nsectors;
-  size_t                bytesleft;
-  int32_t               cluster;
-  uint8_t               *userbuffer = (uint8_t*)buffer;
-  int                   sectorindex;
-  int                   ret;
-  bool                  force_indirect = false;
+  FAR struct inode *inode;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_file_s *ff;
+  unsigned int bytesread;
+  unsigned int readsize;
+  unsigned int nsectors;
+  size_t bytesleft;
+  int32_t cluster;
+  FAR uint8_t *userbuffer = (uint8_t*)buffer;
+  int sectorindex;
+  int ret;
+  bool force_indirect = false;
 
   /* Sanity checks */
 
@@ -477,7 +493,15 @@ static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
 
   /* Recover our private data from the struct file instance */
 
-  ff    = filep->f_priv;
+  ff = filep->f_priv;
+
+  /* Check for the forced mount condition */
+
+  if ((ff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
+
   inode = filep->f_inode;
   fs    = inode->i_private;
 
@@ -504,8 +528,8 @@ static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
 
   bytesleft = ff->ff_size - filep->f_pos;
 
-  /* Truncate read count so that it does not exceed the number
-   * of bytes left in the file.
+  /* Truncate read count so that it does not exceed the number of bytes left
+   * in the file.
    */
 
   if (buflen > bytesleft)
@@ -517,8 +541,8 @@ static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
 
   if (!ff->ff_currentsector)
     {
-      /* The current sector can be determined from the current cluster
-       * and the file offset.
+      /* The current sector can be determined from the current cluster and
+       * the file offset.
        */
 
       ret = fat_currentsector(fs, ff, filep->f_pos);
@@ -528,9 +552,9 @@ static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
         }
     }
 
-  /* Loop until either (1) all data has been transferred, or (2) an
-   * error occurs.  We assume we start with the current sector
-  * (ff_currentsector) which may be uninitialized.
+  /* Loop until either (1) all data has been transferred, or (2) an error
+   * occurs.  We assume we start with the current sector (ff_currentsector)
+   * which may be uninitialized.
    */
 
   readsize    = 0;
@@ -566,9 +590,9 @@ static ssize_t fat_read(FAR struct file *filep, char *buffer, size_t buflen)
 fat_read_restart:
 #endif
 
-      /* Check if the user has provided a buffer large enough to
-       * hold one or more complete sectors -AND- the read is
-       * aligned to a sector boundary.
+      /* Check if the user has provided a buffer large enough to hold one
+       * or more complete sectors -AND- the read is aligned to a sector
+       * boundary.
        */
 
       nsectors = buflen / fs->fs_hwsectorsize;
@@ -676,20 +700,20 @@ errout_with_semaphore:
  * Name: fat_write
  ****************************************************************************/
 
-static ssize_t fat_write(FAR struct file *filep, const char *buffer,
+static ssize_t fat_write(FAR struct file *filep, FAR const char *buffer,
                          size_t buflen)
 {
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  struct fat_file_s    *ff;
-  int32_t               cluster;
-  unsigned int          byteswritten;
-  unsigned int          writesize;
-  unsigned int          nsectors;
-  uint8_t              *userbuffer = (uint8_t*)buffer;
-  int                   sectorindex;
-  int                   ret;
-  bool                  force_indirect = false;
+  FAR struct inode *inode;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_file_s *ff;
+  int32_t cluster;
+  unsigned int byteswritten;
+  unsigned int writesize;
+  unsigned int nsectors;
+  FAR uint8_t *userbuffer = (uint8_t*)buffer;
+  int sectorindex;
+  int ret;
+  bool force_indirect = false;
 
   /* Sanity checks.  I have seen the following assertion misfire if
    * CONFIG_DEBUG_MM is enabled while re-directing output to a
@@ -709,7 +733,15 @@ static ssize_t fat_write(FAR struct file *filep, const char *buffer,
 
   /* Recover our private data from the struct file instance */
 
-  ff    = filep->f_priv;
+  ff = filep->f_priv;
+
+  /* Check for the forced mount condition */
+
+  if ((ff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
+
   inode = filep->f_inode;
   fs    = inode->i_private;
 
@@ -971,13 +1003,13 @@ errout_with_semaphore:
 
 static off_t fat_seek(FAR struct file *filep, off_t offset, int whence)
 {
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  struct fat_file_s    *ff;
-  int32_t               cluster;
-  off_t                 position;
-  unsigned int          clustersize;
-  int                   ret;
+  FAR struct inode *inode;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_file_s *ff;
+  int32_t cluster;
+  off_t position;
+  unsigned int clustersize;
+  int ret;
 
   /* Sanity checks */
 
@@ -985,7 +1017,15 @@ static off_t fat_seek(FAR struct file *filep, off_t offset, int whence)
 
   /* Recover our private data from the struct file instance */
 
-  ff    = filep->f_priv;
+  ff = filep->f_priv;
+
+  /* Check for the forced mount condition */
+
+  if ((ff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
+
   inode = filep->f_inode;
   fs    = inode->i_private;
 
@@ -1112,7 +1152,7 @@ static off_t fat_seek(FAR struct file *filep, off_t offset, int whence)
             }
           else
             {
-              /* Otherwise we can only follong the existing chain */
+              /* Otherwise we can only follow the existing chain */
 
               cluster = fat_getcluster(fs, cluster);
             }
@@ -1131,7 +1171,7 @@ static off_t fat_seek(FAR struct file *filep, off_t offset, int whence)
 
           if (cluster == 0)
             {
-              /* At the position to the current locaiton and
+              /* At the position to the current location and
                * break out.
                */
 
@@ -1199,13 +1239,22 @@ errout_with_semaphore:
 
 static int fat_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  int                   ret;
+  FAR struct inode *inode;
+  FAR struct fat_file_s *ff;
+  FAR struct fat_mountpt_s *fs;
+  int ret;
 
   /* Sanity checks */
 
   DEBUGASSERT(filep->f_priv != NULL && filep->f_inode != NULL);
+
+  /* Check for the forced mount condition */
+
+  ff = filep->f_priv;
+  if ((ff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
 
   /* Recover our private data from the struct file instance */
 
@@ -1240,20 +1289,27 @@ static int fat_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 
 static int fat_sync(FAR struct file *filep)
 {
-  struct inode         *inode;
-  struct fat_mountpt_s *fs;
-  struct fat_file_s    *ff;
-  uint32_t              wrttime;
-  uint8_t              *direntry;
-  int                   ret;
+  FAR struct inode *inode;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_file_s *ff;
+  uint32_t wrttime;
+  uint8_t *direntry;
+  int ret;
 
   /* Sanity checks */
 
   DEBUGASSERT(filep->f_priv != NULL && filep->f_inode != NULL);
 
+  /* Check for the forced mount condition */
+
+  ff = filep->f_priv;
+  if ((ff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
+
   /* Recover our private data from the struct file instance */
 
-  ff    = filep->f_priv;
   inode = filep->f_inode;
   fs    = inode->i_private;
 
@@ -1350,9 +1406,21 @@ static int fat_dup(FAR const struct file *oldp, FAR struct file *newp)
               newp->f_priv == NULL &&
               newp->f_inode != NULL);
 
+  /* Recover the old private data from the old struct file instance */
+
+  oldff = oldp->f_priv;
+
+  /* Check for the forced mount condition */
+
+  if ((oldff->ff_bflags & UMOUNT_FORCED) != 0)
+    {
+      return -EPIPE;
+    }
+
   /* Recover our private data from the struct file instance */
 
   fs = (struct fat_mountpt_s *)oldp->f_inode->i_private;
+
   DEBUGASSERT(fs != NULL);
 
   /* Check if the mount is still healthy */
@@ -1363,10 +1431,6 @@ static int fat_dup(FAR const struct file *oldp, FAR struct file *newp)
     {
       goto errout_with_semaphore;
     }
-
-  /* Recover the old private data from the old struct file instance */
-
-  oldff = oldp->f_priv;
 
   /* Create a new instance of the file private date to describe the
    * dup'ed file.
@@ -1453,12 +1517,13 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_opendir(struct inode *mountpt, const char *relpath, struct fs_dirent_s *dir)
+static int fat_opendir(FAR struct inode *mountpt, FAR const char *relpath,
+                       FAR struct fs_dirent_s *dir)
 {
-  struct fat_mountpt_s *fs;
-  struct fat_dirinfo_s  dirinfo;
-  uint8_t              *direntry;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_dirinfo_s  dirinfo;
+  uint8_t *direntry;
+  int ret;
 
   /* Sanity checks */
 
@@ -1537,15 +1602,15 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
+static int fat_readdir(FAR struct inode *mountpt, FAR struct fs_dirent_s *dir)
 {
-  struct fat_mountpt_s *fs;
-  unsigned int          dirindex;
-  uint8_t              *direntry;
-  uint8_t               ch;
-  uint8_t               attribute;
-  bool                  found;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  unsigned int dirindex;
+  FAR uint8_t *direntry;
+  uint8_t ch;
+  uint8_t attribute;
+  bool found;
+  int ret;
 
   /* Sanity checks */
 
@@ -1555,7 +1620,9 @@ static int fat_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
 
   fs = mountpt->i_private;
 
-  /* Make sure that the mount is still healthy */
+  /* Make sure that the mount is still healthy.
+   * REVISIT: What if a forced unmount was done since opendir() was called?
+   */
 
   fat_semtake(fs);
   ret = fat_checkmount(fs);
@@ -1627,7 +1694,6 @@ static int fat_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
                */
 
 #ifdef CONFIG_FAT_LFN
-
               /* Get a reference to the current, short file name directory
                * entry.
                */
@@ -1682,9 +1748,10 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_rewinddir(struct inode *mountpt, struct fs_dirent_s *dir)
+static int fat_rewinddir(FAR struct inode *mountpt,
+                         FAR struct fs_dirent_s *dir)
 {
-  struct fat_mountpt_s *fs;
+  FAR struct fat_mountpt_s *fs;
   int ret;
 
   /* Sanity checks */
@@ -1695,7 +1762,9 @@ static int fat_rewinddir(struct inode *mountpt, struct fs_dirent_s *dir)
 
   fs = mountpt->i_private;
 
-  /* Make sure that the mount is still healthy */
+  /* Make sure that the mount is still healthy
+   * REVISIT: What if a forced unmount was done since opendir() was called?
+   */
 
   fat_semtake(fs);
   ret = fat_checkmount(fs);
@@ -1757,10 +1826,10 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_bind(FAR struct inode *blkdriver, const void *data,
-                    void **handle)
+static int fat_bind(FAR struct inode *blkdriver, FAR const void *data,
+                    FAR void **handle)
 {
-  struct fat_mountpt_s *fs;
+  FAR struct fat_mountpt_s *fs;
   int ret;
 
   /* Open the block driver */
@@ -1820,8 +1889,7 @@ static int fat_bind(FAR struct inode *blkdriver, const void *data,
 static int fat_unbind(FAR void *handle, FAR struct inode **blkdriver,
                       unsigned int flags)
 {
-  struct fat_mountpt_s *fs = (struct fat_mountpt_s*)handle;
-  int ret;
+  FAR struct fat_mountpt_s *fs = (FAR struct fat_mountpt_s*)handle;
 
   if (!fs)
     {
@@ -1830,59 +1898,76 @@ static int fat_unbind(FAR void *handle, FAR struct inode **blkdriver,
 
   /* Check if there are sill any files opened on the filesystem. */
 
-  ret = OK; /* Assume success */
   fat_semtake(fs);
   if (fs->fs_head)
     {
-      /* We cannot unmount now.. there are open files
-       *
-       * This implementation currently only supports unmounting if there are
-       * no open file references.
+      /* There are open files.  We umount now unless we are forced with the
+       * MNT_FORCE flag.  Forcing the unmount will cause data loss because
+       * the filesystem buffers are not flushed to the media. MNT_DETACH,
+       * the 'lazy' unmount, could be implemented to fix this.
        */
 
-      ret = (flags != 0) ? -ENOSYS : -EBUSY;
-    }
-  else
-    {
-       /* Unmount ... close the block driver */
-
-      if (fs->fs_blkdriver)
+      if ((flags & MNT_FORCE) != 0)
         {
-          struct inode *inode = fs->fs_blkdriver;
-          if (inode)
+          FAR struct fat_file_s *ff;
+
+          /* Set a flag in each open file structure.  This flag will signal
+           * the file system to fail any subsequent attempts to used the
+           * file handle.
+           */
+
+          for (ff = fs->fs_head; ff; ff = ff->ff_next)
             {
-              if (inode->u.i_bops && inode->u.i_bops->close)
-                {
-                  (void)inode->u.i_bops->close(inode);
-                }
-
-              /* We hold a reference to the block driver but should
-               * not but mucking with inodes in this context.  So, we will just return
-               * our contained reference to the block driver inode and let the umount
-               * logic dispose of it.
-               */
-
-              if (blkdriver)
-                {
-                  *blkdriver = inode;
-                }
+              ff->ff_bflags |= UMOUNT_FORCED;
             }
         }
-
-      /* Release the mountpoint private data */
-
-      if (fs->fs_buffer)
+      else
         {
-          fat_io_free(fs->fs_buffer, fs->fs_hwsectorsize);
-        }
+          /* We cannot unmount now.. there are open files.  This
+           * implementation does not support any other umount2()
+           * options.
+           */
 
-      sem_destroy(&fs->fs_sem);
-      kmm_free(fs);
-      return ret;
+          fat_semgive(fs);
+          return (flags != 0) ? -ENOSYS : -EBUSY;
+        }
     }
 
-  fat_semgive(fs);
-  return ret;
+  /* Unmount ... close the block driver */
+
+  if (fs->fs_blkdriver)
+    {
+      FAR struct inode *inode = fs->fs_blkdriver;
+      if (inode)
+        {
+          if (inode->u.i_bops && inode->u.i_bops->close)
+            {
+              (void)inode->u.i_bops->close(inode);
+            }
+
+          /* We hold a reference to the block driver but should not but
+           * mucking with inodes in this context.  So, we will just return
+           * our contained reference to the block driver inode and let the
+           * umount logic dispose of it.
+           */
+
+          if (blkdriver)
+            {
+              *blkdriver = inode;
+            }
+        }
+    }
+
+  /* Release the mountpoint private data */
+
+  if (fs->fs_buffer)
+    {
+      fat_io_free(fs->fs_buffer, fs->fs_hwsectorsize);
+    }
+
+  sem_destroy(&fs->fs_sem);
+  kmm_free(fs);
+  return OK;
 }
 
 /****************************************************************************
@@ -1892,10 +1977,10 @@ static int fat_unbind(FAR void *handle, FAR struct inode **blkdriver,
  *
  ****************************************************************************/
 
-static int fat_statfs(struct inode *mountpt, struct statfs *buf)
+static int fat_statfs(FAR struct inode *mountpt, FAR struct statfs *buf)
 {
-  struct fat_mountpt_s *fs;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  int ret;
 
   /* Sanity checks */
 
@@ -1949,10 +2034,10 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_unlink(struct inode *mountpt, const char *relpath)
+static int fat_unlink(FAR struct inode *mountpt, FAR const char *relpath)
 {
-  struct fat_mountpt_s *fs;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  int ret;
 
   /* Sanity checks */
 
@@ -1990,19 +2075,20 @@ static int fat_unlink(struct inode *mountpt, const char *relpath)
  *
  ****************************************************************************/
 
-static int fat_mkdir(struct inode *mountpt, const char *relpath, mode_t mode)
+static int fat_mkdir(FAR struct inode *mountpt, FAR const char *relpath,
+                     mode_t mode)
 {
-  struct fat_mountpt_s *fs;
-  struct fat_dirinfo_s  dirinfo;
-  uint8_t     *direntry;
-  uint8_t     *direntry2;
-  off_t        parentsector;
-  off_t        dirsector;
-  int32_t      dircluster;
-  uint32_t     parentcluster;
-  uint32_t     crtime;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_dirinfo_s dirinfo;
+  FAR uint8_t *direntry;
+  FAR uint8_t *direntry2;
+  off_t parentsector;
+  off_t dirsector;
+  int32_t dircluster;
+  uint32_t parentcluster;
+  uint32_t crtime;
   unsigned int i;
-  int          ret;
+  int ret;
 
   /* Sanity checks */
 
@@ -2207,10 +2293,10 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-int fat_rmdir(struct inode *mountpt, const char *relpath)
+int fat_rmdir(FAR struct inode *mountpt, FAR const char *relpath)
 {
-  struct fat_mountpt_s *fs;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  int ret;
 
   /* Sanity checks */
 
@@ -2248,15 +2334,15 @@ int fat_rmdir(struct inode *mountpt, const char *relpath)
  *
  ****************************************************************************/
 
-int fat_rename(struct inode *mountpt, const char *oldrelpath,
-               const char *newrelpath)
+int fat_rename(FAR struct inode *mountpt, FAR const char *oldrelpath,
+               FAR const char *newrelpath)
 {
-  struct fat_mountpt_s *fs;
-  struct fat_dirinfo_s  dirinfo;
-  struct fat_dirseq_s   dirseq;
-  uint8_t              *direntry;
-  uint8_t               dirstate[DIR_SIZE-DIR_ATTRIBUTES];
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  FAR struct fat_dirinfo_s dirinfo;
+  FAR struct fat_dirseq_s dirseq;
+  uint8_t *direntry;
+  uint8_t dirstate[DIR_SIZE-DIR_ATTRIBUTES];
+  int ret;
 
   /* Sanity checks */
 
@@ -2394,16 +2480,17 @@ errout_with_semaphore:
  *
  ****************************************************************************/
 
-static int fat_stat(struct inode *mountpt, const char *relpath, struct stat *buf)
+static int fat_stat(FAR struct inode *mountpt, FAR const char *relpath,
+                    FAR struct stat *buf)
 {
-  struct fat_mountpt_s *fs;
-  struct fat_dirinfo_s  dirinfo;
-  uint16_t              fatdate;
-  uint16_t              date2;
-  uint16_t              fattime;
-  uint8_t              *direntry;
-  uint8_t               attribute;
-  int                   ret;
+  FAR struct fat_mountpt_s *fs;
+  struct fat_dirinfo_s dirinfo;
+  uint16_t fatdate;
+  uint16_t date2;
+  uint16_t fattime;
+  FAR uint8_t *direntry;
+  uint8_t attribute;
+  int ret;
 
   /* Sanity checks */
 
@@ -2510,4 +2597,3 @@ errout_with_semaphore:
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-

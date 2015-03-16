@@ -9,6 +9,7 @@ Contents
 ========
 
   - Board Features
+  - Open Issues
   - Serial Console
   - SD card
   - Automounter
@@ -50,6 +51,41 @@ Board Features
 See the Atmel webite for further information about this board:
 
   - http://www.atmel.com/tools/atsamv71-xult.aspx
+
+Open Issues
+===========
+
+The BASIC nsh configuration is fully function (as desribed below under
+"Configurations").  There are still open issues that need to be resolved:
+
+  1. SDRAM support has been implemented and tested using the nsh
+     configuration (as desribed below).  Currently the memory test does not
+     pass.  I am suspecting that this is because D-Cache is enabled when
+     SDRAM is configured?
+
+  2. HSCMI. CONFIG_MMCSD_MULTIBLOCK_DISABLE=y is set to disable multi-block
+     transfers only because I have not yet had a chance to verify this.  The
+     is very low priority to me but might be important to you if you are need
+     very high performance SD card accesses.
+
+  3. HSMCI TX DMA is currently disabled for the SAMV7.  There is some
+     issue with the TX DMA setup (HSMCI TX DMA the same driver works with
+     the SAMA5D4 which has a different DMA subsystem).  This is a bug that
+     needs to be resolved.
+
+     DMA is enabled by these settings in the file arch/arm/src/samvy/sam_hsmci.c:
+
+     #undef  HSCMI_NORXDMA              /* Define to disable RX DMA */
+     #define HSCMI_NOTXDMA            1 /* Define to disable TX DMA */
+
+  4. There may also be some issues with removing and re-inserting SD cards
+     (of course with appropriate mounting and unmounting).  I all not sure
+     of this and need to do more testing to characterize if the issue.
+
+  5. There is not yet any support for the following board features: QSPI, USB,
+     EMAC, AT24, or WM8904 nor for any non-board features).  Most of these
+     drivers will port easily from either the SAM3/4 or from the SAMA5Dx.
+     So there is still plenty to be done.
 
 Serial Console
 ==============
@@ -577,7 +613,16 @@ Configuration sub-directories
 
        CAREFUL!!! You can trash your MAC address using the I2C tool!
 
-    7. Performance-related Configuration settings:
+    7. Support for HSMCI is built-in by default. The SAMV71-XULT provides
+       one full-size SD memory card slot.  Refer to the section entitled
+       "SD card" for configuration-related information.
+
+       See "Open Issues" above for issues related to HSMCI.
+
+       The auto-mounter is not enabled.  See the section above entitled
+       "Auto-Mounter".
+
+    8. Performance-related Configuration settings:
 
        CONFIG_ARMV7M_ICACHE=y                : Instruction cache is enabled
        CONFIG_ARMV7M_DCACHE=y                : Data cache is enabled
