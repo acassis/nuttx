@@ -45,6 +45,7 @@
 #include <debug.h>
 #include <stdio.h>
 
+#include <nuttx/fs/ioctl.h>
 #include <nuttx/kmalloc.h>
 
 #include "nuttx/sensors/inv_mpu.h"
@@ -57,6 +58,7 @@
 
 struct mpu_dev_s {
     struct mpu_inst_s* inst;
+    bool dmp_loaded;
     sem_t exclsem;
 };
 
@@ -141,8 +143,7 @@ static int mpu_close(FAR struct file *filep)
     DEBUGASSERT(inode && inode->i_private);
     priv  = (FAR struct mpu_dev_s *)inode->i_private;
 
-    /* TODO: .... */
-    UNUSED(priv);
+    ret = mpu_set_sensors_enable(priv->inst, 0);
 
     return ret;
 }
@@ -214,6 +215,33 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     switch (cmd)
     {
 
+        case MPU_ENABLE:
+            ret = mpu_set_sensors_enable(priv->inst,arg);
+            break;
+
+        case MPU_FREQUENCY:
+            if ( arg < UINT16_MAX )
+            {
+                if ( priv->dmp_loaded )
+                {
+                    //ret = mpu_dmp_set_fifo_rate(arg)
+                }
+                else
+                {
+                    ret = mpu_set_sample_rate(priv->inst,arg);
+                }
+            }
+            break;
+        case MPU_LOAD_FIRMWARE:
+            if ( ! priv->dmp_loaded )
+            {
+                struct mpu_firmware_s* f = (struct mpu_firmware_s*)arg;
+                ret = mpu_load_firmware(priv->inst, f->size, f->data, 
+                                        f->start_addr, f->sample_rate);
+                if ( ret >= 0 )
+                    priv->dmp_loaded = true;
+            }
+            break;
         default:
         /* TODO: .... */
         UNUSED(priv);
@@ -329,11 +357,12 @@ int mpu_register(struct mpu_inst_s* inst,const char *path ,int minor)
       return -ENOMEM;
     }
 
+  DEBUGASSERT(priv);
+
   /* Initialize the device state structure */
 
   sem_init(&priv->exclsem, 0, 1);
-  snvdbg("handle=%p minor=%d\n", handle, minor);
-  DEBUGASSERT(priv);
+  priv->dmp_loaded = true;
 
   /* Get exclusive access to the device structure */
 
