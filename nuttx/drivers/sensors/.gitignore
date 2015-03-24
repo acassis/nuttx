@@ -1,0 +1,6 @@
+inv_mpu_dmp.c
+inv_mpu_dmp.h
+inv_mpu_dmp_firmware.h
+inv_mpu_dmp_firmware.c
+inv_mpu_dmp_key.h
+inv_mpu_dmp_map.h

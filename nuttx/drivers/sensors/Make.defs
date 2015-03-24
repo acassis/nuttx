@@ -42,8 +42,16 @@ ifeq ($(CONFIG_SENSORS_ADXL345),y)
 endif
 
 ifeq ($(CONFIG_SENSORS_INVENSENSE),y)
+
   CSRCS += inv_mpu_base.c
   CSRCS += inv_mpu_fileops.c
+
+# Include add-on DMP Invensense driver if present and selected (see misc/drivers)
+
+  ifeq ($(CONFIG_INVENSENSE_DMP),y)
+    INV_DMP_CSRC := ${shell if [ -f sensors$(DELIM)inv_mpu_dmp.c ]; then echo "inv_mpu_dmp.c"; fi}
+    CSRCS += $(INV_DMP_CSRC)
+  endif
 endif
 
 # These drivers depend on I2C support

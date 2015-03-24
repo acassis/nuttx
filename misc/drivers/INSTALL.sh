@@ -36,7 +36,7 @@
 
 # Directory list
 
-DRIVERS="rtl8187x"
+DRIVERS="rtl8187x inv_mpu_dmp"
 
 # Parse command arguments
 
@@ -82,7 +82,7 @@ fi
 
 # Then install each driver
 
-for dir in "$DRIVERS"; do
+for dir in $DRIVERS; do
 
   # More sanity checking
 
