@@ -1,5 +1,5 @@
 /****************************************************************************
- * drivers/sensors/inv_mpu_key.h
+ * drivers/sensors/inv_mpu_map.h
  *
  * Modification to fit Nuttx requierement.
  *   Copyright (C) 2015 Pierre-noel Bouteville . All rights reserved.

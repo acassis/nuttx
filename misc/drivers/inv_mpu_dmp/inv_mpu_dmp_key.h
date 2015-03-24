@@ -103,6 +103,7 @@
 #define KEY_CFG_LP_QUAT             (KEY_FCFG_MAG_MOV + 1)
 
 /* MPU6050 keys */
+
 #define KEY_CFG_ACCEL_FILTER        (KEY_CFG_LP_QUAT + 1)
 #define KEY_CFG_MOTION_BIAS         (KEY_CFG_ACCEL_FILTER + 1)
 #define KEY_TEMPLABEL               (KEY_CFG_MOTION_BIAS + 1)
