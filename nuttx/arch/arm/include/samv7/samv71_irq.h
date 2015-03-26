@@ -89,7 +89,7 @@
 #define SAM_PID_MCAN01        (36)  /* CAN0 IRQ line 1 */
 #define SAM_PID_MCAN10        (37)  /* CAN1 IRQ line 0 */
 #define SAM_PID_MCAN11        (38)  /* CAN1 IRQ line 1 */
-#define SAM_PID_EMAC          (39)  /* Ethernet MAC */
+#define SAM_PID_EMAC0         (39)  /* Ethernet MAC */
 #define SAM_PID_AFEC1         (40)  /* Analog Front End 1 */
 #define SAM_PID_TWIHS2        (41)  /* Two-Wire Interface 2 */
 #define SAM_PID_SPI1          (42)  /* Serial Peripheral Interface 1 */
@@ -115,8 +115,12 @@
 #define SAM_PID_SDRAMC        (62)  /* SDRAM Controller */
 #define SAM_PID_WDT1          (63)  /* Watchdog Timer 1 */
 #define SAM_PID_CCW           (64)  /* ARM Cache ECC Warning */
+#define SAM_PID_CCF           (65)  /* ARM Cache ECC Fault */
+#define SAM_PID_EMACQ1        (66)  /* EMAC Queue 1 Interrupt */
+#define SAM_PID_EMACQ2        (67)  /* EMAC Queue 2 Interrupt */
+#define SAM_PID_FPIXC         (68)  /* ARM Cache ECC Warning */
 
-#define NR_PIDS               (65)  /* Number of peripheral identifiers */
+#define NR_PIDS               (69)  /* Number of peripheral identifiers */
 
 /* External interrupts (priority levels >= 256*/
 
@@ -159,7 +163,7 @@
 #define SAM_IRQ_MCAN01        (SAM_IRQ_EXTINT+SAM_PID_MCAN01) /* CAN0 IRQ line 1 */
 #define SAM_IRQ_MCAN10        (SAM_IRQ_EXTINT+SAM_PID_MCAN10) /* CAN1 IRQ line 0 */
 #define SAM_IRQ_MCAN11        (SAM_IRQ_EXTINT+SAM_PID_MCAN11) /* CAN1 IRQ line 1 */
-#define SAM_IRQ_EMAC          (SAM_IRQ_EXTINT+SAM_PID_EMAC)   /*  Ethernet MAC */
+#define SAM_IRQ_EMAC0         (SAM_IRQ_EXTINT+SAM_PID_EMAC0)  /*  Ethernet MAC */
 #define SAM_IRQ_AFEC1         (SAM_IRQ_EXTINT+SAM_PID_AFEC1)  /* Analog Front End 1 */
 #define SAM_IRQ_TWIHS2        (SAM_IRQ_EXTINT+SAM_PID_TWIHS2) /* Two-Wire Interface 2 */
 #define SAM_IRQ_SPI1          (SAM_IRQ_EXTINT+SAM_PID_SPI1)   /* Serial Peripheral Interface 1 */
@@ -185,6 +189,10 @@
 #define SAM_IRQ_SDRAMC        (SAM_IRQ_EXTINT+SAM_PID_SDRAMC) /* SDRAM Controller */
 #define SAM_IRQ_WDT1          (SAM_IRQ_EXTINT+SAM_PID_WDT1)   /* Watchdog Timer 1 */
 #define SAM_IRQ_CCW           (SAM_IRQ_EXTINT+SAM_PID_CCW)    /* ARM Cache ECC Warning */
+#define SAM_IRQ_CCF           (SAM_IRQ_EXTINT+SAM_PID_CCF)    /* ARM Cache ECC Fault */
+#define SAM_IRQ_EMACQ1        (SAM_IRQ_EXTINT+SAM_PID_EMACQ1) /* EMAC Queue 1 Interrupt */
+#define SAM_IRQ_EMACQ2        (SAM_IRQ_EXTINT+SAM_PID_EMACQ2) /* EMAC Queue 2 Interrupt */
+#define SAM_IRQ_FPIXC         (SAM_IRQ_EXTINTSAM_PID_FPIXC+)  /* ARM Cache ECC Warning */
 
 #define SAM_IRQ_NEXTINT       NR_PIDS                         /* Total number of external interrupt numbers */
 #define SAM_IRQ_NIRQS         (SAM_IRQ_EXTINT+NR_PIDS)        /* The number of real IRQs */

@@ -54,7 +54,16 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Cache Size ID (CCSIDR) register macros used by inline function s*/
+/* Cache Size ID (CCSIDR) register macros used by inline functions
+ * Given the value of the CCSIDR reginer (n):
+ *
+ *   CCSIDR_WAYS    - Returns the (number of ways) - 1
+ *   CCSIDR_SETS    - Returns the (number of sets) - 1
+ *   CCSIDR_LSSHIFT - Returns log2(cache line size in words) - 2
+ *                    Eg. 0 -> 4 words
+ *                        1 -> 8 words
+ *                        ...
+ */
 
 #define CCSIDR_WAYS(n) \
   (((n) & NVIC_CCSIDR_ASSOCIATIVITY_MASK) >> NVIC_CCSIDR_ASSOCIATIVITY_SHIFT)
@@ -280,12 +289,10 @@ void arch_disable_dcache(void);
  *
  ****************************************************************************/
 
-#if 0 /* Not implemented */
 #ifdef CONFIG_ARMV7M_DCACHE
 void arch_invalidate_dcache(uintptr_t start, uintptr_t end);
 #else
 #  define arch_invalidate_dcache(s,e)
-#endif
 #endif
 
 /****************************************************************************
@@ -329,12 +336,10 @@ void arch_invalidate_dcache_all(void);
  *
  ****************************************************************************/
 
-#if 0 /* Not implemented */
 #ifdef CONFIG_ARMV7M_DCACHE
 void arch_clean_dcache(uintptr_t start, uintptr_t end);
 #else
 #  define arch_clean_dcache(s,e)
-#endif
 #endif
 
 /****************************************************************************
@@ -384,12 +389,10 @@ void arch_clean_dcache_all(void);
  *
  ****************************************************************************/
 
-#if 0 /* Not implemented */
 #ifdef CONFIG_ARMV7M_DCACHE
 void arch_flush_dcache(uintptr_t start, uintptr_t end);
 #else
 #  define arch_flush_dcache(s,e)
-#endif
 #endif
 
 /****************************************************************************

@@ -41,7 +41,6 @@
  ************************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/compiler.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -56,9 +55,12 @@
 
 #define HAVE_HSMCI       1
 #define HAVE_AUTOMOUNTER 1
+#define HAVE_USB         1
 #define HAVE_USBDEV      1
 #define HAVE_USBMONITOR  1
 #define HAVE_NETWORK     1
+#define HAVE_MACADDR     1
+#define HAVE_MTDCONFIG   1
 
 /* HSMCI */
 /* Can't support MMC/SD if the card interface is not enabled */
@@ -143,6 +145,7 @@
  */
 
 #if !defined(CONFIG_SAMV7_UDP) || !defined(CONFIG_USBDEV)
+#  undef HAVE_USB
 #  undef HAVE_USBDEV
 #endif
 
@@ -156,10 +159,24 @@
 #  undef HAVE_USBMONITOR
 #endif
 
-/* Networking */
+/* Networking and AT24-based MTD config */
 
 #if !defined(CONFIG_NET) || !defined(CONFIG_SAMV7_EMAC)
 #  undef HAVE_NETWORK
+#  undef HAVE_MACADDR
+#endif
+
+#if !defined(CONFIG_SAMV7_TWIHS0) || !defined(CONFIG_MTD_AT24XX)
+#  undef HAVE_MACADDR
+#  undef HAVE_MTDCONFIG
+#endif
+
+#if defined(CONFIG_NSH_NOMAC) || !defined(CONFIG_AT24XX_EXTENDED)
+#  undef HAVE_MACADDR
+#endif
+
+#if !defined(CONFIG_MTD_CONFIG)
+#  undef HAVE_MTDCONFIG
 #endif
 
 /* SAMV71-XULT GPIO Pin Definitions *************************************************/
@@ -169,8 +186,38 @@
  */
 
 /* Ethernet MAC.
- * to be provided
+ *
+ * KSZ8061RNBVA Connections
+ * ------------------------
+ *
+ *   ------ --------- --------- --------------------------
+ *   SAMV71 SAMV71    Ethernet  Shared functionality
+ *   Pin    Function  Function
+ *   ------ --------- --------- --------------------------
+ *   PD00   GTXCK     REF_CLK   Shield
+ *   PD01   GTXEN     TXEN
+ *   PD02   GTX0      TXD0
+ *   PD03   GTX1      TXD1
+ *   PD04   GRXDV     CRS_DV    Trace
+ *   PD05   GRX0      RXD0      Trace
+ *   PD06   GRX1      RXD1      Trace
+ *   PD07   GRXER     RXER      Trace
+ *   PD08   GMDC      MDC       Trace
+ *   PD09   GMDIO     MDIO
+ *   PA19   GPIO      INTERRUPT EXT1, Shield
+ *   PA29   GPIO      SIGDET
+ *   PC10   GPIO      RESET
+ *   ------ --------- --------- --------------------------
  */
+
+#define GPIO_EMAC0_INT    (GPIO_INPUT | GPIO_CFG_PULLUP | GPIO_CFG_DEGLITCH | \
+                           GPIO_INT_FALLING | GPIO_PORT_PIOA | GPIO_PIN19)
+#define GPIO_EMAC0_SIGDET (GPIO_INPUT | GPIO_CFG_DEFAULT | \
+                           GPIO_PORT_PIOA | GPIO_PIN29)
+#define GPIO_EMAC0_RESET  (GPIO_OUTPUT | GPIO_CFG_PULLUP | GPIO_OUTPUT_SET | \
+                           GPIO_PORT_PIOC | GPIO_PIN10)
+
+#define IRQ_EMAC0_INT     SAM_IRQ_PA19
 
 /* LEDs
  *
@@ -250,6 +297,17 @@
                       GPIO_INT_BOTHEDGES | GPIO_PORT_PIOD | GPIO_PIN18)
 #define IRQ_MCI0_CD   SAM_IRQ_PD18
 
+/* USB Host
+ *
+ * The SAM V71 Xplained Ultra has a Micro-USB connector for use with the SAM V71
+ * USB module labeled as TARGET USB on the kit. In USB host mode VBUS voltage is
+ * provided by the kit and has to be enabled by setting the "VBUS Host Enable"
+ * pin (PC16) low.
+ */
+
+#define GPIO_VBUSON (GPIO_OUTPUT | GPIO_CFG_DEFAULT | GPIO_OUTPUT_SET | \
+                     GPIO_PORT_PIOC | GPIO_PIN16)
+
 /* SPI Chip Selects
  * to be provided
  */
@@ -312,7 +370,7 @@ int sam_bringup(void);
  *
  ************************************************************************************/
 
-void weak_function sam_spiinitialize(void);
+void sam_spiinitialize(void);
 
 /************************************************************************************
  * Name: sam_hsmci_initialize
@@ -329,6 +387,19 @@ int sam_hsmci_initialize(int slot, int minor);
 #endif
 
 /************************************************************************************
+ * Name:  sam_usbinitialize
+ *
+ * Description:
+ *   Called from stm32_boardinitialize very early in initialization to setup USB-
+ *   related GPIO pins for the SAMV71-XULT board.
+ *
+ ************************************************************************************/
+
+#ifdef HAVE_USB
+void sam_usbinitialize(void);
+#endif
+
+/************************************************************************************
  * Name: sam_netinitialize
  *
  * Description:
@@ -337,7 +408,20 @@ int sam_hsmci_initialize(int slot, int minor);
  ************************************************************************************/
 
 #ifdef HAVE_NETWORK
-void weak_function sam_netinitialize(void);
+void sam_netinitialize(void);
+#endif
+
+/************************************************************************************
+ * Name: sam_emac0_setmac
+ *
+ * Description:
+ *   Read the Ethernet MAC address from the AT24 FLASH and configure the Ethernet
+ *   driver with that address.
+ *
+ ************************************************************************************/
+
+#ifdef HAVE_MACADDR
+int sam_emac0_setmac(void);
 #endif
 
 /************************************************************************************
@@ -424,6 +508,19 @@ void sam_automount_event(int slotno, bool inserted);
 bool sam_writeprotected(int slotno);
 #else
 #  define sam_writeprotected(slotno) (false)
+#endif
+
+/************************************************************************************
+ * Name: sam_at24config
+ *
+ * Description:
+ *   Create an AT24xx-based MTD configuration device for storage device configuration
+ *   information.
+ *
+ ************************************************************************************/
+
+#ifdef HAVE_MTDCONFIG
+int sam_at24config(void);
 #endif
 
 #endif /* __ASSEMBLY__ */

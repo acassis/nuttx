@@ -74,12 +74,24 @@ ifeq ($(CONFIG_SAMV7_EMAC),y)
 CSRCS += sam_ethernet.c
 endif
 
+ifeq ($(CONFIG_SAMV7_USBDEVHS),y)
+CSRCS += sam_usbdev.c
+endif
+
 ifeq ($(CONFIG_SAMV7_SPI0),y)
 CSRCS += sam_spi.c
 endif
 
 ifeq ($(CONFIG_USBMSC),y)
 CSRCS += sam_usbmsc.c
+endif
+
+ifeq ($(CONFIG_MTD_CONFIG),y)
+ifeq ($(CONFIG_SAMV7_TWIHS0),y)
+ifeq ($(CONFIG_MTD_AT24XX),y)
+CSRCS += sam_at24config.c
+endif
+endif
 endif
 
 COBJS = $(CSRCS:.c=$(OBJEXT))

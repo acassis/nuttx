@@ -106,8 +106,8 @@
  */
 
 #define BOARD_PBCLK2_ENABLE    1         /* Enable PBCLK2 */
-#define BOARD_PB2DIV           5         /* Divider = 5 */
-#define BOARD_PBCLK2           40000000  /* PBCLK2 frequency = 200MHz/5 = 40MHz */
+#define BOARD_PB2DIV           2         /* Divider = 2 */
+#define BOARD_PBCLK2           100000000 /* PBCLK2 frequency = 200MHz/2 = 100MHz */
 
 /* PBCLK3
  *   Peripherals: ADC, Comparator, Timers, Output Compare, Input Compare
@@ -239,15 +239,38 @@
 #define BUTTON_SW3_BIT         (1 << BUTTON_SW3)
 
 /* UARTS ********************************************************************/
-/* If the PIC32MZEC Adaptor Board is connected, then UART1 signals are
- * available at these locations on the adaptor board:
+/*  MEB-II
+ *
+ * By default, the UART1 is configured for the pins used by the MEB-II
+ * board.  The UART1 signals are available at the MEB-II PICTail
+ * connector:
+ *
+ *   --------------- --------- -------------- ------------
+ *   PIC32MZ PIN     CONNECTOR MEB-II PIN     PICTAIL PIN
+ *   FUNCTION        J1        NAME           J2
+ *   --------------- --------- -------------- ------------
+ *   RPA14/SCL1/RA14 124       SCL1/TOUCH_SCL 4
+ *   RPA15/SDA1/RA15 126       SDA1/TOUCH_SDA 6
+ *                             +3.3V          1,26
+ *                             GND            28
+ *   --------------- --------- -------------- ------------
+ *
+ * The following pin assignment is used with the MEB-II board.  If you are
+ * using signals from PIC32MZEC Adaptor Board (as described in the the README
+ * file), then UART1 signals are available at these locations on the adaptor
+ * board:
  *
  *   JP7 Pin 2: RPC14
  *   JP8 Pin 2: RPB3
+ *
+ * And the following should be changed to:
+ *
+ *  #define BOARD_U1RX_PPS  U1RXR_RPC14
+ *  #define BOARD_U1TX_PPS  U1TX_RPB3R
  */
 
-#define BOARD_U1RX_PPS  U1RXR_RPC14
-#define BOARD_U1TX_PPS  U1TX_RPB3R
+#define BOARD_U1RX_PPS  U1RXR_RPA14
+#define BOARD_U1TX_PPS  U1TX_RPA15R
 
 /****************************************************************************
  * Public Types
