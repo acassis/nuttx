@@ -70,7 +70,7 @@
 #define DMP_FEATURE_SEND_RAW_GYRO   (0x080)
 #define DMP_FEATURE_SEND_CAL_GYRO   (0x100)
  
-#define INV_WXYZ_QUAT       (0x100)
+#define DMP_WXYZ_QUAT       (0x100)
   
 struct dmp_s;
 
@@ -89,7 +89,8 @@ int dmp_set_accel_bias(         struct dmp_s* dmp,int32_t *bias);
 
 /* Tap functions. */ 
 
-int dmp_register_tap_cb(void (*func) (struct dmp_s* dmp, uint8_t, uint8_t));
+int dmp_register_tap_cb(struct dmp_s* dmp,
+                        void (*func) (struct dmp_s* dmp, uint8_t, uint8_t));
 int dmp_set_tap_thresh(struct dmp_s* dmp,uint8_t axis, uint16_t thresh);
 int dmp_set_tap_axes(struct dmp_s* dmp,uint8_t axis);
 int dmp_set_tap_count(struct dmp_s* dmp,uint8_t min_taps);
@@ -102,7 +103,8 @@ int dmp_set_shake_reject_timeout(struct dmp_s* dmp,uint16_t time);
 
 /* Android orientation functions. */ 
 
-int dmp_register_android_orient_cb(void (*func) (struct dmp_s* dmp,uint8_t));
+int dmp_register_android_orient_cb(struct dmp_s* dmp,
+                                   void (*func) (struct dmp_s* dmp,uint8_t));
 
 /* LP quaternion functions. */ 
 
@@ -127,9 +129,9 @@ int dmp_enable_gyro_cal(struct dmp_s* dmp,uint8_t enable);
  * detected.
  */ 
  
-int dmp_read_fifo(struct dmp_s* dmp, int16_t *gyro, int16_t *accel, int32_t *quat, 
-                  uint32_t *timestamp, int16_t *sensors, 
-                  uint8_t *more);
+int dmp_read_fifo(struct dmp_s* dmp, int16_t *gyro, int16_t *accel, 
+                  int32_t *quat, struct timespec *tp, int16_t * sensors,
+                  int *more);
  
 #endif  /* #ifndef __MISC_DRIVERS_INV_MPU_DMP_INPUT_INV_MPU_DMP_H */
   

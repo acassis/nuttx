@@ -50,6 +50,10 @@
 
 #include "nuttx/sensors/inv_mpu.h"
 
+#if CONFIG_INVENSENSE_DMP
+#   include "inv_mpu_dmp.h"
+#endif
+
 #if defined(CONFIG_SENSORS_INVENSENSE)
 
 /****************************************************************************
@@ -57,8 +61,11 @@
  ****************************************************************************/
 
 struct mpu_dev_s {
-    struct mpu_inst_s* inst;
+#if CONFIG_INVENSENSE_DMP
+    struct dmp_s *dmp;
     bool dmp_loaded;
+#endif
+    struct mpu_inst_s* inst;
     sem_t exclsem;
 };
 
@@ -222,16 +229,19 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
         case MPU_FREQUENCY:
             if ( arg < UINT16_MAX )
             {
+#if CONFIG_INVENSENSE_DMP
                 if ( priv->dmp_loaded )
                 {
-                    //ret = mpu_dmp_set_fifo_rate(arg)
+                    ret = dmp_set_fifo_rate(priv->dmp,arg);
                 }
                 else
+#endif
                 {
                     ret = mpu_set_sample_rate(priv->inst,arg);
                 }
             }
             break;
+#if CONFIG_INVENSENSE_DMP
         case MPU_LOAD_FIRMWARE:
             if ( ! priv->dmp_loaded )
             {
@@ -241,6 +251,7 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
                 if ( ret >= 0 )
                     priv->dmp_loaded = true;
             }
+#endif
             break;
         default:
         /* TODO: .... */
@@ -362,7 +373,9 @@ int mpu_register(struct mpu_inst_s* inst,const char *path ,int minor)
   /* Initialize the device state structure */
 
   sem_init(&priv->exclsem, 0, 1);
+#if CONFIG_INVENSENSE_DMP
   priv->dmp_loaded = true;
+#endif
 
   /* Get exclusive access to the device structure */
 

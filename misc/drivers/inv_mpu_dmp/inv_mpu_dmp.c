@@ -57,6 +57,7 @@
 #include "inv_mpu_dmp.h"
 #include "inv_mpu_dmp_key.h"
 #include "inv_mpu_dmp_map.h"
+#include "inv_mpu_dmp_firmware.h"
 
 
 /*******************************************************************************
@@ -86,8 +87,8 @@
  ******************************************************************************/ 
 struct dmp_s
 {
-    void (*tap_cb) (uint8_t count, uint8_t direction);
-    void (*android_orient_cb) (uint8_t orientation);
+    void (*tap_cb) (struct dmp_s * dmp, uint8_t count, uint8_t direction);
+    void (*android_orient_cb) (struct dmp_s * dmp, uint8_t orientation);
     uint16_t orient;
     uint16_t feature_mask;
     uint16_t fifo_rate;
@@ -142,6 +143,7 @@ inline int dmp_write_16( struct dmp_s* dmp, int reg, uint16_t val16)
     buf[1] = (uint8_t) ((val16 >>  0) & 0xFF);
     if (mpu_write_mem(dmp->inst, reg, 2, buf) < 0 )
         return -1;
+    return 0;
 }
 
 inline int dmp_write_3bytes( struct dmp_s* dmp, int reg, uint8_t* buf)
@@ -157,6 +159,42 @@ inline int dmp_write_8( struct dmp_s* dmp, int reg, uint8_t val)
         return -1;
     return 0;
 }
+
+/*
+ *  Name: dmp_enable_lp_quat
+ *  Description:
+ *   Decode the four-byte gesture data and execute any callbacks.
+ *  Parameters
+ *   gesture Gesture data from DMP packet.
+ *  Return:
+ *   0 if successful, negative value in case of error.
+ */ 
+static int decode_gesture(struct dmp_s* dmp, uint8_t * gesture) 
+{
+    uint8_t tap;
+    uint8_t android_orient;
+
+    android_orient = gesture[3] & 0xC0;
+    tap = 0x3F & gesture[3];
+
+    if (gesture[1] & INT_SRC_TAP)
+    {
+        uint8_t direction, count;
+        direction = tap >> 3;
+        count = (tap % 8) + 1;
+        if (dmp->tap_cb)
+            dmp->tap_cb(dmp, direction, count);
+    }
+
+    if (gesture[1] & INT_SRC_ANDROID_ORIENT)
+    {
+        if (dmp->android_orient_cb)
+            dmp->android_orient_cb(dmp,android_orient >> 6);
+    }
+
+    return 0;
+}
+
 
 /*******************************************************************************
  * Private Data
@@ -185,11 +223,11 @@ int dmp_set_orientation(struct dmp_s* dmp, uint16_t orient)
     uint8_t gyro_regs[3];
     uint8_t accel_regs[3];
 
-    const uint8_t gyro_axes[3] = { DINA4C, DINACD, DINA6C };
-    const uint8_t accel_axes[3] = { DINA0C, DINAC9, DINA2C };
+    const uint8_t gyro_axes[3] = { 0x4C, 0xCD, 0x6C };
+    const uint8_t accel_axes[3] = { 0x0C, 0xC9, 0x2C };
 
-    const uint8_t gyro_sign[3] = { DINA36, DINA56, DINA76 };
-    const uint8_t accel_sign[3] = { DINA26, DINA46, DINA66 };
+    const uint8_t gyro_sign[3] = { 0x36, 0x56, 0x76 };
+    const uint8_t accel_sign[3] = { 0x26, 0x46, 0x66 };
 
     /* Chip-to-body, axes only. */ 
 
@@ -256,7 +294,6 @@ int dmp_set_orientation(struct dmp_s* dmp, uint16_t orient)
 int dmp_set_gyro_bias(struct dmp_s* dmp, int32_t * bias) 
 {
     int32_t gyro_bias_body[3];
-    uint8_t regs[4];
 
     gyro_bias_body[0] = bias[dmp->orient & 3];
     if (dmp->orient & 4)
@@ -280,13 +317,13 @@ int dmp_set_gyro_bias(struct dmp_s* dmp, int32_t * bias)
     gyro_bias_body[2] = (((int64_t)gyro_bias_body[2] * GYRO_SF) >> 30);
 #endif
 
-    if (dmp_write_32(dmp, KEY_D_EXT_GYRO_BIAS_X, gyro_bias_body[0]) < 0 )
+    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_X, gyro_bias_body[0]) < 0 )
         return -1;
 
-    if (dmp_write_32(dmp, KEY_D_EXT_GYRO_BIAS_Y, gyro_bias_body[1]) < 0 )
+    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_Y, gyro_bias_body[1]) < 0 )
         return -1;
 
-    if (dmp_write_32(dmp, KEY_D_EXT_GYRO_BIAS_Z, gyro_bias_body[2]) < 0 )
+    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_Z, gyro_bias_body[2]) < 0 )
         return -1;
 
     return 0;
@@ -312,7 +349,8 @@ int dmp_set_accel_bias(struct dmp_s* dmp, int32_t * bias)
     int32_t accel_sf;
     uint16_t accel_sens;
 
-    mpu_get_accel_sens(&accel_sens);
+    if ( mpu_get_accel_sensibilty(dmp->inst,&accel_sens) < 0 )
+        return -1;
 
     accel_sf = (int64_t) accel_sens << 15;
     //__no_operation();
@@ -374,22 +412,14 @@ int dmp_set_fifo_rate(struct dmp_s* dmp, uint16_t rate)
 {
     const uint8_t regs_end[12] =
     {
-        DINAFE, DINAF2, DINAAB, 0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 
-        0xAF, DINADF, DINADF
+        0xFE, 0xF2, 0xAB, 0xc4, 0xAA, 0xF1, 0xDF, 0xDF, 0xBB, 
+        0xAF, 0xDF, 0xDF
     };
-
-    uint16_t div;
-    uint8_t tmp[8];
 
     if (rate > MPU_DMP_SAMPLE_RATE)
         return -1;
 
-    div = MPU_DMP_SAMPLE_RATE / rate - 1;
-
-    tmp[0] = (uint8_t) ((div >> 8) & 0xFF);
-    tmp[1] = (uint8_t) (div & 0xFF);
-
-    if (dmp_write_16(dmp, MPU_DMP_D_0_22, tmp) < 0 )
+    if (dmp_write_16(dmp, MPU_DMP_D_0_22, MPU_DMP_SAMPLE_RATE / rate - 1) < 0 )
         return -1;
 
     if (mpu_write_mem(dmp->inst, MPU_DMP_CFG_6, 12, (uint8_t *) regs_end) < 0 )
@@ -445,24 +475,25 @@ int dmp_set_tap_thresh(struct dmp_s* dmp, uint8_t axis, uint16_t thresh)
 
     scaled_thresh = (float)thresh / MPU_DMP_SAMPLE_RATE;
 
-    mpu_get_accel_fsr(&accel_fsr);
+    if ( mpu_get_accel_fsr(dmp->inst, &accel_fsr) < 0 )
+        return -1;
 
     switch (accel_fsr)
     {
         case 2:
-            dmp_thresh = (uint16_t) (scaled_thresh * 16384);
+            dmp_thresh   = (uint16_t) (scaled_thresh * 16384);
             dmp_thresh_2 = (uint16_t) (scaled_thresh * 12288);
             break;
         case 4:
-            dmp_thresh = (uint16_t) (scaled_thresh * 8192);
+            dmp_thresh   = (uint16_t) (scaled_thresh * 8192);
             dmp_thresh_2 = (uint16_t) (scaled_thresh * 6144);
             break;
         case 8:
-            dmp_thresh = (uint16_t) (scaled_thresh * 4096);
+            dmp_thresh   = (uint16_t) (scaled_thresh * 4096);
             dmp_thresh_2 = (uint16_t) (scaled_thresh * 3072);
             break;
         case 16:
-            dmp_thresh = (uint16_t) (scaled_thresh * 2048);
+            dmp_thresh   = (uint16_t) (scaled_thresh * 2048);
             dmp_thresh_2 = (uint16_t) (scaled_thresh * 1536);
             break;
         default:
@@ -584,7 +615,6 @@ int dmp_set_tap_time(struct dmp_s* dmp, uint16_t time)
 int dmp_set_tap_time_multi(struct dmp_s* dmp, uint16_t time) 
 {
     uint16_t dmp_time;
-    uint8_t tmp[2];
 
     dmp_time = time / (1000 / MPU_DMP_SAMPLE_RATE);
 
@@ -712,7 +742,6 @@ int dmp_set_pedometer_step_count(struct dmp_s* dmp, uint32_t count)
  */ 
 int dmp_get_pedometer_walk_time(struct dmp_s* dmp, uint32_t * time) 
 {
-    uint8_t tmp[4];
 
     if (!time)
         return -1;
@@ -772,6 +801,7 @@ int dmp_set_pedometer_walk_time(struct dmp_s* dmp, uint32_t time)
  */ 
 int dmp_enable_feature(struct dmp_s* dmp, uint16_t mask) 
 {
+    uint8_t regval;
     uint8_t tmp[10];
 
     /* TODO: All of these settings can probably be integrated into the default
@@ -811,23 +841,21 @@ int dmp_enable_feature(struct dmp_s* dmp, uint16_t mask)
     tmp[8] = 0xA3;
     tmp[9] = 0xA3;
 
-    if (mpu_write_mem(dmp->inst, CFG_15, 10, tmp) < 0)
+    if (mpu_write_mem(dmp->inst, KEY_CFG_15, 10, tmp) < 0)
         return -1;
 
     /* Send gesture data to the FIFO. */ 
 
     if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
-        tmp[0] = DINA20;
+        regval = 0x20;
     else
-        tmp[0] = 0xD8;
+        regval = 0xD8;
 
-    if ( dmp_write_8(dmp, CFG_27, tmp) < 0)
+    if ( dmp_write_8(dmp, KEY_CFG_27, 0x20) < 0)
         return -1;
 
-    if (mask & DMP_FEATURE_GYRO_CAL)
-        dmp_enable_gyro_cal(1);
-    else
-        dmp_enable_gyro_cal(0);
+
+    dmp_enable_gyro_cal(dmp,(mask & DMP_FEATURE_GYRO_CAL)?1:0);
 
     if (mask & DMP_FEATURE_SEND_ANY_GYRO)
     {
@@ -840,58 +868,69 @@ int dmp_enable_feature(struct dmp_s* dmp, uint16_t mask)
         }
         else
         {
-            tmp[0] = DINAC0;
-            tmp[1] = DINA80;
-            tmp[2] = DINAC2;
-            tmp[3] = DINA90;
+            tmp[0] = 0xC0;
+            tmp[1] = 0x80;
+            tmp[2] = 0xC2;
+            tmp[3] = 0x90;
         }
 
-        if ( mpu_write_mem(dmp->inst, CFG_GYRO_RAW_DATA, 4, tmp) < 0)
+        if ( mpu_write_mem(dmp->inst, MPU_DMP_CFG_GYRO_RAW_DATA, 4, tmp) < 0)
             return -1;
     }
+
     if (mask & DMP_FEATURE_TAP)
     {
 
         /* Enable tap. */ 
 
-        if (dmp_write_8(dmp, CFG_20, 0xF8) < 0 )
+        if (dmp_write_8(dmp, KEY_CFG_20, 0xF8) < 0 )
             return -1;
-        if (dmp_set_tap_thresh(TAP_XYZ, 250) < 0 )
+        if (dmp_set_tap_thresh(dmp, TAP_XYZ, 250) < 0 )
             return -1;
-        if (dmp_set_tap_axes(TAP_XYZ) < 0 )
+        if (dmp_set_tap_axes(dmp, TAP_XYZ) < 0 )
             return -1;
-        if (dmp_set_tap_count(1) < 0 )
+        if (dmp_set_tap_count(dmp, 1) < 0 )
             return -1;
-        if (dmp_set_tap_time(100) < 0 )
+        if (dmp_set_tap_time(dmp, 100) < 0 )
             return -1;
-        if (dmp_set_tap_time_multi(500) < 0 )
+        if (dmp_set_tap_time_multi(dmp, 500) < 0 )
             return -1;
-        if (dmp_set_shake_reject_thresh(GYRO_SF, 200) < 0 )
+        if (dmp_set_shake_reject_thresh(dmp, GYRO_SF, 200) < 0 )
             return -1;
-        if (dmp_set_shake_reject_time(40) < 0 )
+        if (dmp_set_shake_reject_time(dmp, 40) < 0 )
             return -1;
-        if (dmp_set_shake_reject_timeout(10) < 0 )
+        if (dmp_set_shake_reject_timeout(dmp, 10) < 0 )
             return -1;
     }
     else
     {
-        if (dmp_write_8(dmp, CFG_20, 0xD8) < 0 )
+        if (dmp_write_8(dmp, KEY_CFG_20, 0xD8) < 0 )
             return -1;
     }
 
     if (mask & DMP_FEATURE_ANDROID_ORIENT)
-        tmp[0] = 0xD9;
+        regval = 0xD9;
     else
-        tmp[0] = 0xD8;
+        regval = 0xD8;
 
-    if (dmp_write_8(dmp, CFG_ANDROID_ORIENT_INT, tmp) < 0 )
+    if (dmp_write_8(dmp, KEY_CFG_ANDROID_ORIENT_INT, regval) < 0 )
         return -1;
 
-    if (dmp_enable_lp_quat((mask & DMP_FEATURE_LP_QUAT)?1:0) < 0 )
-        return -1
+    if (mask & DMP_FEATURE_LP_QUAT)
+        regval = true;
+    else
+        regval = false;
 
-    if (dmp_enable_6x_lp_quat((mask & DMP_FEATURE_6X_LP_QUAT)?1:0) < 0 )
-        return -1
+    if (dmp_enable_lp_quat(dmp, regval) < 0 )
+        return -1;
+
+    if (mask & DMP_FEATURE_6X_LP_QUAT)
+        regval = true;
+    else
+        regval = false;
+
+    if (dmp_enable_6x_lp_quat(dmp, regval) < 0 )
+        return -1;
 
     /* Pedometer is always enabled. */ 
 
@@ -950,7 +989,7 @@ int dmp_get_enabled_features(struct dmp_s* dmp, uint16_t * mask)
  */ 
 int dmp_enable_gyro_cal(struct dmp_s* dmp, uint8_t enable) 
 {
-    uint8_t *sel;
+    const uint8_t *sel;
     const uint8_t regs_enable[9] =
     {
         0xb8, 0xaa, 0xb3, 0x8d, 0xb4, 0x98, 0x0d, 0x35, 0x5d
@@ -968,7 +1007,7 @@ int dmp_enable_gyro_cal(struct dmp_s* dmp, uint8_t enable)
     {
         sel = regs_disable;
     }
-    return mpu_write_mem(dmp->inst, CFG_MOTION_BIAS, 9, (uint8_t *)sel);
+    return mpu_write_mem(dmp->inst, KEY_CFG_MOTION_BIAS, 9, (uint8_t *)sel);
 }
 
 
@@ -984,7 +1023,7 @@ int dmp_enable_gyro_cal(struct dmp_s* dmp, uint8_t enable)
  *  Return:
  *   0 if successful, negative value in case of error.
  */ 
-int dmp_enable_lp_quat(struct dmp_s* dmp, uint8_t enable) 
+int dmp_enable_lp_quat(struct dmp_s* dmp, bool enable) 
 {
     uint8_t regs[4];
 
@@ -1000,7 +1039,7 @@ int dmp_enable_lp_quat(struct dmp_s* dmp, uint8_t enable)
         memset(regs, 0x8B, 4);
     }
 
-    if ( mpu_write_mem(dmp->inst, CFG_LP_QUAT, 4, regs) < 0 )
+    if ( mpu_write_mem(dmp->inst, KEY_CFG_LP_QUAT, 4, regs) < 0 )
         return -1;
 
     return mpu_reset_fifo(dmp->inst);
@@ -1019,63 +1058,27 @@ int dmp_enable_lp_quat(struct dmp_s* dmp, uint8_t enable)
  *  Return:
  *   0 if successful, negative value in case of error.
  */ 
-int dmp_enable_6x_lp_quat(struct dmp_s* dmp, uint8_t enable) 
+int dmp_enable_6x_lp_quat(struct dmp_s* dmp, bool enable) 
 {
     uint8_t regs[4];
     if (enable)
     {
-        regs[0] = DINA20;
-        regs[1] = DINA28;
-        regs[2] = DINA30;
-        regs[3] = DINA38;
+        regs[0] = 0x20;
+        regs[1] = 0x28;
+        regs[2] = 0x30;
+        regs[3] = 0x38;
     }
     else
     {
         memset(regs, 0xA3, 4);
     }
 
-    if ( mpu_write_mem(dmp->inst, CFG_LP_QUAT, 4, regs) < 0 )
+    if ( mpu_write_mem(dmp->inst, KEY_CFG_LP_QUAT, 4, regs) < 0 )
         return -1;
 
     return mpu_reset_fifo(dmp->inst);
 }
 
-
-
-/*
- *  Name: dmp_enable_lp_quat
- *  Description:
- *   Decode the four-byte gesture data and execute any callbacks.
- *  Parameters
- *   gesture Gesture data from DMP packet.
- *  Return:
- *   0 if successful, negative value in case of error.
- */ 
-static int decode_gesture(struct dmp_s* dmp, uint8_t * gesture) 
-{
-    uint8_t tap;
-    uint8_t android_orient;
-
-    android_orient = gesture[3] & 0xC0;
-    tap = 0x3F & gesture[3];
-
-    if (gesture[1] & INT_SRC_TAP)
-    {
-        uint8_t direction, count;
-        direction = tap >> 3;
-        count = (tap % 8) + 1;
-        if (dmp->tap_cb)
-            dmp->tap_cb(dmp,direction, count);
-    }
-
-    if (gesture[1] & INT_SRC_ANDROID_ORIENT)
-    {
-        if (dmp->android_orient_cb)
-            dmp->android_orient_cb(dmp,android_orient >> 6);
-    }
-
-    return 0;
-}
 
 
 
@@ -1114,7 +1117,7 @@ int dmp_set_interrupt_mode(struct dmp_s* dmp, uint8_t mode)
             return -1;
     }
 
-    return mpu_write_mem(dmp->inst, CFG_FIFO_ON_EVENT, 11, (uint8_t *) sel);
+    return mpu_write_mem(dmp->inst, KEY_CFG_FIFO_ON_EVENT, 11, (uint8_t *) sel);
 }
 
 
@@ -1144,17 +1147,17 @@ int dmp_set_interrupt_mode(struct dmp_s* dmp, uint8_t mode)
  *   0 if successful, negative value in case of error.
  */ 
 int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel, 
-                  int32_t * quat, uint32_t * timestamp, int16_t * sensors, 
-                  uint8_t * more) 
+                  int32_t * quat, struct timespec *tp, int16_t * sensors, 
+                  int * more) 
 {
     uint8_t fifo_data[MAX_PACKET_LENGTH];
     uint8_t ii = 0;
 
-    /* TODO: sensors[0] only changes when dmp_enable_feature is called. We can
+    /* TODO: *sensors only changes when dmp_enable_feature is called. We can
      * cache this value and save some cycles. 
      */ 
 
-    sensors[0] = 0;
+    *sensors = 0;
 
     /* Get a packet. */ 
 
@@ -1213,14 +1216,14 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
 
             /* Quaternion is outside of the acceptable threshold. */ 
 
-            sensors[0] = 0;
+            *sensors = 0;
 
             mpu_reset_fifo(dmp->inst);
 
             return -1;
         }
 
-        sensors[0] |= INV_WXYZ_QUAT;
+        *sensors |= DMP_WXYZ_QUAT;
 
 #endif
     }
@@ -1231,7 +1234,7 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
         accel[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
         accel[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
-        sensors[0] |= INV_XYZ_ACCEL;
+        *sensors |= MPU_XYZ_ACCEL;
     }
 
     if (dmp->feature_mask & DMP_FEATURE_SEND_ANY_GYRO)
@@ -1240,16 +1243,23 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
         gyro[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
         gyro[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
-        sensors[0] |= INV_XYZ_GYRO;
+        *sensors |= MPU_XYZ_GYRO;
     }
 
     /* Gesture data is at the end of the DMP packet. Parse it and call the
      * gesture callbacks (if registered). 
      */
     if (dmp->feature_mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
-        decode_gesture(fifo_data + ii);
+        decode_gesture(dmp,fifo_data + ii);
 
-    get_ms(timestamp);
+    if ( tp != NULL ) 
+    { 
+        if ( clock_gettime(CLOCK_REALTIME,tp) < 0 )
+        {
+            tp->tv_sec  = 0;
+            tp->tv_nsec = 0;
+        }
+    }
 
     return 0;
 }
@@ -1272,7 +1282,8 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
  *  Return:
  *   0 if successful, negative value in case of error.
  */ 
-int dmp_register_tap_cb(struct dmp_s* dmp, void (*func) (uint8_t, uint8_t)) 
+int dmp_register_tap_cb(struct dmp_s* dmp, 
+                        void (*func) (struct dmp_s*, uint8_t, uint8_t)) 
 {
     dmp->tap_cb = func;
     return 0;
@@ -1289,7 +1300,8 @@ int dmp_register_tap_cb(struct dmp_s* dmp, void (*func) (uint8_t, uint8_t))
  *  Return:
  *   0 if successful, negative value in case of error.
  */ 
-int dmp_register_android_orient_cb(struct dmp_s* dmp, void (*func) (uint8_t)) 
+int dmp_register_android_orient_cb(struct dmp_s* dmp, 
+                                   void (*func) (struct dmp_s*, uint8_t)) 
 {
     dmp->android_orient_cb = func;
     return 0;

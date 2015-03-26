@@ -1943,7 +1943,7 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
 
     if ( tp != NULL ) 
     { 
-        if ( clock_gettime(CLOCK_REALTIME,tp) != OK )
+        if ( clock_gettime(CLOCK_REALTIME,tp) < OK )
         {
             tp->tv_sec  = 0;
             tp->tv_nsec = 0;
