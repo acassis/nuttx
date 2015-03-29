@@ -1,5 +1,5 @@
 /****************************************************************************
- * drivers/sensors/mpu9250_base.c
+ * drivers/sensors/inv_mpu_fileops.c
  *
  *   Copyright (C) 2015 Pierre-noel Bouteville . All rights reserved.
  *   Authors: Pierre-noel Bouteville <pnb990@gmail.com>
@@ -40,37 +40,62 @@
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 
-#include <unistd.h>
+#include <string.h>
+//#include <unistd.h>
+#include <poll.h>
 #include <errno.h>
 #include <debug.h>
 #include <stdio.h>
 
 #include <nuttx/fs/ioctl.h>
 #include <nuttx/kmalloc.h>
+#include <nuttx/wqueue.h>
+#include <nuttx/clock.h>
 
 #include "nuttx/sensors/inv_mpu.h"
 
-#if CONFIG_INVENSENSE_DMP
+#ifdef CONFIG_INVENSENSE_DMP
 #   include "inv_mpu_dmp.h"
 #endif
 
 #if defined(CONFIG_SENSORS_INVENSENSE)
+/*******************************************************************************
+ * Pre-processor Definitions
+ ******************************************************************************/ 
+
+#ifndef CONFIG_INVENSENSE_POLLING_MS
+#   define CONFIG_INVENSENSE_POLLING_MS 100
+#endif
+
+//#define MPU_LOG(...)
+//#define MPU_LOG(...) lldbg(__VA_ARGS__)
+#define MPU_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
 
 /****************************************************************************
  * Private Types
  ****************************************************************************/
 
+typedef FAR struct file file_t;
+
 struct mpu_dev_s {
-#if CONFIG_INVENSENSE_DMP
-    struct dmp_s *dmp;
-    bool dmp_loaded;
-#endif
     struct mpu_inst_s* inst;
-    sem_t exclsem;
+#ifdef CONFIG_INVENSENSE_DMP
+    struct dmp_s *dmp;
+    bool    dmp_loaded;
+#endif
+    uint8_t mpu_int_status;
+    uint8_t dmp_int_status;
+    sem_t   exclsem;
+#ifndef CONFIG_DISABLE_POLL
+    sem_t   *poll_sem;
+#ifndef BOARD_INV_MPU_IRQ
+    struct work_s work;
+#endif
+#endif
 };
 
 /****************************************************************************
- * Private Functions
+ * Private Functions prototypes
  ****************************************************************************/
 
 /* Character driver methods */
@@ -81,6 +106,10 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len);
 static int     mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
 #ifndef CONFIG_DISABLE_POLL
 static int     mpu_poll(FAR struct file *filep, struct pollfd *fds, bool setup);
+#endif
+
+#ifndef CONFIG_DISABLE_POLL
+static void mpu_worker(FAR void *arg);
 #endif
 
 /****************************************************************************
@@ -106,6 +135,108 @@ static const struct file_operations g_mpu_fops =
  * Private Functions
  ****************************************************************************/
 
+/******************************************************************************
+ * Name: mpu_takesem
+ ******************************************************************************/
+
+static int mpu_takesem(FAR sem_t *sem, bool errout)
+{
+  /* Loop, ignoring interrupts, until we have successfully acquired the semaphore */
+
+  while (sem_wait(sem) != OK)
+    {
+      /* The only case that an error should occur here is if the wait was awakened
+       * by a signal.
+       */
+
+      ASSERT(get_errno() == EINTR);
+
+      /* When the signal is received, should we errout? Or should we just continue
+       * waiting until we have the semaphore?
+       */
+
+      if (errout)
+        {
+          return -EINTR;
+        }
+    }
+
+  return OK;
+}
+
+/******************************************************************************
+ * Name: mpu_givensem
+ ******************************************************************************/
+
+#define mpu_givesem(sem) (void)sem_post(sem)
+
+
+/****************************************************************************
+ * Name: efm32_lcd_kbd_open
+ ****************************************************************************/
+#if !defined(CONFIG_DISABLE_POLL) && !defined(BOARD_INV_MPU_IRQ)
+static void mpu_set_next_poll(struct mpu_dev_s* dev)
+{
+    if ( work_queue(HPWORK, 
+                    &(dev->work), 
+                    mpu_worker,
+                    dev, 
+                    MSEC2TICK(CONFIG_INVENSENSE_POLLING_MS)
+                    ) != OK )
+    {
+        MPU_LOG("Cannot register worker !\n");
+        return;
+    }
+}
+#endif
+
+/****************************************************************************
+ * irq handler
+ ****************************************************************************/
+#ifndef CONFIG_DISABLE_POLL
+static void mpu_worker(FAR void *arg)
+{
+    struct mpu_dev_s *dev = (struct mpu_dev_s*)arg;
+
+    if ( mpu_takesem(&dev->exclsem, true) < 0 )
+    {
+        MPU_LOG("Cannot take semaphore !\n");
+        return;
+    }
+
+    if ( mpu_get_int_status(dev->inst, &dev->mpu_int_status, 
+                             &dev->dmp_int_status) < 0 )
+    {
+        MPU_LOG("Cannot get interrupts status !\n");
+    }
+    else
+    {
+        MPU_LOG("mpu_int_status 0x%02X dmp_int_status 0x%02X \n");
+
+        if ( dev->mpu_int_status & MPU_INT_STATUS_DATA_READY )
+        {
+
+            MPU_LOG("Data ready !\n");
+
+            /* add event to waiting semaphore */
+
+            if ( dev->poll_sem )
+            {
+                sem_post( dev->poll_sem );
+            }
+        }
+    }
+
+    mpu_givesem(&dev->exclsem);
+
+#if !defined(BOARD_INV_MPU_IRQ)
+    mpu_set_next_poll(dev);
+#endif
+
+    return;
+}
+#endif
+
 /****************************************************************************
  * Name: mpu_open
  *
@@ -116,23 +247,29 @@ static const struct file_operations g_mpu_fops =
 
 static int mpu_open(FAR struct file *filep)
 {
-    int ret = -EINVAL;
-    FAR struct inode      *inode;
-    FAR struct mpu_dev_s  *priv;
+    int ret;
+    FAR struct inode *inode     = filep->f_inode;
+    FAR struct mpu_dev_s *dev   = inode->i_private;
 
-    DEBUGASSERT(filep);
-    inode = filep->f_inode;
-    DEBUGASSERT(inode && inode->i_private);
-    priv  = (FAR struct mpu_dev_s *)inode->i_private;
+    if ( mpu_takesem(&dev->exclsem, true) < 0 )
+    {
+        MPU_LOG("Cannot take semaphore !\n");
+        return -1;
+    }
 
-    /* TODO: .... */
-    UNUSED(priv);
+    ret = mpu_set_sensors_enable(dev->inst, MPU_XYZ_GYRO|MPU_XYZ_ACCEL| 
+                                 MPU_XYZ_COMPASS); 
+
+    if ( ret >= 0 )
+        ret = mpu_reset_fifo(dev->inst);
+
+    mpu_givesem(&dev->exclsem);
 
     return ret;
 }
 
 /****************************************************************************
- * Name: mpu9250_close
+ * Name: mpu_close
  *
  * Description:
  *   Standard character driver close method.
@@ -141,63 +278,127 @@ static int mpu_open(FAR struct file *filep)
 
 static int mpu_close(FAR struct file *filep)
 {
-    int ret = -EINVAL;
-    FAR struct inode      *inode;
-    FAR struct mpu_dev_s  *priv;
+    int ret;
+    FAR struct inode *inode     = filep->f_inode;
+    FAR struct mpu_dev_s *dev   = inode->i_private;
 
-    DEBUGASSERT(filep);
-    inode = filep->f_inode;
-    DEBUGASSERT(inode && inode->i_private);
-    priv  = (FAR struct mpu_dev_s *)inode->i_private;
+    if ( mpu_takesem(&dev->exclsem, true) < 0 )
+    {
+        MPU_LOG("Cannot take semaphore !\n");
+        return -1;
+    }
 
-    ret = mpu_set_sensors_enable(priv->inst, 0);
+    ret = mpu_set_sensors_enable(dev->inst,0);
+
+    mpu_givesem(&dev->exclsem);
 
     return ret;
 }
 
 /****************************************************************************
- * Name: mpu9250_read
+ * Name: mpu_poll
  *
  * Description:
- *   Standard character driver read method.
+ *   Standard character driver close method.
+ *
+ ****************************************************************************/
+
+#ifndef CONFIG_DISABLE_POLL
+static int mpu_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
+{
+
+    FAR struct inode *inode     = filep->f_inode;
+    FAR struct mpu_dev_s *dev    = inode->i_private;
+
+    int res = 0;
+
+    /* Are we setting up the poll?  Or tearing it down? */
+
+    res = mpu_takesem(&dev->exclsem, true);
+
+    if (res < 0)
+    {
+        /* A signal received while waiting for access to the poll data
+         * will abort the operation.
+         */
+
+        return res;
+    }
+
+    if (setup)
+    {
+
+        fds->revents = 0;
+        /* This is a request to set up the poll.  Find an available
+         * slot for the poll structure reference
+         */
+
+        if ( dev->poll_sem != NULL)
+        {
+            res = -EINVAL;
+            goto errout;
+        }
+
+        if( dev->mpu_int_status & MPU_INT_STATUS_DATA_READY )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
+
+        if ( fds->revents == 0 )
+        {
+            dev->poll_sem = fds->sem ;
+        }
+        else
+        {
+            sem_post(fds->sem);
+            res = 1;
+        }
+    }
+    else if ( dev->poll_sem == fds->sem )
+    {
+        dev->poll_sem = NULL;
+    }
+errout:
+    mpu_givesem(&dev->exclsem);
+    return res;
+}
+#endif
+/****************************************************************************
+ * Name: mpu_read
+ *
+ * Description:
+ *   read fifo
  *
  ****************************************************************************/
 
 static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 {
-  FAR struct inode      *inode;
-  FAR struct mpu_dev_s  *priv;
-  int                   ret;
-  int                   more;
+    FAR struct inode *inode     = filep->f_inode;
+    FAR struct mpu_dev_s *dev    = inode->i_private;
 
-  snvdbg("len=%d\n", len);
+    int                   ret;
+    int                   more;
 
-  DEBUGASSERT(filep);
-  inode = filep->f_inode;
-  DEBUGASSERT(inode && inode->i_private);
-  priv  = (FAR struct mpu_dev_s *)inode->i_private;
+    snvdbg("len=%d\n", len);
 
-  /* Get exclusive access to the driver data structure */
+    /* Get exclusive access to the driver data structure */
 
-  ret = sem_wait(&priv->exclsem);
-  if (ret < 0)
+    if ( mpu_takesem(&dev->exclsem, true) < 0 )
     {
-      /* This should only happen if the wait was canceled by an signal */
-
-      DEBUGASSERT(errno == EINTR);
-      return -EINTR;
+        MPU_LOG("Cannot take semaphore !\n");
+        return -EINTR;
     }
 
-  /* Read accelerometer X Y Z axes */
+    /* Read accelerometer X Y Z axes */
 
-  ret = mpu_read_fifo_stream(priv->inst, len, (uint8_t*)buffer, &more);
+    ret = mpu_read_fifo_stream(dev->inst, len, (uint8_t*)buffer, &more);
 
-  sem_post(&priv->exclsem);
+    mpu_givesem(&dev->exclsem);
 
-  if ( ret < 0 )
-      return ret;
+    if ( ret < 0 )
+        return ret;
 
-  return more;
+    return len;
 }
 
 /****************************************************************************
@@ -229,7 +430,7 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
         case MPU_FREQUENCY:
             if ( arg < UINT16_MAX )
             {
-#if CONFIG_INVENSENSE_DMP
+#ifdef CONFIG_INVENSENSE_DMP
                 if ( priv->dmp_loaded )
                 {
                     ret = dmp_set_fifo_rate(priv->dmp,arg);
@@ -241,7 +442,7 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
                 }
             }
             break;
-#if CONFIG_INVENSENSE_DMP
+#ifdef CONFIG_INVENSENSE_DMP
         case MPU_LOAD_FIRMWARE:
             if ( ! priv->dmp_loaded )
             {
@@ -262,45 +463,19 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     return ret;
 }
 
+
+#if BOARD_INV_MPU_IRQ
 /****************************************************************************
- * Name: mpu_poll
+ * Name: mpu_interrupt
  *
  * Description:
- *  The invensense MPU ioctl handler
+ *  The MPU interrupt handler
  *
  ****************************************************************************/
 
-static int mpu_poll(FAR struct file *filep, struct pollfd *fds, bool setup)
+static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
 {
-    int ret = -EINVAL;
-    FAR struct inode      *inode;
-    FAR struct mpu_dev_s  *priv;
-
-    DEBUGASSERT(filep);
-    inode = filep->f_inode;
-    DEBUGASSERT(inode && inode->i_private);
-    priv  = (FAR struct mpu_dev_s *)inode->i_private;
-
-    /* TODO: .... */
-    UNUSED(priv);
-    UNUSED(fds);
-    UNUSED(setup);
-
-    return ret;
-}
-
-#if 0
-/****************************************************************************
- * Name: mpu9250_interrupt
- *
- * Description:
- *  The MPU9250 interrupt handler
- *
- ****************************************************************************/
-
-static void mpu9250_interrupt(FAR struct mpu9250_config_s *config, FAR void *arg)
-{
-  FAR struct mpu9250_dev_s *priv = (FAR struct mpu9250_dev_s *)arg;
+  FAR struct mpu_dev_s *priv = (FAR struct mpu_dev_s *)arg;
   int ret;
 
   DEBUGASSERT(priv && priv->config == config);
@@ -316,12 +491,12 @@ static void mpu9250_interrupt(FAR struct mpu9250_config_s *config, FAR void *arg
 
   if (work_available(&priv->work))
     {
-      /* Yes.. Transfer processing to the worker thread.  Since MPU9250
+      /* Yes.. Transfer processing to the worker thread.  Since MPU
        * interrupts are disabled while the work is pending, no special
        * action should be required to protect the work queue.
        */
 
-      ret = work_queue(HPWORK, &priv->work, mpu9250_worker, priv, 0);
+      ret = work_queue(HPWORK, &priv->work, mpu_worker, priv, 0);
       if (ret != 0)
         {
           snlldbg("Failed to queue work: %d\n", ret);
@@ -339,7 +514,7 @@ static void mpu9250_interrupt(FAR struct mpu9250_config_s *config, FAR void *arg
  ****************************************************************************/
 
 /****************************************************************************
- * Name: mpu_register
+ * Name: mpu_fileops_init
  *
  * Description:
  *   regiter invensense mpu ic.
@@ -354,48 +529,58 @@ static void mpu9250_interrupt(FAR struct mpu9250_config_s *config, FAR void *arg
  *
  ****************************************************************************/
 
-int mpu_register(struct mpu_inst_s* inst,const char *path ,int minor)
+int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor, 
+                     bool load_dmp)
 {
-  FAR struct mpu_dev_s *priv;
+  FAR struct mpu_dev_s *dev;
   int ret;
 
-  /* Allocate the MPU9250 driver instance */
+  /* Allocate the MPU driver instance */
 
-  priv = (FAR struct mpu_dev_s *)kmm_zalloc(sizeof(struct mpu_dev_s));
-  if (!priv)
+  dev = (FAR struct mpu_dev_s *)kmm_zalloc(sizeof(struct mpu_dev_s));
+  if (!dev)
     {
       sndbg("Failed to allocate the device structure!\n");
       return -ENOMEM;
     }
 
-  DEBUGASSERT(priv);
+  DEBUGASSERT(dev);
 
   /* Initialize the device state structure */
 
-  sem_init(&priv->exclsem, 0, 1);
-#if CONFIG_INVENSENSE_DMP
-  priv->dmp_loaded = true;
+  memset(dev,0,sizeof(*dev));
+  //dev->poll_sem = NULL; /* already done by memset */
+  sem_init(&dev->exclsem, 0, 1);
+  dev->inst = inst;
+
+#ifdef CONFIG_INVENSENSE_DMP
+  if ( load_dmp ) 
+  {
+      dev->dmp = dmp_init(inst);
+      if ( dev->dmp == NULL ) 
+      {
+          syslog(LOG_ERR,"Cannot initialize dmp instance !\n");
+          return -1;
+      }
+      dev->dmp_loaded = true;
+  }
+#else
+  ASSERT( load_dmp == false );
 #endif
-
-  /* Get exclusive access to the device structure */
-
-  ret = sem_wait(&priv->exclsem);
-  if (ret < 0)
-    {
-      int errval = errno;
-      sndbg("ERROR: sem_wait failed: %d\n", errval);
-      return -errval;
-    }
 
   /* Register the character driver */
 
-  ret = register_driver(path, &g_mpu_fops, 0666, priv);
+  ret = register_driver(path, &g_mpu_fops, 0666, dev);
+
   if (ret < 0)
     {
       sndbg("ERROR: Failed to register driver %s: %d\n", devname, ret);
-      sem_post(&priv->exclsem);
       return ret;
     }
+
+#ifndef CONFIG_DISABLE_POLL
+    mpu_set_next_poll(dev);
+#endif
 
   return ret;
 }

@@ -346,7 +346,9 @@ static int efm32_i2c_transfer(FAR struct i2c_dev_s *dev,
                               FAR struct i2c_msg_s *msgs, int count);
 #endif /* CONFIG_I2C_TRANSFER */
 
+#ifdef CONFIG_I2C_TRACE
 static const char *efm32_i2c_state_str(int i2c_state);
+#endif
 
 /*******************************************************************************
  * Private Data
@@ -485,6 +487,7 @@ static inline void efm32_i2c_modifyreg(FAR struct efm32_i2c_priv_s *priv,
  *
  ******************************************************************************/
 
+#ifdef CONFIG_I2C_TRACE
 static const char *efm32_i2c_state_str(int i2c_state)
 {
   switch (i2c_state)
@@ -515,6 +518,7 @@ static const char *efm32_i2c_state_str(int i2c_state)
       return "Unknown state!";
     }
 }
+#endif
 
 /*******************************************************************************
  * Name: efm32_i2c_sem_wait

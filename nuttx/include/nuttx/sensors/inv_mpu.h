@@ -205,6 +205,7 @@ extern "C" {
 #endif
 
 /* low level function */
+
 #ifdef CONFIG_INVENSENSE_SPI
 struct spi_dev_s; /* See nuttx/spi/spi.h */
 struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
@@ -218,13 +219,17 @@ struct mpu_low_s* mpu_low_i2c_init(int devno, int mpu_addr, int akm_addr,
 #endif
 
 /* Setup function */
+
 struct mpu_inst_s; /* See inv_mpu_base.c */
 struct mpu_inst_s* mpu_instantiate(FAR struct mpu_low_s* low);
 
 /* device driver setup function */
-int mpu_register(struct mpu_inst_s* inst,const char *path ,int minor);
+
+int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor, 
+                     bool load_dmp);
 
 /* Reset to default function */
+
 int mpu_reset_default(FAR struct mpu_inst_s* inst);
 
 /* Low Power mode */
@@ -319,8 +324,12 @@ int mpu_read_reg(struct mpu_inst_s* inst,uint8_t reg, uint8_t *data);
 
 int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
 
-/* TODO Sorry, not implemented */
 #if 0
+
+SCHED_FIFO
+
+/* TODO Sorry, not implemented */
+
 int mpu_run_self_test(struct mpu_inst_s* inst,long *gyro, long *accel);
 int mpu_run_6500_self_test(struct mpu_inst_s* inst,long *gyro, long *accel, 
                            uint8_t debug);

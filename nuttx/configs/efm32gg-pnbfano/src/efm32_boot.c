@@ -100,6 +100,24 @@ void efm32_boardinitialize(void)
 
 }
 
+#ifdef CONFIG_SCHED_INSTRUMENTATION
+
+void   sched_note_start(FAR struct tcb_s *tcb)
+{
+    up_putc('B');
+}
+void   sched_note_stop(FAR struct tcb_s *tcb)
+{
+    up_putc('E');
+}
+void   sched_note_switch(FAR struct tcb_s *pFromTcb,
+                         FAR struct tcb_s *pToTcb)
+{
+    up_putc('S');
+}
+
+#endif /* CONFIG_SCHED_INSTRUMENTATION */
+
 /****************************************************************************
  * Name: board_get_dev_vplane
  *
@@ -180,7 +198,11 @@ int efm32_initialize_mpu(int devno)
         return -1;
     }
 
-    if ( mpu_register(mpu_inst, "/dev/invmpu0", 0 ) < 0 )
+#ifdef CONFIG_INVENSENSE_DMP
+    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0, true) < 0 )
+#else
+    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0, false) < 0 )
+#endif
     {
         syslog(LOG_ERR,"Cannot register mpu device !\n");
         return -1;

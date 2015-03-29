@@ -52,6 +52,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <nuttx/kmalloc.h>
+
 #include "nuttx/sensors/inv_mpu.h"
 
 #include "inv_mpu_dmp.h"
@@ -71,7 +73,7 @@
                                      DMP_FEATURE_SEND_CAL_GYRO)  
 #define MAX_PACKET_LENGTH   (32)
 
-#define GYRO_SF             (46850825LL * 200 / MPU_DMP_SAMPLE_RATE)
+#define GYRO_SF             (46850825LL * 200 / DMP_SAMPLE_RATE)
 
 #define FIFO_CORRUPTION_CHECK
 #ifdef FIFO_CORRUPTION_CHECK
@@ -205,6 +207,33 @@ static int decode_gesture(struct dmp_s* dmp, uint8_t * gesture)
  * Public Functions
  ****************************************************************************/ 
 
+struct dmp_s* dmp_init(struct mpu_inst_s* inst)
+{
+  struct dmp_s* dmp;
+  const struct dmp_firmware_s* firm = dmp_firmware;
+
+  dmp = (FAR struct dmp_s *)kmm_zalloc(sizeof(struct dmp_s));
+  if (!dmp)
+    {
+      sndbg("Failed to allocate the device structure!\n");
+      return NULL;
+    }
+
+  memset(dmp,0,sizeof(*dmp));
+  dmp->inst = inst;
+
+  if ( mpu_load_firmware( inst, firm->size, firm->data, firm->start_addr, 
+                          firm->sample_rate) < 0 )
+    {
+      sndbg("Failed to allocate the device structure!\n");
+      free(dmp);
+      return NULL;
+    }
+
+
+  return dmp;
+    
+}
 
 /*
  *  Name:dmp_set_orientation
@@ -317,13 +346,13 @@ int dmp_set_gyro_bias(struct dmp_s* dmp, int32_t * bias)
     gyro_bias_body[2] = (((int64_t)gyro_bias_body[2] * GYRO_SF) >> 30);
 #endif
 
-    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_X, gyro_bias_body[0]) < 0 )
+    if (dmp_write_32(dmp, DMP_D_EXT_GYRO_BIAS_X, gyro_bias_body[0]) < 0 )
         return -1;
 
-    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_Y, gyro_bias_body[1]) < 0 )
+    if (dmp_write_32(dmp, DMP_D_EXT_GYRO_BIAS_Y, gyro_bias_body[1]) < 0 )
         return -1;
 
-    if (dmp_write_32(dmp, MPU_DMP_D_EXT_GYRO_BIAS_Z, gyro_bias_body[2]) < 0 )
+    if (dmp_write_32(dmp, DMP_D_EXT_GYRO_BIAS_Z, gyro_bias_body[2]) < 0 )
         return -1;
 
     return 0;
@@ -390,7 +419,7 @@ int dmp_set_accel_bias(struct dmp_s* dmp, int32_t * bias)
     regs[10] = (uint8_t) ((accel_bias_body[2] >> 8) & 0xFF);
     regs[11] = (uint8_t) (accel_bias_body[2] & 0xFF);
 
-    if ( mpu_write_mem(dmp->inst,MPU_DMP_D_ACCEL_BIAS, 12, regs) < 0 )
+    if ( mpu_write_mem(dmp->inst,DMP_D_ACCEL_BIAS, 12, regs) < 0 )
         return -1;
     return 0;
 }
@@ -416,13 +445,13 @@ int dmp_set_fifo_rate(struct dmp_s* dmp, uint16_t rate)
         0xAF, 0xDF, 0xDF
     };
 
-    if (rate > MPU_DMP_SAMPLE_RATE)
+    if (rate > DMP_SAMPLE_RATE)
         return -1;
 
-    if (dmp_write_16(dmp, MPU_DMP_D_0_22, MPU_DMP_SAMPLE_RATE / rate - 1) < 0 )
+    if (dmp_write_16(dmp, DMP_D_0_22, DMP_SAMPLE_RATE / rate - 1) < 0 )
         return -1;
 
-    if (mpu_write_mem(dmp->inst, MPU_DMP_CFG_6, 12, (uint8_t *) regs_end) < 0 )
+    if (mpu_write_mem(dmp->inst, DMP_CFG_6, 12, (uint8_t *) regs_end) < 0 )
         return -1;
 
     dmp->fifo_rate = rate;
@@ -473,7 +502,7 @@ int dmp_set_tap_thresh(struct dmp_s* dmp, uint8_t axis, uint16_t thresh)
     if (!(axis & TAP_XYZ) || thresh > 1600)
         return -1;
 
-    scaled_thresh = (float)thresh / MPU_DMP_SAMPLE_RATE;
+    scaled_thresh = (float)thresh / DMP_SAMPLE_RATE;
 
     if ( mpu_get_accel_fsr(dmp->inst, &accel_fsr) < 0 )
         return -1;
@@ -504,7 +533,7 @@ int dmp_set_tap_thresh(struct dmp_s* dmp, uint8_t axis, uint16_t thresh)
     {
         if (dmp_write_16(dmp, DMP_TAP_THX, dmp_thresh) < 0 )
             return -1;
-        if (dmp_write_16(dmp, MPU_DMP_D_1_36, dmp_thresh_2) < 0 )
+        if (dmp_write_16(dmp, DMP_D_1_36, dmp_thresh_2) < 0 )
             return -1;
     }
 
@@ -512,7 +541,7 @@ int dmp_set_tap_thresh(struct dmp_s* dmp, uint8_t axis, uint16_t thresh)
     {
         if (dmp_write_16(dmp, DMP_TAP_THY, dmp_thresh) < 0 )
             return -1;
-        if (dmp_write_16(dmp, MPU_DMP_D_1_40, dmp_thresh_2) < 0 )
+        if (dmp_write_16(dmp, DMP_D_1_40, dmp_thresh_2) < 0 )
             return -1;
     }
 
@@ -520,7 +549,7 @@ int dmp_set_tap_thresh(struct dmp_s* dmp, uint8_t axis, uint16_t thresh)
     {
         if (dmp_write_16(dmp, DMP_TAP_THZ, dmp_thresh) < 0 )
             return -1;
-        if (dmp_write_16(dmp, MPU_DMP_D_1_44, dmp_thresh_2) < 0 )
+        if (dmp_write_16(dmp, DMP_D_1_44, dmp_thresh_2) < 0 )
             return -1;
     }
 
@@ -550,7 +579,7 @@ int dmp_set_tap_axes(struct dmp_s* dmp, uint8_t axis)
         regval |= 0x0C;
     if (axis & TAP_Z)
         regval |= 0x03;
-    return dmp_write_8(dmp, MPU_DMP_D_1_72, regval);
+    return dmp_write_8(dmp, DMP_D_1_72, regval);
 }
 
 
@@ -574,7 +603,7 @@ int dmp_set_tap_count(struct dmp_s* dmp, uint8_t min_taps)
     else if (min_taps > 4)
         min_taps = 4;
 
-    return dmp_write_8(dmp, MPU_DMP_D_1_79, min_taps - 1);
+    return dmp_write_8(dmp, DMP_D_1_79, min_taps - 1);
 }
 
 
@@ -594,7 +623,7 @@ int dmp_set_tap_time(struct dmp_s* dmp, uint16_t time)
 {
     uint16_t dmp_time;
 
-    dmp_time = time / (1000 / MPU_DMP_SAMPLE_RATE);
+    dmp_time = time / (1000 / DMP_SAMPLE_RATE);
 
     return dmp_write_16(dmp, DMP_TAPW_MIN, dmp_time);
 }
@@ -616,9 +645,9 @@ int dmp_set_tap_time_multi(struct dmp_s* dmp, uint16_t time)
 {
     uint16_t dmp_time;
 
-    dmp_time = time / (1000 / MPU_DMP_SAMPLE_RATE);
+    dmp_time = time / (1000 / DMP_SAMPLE_RATE);
 
-    return dmp_write_16(dmp, MPU_DMP_D_1_218, dmp_time);
+    return dmp_write_16(dmp, DMP_D_1_218, dmp_time);
 }
 
 
@@ -640,7 +669,7 @@ int dmp_set_shake_reject_thresh(struct dmp_s* dmp, int32_t sf, uint16_t thresh)
 {
     int32_t thresh_scaled = sf / 1000 * thresh;
 
-    return dmp_write_32(dmp, MPU_DMP_D_1_92,thresh_scaled);
+    return dmp_write_32(dmp, DMP_D_1_92,thresh_scaled);
 }
 
 
@@ -661,7 +690,7 @@ int dmp_set_shake_reject_thresh(struct dmp_s* dmp, int32_t sf, uint16_t thresh)
  */ 
 int dmp_set_shake_reject_time(struct dmp_s* dmp, uint16_t time) 
 {
-    return dmp_write_16(dmp, MPU_DMP_D_1_90, time/(1000/MPU_DMP_SAMPLE_RATE) );
+    return dmp_write_16(dmp, DMP_D_1_90, time/(1000/DMP_SAMPLE_RATE) );
 }
 
 
@@ -682,7 +711,7 @@ int dmp_set_shake_reject_time(struct dmp_s* dmp, uint16_t time)
  */ 
 int dmp_set_shake_reject_timeout(struct dmp_s* dmp, uint16_t time) 
 {
-    return dmp_write_16(dmp, MPU_DMP_D_1_88, time/(1000/MPU_DMP_SAMPLE_RATE) );
+    return dmp_write_16(dmp, DMP_D_1_88, time/(1000/DMP_SAMPLE_RATE) );
 }
 
 
@@ -704,7 +733,7 @@ int dmp_get_pedometer_step_count(struct dmp_s* dmp, uint32_t * count)
     if (!count)
         return -1;
 
-    return dmp_read_32(dmp, MPU_DMP_D_PEDSTD_STEPCTR, count);
+    return dmp_read_32(dmp, DMP_D_PEDSTD_STEPCTR, count);
 }
 
 
@@ -724,7 +753,7 @@ int dmp_get_pedometer_step_count(struct dmp_s* dmp, uint32_t * count)
  */ 
 int dmp_set_pedometer_step_count(struct dmp_s* dmp, uint32_t count) 
 {
-    return dmp_write_32(dmp, MPU_DMP_D_PEDSTD_STEPCTR, count);
+    return dmp_write_32(dmp, DMP_D_PEDSTD_STEPCTR, count);
 }
 
 
@@ -746,7 +775,7 @@ int dmp_get_pedometer_walk_time(struct dmp_s* dmp, uint32_t * time)
     if (!time)
         return -1;
 
-    if ( dmp_read_32(dmp, MPU_DMP_D_PEDSTD_TIMECTR, time) < 0 );
+    if ( dmp_read_32(dmp, DMP_D_PEDSTD_TIMECTR, time) < 0 );
         return -1;
 
     *time *= 20;
@@ -771,7 +800,7 @@ int dmp_get_pedometer_walk_time(struct dmp_s* dmp, uint32_t * time)
  */ 
 int dmp_set_pedometer_walk_time(struct dmp_s* dmp, uint32_t time) 
 {
-    return dmp_write_32(dmp, MPU_DMP_D_PEDSTD_STEPCTR, time/20);
+    return dmp_write_32(dmp, DMP_D_PEDSTD_STEPCTR, time/20);
 }
 
 
@@ -808,7 +837,7 @@ int dmp_enable_feature(struct dmp_s* dmp, uint16_t mask)
      * DMP image. */ 
 
     /* Set integration scale factor. */ 
-    if ( dmp_write_32(dmp, MPU_DMP_D_0_104, GYRO_SF) < 0 )
+    if ( dmp_write_32(dmp, DMP_D_0_104, GYRO_SF) < 0 )
         return -1;
 
     /* Send sensor data to the FIFO. */ 
@@ -874,7 +903,7 @@ int dmp_enable_feature(struct dmp_s* dmp, uint16_t mask)
             tmp[3] = 0x90;
         }
 
-        if ( mpu_write_mem(dmp->inst, MPU_DMP_CFG_GYRO_RAW_DATA, 4, tmp) < 0)
+        if ( mpu_write_mem(dmp->inst, DMP_CFG_GYRO_RAW_DATA, 4, tmp) < 0)
             return -1;
     }
 

@@ -76,7 +76,9 @@ struct dmp_s;
 
 /* Set up functions. */ 
 
-int dmp_load_motion_driver_firmware(struct dmp_s* dmp);
+struct dmp_s* dmp_init(struct mpu_inst_s* inst);
+
+
 int dmp_set_fifo_rate(          struct dmp_s* dmp,uint16_t rate);
 int dmp_get_fifo_rate(          struct dmp_s* dmp,uint16_t *rate);
 int dmp_enable_feature(         struct dmp_s* dmp,uint16_t mask);

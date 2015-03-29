@@ -1728,12 +1728,12 @@ int mpu_get_sensors_enable(struct mpu_inst_s* inst, uint8_t* sensors)
  *  inst        instance of inv_mpu driver.
  *  sensors     Mask of sensors On/Off. sensors can contain a 
  *              combination of the following flags:
- *                  INV_X_GYRO 
- *                  INV_Y_GYRO 
- *                  INV_Z_GYRO
- *                  INV_XYZ_GYRO
- *                  INV_XYZ_ACCEL
- *                  INV_XYZ_COMPASS
+ *                  MPU_X_GYRO 
+ *                  MPU_Y_GYRO 
+ *                  MPU_Z_GYRO
+ *                  MPU_XYZ_GYRO
+ *                  MPU_XYZ_ACCEL
+ *                  MPU_XYZ_COMPASS
  *
  * Return
  *  0 on success, negative value in case of error.

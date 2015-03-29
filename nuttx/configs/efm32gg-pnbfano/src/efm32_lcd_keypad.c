@@ -57,6 +57,10 @@
 
 #include <efm32_lcd_keypad.h>
 
+/*******************************************************************************
+ * Pre-processor Definitions
+ ******************************************************************************/ 
+
 #define EFM32_LCD_KBD_LOG(...)
 //#define EFM32_LCD_KBD_LOG(...) lldbg(__VA_ARGS__)
 //#define EFM32_LCD_KBD_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
@@ -83,8 +87,10 @@ typedef struct
     int     wr_idx;
     uint8_t kbdbuffer[CONFIG_EFM32_LCD_KBD_BUFSIZE];
 
+#ifndef CONFIG_DISABLE_POLL
     sem_t   *poll_sem;
     struct work_s work;
+#endif
 }efm32_lcd_kbd_t;
 
 struct efm32_lcd_kbd_stream 
@@ -114,9 +120,9 @@ static const struct file_operations keypad_ops =
 #endif
 };
 
-/************************************************************************************
+/******************************************************************************
  * Name: efm32_lcd_kbd_takesem
- ************************************************************************************/
+ ******************************************************************************/
 
 static int efm32_lcd_kbd_takesem(FAR sem_t *sem, bool errout)
 {
@@ -143,9 +149,9 @@ static int efm32_lcd_kbd_takesem(FAR sem_t *sem, bool errout)
   return OK;
 }
 
-/************************************************************************************
- * Name: uart_givesem
- ************************************************************************************/
+/******************************************************************************
+ * Name: efm32_lcd_kbd_givesem
+ ******************************************************************************/
 
 #define efm32_lcd_kbd_givesem(sem) (void)sem_post(sem)
 
@@ -167,7 +173,9 @@ static const int key_mapping[GPIO_LCD_PORT_BUS_WIDTH] =
     GPIO_LCD_KEY_D7
 };
 
+#ifndef CONFIG_DISABLE_POLL
 static void efm32_lcd_kbd_worker(FAR void *arg);
+#endif
 
 /****************************************************************************
  * Name: efm32_lcd_kbd_level
@@ -208,11 +216,13 @@ static void efm32_lcd_kbd_putc(FAR struct lib_outstream_s *this, int ch)
         sem_post(&dev->rd_sem);
         this->nput++;
 
+#ifndef CONFIG_DISABLE_POLL
         /* add event to waiting semaphore */
         if ( dev->poll_sem )
         {
             sem_post( dev->poll_sem );
         }
+#endif
     }
     else
     {
@@ -224,6 +234,7 @@ static void efm32_lcd_kbd_putc(FAR struct lib_outstream_s *this, int ch)
 /****************************************************************************
  * Name: efm32_lcd_kbd_open
  ****************************************************************************/
+#ifndef CONFIG_DISABLE_POLL
 static void efm32_lcd_kbd_set_next_poll(efm32_lcd_kbd_t* dev)
 {
     if ( work_queue(HPWORK, 
@@ -233,14 +244,16 @@ static void efm32_lcd_kbd_set_next_poll(efm32_lcd_kbd_t* dev)
                     MSEC2TICK(CONFIG_LCD_KBD_POLL_MS)
                     ) != OK )
     {
-        EFM32_LCD_KBD_LOG("Cannot register work !\n");
+        EFM32_LCD_KBD_LOG("Cannot register worker !\n");
         return;
     }
 }
+#endif
 
 /****************************************************************************
  * irq handler
  ****************************************************************************/
+#ifndef CONFIG_DISABLE_POLL
 static void efm32_lcd_kbd_worker(FAR void *arg)
 {
     int res ;
@@ -307,6 +320,7 @@ static void efm32_lcd_kbd_worker(FAR void *arg)
 
     return;
 }
+#endif
 
 
 
@@ -346,7 +360,9 @@ int keypad_kbdinit( void )
     sem_init(&dev->rd_sem,    1, 0);
     sem_init(&dev->mutex,     1, 1);
 
+#ifndef CONFIG_DISABLE_POLL
     efm32_lcd_kbd_set_next_poll(dev);
+#endif
 
     register_driver("/dev/keypad", &keypad_ops, 0444, dev);
 

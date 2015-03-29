@@ -68,7 +68,7 @@
  * Private Data
  ******************************************************************************/
 
-struct const mpu_firmware_s firmware = 
+struct const dmp_firmware_s dmp_firmware = 
 {
     .start_addr     = 0x0400,
     .sample_rate    = MPU_DMP_SAMPLE_RATE,
@@ -352,7 +352,5 @@ struct const mpu_firmware_s firmware =
     }
 };
 
-
-struct mpu_dmp_firmware_s* mpu_dmp_get_firmware(const char path);
 
 
