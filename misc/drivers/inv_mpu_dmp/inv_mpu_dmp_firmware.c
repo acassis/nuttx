@@ -45,7 +45,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "inv_mpu.h"
+#include "nuttx/sensors/inv_mpu.h"
+
 #include "inv_mpu_dmp_firmware.h"
 
 /*******************************************************************************
@@ -68,11 +69,11 @@
  * Private Data
  ******************************************************************************/
 
-struct const dmp_firmware_s dmp_firmware = 
+const struct dmp_firmware_s dmp_firmware = 
 {
     .start_addr     = 0x0400,
-    .sample_rate    = MPU_DMP_SAMPLE_RATE,
-    .size           = MPU_DMP_CODE_SIZE,
+    .sample_rate    = DMP_SAMPLE_RATE,
+    .size           = DMP_CODE_SIZE,
     .data = {
         /* bank # 0 */
         0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x02, 

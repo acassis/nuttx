@@ -263,7 +263,7 @@ struct dmp_firmware_s
     uint8_t data[]; 
 };
 
-const struct dmp_firmware_s* dmp_firmware;
+extern const struct dmp_firmware_s dmp_firmware;
 
 
 #undef EXTERN

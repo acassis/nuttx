@@ -1612,11 +1612,11 @@ int mpu_get_accel_sensibilty(struct mpu_inst_s* inst,uint16_t *sensitivity)
  *  inst        instance of inv_mpu driver.
  *  sensors     Mask of sensors in FIFO. sensors can contain a combination of 
  *              the following flags:
- *                  INV_X_GYRO 
- *                  INV_Y_GYRO 
- *                  INV_Z_GYRO
- *                  INV_XYZ_GYRO
- *                  INV_XYZ_ACCEL
+ *                  MPU_X_GYRO 
+ *                  MPU_Y_GYRO 
+ *                  MPU_Z_GYRO
+ *                  MPU_XYZ_GYRO
+ *                  MPU_XYZ_ACCEL
  *
  * Return
  *  0 on success, negative value in case of error.
@@ -1638,11 +1638,11 @@ int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors)
  *  inst        instance of inv_mpu driver.
  *  sensors     Mask of sensors to push to FIFO. sensors can contain a 
  *              combination of the following flags:
- *                  INV_X_GYRO 
- *                  INV_Y_GYRO 
- *                  INV_Z_GYRO
- *                  INV_XYZ_GYRO
- *                  INV_XYZ_ACCEL
+ *                  MPU_X_GYRO 
+ *                  MPU_Y_GYRO 
+ *                  MPU_Z_GYRO
+ *                  MPU_XYZ_GYRO
+ *                  MPU_XYZ_ACCEL
  *
  * Return
  *  0 on success, negative value in case of error.
@@ -1701,12 +1701,12 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
  *  inst        instance of inv_mpu driver.
  *  sensors     Mask of sensors On/Off. sensors can contain a 
  *              combination of the following flags:
- *                  INV_X_GYRO 
- *                  INV_Y_GYRO 
- *                  INV_Z_GYRO
- *                  INV_XYZ_GYRO
- *                  INV_XYZ_ACCEL
- *                  INV_XYZ_COMPASS
+ *                  MPU_X_GYRO 
+ *                  MPU_Y_GYRO 
+ *                  MPU_Z_GYRO
+ *                  MPU_XYZ_GYRO
+ *                  MPU_XYZ_ACCEL
+ *                  MPU_XYZ_COMPASS
  *
  * Return
  *  0 on success, negative value in case of error.
@@ -1781,7 +1781,6 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
 
     if ((sensors) && (sensors != MPU_XYZ_ACCEL))
     {
-
         mpu_set_int_latched(inst,false);
     }
 
@@ -2204,8 +2203,10 @@ int mpu_write_mem(struct mpu_inst_s* inst, uint16_t mem_addr, uint16_t length,
 
     if (!data)
         return -1;
-    if (!inst->chip_cfg.sensors)
-        return -1;
+/* I don't see why I need to enable sensors to read or write memory 
+ *    if (!inst->chip_cfg.sensors)
+ *        return -1;
+ */
 
     tmp[0] = (uint8_t)(mem_addr >> 8);
     tmp[1] = (uint8_t)(mem_addr & 0xFF);
@@ -2250,8 +2251,10 @@ int mpu_read_mem(struct mpu_inst_s* inst, uint16_t mem_addr, uint16_t length,
     if (!data)
         return -1;
 
-    if (!inst->chip_cfg.sensors)
-        return -1;
+/* I don't see why I need to enable sensors to read or write memory 
+ *    if (!inst->chip_cfg.sensors)
+ *        return -1;
+ */
 
     tmp[0] = (uint8_t)(mem_addr >> 8);
     tmp[1] = (uint8_t)(mem_addr & 0xFF);

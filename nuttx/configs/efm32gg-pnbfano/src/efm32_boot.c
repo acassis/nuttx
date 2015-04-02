@@ -228,28 +228,28 @@ int efm32_initialize_mpu(int devno)
 void board_initialize(void)
 {
 
-    syslog(LOG_NOTICE,"initialize PWM !\n");
+    syslog(LOG_NOTICE,"initialize PWM \n");
 	if ( board_init_pwm() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize PWMs\n");
     }
 
-    syslog(LOG_NOTICE,"initialize CHRONO !\n");
+    syslog(LOG_NOTICE,"initialize CHRONO \n");
 	if ( efm32_gpio_chrono_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize Chrono\n");
     }
 
-    syslog(LOG_NOTICE,"initialize PPS !\n");
+    syslog(LOG_NOTICE,"initialize PPS \n");
 	if ( efm32_gpio_pps_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize PPS\n");
     }
 
-    syslog(LOG_NOTICE,"initialize LCD !\n");
+    syslog(LOG_NOTICE,"initialize LCD \n");
     if ( up_lcdinitialize() != OK )
     {
-        syslog(LOG_ERR,"Cannot initialize LCD !\n");
+        syslog(LOG_ERR,"Cannot initialize LCD \n");
     }
 
 #if defined(CONFIG_PNBFANO_GPIO_KEYPAD) || \
@@ -259,37 +259,40 @@ void board_initialize(void)
 
     /* initialise MPU9250 */
 
-    if ( efm32_initialize_mpu(0) )
+    syslog(LOG_NOTICE,"initialize MPU \n");
+    if ( efm32_initialize_mpu(0) < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize MPU\n");
     }
 
     /* Mount the SDIO-based MMC/SD block driver */
 
+    syslog(LOG_NOTICE,"initialize all SPI.\n");
     if ( efm32_initialize_spi_devices() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize SDcard\n");
     }
 
+    syslog(LOG_NOTICE,"Mount SDCARD.\n");
     if ( mount("/dev/mmcsd0","/mnt","vfat",0,NULL) < 0 )
     {
         syslog(LOG_ERR,"Cannot Mount SDcard\n");
     }
 
-    syslog(LOG_NOTICE,"Start slow polling !\n");
+    syslog(LOG_NOTICE,"Start slow polling \n");
     if ( efm32_slow_poll_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot Start slow polling\n");
     }
 
-    syslog(LOG_NOTICE,"initialize usbdev !\n");
+    syslog(LOG_NOTICE,"initialize usbdev \n");
     if ( efm32_usbdev_init() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize usbdev\n");
     }
 
 
-    syslog(LOG_NOTICE,"Board Ready !\n");
+    syslog(LOG_NOTICE,"Board Ready \n");
 
 }
 #endif

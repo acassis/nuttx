@@ -113,7 +113,7 @@ static int mpu_i2c_trans(FAR struct mpu_i2c_low_s* i2c_low, int i2c_addr, bool r
   if (read)
       msg[1].flags  = I2C_M_READ;       /* Read transaction             */
   else
-      msg[1].flags  = 0;                /* write transaction            */
+      msg[1].flags  = I2C_M_NORESTART;  /* write transaction no restart */
   msg[1].buffer = buf;                  /* Transfer to this address     */
   msg[1].length = size;                 /* Receive/Send data buffer     */
 

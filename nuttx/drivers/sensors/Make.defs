@@ -51,6 +51,8 @@ ifeq ($(CONFIG_SENSORS_INVENSENSE),y)
   ifeq ($(CONFIG_INVENSENSE_DMP),y)
     INV_DMP_CSRC := ${shell if [ -f sensors$(DELIM)inv_mpu_dmp.c ]; then echo "inv_mpu_dmp.c"; fi}
     CSRCS += $(INV_DMP_CSRC)
+    INV_DMP_FIRM_CSRC := ${shell if [ -f sensors$(DELIM)inv_mpu_dmp_firmware.c ]; then echo "inv_mpu_dmp_firmware.c"; fi}
+    CSRCS += $(INV_DMP_FIRM_CSRC)
   endif
 endif
 

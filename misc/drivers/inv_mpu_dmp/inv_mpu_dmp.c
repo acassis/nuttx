@@ -210,7 +210,7 @@ static int decode_gesture(struct dmp_s* dmp, uint8_t * gesture)
 struct dmp_s* dmp_init(struct mpu_inst_s* inst)
 {
   struct dmp_s* dmp;
-  const struct dmp_firmware_s* firm = dmp_firmware;
+  const struct dmp_firmware_s* firm = &dmp_firmware;
 
   dmp = (FAR struct dmp_s *)kmm_zalloc(sizeof(struct dmp_s));
   if (!dmp)
