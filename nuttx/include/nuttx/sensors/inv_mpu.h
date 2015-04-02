@@ -225,8 +225,7 @@ struct mpu_inst_s* mpu_instantiate(FAR struct mpu_low_s* low);
 
 /* device driver setup function */
 
-int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor, 
-                     bool load_dmp);
+int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor );
 
 /* Reset to default function */
 

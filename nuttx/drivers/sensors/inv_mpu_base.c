@@ -1473,7 +1473,8 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 
     /* Automatically set LPF to 1/2 sampling rate. */
 
-    mpu_set_lpf(inst, regval/2 );
+    if ( mpu_set_lpf(inst, inst->chip_cfg.sample_rate /2 ) < 0 )
+    	return -1;
 
     return 0;
 }
@@ -1677,7 +1678,8 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
         result = -1;
     }
 
-    mpu_set_int_enable(inst, (sensors || inst->chip_cfg.lp_accel_mode) );
+    if ( mpu_set_int_enable(inst, (sensors || inst->chip_cfg.lp_accel_mode) ) < 0 )
+    	return -1;
 
     if (sensors) 
     {

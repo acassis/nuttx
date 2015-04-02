@@ -198,11 +198,7 @@ int efm32_initialize_mpu(int devno)
         return -1;
     }
 
-#ifdef CONFIG_INVENSENSE_DMP
-    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0, true) < 0 )
-#else
-    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0, false) < 0 )
-#endif
+    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0) < 0 )
     {
         syslog(LOG_ERR,"Cannot register mpu device !\n");
         return -1;

@@ -71,6 +71,14 @@
 //#define MPU_LOG(...) lldbg(__VA_ARGS__)
 #define MPU_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
 
+#ifndef BOARD_ENABLES_SENSORS
+#   define BOARD_ENABLES_SENSORS MPU_XYZ_GYRO|MPU_XYZ_ACCEL
+#endif
+
+#ifndef BOARD_DEFAULT_MPU_HZ
+#   define BOARD_DEFAULT_MPU_HZ (100) /* in Hz */
+#endif
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -247,7 +255,7 @@ static void mpu_worker(FAR void *arg)
 
 static int mpu_open(FAR struct file *filep)
 {
-    int ret;
+    int ret = 0;
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev   = inode->i_private;
 
@@ -257,12 +265,22 @@ static int mpu_open(FAR struct file *filep)
         return -1;
     }
 
-    ret = mpu_set_sensors_enable(dev->inst, MPU_XYZ_GYRO|MPU_XYZ_ACCEL| 
-                                 MPU_XYZ_COMPASS); 
+    /* Get/set hardware configuration. Start gyro. 
+     * Wake up all sensors. 
+     */
 
-    if ( ret >= 0 )
-        ret = mpu_reset_fifo(dev->inst);
+    if ( ret == 0 )
+        ret = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
 
+    /* Push both gyro and accel data into the FIFO at default rate. */
+
+    if ( ret == 0 )
+        ret = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
+
+    if ( ret == 0 )
+        ret = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
+
+         
     mpu_givesem(&dev->exclsem);
 
     return ret;
@@ -289,6 +307,9 @@ static int mpu_close(FAR struct file *filep)
     }
 
     ret = mpu_set_sensors_enable(dev->inst,0);
+
+    if ( ret >= 0 )
+        ret = mpu_reset_fifo(dev->inst);
 
     mpu_givesem(&dev->exclsem);
 
@@ -529,8 +550,7 @@ static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
  *
  ****************************************************************************/
 
-int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor, 
-                     bool load_dmp)
+int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
 {
   FAR struct mpu_dev_s *dev;
   int ret;
@@ -553,20 +573,6 @@ int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor,
   sem_init(&dev->exclsem, 0, 1);
   dev->inst = inst;
 
-#ifdef CONFIG_INVENSENSE_DMP
-  if ( load_dmp ) 
-  {
-      dev->dmp = dmp_init(inst);
-      if ( dev->dmp == NULL ) 
-      {
-          syslog(LOG_ERR,"Cannot initialize dmp instance !\n");
-          return -1;
-      }
-      dev->dmp_loaded = true;
-  }
-#else
-  ASSERT( load_dmp == false );
-#endif
 
   /* Register the character driver */
 
