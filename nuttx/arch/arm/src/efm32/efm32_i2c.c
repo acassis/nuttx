@@ -243,7 +243,7 @@ struct efm32_i2c_priv_s
   sem_t sem_isr;              /* Interrupt wait semaphore */
 #endif
 
-  volatile uint8_t result;    /* result of transfer */
+  volatile int8_t result;    /* result of transfer */
 
   uint8_t i2c_state;          /* i2c state machine */
   uint32_t i2c_reg_if;        /* Current state of I2Cx_IF register. */
@@ -1605,23 +1605,47 @@ static int efm32_i2c_process(FAR struct i2c_dev_s *dev,
       efm32_i2c_putreg(priv, EFM32_I2C_CMD_OFFSET, I2C_CMD_ABORT);
 
     }
+  else
+    {
 
-  /* Check for error status conditions */
+      /* Check for error status conditions */
 
-#if 0
-  /* Arbitration Lost (master mode) */
-  errval = EAGAIN;
-  /* Acknowledge Failure */
-  errval = ENXIO;
-  /* Overrun/Underrun */
-  errval = EIO;
-  /* PEC Error in reception */
-  errval = EPROTO;
-  /* Timeout or Tlow Error */
-  errval = ETIME;
-  /* I2C Bus is for some reason busy */
-  errval = EBUSY;
-#endif
+      switch(priv->result)
+        {
+
+            /* Arbitration lost during transfer. */
+
+          case I2CRESULT_ARBLOST:
+              errval = EAGAIN;
+              break;
+
+              /* NACK received during transfer. */
+
+          case I2CRESULT_NACK:
+              errval = ENXIO;
+              break;
+
+              /* SW fault. */
+
+          case I2CRESULT_SWFAULT:
+              errval = EIO;
+              break;
+
+              /* Usage fault. */
+
+          case I2CRESULT_USAGEFAULT:
+              errval = EINTR;
+              break;
+
+              /* Bus error during transfer (misplaced START/STOP).
+               * I2C Bus is for some reason busy 
+               */
+
+          case I2CRESULT_BUSERR:
+              errval = EBUSY;
+              break;
+        }
+    }
 
   /* Dump the trace result */
 

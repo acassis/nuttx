@@ -89,7 +89,6 @@ struct mpu_dev_s {
     struct mpu_inst_s* inst;
 #ifdef CONFIG_INVENSENSE_DMP
     struct dmp_s *dmp;
-    bool    dmp_loaded;
 #endif
     uint8_t mpu_int_status;
     uint8_t dmp_int_status;
@@ -265,22 +264,6 @@ static int mpu_open(FAR struct file *filep)
         return -1;
     }
 
-    /* Get/set hardware configuration. Start gyro. 
-     * Wake up all sensors. 
-     */
-
-    if ( ret == 0 )
-        ret = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
-
-    /* Push both gyro and accel data into the FIFO at default rate. */
-
-    if ( ret == 0 )
-        ret = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
-
-    if ( ret == 0 )
-        ret = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
-
-         
     mpu_givesem(&dev->exclsem);
 
     return ret;
@@ -433,52 +416,32 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
     int ret = -EINVAL;
-    FAR struct inode      *inode;
-    FAR struct mpu_dev_s  *priv;
 
-    DEBUGASSERT(filep);
-    inode = filep->f_inode;
-    DEBUGASSERT(inode && inode->i_private);
-    priv  = (FAR struct mpu_dev_s *)inode->i_private;
+    FAR struct inode *inode     = filep->f_inode;
+    FAR struct mpu_dev_s *dev   = inode->i_private;
 
     switch (cmd)
     {
 
         case MPU_ENABLE:
-            ret = mpu_set_sensors_enable(priv->inst,arg);
+            ret = mpu_set_sensors_enable(dev->inst,arg);
             break;
 
         case MPU_FREQUENCY:
             if ( arg < UINT16_MAX )
             {
 #ifdef CONFIG_INVENSENSE_DMP
-                if ( priv->dmp_loaded )
+                if ( dev->dmp )
                 {
-                    ret = dmp_set_fifo_rate(priv->dmp,arg);
+                    ret = dmp_set_fifo_rate(dev->dmp,arg);
                 }
                 else
 #endif
                 {
-                    ret = mpu_set_sample_rate(priv->inst,arg);
+                    ret = mpu_set_sample_rate(dev->inst,arg);
                 }
             }
             break;
-#ifdef CONFIG_INVENSENSE_DMP
-        case MPU_LOAD_FIRMWARE:
-            if ( ! priv->dmp_loaded )
-            {
-                struct mpu_firmware_s* f = (struct mpu_firmware_s*)arg;
-                ret = mpu_load_firmware(priv->inst, f->size, f->data, 
-                                        f->start_addr, f->sample_rate);
-                if ( ret >= 0 )
-                    priv->dmp_loaded = true;
-            }
-#endif
-            break;
-        default:
-        /* TODO: .... */
-        UNUSED(priv);
-        UNUSED(arg);
 
     }
     return ret;
@@ -552,43 +515,65 @@ static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
 
 int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
 {
-  FAR struct mpu_dev_s *dev;
-  int ret;
+    FAR struct mpu_dev_s *dev;
+    int ret;
 
-  /* Allocate the MPU driver instance */
+    /* Allocate the MPU driver instance */
 
-  dev = (FAR struct mpu_dev_s *)kmm_zalloc(sizeof(struct mpu_dev_s));
-  if (!dev)
+    dev = (FAR struct mpu_dev_s *)kmm_zalloc(sizeof(struct mpu_dev_s));
+    if (!dev)
     {
-      sndbg("Failed to allocate the device structure!\n");
-      return -ENOMEM;
+        sndbg("Failed to allocate the device structure!\n");
+        return -ENOMEM;
     }
 
-  DEBUGASSERT(dev);
+    DEBUGASSERT(dev);
 
-  /* Initialize the device state structure */
+    /* Initialize the device state structure */
 
-  memset(dev,0,sizeof(*dev));
-  //dev->poll_sem = NULL; /* already done by memset */
-  sem_init(&dev->exclsem, 0, 1);
-  dev->inst = inst;
+    memset(dev,0,sizeof(*dev));
+    //dev->poll_sem = NULL; /* already done by memset */
+    sem_init(&dev->exclsem, 0, 1);
+    dev->inst = inst;
 
 
-  /* Register the character driver */
+    /* Get/set hardware configuration. Start gyro. 
+     * Wake up all sensors. 
+     */
 
-  ret = register_driver(path, &g_mpu_fops, 0666, dev);
+    if ( ret == 0 )
+        ret = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
 
-  if (ret < 0)
+    /* Push both gyro and accel data into the FIFO at default rate. */
+
+    if ( ret == 0 )
+        ret = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
+
+    if ( ret == 0 )
+        ret = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
+
+#ifdef CONFIG_INVENSENSE_DMP
+    if ( dev->dmp == NULL )
     {
-      sndbg("ERROR: Failed to register driver %s: %d\n", devname, ret);
-      return ret;
+        dev->dmp = dmp_init(dev->inst);
+    }
+#endif
+
+    /* Register the character driver */
+
+    ret = register_driver(path, &g_mpu_fops, 0666, dev);
+
+    if (ret < 0)
+    {
+        sndbg("ERROR: Failed to register driver %s: %d\n", devname, ret);
+        return ret;
     }
 
 #ifndef CONFIG_DISABLE_POLL
     mpu_set_next_poll(dev);
 #endif
 
-  return ret;
+    return ret;
 }
 
 #endif /* CONFIG_SENSORS_INVENSENSE */
