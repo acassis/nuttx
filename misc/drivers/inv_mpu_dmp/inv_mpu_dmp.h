@@ -131,9 +131,8 @@ int dmp_enable_gyro_cal(struct dmp_s* dmp,uint8_t enable);
  * detected.
  */ 
  
-int dmp_read_fifo(struct dmp_s* dmp, int16_t *gyro, int16_t *accel, 
-                  int32_t *quat, struct timespec *tp, int16_t * sensors,
-                  int *more);
+int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel, 
+                  int32_t * quat );
  
 #endif  /* #ifndef __MISC_DRIVERS_INV_MPU_DMP_INPUT_INV_MPU_DMP_H */
   

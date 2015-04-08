@@ -160,9 +160,28 @@ struct mpu_firmware_s {
 };
 
 struct mpu_axes_s {
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
+    int16_t x;
+    int16_t y;
+    int16_t z;
+};
+
+struct mpu_quat_s {
+    int16_t w;
+    int16_t x;
+    int16_t y;
+    int16_t z;
+};
+
+struct mpu_fifo_mpu_s {
+    struct mpu_axes_s accel;
+    struct mpu_axes_s gyro;
+    struct mpu_axes_s comp;
+};
+
+struct mpu_fifo_dmp_s {
+    struct mpu_quat_s   quat;
+    struct mpu_axes_s   accel;
+    struct mpu_axes_s   gyro;
 };
 
 struct mpu_low_s;
@@ -301,12 +320,10 @@ int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
 int mpu_set_fifo_config(struct mpu_inst_s* inst,uint8_t sensors);
 int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
 
-int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
-                  struct mpu_axes_s *gyro, uint8_t *sensors, uint8_t *more, 
-                  struct timespec *tp);
+int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data);
 
-int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data,
-                         int *more);
+int mpu_read_fifo_level(struct mpu_inst_s* inst);
+int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint8_t *data, int size);
 
 int mpu_reset_fifo(struct mpu_inst_s* inst);
 
@@ -322,6 +339,11 @@ int mpu_reg_dump(struct mpu_inst_s* inst);
 int mpu_read_reg(struct mpu_inst_s* inst,uint8_t reg, uint8_t *data);
 
 int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
+
+int mpu_set_dmp_on(struct mpu_inst_s* inst);
+int mpu_set_dmp_off(struct mpu_inst_s* inst);
+
+
 
 #if 0
 

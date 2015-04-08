@@ -1155,46 +1155,35 @@ int dmp_set_interrupt_mode(struct dmp_s* dmp, uint8_t mode)
  *  Name: dmp_read_fifo
  *  Description:
  *      Get one packet from the FIFO.
- *   If @e sensors does not contain a particular sensor, disregard the data
- *   returned to that pointer.
- *   @e sensors can contain a combination of the following flags:
- *   INV_X_GYRO, INV_Y_GYRO, INV_Z_GYRO
- *   INV_XYZ_GYRO
- *   INV_XYZ_ACCEL
- *   INV_WXYZ_QUAT
- *   If the FIFO has no new data, @e sensors will be zero.
- *   If the FIFO is disabled, @e sensors will be zero and this function will
  *   return a non-zero error code.
  *  Parameters
  *   gyro        Gyro data in hardware units.
  *   accel       Accel data in hardware units.
  *   quat        3-axis quaternion data in hardware units.
  *   timestamp   Timestamp in milliseconds.
- *   sensors     Mask of sensors read from FIFO.
- *   more        Number of remaining packets.
  *  Return:
- *   0 if successful, negative value in case of error.
+ *   1 complete packet read successful, negative value in case of error.
  */ 
 int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel, 
-                  int32_t * quat, struct timespec *tp, int16_t * sensors, 
-                  int * more) 
+                  int32_t * quat ) 
 {
     uint8_t fifo_data[MAX_PACKET_LENGTH];
-    uint8_t ii = 0;
+    uint8_t ii;
 
-    /* TODO: *sensors only changes when dmp_enable_feature is called. We can
-     * cache this value and save some cycles. 
-     */ 
+    ii = mpu_read_fifo_level(dmp->inst);
 
-    *sensors = 0;
+    if ( ii < 0 )
+        return ii;
 
-    /* Get a packet. */ 
+    if ( ii < dmp->packet_length )
+        return 0;
 
-    if (mpu_read_fifo_stream(dmp->inst,dmp->packet_length,fifo_data,more) < 0)
+    if (mpu_read_fifo_stream(dmp->inst,fifo_data,dmp->packet_length) < 0)
         return -1;
 
     /* Parse DMP packet. */ 
 
+    ii = 0;
     if (dmp->feature_mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT))
     {
 
@@ -1245,14 +1234,12 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
 
             /* Quaternion is outside of the acceptable threshold. */ 
 
-            *sensors = 0;
 
             mpu_reset_fifo(dmp->inst);
 
             return -1;
         }
 
-        *sensors |= DMP_WXYZ_QUAT;
 
 #endif
     }
@@ -1263,7 +1250,6 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
         accel[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
         accel[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
-        *sensors |= MPU_XYZ_ACCEL;
     }
 
     if (dmp->feature_mask & DMP_FEATURE_SEND_ANY_GYRO)
@@ -1272,7 +1258,6 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
         gyro[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
         gyro[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
-        *sensors |= MPU_XYZ_GYRO;
     }
 
     /* Gesture data is at the end of the DMP packet. Parse it and call the
@@ -1281,22 +1266,13 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
     if (dmp->feature_mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
         decode_gesture(dmp,fifo_data + ii);
 
-    if ( tp != NULL ) 
-    { 
-        if ( clock_gettime(CLOCK_REALTIME,tp) < 0 )
-        {
-            tp->tv_sec  = 0;
-            tp->tv_nsec = 0;
-        }
-    }
-
     return 0;
 }
 
 
 
 /*
- *  Name: dmp_read_fifo
+ *  Name: dmp_register_tap_cb
  *  Description:
  *   Register a function to be executed on a tap event.
  *   The tap direction is represented by one of the following:
@@ -1321,7 +1297,7 @@ int dmp_register_tap_cb(struct dmp_s* dmp,
 
 
 /*
- *  Name: dmp_read_fifo
+ *  Name: dmp_register_android_orient_cb
  *  Description:
  *   Register a function to be executed on a android orientation event.
  *  Parameters

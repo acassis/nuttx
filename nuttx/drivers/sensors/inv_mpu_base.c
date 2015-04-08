@@ -251,6 +251,8 @@ struct chip_cfg_s {
     uint16_t sample_rate;
     /* Matches fifo_en register. */
     uint8_t fifo_enable;
+    /* Matches fifo packet size in function of fifo_en register. */
+    uint8_t     packet_size;
     /* Matches int enable register. */
     uint8_t int_enable;
     /* 1 if devices on auxiliary I2C bus appear on the primary. */
@@ -1652,7 +1654,7 @@ int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors)
 int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
 {
     uint8_t prev;
-    int result = 0;
+    int packet_size = 0;
 
     /* Compass data isn't going into the FIFO. Stop trying. */
 
@@ -1667,15 +1669,10 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
     prev = inst->chip_cfg.fifo_enable;
     inst->chip_cfg.fifo_enable = sensors & inst->chip_cfg.sensors;
 
-    result = 0;
     if (inst->chip_cfg.fifo_enable != sensors)
     {
-
-        /* You're not getting what you asked for. Some sensors are
-         * asleep.
-         */
-
-        result = -1;
+        inst->chip_cfg.fifo_enable = prev;
+        return -1;
     }
 
     if ( mpu_set_int_enable(inst, (sensors || inst->chip_cfg.lp_accel_mode) ) < 0 )
@@ -1690,7 +1687,18 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
         }
     }
 
-    return result;
+    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO)
+        packet_size += 2;
+    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO)
+        packet_size += 2;
+    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO)
+        packet_size += 2;
+    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL)
+        packet_size += 6;
+
+    inst->chip_cfg.packet_size = packet_size;
+
+    return 0;
 }
 
 /*******************************************************************************
@@ -1877,158 +1885,98 @@ int mpu_get_int_status(struct mpu_inst_s* inst, uint8_t *mpu_int_status,
  *
  * Params
  *  inst        instance of inv_mpu driver.
- *  gyro        Gyro data in hardware units.
- *  accel       Accel data in hardware units.
- *  tp          value of CLOCK_REALTIME just after fifo read (set NULL if not 
- *              used).
- *  sensors     Mask of sensors read from FIFO.
- *  more        Number of remaining packets.
+ *  data        fifo data structure.
  *
  * Return
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_axes_s *accel,
-                  struct mpu_axes_s *gyro, uint8_t *sensors, uint8_t *more, 
-                  struct timespec *tp)
+int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
 {
 
     /* Assumes maximum packet size is gyro (6) + accel (6). */
 
-    uint8_t data[MAX_PACKET_LENGTH];
-    uint8_t packet_size = 0;
-    uint16_t fifo_count, index = 0;
+    uint8_t *ptr;
+    uint8_t buf[MAX_PACKET_LENGTH];
+    uint8_t packet_size = inst->chip_cfg.packet_size;
+    int fifo_level;
 
     if (inst->chip_cfg.dmp_on)
         return -1;
 
-    *sensors = 0;
     if (!inst->chip_cfg.sensors)
         return -1;
+
     if (!inst->chip_cfg.fifo_enable)
         return -1;
 
-    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO)
-        packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO)
-        packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO)
-        packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL)
-        packet_size += 6;
+    fifo_level = mpu_read_fifo_level(inst);
 
-    if ( mpu_read(inst,INV_MPU_FIFO_COUNT_H, data, 2) < 0 )
-        return -1;
+    invdbg("FIFO count: %d\n", fifo_level);
 
-    fifo_count = (data[0] << 8) | data[1];
+    if (fifo_level < 0 )
+        return fifo_level;
 
-    if (fifo_count < packet_size)
+    if (fifo_level < packet_size)
         return 0;
 
-    invdbg("FIFO count: %hd\n", fifo_count);
-
-    if (fifo_count > (INV_MPU_MAX_FIFO/2)) 
-    {
-
-        /* FIFO is 50% full, better check overflow bit. */
-
-        if ( mpu_read(inst,INV_MPU_INT_STATUS, data, 1) < 0 )
-            return -1;
-
-        if (data[0] & BIT_FIFO_OVERFLOW) 
-        {
-            mpu_reset_fifo(inst);
-            return -2;
-        }
-    }
-
-    if ( tp != NULL ) 
-    { 
-        if ( clock_gettime(CLOCK_REALTIME,tp) < OK )
-        {
-            tp->tv_sec  = 0;
-            tp->tv_nsec = 0;
-        }
-    }
-
-    if ( mpu_read(inst,INV_MPU_FIFO_R_W, data, packet_size) < 0 )
+    if ( mpu_read_fifo_stream(inst, buf, packet_size) < 0 )
         return -1;
 
-    *more = fifo_count / packet_size - 1;
-    *sensors = 0;
+    ptr = buf;
 
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL) 
+    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL) 
     {
-        accel->x = (data[index+0] << 8) | data[index+1];
-        accel->y = (data[index+2] << 8) | data[index+3];
-        accel->z = (data[index+4] << 8) | data[index+5];
-        *sensors |= MPU_XYZ_ACCEL;
-        index += 6;
-    }
-
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_X_GYRO) 
-    {
-        gyro->x = (data[index+0] << 8) | data[index+1];
-        *sensors |= MPU_X_GYRO;
-        index += 2;
-    }
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_Y_GYRO) 
-    {
-        gyro->y = (data[index+0] << 8) | data[index+1];
-        *sensors |= MPU_Y_GYRO;
-        index += 2;
-    }
-    if ((index != packet_size) && inst->chip_cfg.fifo_enable & MPU_Z_GYRO) 
-    {
-        gyro->z = (data[index+0] << 8) | data[index+1];
-        *sensors |= MPU_Z_GYRO;
-        index += 2;
+        data->accel.x = (*ptr++) << 8;
+        data->accel.x|= (*ptr++);
+        data->accel.y = (*ptr++) << 8;
+        data->accel.y|= (*ptr++);
+        data->accel.z = (*ptr++) << 8;
+        data->accel.z|= (*ptr++);
     }
 
-    return 0;
+    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO) 
+    {
+        data->gyro.x = (*ptr++) << 8;
+        data->gyro.x|= (*ptr++);
+    }
+    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO) 
+    {
+        data->gyro.y = (*ptr++) << 8;
+        data->gyro.y|= (*ptr++);
+    }
+    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO) 
+    {
+        data->gyro.z = (*ptr++) << 8;
+        data->gyro.z|= (*ptr++);
+    }
+
+    return (ptr - buf);
 }
 
 /*******************************************************************************
- * Name: mpu_read_fifo_stream
+ * Name: mpu_read_fifo_level
  *
  * Description:
- *  Get one unparsed packet from the FIFO.
- *  This function should be used if the packet is to be parsed elsewhere.
+ *  Get fifo level.
  *
  * Params
  *  inst        instance of inv_mpu driver.
- *  length      Length of one FIFO packet.
- *  data        FIFO packet.
- *  more        Number of remaining packets.
  *
  * Return
- *  0 on success, negative value in case of error.
+ *  level of fifo on success, negative value in case of error.
  ******************************************************************************/
-
-int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data, 
-                         int *more)
+int mpu_read_fifo_level(struct mpu_inst_s* inst )
 {
     uint8_t tmp[2];
-    uint16_t fifo_count;
-
-    if (!inst->chip_cfg.dmp_on)
-        return -1;
-
-    if (!inst->chip_cfg.sensors)
-        return -1;
+    uint16_t level;
 
     if ( mpu_read(inst,INV_MPU_FIFO_COUNT_H, tmp, 2) < 0 )
         return -1;
 
-    fifo_count = (tmp[0] << 8) | tmp[1];
+    level = (tmp[0] << 8) | tmp[1];
 
-    if (fifo_count < length) 
-    {
-        *more = 0;
-        return -1;
-    }
-
-    if (fifo_count > (INV_MPU_MAX_FIFO/2)) 
+    if (level > (INV_MPU_MAX_FIFO/2)) 
     {
 
         /* FIFO is 50% full, better check overflow bit. */
@@ -2042,13 +1990,32 @@ int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint16_t length, uint8_t *data,
             return -2;
         }
     }
+    return level;
+}
 
-    if ( mpu_read(inst,INV_MPU_FIFO_R_W, data, length) < 0 )
+/*******************************************************************************
+ * Name: mpu_read_fifo_stream
+ *
+ * Description:
+ *  Get one unparsed packet from the FIFO.
+ *  This function should be used if the packet is to be parsed elsewhere.
+ *
+ * Params
+ *  inst        instance of inv_mpu driver.
+ *  data        FIFO packet.
+ *  size_max    size of data buffer
+ *
+ * Return
+ *  0 on success, negative value in case of error.
+ ******************************************************************************/
+
+int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint8_t *data, int size)
+{
+
+    if ( mpu_read(inst,INV_MPU_FIFO_R_W, data, size) < 0 )
         return -1;
 
-    *more = fifo_count / length - 1;
-
-    return 0;
+    return size;
 }
 
 /*******************************************************************************
@@ -2982,7 +2949,7 @@ static int get_st_biases(long *gyro, long *accel, uint8_t hw_test)
 {
     uint8_t data[MAX_PACKET_LENGTH];
     uint8_t packet_count, ii;
-    uint16_t fifo_count;
+    uint16_t fifo_level;
 
     data[0] = 0x01;
     data[1] = 0;
@@ -3039,11 +3006,11 @@ static int get_st_biases(long *gyro, long *accel, uint8_t hw_test)
     if (mpu_write(inst,INV_MPU_FIFO_EN,data,1) < 0 )
         return -1;
 
-    if (mpu_read(inst,INV_MPU_FIFO_COUNT_H,data,2) < 0 )
-        return -1;
+    fifo_level = mpu_read_fifo_level(inst);
+    if ( fifo_level < 0 )
+        return fifo_level;
 
-    fifo_count = (data[0] << 8) | data[1];
-    packet_count = fifo_count / MAX_PACKET_LENGTH;
+    packet_count = fifo_level / MAX_PACKET_LENGTH;
     gyro[0] = gyro[1] = gyro[2] = 0;
     accel[0] = accel[1] = accel[2] = 0;
 
@@ -3299,7 +3266,7 @@ static int get_st_6500_biases(long *gyro, long *accel, uint8_t hw_test)
 {
     uint8_t data[HWST_MAX_PACKET_LENGTH];
     uint8_t packet_count, ii;
-    uint16_t fifo_count;
+    uint16_t fifo_level;
     int s = 0, read_size = 0, ind;
 
     data[0] = 0x01;
@@ -3361,10 +3328,13 @@ static int get_st_6500_biases(long *gyro, long *accel, uint8_t hw_test)
     //start reading samples
     while (s < teinst->packet_thresh) {
         up_mdelay(teinst->sample_wait_ms); //wait 10ms to fill FIFO
-        if (mpu_read(inst,INV_MPU_FIFO_COUNT_H, 2, data) < 0 )
-            return -1;
-        fifo_count = (data[0] << 8) | data[1];
-        packet_count = fifo_count / MAX_PACKET_LENGTH;
+
+        fifo_level = mpu_read_fifo_level(inst);
+        if ( fifo_level < 0 )
+            return fifo_level;
+
+        packet_count = fifo_level / MAX_PACKET_LENGTH;
+
         if ((teinst->packet_thresh - s) < packet_count)
             packet_count = teinst->packet_thresh - s;
         read_size = packet_count * MAX_PACKET_LENGTH;

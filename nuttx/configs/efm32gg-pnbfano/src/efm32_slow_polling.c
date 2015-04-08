@@ -54,9 +54,9 @@
 #include "efm32_gpio.h"
 #include "efm32gg-pnbfano.h"
 
-//#define EFM32_SLOW_POLL_LOG(...)
+#define EFM32_SLOW_POLL_LOG(...)
 //#define EFM32_SLOW_POLL_LOG(...) lldbg(__VA_ARGS__)
-#define EFM32_SLOW_POLL_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
+//#define EFM32_SLOW_POLL_LOG(...) syslog(LOG_NOTICE,__VA_ARGS__)
 
 #ifndef CONFIG_SLOW_POLL_MS
 #   define CONFIG_SLOW_POLL_MS 2000
