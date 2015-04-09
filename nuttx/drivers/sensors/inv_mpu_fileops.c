@@ -100,6 +100,7 @@ struct mpu_dev_s {
 #ifdef CONFIG_INVENSENSE_DMP
     struct dmp_s *dmp;
 #endif
+    int     fifo_level;
     uint8_t mpu_int_status;
     uint8_t dmp_int_status;
     sem_t   exclsem;
@@ -416,6 +417,7 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
     FAR struct mpu_dev_s *dev    = inode->i_private;
 
     int ret;
+    int level;
 
     snvdbg("len=%d\n", len);
 
@@ -430,9 +432,9 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 
     /* Read accelerometer X Y Z axes */
 
-    ret = mpu_read_fifo_level(dev->inst);
+    level = mpu_read_fifo_level(dev->inst);
 
-    while ( (len > 0) && (ret > 0) )
+    while ( len > 0 )
     {
 #ifdef CONFIG_INVENSENSE_DMP
         if ( dev->dmp )
@@ -454,7 +456,22 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
             if ( ret > 0 )
                 len -= sizeof(struct mpu_fifo_mpu_s);
         }
+
+        if ( ret <= 0 )
+            break;
+
+        if ( level <= ret )
+        {
+            level = 0;
+            dev->mpu_int_status &= ~MPU_INT_STATUS_DATA_READY;
+        }
+        else
+        {
+            level -= ret;
+        }
     }
+
+    dev->fifo_level = level;
 
     mpu_givesem(&dev->exclsem);
 
