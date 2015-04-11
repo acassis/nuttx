@@ -485,7 +485,7 @@ static int  st7565_backlight (FAR struct st7565_lcd_s *lcd, int level)
  ************************************************************************************/
 
 /************************************************************************************
- * Name:  up_lcdinitialize
+ * Name:  board_lcd_initialize
  *
  * Description:
  *   Initialize the LCD video hardware.  The initial state of the LCD is fully
@@ -494,7 +494,7 @@ static int  st7565_backlight (FAR struct st7565_lcd_s *lcd, int level)
  *
  ************************************************************************************/
 
-int up_lcdinitialize(void)
+int board_lcd_initialize(void)
 {
 
   if ( g_lcd != NULL )
@@ -552,14 +552,14 @@ int up_lcdinitialize(void)
 
 
 /************************************************************************************
- * Name:  up_lcdgetdev
+ * Name:  board_lcd_getdev
  *
  * Description:
  *  Give lcd pointer instance
  *
  ************************************************************************************/
 
-FAR struct lcd_dev_s *up_lcdgetdev(int lcddev)
+FAR struct lcd_dev_s *board_lcd_getdev(int lcddev)
 {
     if ( lcddev != 0 )
         return NULL;

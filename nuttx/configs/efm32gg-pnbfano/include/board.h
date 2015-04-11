@@ -331,6 +331,4 @@ void efm32_setled(int led, bool ledon);
 void efm32_setleds(uint8_t ledset);
 #endif
 
-void* board_get_nx_dev(int devno, int vplaneno);
-
 #endif /* __CONFIGS_EFM32_PNBFANO_INCLUDE_BOARD_H */

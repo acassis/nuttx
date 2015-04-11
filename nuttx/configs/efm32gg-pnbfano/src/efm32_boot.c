@@ -49,6 +49,7 @@
 #include <nuttx/sensors/inv_mpu.h>
 #include <nuttx/input/keypad.h>
 #include <nuttx/pwm.h>
+#include <nuttx/board.h>
 #include <nuttx/nx/nx.h>
 #include <syslog.h>
 
@@ -117,23 +118,6 @@ void   sched_note_switch(FAR struct tcb_s *pFromTcb,
 }
 
 #endif /* CONFIG_SCHED_INSTRUMENTATION */
-
-/****************************************************************************
- * Name: board_get_dev_vplane
- *
- * Description:
- *  It return NX_DRIVER of device devno,vplaneno.
- *
- ****************************************************************************/
-
-void* board_get_nx_dev(int devno, int vplaneno)
-{
-    NX_DRIVERTYPE* dev = NULL;
-
-    dev = up_lcdgetdev( devno);
-
-    return dev;
-}
 
 /****************************************************************************
  * Name: board_init_pwm
@@ -243,7 +227,7 @@ void board_initialize(void)
     }
 
     syslog(LOG_NOTICE,"initialize LCD \n");
-    if ( up_lcdinitialize() != OK )
+    if ( board_lcd_initialize() != OK )
     {
         syslog(LOG_ERR,"Cannot initialize LCD \n");
     }

@@ -171,7 +171,6 @@ static inline void nxgl_fillrun_16bpp(FAR uint16_t *run, nxgl_mxpixel_t color,
 static inline void nxgl_fillrun_24bpp(FAR uint32_t *run, nxgl_mxpixel_t color, size_t npixels)
 {
   /* Fill the run with the color (it is okay to run a fractional byte overy the end */
-#warning "Assuming 24-bit color is not packed"
   while (npixels-- > 0)
     {
       *run++ = (uint32_t)color;
