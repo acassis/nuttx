@@ -61,7 +61,7 @@
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
-#include <nuttx/rtc.h>
+#include <nuttx/timers/rtc.h>
 #include <arch/board/board.h>
 
 #include <stdlib.h>
@@ -115,6 +115,14 @@
 
 #ifndef CONFIG_STM32_PWR
 #  error "CONFIG_STM32_PWR is required for CONFIG_RTC"
+#endif
+
+#ifdef CONFIG_STM32_STM32F10XX
+#  if defined(CONFIG_RTC_HSECLOCK)
+#    error "RTC with HSE clock not yet implemented for STM32F10XXX"
+#  elif defined(CONFIG_RTC_LSICLOCK)
+#    error "RTC with LSI clock not yet implemented for STM32F10XXX"
+#  endif
 #endif
 
 /* RTC/BKP Definitions *************************************************************/

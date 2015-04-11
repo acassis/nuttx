@@ -317,7 +317,7 @@
 #  define sam_dumppacket(m,a,n)
 #endif
 
-/* EMAC buffer sizes, number of buffers, and number of descriptors **********
+/* EMAC buffer sizes, number of buffers, and number of descriptors ***********
  *
  * REVISIT: The CONFIG_NET_MULTIBUFFER might be useful.  It might be possible
  * to use this option to send and receive messages directly into the DMA
@@ -330,41 +330,94 @@
 #  error CONFIG_NET_MULTIBUFFER must not be set
 #endif
 
-#define EMAC_RX_UNITSIZE 128                 /* Fixed size for RX buffer  */
-#define EMAC_TX_UNITSIZE CONFIG_NET_ETH_MTU  /* MAX size for Ethernet packet */
-
-#define DUMMY_BUFSIZE    128
-#define DUMMY_NBUFFERS   2
-
 /* Queue identifiers/indices */
 
-#define EMAC_QUEUE_0     0
-#define EMAC_QUEUE_1     1
-#define EMAC_QUEUE_2     2
-#define EMAC_NQUEUES     3
+#define EMAC_QUEUE_0        0
+#define EMAC_QUEUE_1        1
+#define EMAC_QUEUE_2        2
+#define EMAC_NQUEUES        3
 
 /* Interrupt settings */
 
-#define EMAC_RX_INTS     (EMAC_INT_RCOMP | EMAC_INT_RXUBR | EMAC_INT_ROVR)
-#define EMAC_TXERR_INTS  (EMAC_INT_TUR | EMAC_INT_RLEX | EMAC_INT_TFC | \
-                          EMAC_INT_HRESP)
-#define EMAC_TX_INTS     (EMAC_TXERR_INTS | EMAC_INT_TCOMP)
+#define EMAC_RX_INTS        (EMAC_INT_RCOMP | EMAC_INT_RXUBR | EMAC_INT_ROVR)
+#define EMAC_TXERR_INTS     (EMAC_INT_TUR | EMAC_INT_RLEX | EMAC_INT_TFC | \
+                             EMAC_INT_HRESP)
+#define EMAC_TX_INTS        (EMAC_TXERR_INTS | EMAC_INT_TCOMP)
+
+/* Buffer Alignment.
+ *
+ * The EMAC peripheral requires that descriptors and buffers be aligned
+ * the 8-byte (2 word boundaries).  However, if the data cache is enabled
+ * the a higher level of alignment is required.  That is because the data
+ * will need to be invalidated and that cache invalidation will occur in
+ * multiples of full change lines.
+ *
+ * In addition, padding may be required at the ends of the descriptors and
+ * buffers to protect data after the end of from invalidation.
+ */
+
+#ifdef CONFIG_ARMV7M_DCACHE
+/* Align to the cache line size which we assume is >= 8 */
+
+#  define EMAC_ALIGN        ARMV7M_DCACHE_LINESIZE
+#  define EMAC_ALIGN_MASK   (EMAC_ALIGN-1)
+#  define EMAC_ALIGN_UP(n)  (((n) + EMAC_ALIGN_MASK) & ~EMAC_ALIGN_MASK)
+
+#  define EMAC0_RX_DPADSIZE (EMAC0_RX_DESCSIZE & EMAC_ALIGN_MASK)
+#  define EMAC0_TX_DPADSIZE (EMAC0_TX_DESCSIZE & EMAC_ALIGN_MASK)
+#  define EMAC1_RX_DPADSIZE (EMAC1_RX_DESCSIZE & EMAC_ALIGN_MASK)
+#  define EMAC1_TX_DPADSIZE (EMAC1_TX_DESCSIZE & EMAC_ALIGN_MASK)
+
+#else
+/* Use the minimum alignment requirement */
+
+#  define EMAC_ALIGN        8
+#  define EMAC_ALIGN_MASK   7
+#  define EMAC_ALIGN_UP(n)  (((n) + 7) & ~7)
+
+#  define EMAC0_RX_DPADSIZE 0
+#  define EMAC0_TX_DPADSIZE 0
+#  define EMAC1_RX_DPADSIZE 0
+#  define EMAC1_TX_DPADSIZE 0
+
+#endif
+
+/* Buffer sizes.
+ *
+ * RX buffer size if fixed at 128 bytes since fragmented incoming packets
+ * are handled.
+ */
+
+#define EMAC_RX_UNITSIZE    EMAC_ALIGN_UP(128)
+#define EMAC_TX_UNITSIZE    EMAC_ALIGN_UP(CONFIG_NET_ETH_MTU)
+#define DUMMY_BUFSIZE       EMAC_ALIGN_UP(128)
+#define DUMMY_NBUFFERS      2
+
+#define EMAC0_RX_DESCSIZE   (CONFIG_SAMV7_EMAC0_NRXBUFFERS * sizeof(struct emac_rxdesc_s))
+#define EMAC0_TX_DESCSIZE   (CONFIG_SAMV7_EMAC0_NTXBUFFERS * sizeof(struct emac_txdesc_s))
+#define EMAC0_RX_BUFSIZE    (CONFIG_SAMV7_EMAC0_NRXBUFFERS * EMAC_RX_UNITSIZE)
+#define EMAC0_TX_BUFSIZE    (CONFIG_SAMV7_EMAC0_NTXBUFFERS * EMAC_TX_UNITSIZE)
+
+#define EMAC1_RX_DESCSIZE   (CONFIG_SAMV7_EMAC1_NRXBUFFERS * sizeof(struct emac_rxdesc_s))
+#define EMAC1_TX_DESCSIZE   (CONFIG_SAMV7_EMAC1_NTXBUFFERS * sizeof(struct emac_txdesc_s))
+#define EMAC1_RX_BUFSIZE    (CONFIG_SAMV7_EMAC1_NRXBUFFERS * EMAC_RX_UNITSIZE)
+#define EMAC1_TX_BUFSIZE    (CONFIG_SAMV7_EMAC1_NTXBUFFERS * EMAC_TX_UNITSIZE)
 
 /* Timing *******************************************************************/
 /* TX poll delay = 1 seconds. CLK_TCK is the number of clock ticks per
  * second
  */
 
-#define SAM_WDDELAY      (1*CLK_TCK)
-#define SAM_POLLHSEC     (1*2)
+#define SAM_WDDELAY         (1*CLK_TCK)
+#define SAM_POLLHSEC        (1*2)
 
 /* TX timeout = 1 minute */
 
-#define SAM_TXTIMEOUT    (60*CLK_TCK)
+#define SAM_TXTIMEOUT       (60*CLK_TCK)
 
 /* PHY read/write delays in loop counts */
 
-#define PHY_RETRY_MAX    1000000
+#define PHY_RETRY_MAX       1000000
 
 /* Helpers ******************************************************************/
 /* This is a helper pointer for accessing the contents of the EMAC
@@ -643,18 +696,26 @@ static int  sam_emac_configure(struct sam_emac_s *priv);
 /* EMAC0 TX descriptors list */
 
 static struct emac_txdesc_s g_emac0_tx0desc[CONFIG_SAMV7_EMAC0_NTXBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
+
+#if EMAC0_TX_DPADSIZE > 0
+static uint8_t g_emac0_txdpad[EMAC0_TX_DPADSIZE] __atrribute__((used));
+#endif
 
 static struct emac_txdesc_s g_emac0_tx1desc[DUMMY_NBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC0 RX descriptors list */
 
 static struct emac_rxdesc_s g_emac0_rx0desc[CONFIG_SAMV7_EMAC0_NRXBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
+
+#if EMAC0_RX_DPADSIZE > 0
+static uint8_t g_emac0_rxdpad[EMAC0_RX_DPADSIZE] __atrribute__((used));
+#endif
 
 static struct emac_rxdesc_s g_emac0_rx1desc[DUMMY_NBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC0 Transmit Buffers
  *
@@ -663,38 +724,46 @@ static struct emac_rxdesc_s g_emac0_rx1desc[DUMMY_NBUFFERS]
  * shall be set to 0
  */
 
-static uint8_t g_emac0_tx0buffer[CONFIG_SAMV7_EMAC0_NTXBUFFERS * EMAC_TX_UNITSIZE];
-               __attribute__((aligned(8)))
+static uint8_t g_emac0_tx0buffer[EMAC0_TX_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
-static uint8_t g_emac0_tx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE];
-               __attribute__((aligned(8)))
+static uint8_t g_emac0_tx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC0 Receive Buffers */
 
-static uint8_t g_emac0_rx0buffer[CONFIG_SAMV7_EMAC0_NRXBUFFERS * EMAC_RX_UNITSIZE]
-               __attribute__((aligned(8)));
+static uint8_t g_emac0_rx0buffer[EMAC0_RX_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
-static uint8_t pRxDummyBuffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE];
-               __attribute__((aligned(8)))
+static uint8_t pRxDummyBuffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
 #endif
 
 #ifdef CONFIG_SAMV7_EMAC1
 /* EMAC1 TX descriptors list */
 
-static struct emac_txdesc_s g_emac1_tx0desc[CONFIG_SAMV7_EMAC1_NTXBUFFERS]
-              __attribute__((aligned(8)));
+static struct emac_txdesc_s g_emac1_tx1desc[CONFIG_SAMV7_EMAC1_NTXBUFFERS]
+              __attribute__((aligned(EMAC_ALIGN)));
+
+#if EMAC1_TX_DPADSIZE > 0
+static uint8_t g_emac1_txdpad[EMAC1_TX_DPADSIZE] __atrribute__((used));
+#endif
 
 static struct emac_txdesc_s g_emac1_tx1desc[DUMMY_NBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC1 RX descriptors list */
 
-static struct emac_rxdesc_s g_emac1_rx0desc[CONFIG_SAMV7_EMAC1_NRXBUFFERS]
-              __attribute__((aligned(8)));
+static struct emac_rxdesc_s g_emac1_rx1desc[CONFIG_SAMV7_EMAC1_NRXBUFFERS]
+              __attribute__((aligned(EMAC_ALIGN)));
+
+#if EMAC1_RX_DPADSIZE > 0
+static uint8_t g_emac1_rxdpad[EMAC1_RX_DPADSIZE] __atrribute__((used));
+#endif
 
 static struct emac_rxdesc_s g_emac1_rx1desc[DUMMY_NBUFFERS]
-              __attribute__((aligned(8)));
+              __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC1 Transmit Buffers
  *
@@ -703,19 +772,19 @@ static struct emac_rxdesc_s g_emac1_rx1desc[DUMMY_NBUFFERS]
  * shall be set to 0
  */
 
-static uint8_t g_emac1_tx0buffer[CONFIG_SAMV7_EMAC1_NTXBUFFERS * EMAC_TX_UNITSIZE];
-               __attribute__((aligned(8)))
+static uint8_t g_emac1_tx1buffer[EMAC1_TX_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
-static uint8_t g_emac1_tx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE];
-               __attribute__((aligned(8)))
+static uint8_t g_emac1_tx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
 /* EMAC1 Receive Buffers */
 
-static uint8_t g_emac1_rxbuffer[CONFIG_SAMV7_EMAC1_NRXBUFFERS * EMAC_RX_UNITSIZE]
-               __attribute__((aligned(8)));
+static uint8_t g_emac1_rxbuffer[EMAC1_RX_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
-static uint8_t g_emac1_rx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE];
-               __attribute__((aligned(8)))
+static uint8_t g_emac1_rx1buffer[DUMMY_NBUFFERS * DUMMY_BUFSIZE]
+               __attribute__((aligned(EMAC_ALIGN)));
 
 #endif
 #endif
@@ -979,13 +1048,15 @@ static void sam_putreg(struct sam_emac_s *priv, uint16_t offset,
 
 static uint16_t sam_txinuse(struct sam_emac_s *priv, int qid)
 {
-  uint32_t txhead32 = (uint32_t)priv->xfrq[qid].txhead;
-  if ((uint32_t)priv->xfrq[qid].txtail > txhead32)
+  struct sam_queue_s *xfrq = &priv->xfrq[qid];
+
+  uint32_t txhead32 = (uint32_t)xfrq->txhead;
+  if ((uint32_t)xfrq->txtail > txhead32)
     {
-      txhead32 += priv->xfrq[qid].ntxbuffers;
+      txhead32 += xfrq->ntxbuffers;
     }
 
-  return (uint16_t)(txhead32 - (uint32_t)priv->xfrq[qid].txtail);
+  return (uint16_t)(txhead32 - (uint32_t)xfrq->txtail);
 }
 
 /****************************************************************************
@@ -1010,7 +1081,7 @@ static uint16_t sam_txfree(struct sam_emac_s *priv, int qid)
    * the configured size minus 1.
    */
 
-  return (priv->xfrq[qid].ntxbuffers-1) - sam_txinuse(priv, qid);
+  return (priv->xfrq[qid].ntxbuffers - 1) - sam_txinuse(priv, qid);
 }
 
 /****************************************************************************
@@ -1034,6 +1105,7 @@ static uint16_t sam_txfree(struct sam_emac_s *priv, int qid)
 static int sam_buffer_allocate(struct sam_emac_s *priv)
 {
 #ifdef CONFIG_SAMV7_EMAC_PREALLOCATE
+  struct sam_queue_s *xfrq;
   int qid;
 
   /* Use pre-allocated buffers */
@@ -1041,7 +1113,7 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   priv->xfrq[0].txdesc         = priv->attr->tx0desc;
   priv->xfrq[0].ntxbuffers     = priv->attr->ntxbuffers;
   priv->xfrq[0].rxdesc         = priv->attr->rx0desc;
-  priv->xfrq[0].nrxbuffers     = priv->attr->rtxbuffers;
+  priv->xfrq[0].nrxbuffers     = priv->attr->nrxbuffers;
 
   priv->xfrq[0].txbuffer       = priv->attr->tx0buffer;
   priv->xfrq[0].txbufsize      = EMAC_TX_UNITSIZE;
@@ -1052,25 +1124,28 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
 
   for (qid = 1; qid < EMAC_NQUEUES; qid++)
     {
-      priv->xfrq[qid].txdesc     = priv->attr->tx1desc;
-      priv->xfrq[qid].ntxbuffers = DUMMY_NBUFFERS;
-      priv->xfrq[qid].rxdesc     = priv->attr->rx1desc;
-      priv->xfrq[qid].nrxbuffers = DUMMY_NBUFFERS;
+      xfrq             = &priv->xfrq[qid];
 
-      priv->xfrq[qid].txbuffer   = priv->attr->tx1buffer;
-      priv->xfrq[qid].txbufsize  = DUMMY_BUFSIZE;
-      priv->xfrq[qid].rxbuffer   = priv->attr->rx1buffer;
-      priv->xfrq[qid].rxbufsize  = DUMMY_BUFSIZE;
+      xfrq->txdesc     = priv->attr->tx1desc;
+      xfrq->ntxbuffers = DUMMY_NBUFFERS;
+      xfrq->rxdesc     = priv->attr->rx1desc;
+      xfrq->nrxbuffers = DUMMY_NBUFFERS;
+
+      xfrq->txbuffer   = priv->attr->tx1buffer;
+      xfrq->txbufsize  = DUMMY_BUFSIZE;
+      xfrq->rxbuffer   = priv->attr->rx1buffer;
+      xfrq->rxbufsize  = DUMMY_BUFSIZE;
     }
 
 #else
+  struct sam_queue_s *xfrq;
   size_t allocsize;
   int qid;
 
   /* Allocate Queue 0 buffers */
 
-  allocsize = priv->attr->ntxbuffers * sizeof(struct emac_txdesc_s);
-  priv->xfrq[0].txdesc = (struct emac_txdesc_s *)kmm_memalign(8, allocsize);
+  allocsize = EMAC_ALIGN_UP(priv->attr->ntxbuffers * sizeof(struct emac_txdesc_s));
+  priv->xfrq[0].txdesc = (struct emac_txdesc_s *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[0].txdesc)
     {
       nlldbg("ERROR: Failed to allocate TX descriptors\n");
@@ -1080,8 +1155,8 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   memset(priv->xfrq[0].txdesc, 0, allocsize);
   priv->xfrq[0].ntxbuffers = priv->attr->ntxbuffers;
 
-  allocsize = priv->attr->nrxbuffers * sizeof(struct emac_rxdesc_s);
-  priv->xfrq[0].rxdesc = (struct emac_rxdesc_s *)kmm_memalign(8, allocsize);
+  allocsize = EMAC_ALIGN_UP(priv->attr->nrxbuffers * sizeof(struct emac_rxdesc_s));
+  priv->xfrq[0].rxdesc = (struct emac_rxdesc_s *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[0].rxdesc)
     {
       nlldbg("ERROR: Failed to allocate RX descriptors\n");
@@ -1093,7 +1168,7 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   priv->xfrq[0].nrxbuffers = priv->attr->nrxbuffers;
 
   allocsize = priv->attr->ntxbuffers * EMAC_TX_UNITSIZE;
-  priv->xfrq[0].txbuffer = (uint8_t *)kmm_memalign(8, allocsize);
+  priv->xfrq[0].txbuffer = (uint8_t *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[0].txbuffer)
     {
       nlldbg("ERROR: Failed to allocate TX buffer\n");
@@ -1104,7 +1179,7 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   priv->xfrq[0].txbufsize = EMAC_TX_UNITSIZE;
 
   allocsize = priv->attr->nrxbuffers * EMAC_RX_UNITSIZE;
-  priv->xfrq[0].rxbuffer = (uint8_t *)kmm_memalign(8, allocsize);
+  priv->xfrq[0].rxbuffer = (uint8_t *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[0].rxbuffer)
     {
       nlldbg("ERROR: Failed to allocate RX buffer\n");
@@ -1116,8 +1191,8 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
 
   /* Allocate Queue 1 buffers */
 
-  allocsize = DUMMY_NBUFFERS * sizeof(struct emac_txdesc_s);
-  priv->xfrq[1].txdesc = (struct emac_txdesc_s *)kmm_memalign(8, allocsize);
+  allocsize = EMAC_ALIGN_UP(DUMMY_NBUFFERS * sizeof(struct emac_txdesc_s));
+  priv->xfrq[1].txdesc = (struct emac_txdesc_s *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[1].txdesc)
     {
       nlldbg("ERROR: Failed to allocate TX descriptors\n");
@@ -1127,8 +1202,8 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   memset(priv->xfrq[1].txdesc, 0, allocsize);
   priv->xfrq[1].ntxbuffers = DUMMY_NBUFFERS;
 
-  allocsize = DUMMY_NBUFFERS * sizeof(struct emac_rxdesc_s);
-  priv->xfrq[1].rxdesc = (struct emac_rxdesc_s *)kmm_memalign(8, allocsize);
+  allocsize = EMAC_ALIGN_UP(DUMMY_NBUFFERS * sizeof(struct emac_rxdesc_s));
+  priv->xfrq[1].rxdesc = (struct emac_rxdesc_s *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[1].rxdesc)
     {
       nlldbg("ERROR: Failed to allocate RX descriptors\n");
@@ -1140,7 +1215,7 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   priv->xfrq[1].nrxbuffers = DUMMY_NBUFFERS;
 
   allocsize = DUMMY_NBUFFERS * DUMMY_BUFSIZE;
-  priv->xfrq[1].txbuffer = (uint8_t *)kmm_memalign(8, allocsize);
+  priv->xfrq[1].txbuffer = (uint8_t *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[1].txbuffer)
     {
       nlldbg("ERROR: Failed to allocate TX buffer\n");
@@ -1151,7 +1226,7 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
   priv->xfrq[1].txbufsize = DUMMY_BUFSIZE;
 
   allocsize = DUMMY_NBUFFERS * DUMMY_BUFSIZE;
-  priv->xfrq[1].rxbuffer = (uint8_t *)kmm_memalign(8, allocsize);
+  priv->xfrq[1].rxbuffer = (uint8_t *)kmm_memalign(EMAC_ALIGN, allocsize);
   if (!priv->xfrq[1].rxbuffer)
     {
       nlldbg("ERROR: Failed to allocate RX buffer\n");
@@ -1165,31 +1240,34 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
 
   for (qid = 2; qid < EMAC_NQUEUES; qid++)
     {
-      priv->xfrq[qid].txdesc     = priv->xfrq[1].txdesc;
-      priv->xfrq[qid].rxdesc     = priv->xfrq[1].rxdesc;
+      xfrq             = &priv->xfrq[qid];
 
-      priv->xfrq[qid].txbuffer   = priv->xfrq[1].txbuffer;
-      priv->xfrq[qid].rxbuffer   = priv->xfrq[1].rxbuffer;
+      xfrq->txdesc     = priv->xfrq[1].txdesc;
+      xfrq->rxdesc     = priv->xfrq[1].rxdesc;
 
-      priv->xfrq[qid].ntxbuffers = DUMMY_NBUFFERS;
-      priv->xfrq[qid].nrxbuffers = DUMMY_NBUFFERS;
+      xfrq->txbuffer   = priv->xfrq[1].txbuffer;
+      xfrq->rxbuffer   = priv->xfrq[1].rxbuffer;
 
-      priv->xfrq[qid].txbufsize  = DUMMY_BUFSIZE;
-      priv->xfrq[qid].rxbufsize  = DUMMY_BUFSIZE;
+      xfrq->ntxbuffers = DUMMY_NBUFFERS;
+      xfrq->nrxbuffers = DUMMY_NBUFFERS;
+
+      xfrq->txbufsize  = DUMMY_BUFSIZE;
+      xfrq->rxbufsize  = DUMMY_BUFSIZE;
     }
 
 #endif
 
   /* Verify Alignment */
 
-  DEBUGASSERT(((uintptr_t)priv->xfrq[0].rxdesc   & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[0].rxbuffer & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[0].txdesc   & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[0].txbuffer & 7) == 0);
-  DEBUGASSERT(((uintptr_t)priv->xfrq[1].rxdesc   & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[1].rxbuffer & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[1].txdesc   & 7) == 0 &&
-              ((uintptr_t)priv->xfrq[1].txbuffer & 7) == 0);
+  DEBUGASSERT(((uintptr_t)priv->xfrq[0].rxdesc   & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[0].rxbuffer & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[0].txdesc   & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[0].txbuffer & EMAC_ALIGN_MASK) == 0);
+  DEBUGASSERT(((uintptr_t)priv->xfrq[1].rxdesc   & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[1].rxbuffer & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[1].txdesc   & EMAC_ALIGN_MASK) == 0 &&
+              ((uintptr_t)priv->xfrq[1].txbuffer & EMAC_ALIGN_MASK) == 0);
+
   return OK;
 }
 
@@ -1211,43 +1289,45 @@ static int sam_buffer_allocate(struct sam_emac_s *priv)
 static void sam_buffer_free(struct sam_emac_s *priv)
 {
 #ifndef CONFIG_SAMV7_EMAC_PREALLOCATE
+  struct sam_queue_s *xfrq;
   int qid;
 
   /* Free allocated buffers */
 
   for (qid = 0; qid < EMAC_NQUEUES; qid++)
     {
+      xfrq = &priv->xfrq[qid];
       if (qid < 2)
         {
-          if (priv->xfrq[qid].txdesc)
+          if (xfrq->txdesc)
             {
-              kmm_free(priv->xfrq[qid].txdesc);
-              priv->xfrq[qid].txdesc = NULL;
+              kmm_free(xfrq->txdesc);
+              xfrq->txdesc = NULL;
             }
 
-          if (priv->xfrq[qid].rxdesc)
+          if (xfrq->rxdesc)
             {
-              kmm_free(priv->xfrq[qid].rxdesc);
-              priv->xfrq[qid].rxdesc = NULL;
+              kmm_free(xfrq->rxdesc);
+              xfrq->rxdesc = NULL;
             }
 
-          if (priv->xfrq[qid].txbuffer)
+          if (xfrq->txbuffer)
             {
-              kmm_free(priv->xfrq[qid].txbuffer);
-              priv->xfrq[qid].txbuffer = NULL;
+              kmm_free(xfrq->txbuffer);
+              xfrq->txbuffer = NULL;
             }
 
-          if (priv->xfrq[qid].rxbuffer)
+          if (xfrq->rxbuffer)
             {
-              kmm_free(priv->xfrq[qid].rxbuffer);
-              priv->xfrq[qid].rxbuffer = NULL;
+              kmm_free(xfrq->rxbuffer);
+              xfrq->rxbuffer = NULL;
             }
         }
 
-      priv->xfrq[qid].txdesc = NULL;
-      priv->xfrq[qid].rxdesc = NULL;
-      priv->xfrq[qid].txbuffer = NULL;
-      priv->xfrq[qid].rxbuffer = NULL;
+      xfrq->txdesc = NULL;
+      xfrq->rxdesc = NULL;
+      xfrq->txbuffer = NULL;
+      xfrq->rxbuffer = NULL;
     }
 #endif
 }
@@ -1279,12 +1359,10 @@ static int sam_transmit(struct sam_emac_s *priv, int qid)
 {
   struct net_driver_s *dev = &priv->dev;
   volatile struct emac_txdesc_s *txdesc;
+  struct sam_queue_s *xfrq;
   uint32_t regval;
   uint32_t status;
   uint16_t txhead;
-
-  nllvdbg("d_len: %d txhead: %d\n",  dev->d_len, priv->xfrq[qid].txhead);
-  sam_dumppacket("Transmit packet", dev->d_buf, dev->d_len);
 
   /* Check parameter */
 
@@ -1296,8 +1374,12 @@ static int sam_transmit(struct sam_emac_s *priv, int qid)
 
   /* Pointer to the current TX descriptor */
 
-  txhead = priv->xfrq[qid].txhead;
-  txdesc = &priv->xfrq[qid].txdesc[txhead];
+  xfrq   = &priv->xfrq[qid];
+  txhead = xfrq->txhead;
+  txdesc = &xfrq->txdesc[txhead];
+
+  nllvdbg("d_len: %d txhead[%d]: %d\n",  dev->d_len, qid, xfrq->txhead);
+  sam_dumppacket("Transmit packet", dev->d_buf, dev->d_len);
 
   /* If no free TX descriptor, buffer can't be sent */
 
@@ -1311,17 +1393,20 @@ static int sam_transmit(struct sam_emac_s *priv, int qid)
 
   if (dev->d_len > 0)
     {
-      /* Driver managed the ring buffer */
+      /* Copy the data into the driver managed the ring buffer.  If we
+       * wanted to support zero copy transfers, we would need to make sure
+       * that dev->d_buf and txdesc->addr refer to the same memory.
+       */
 
       memcpy((void *)txdesc->addr, dev->d_buf, dev->d_len);
-      arch_clean_dcache((uintptr_t)txdesc->addr,
-                        (uintptr_t)txdesc->addr + dev->d_len);
+      arch_clean_dcache((uint32_t)txdesc->addr,
+                        (uint32_t)txdesc->addr + dev->d_len);
     }
 
-  /* Update TX descriptor status. */
+  /* Update TX descriptor status (with USED=0). */
 
   status = dev->d_len | EMACTXD_STA_LAST;
-  if (txhead == priv->xfrq[qid].ntxbuffers-1)
+  if (txhead == xfrq->ntxbuffers - 1)
     {
       status |= EMACTXD_STA_WRAP;
     }
@@ -1334,17 +1419,24 @@ static int sam_transmit(struct sam_emac_s *priv, int qid)
 
   /* Increment the head index */
 
-  if (++txhead >= priv->xfrq[qid].ntxbuffers)
+  if (++txhead >= xfrq->ntxbuffers)
     {
       txhead = 0;
     }
 
-  priv->xfrq[qid].txhead = txhead;
+  xfrq->txhead = txhead;
 
   /* Now start transmission (if it is not already done) */
 
   regval  = sam_getreg(priv, SAM_EMAC_NCR_OFFSET);
   regval |= EMAC_NCR_TSTART;
+  sam_putreg(priv, SAM_EMAC_NCR_OFFSET, regval);
+
+  /* REVISIT: Sometimes TSTART is missed?  In this case, the symptom is
+   * that the packet is not sent until the next transfer when TXSTART
+   * is set again.
+   */
+
   sam_putreg(priv, SAM_EMAC_NCR_OFFSET, regval);
 
   /* Setup the TX timeout watchdog (perhaps restarting the timer) */
@@ -1515,7 +1607,8 @@ static void sam_dopoll(struct sam_emac_s *priv, int qid)
 
 static int sam_recvframe(struct sam_emac_s *priv, int qid)
 {
-  struct emac_rxdesc_s *rxdesc;
+  volatile struct emac_rxdesc_s *rxdesc;
+  struct sam_queue_s *xfrq;
   struct net_driver_s *dev;
   const uint8_t *src;
   uint8_t  *dest;
@@ -1534,19 +1627,17 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
   dest       = dev->d_buf;
   pktlen     = 0;
 
-  rxndx      = priv->xfrq[qid].rxndx;
-  rxdesc     = &priv->xfrq[qid].rxdesc[rxndx];
+  xfrq       = &priv->xfrq[qid];
+  rxndx      = xfrq->rxndx;
+  rxdesc     = &xfrq->rxdesc[rxndx];
   isframe    = false;
 
-  /* Invalidate the RX descriptor to force re-fetching from RAM.
-   * REVISIT:  If the rxdesc is not aligned with the cacheline boundary
-   * then won't this also invalidate some surrounding memory?
-   */
+  /* Invalidate the RX descriptor to force re-fetching from RAM. */
 
   arch_invalidate_dcache((uintptr_t)rxdesc,
                          (uintptr_t)rxdesc + sizeof(struct emac_rxdesc_s));
 
-  nllvdbg("rxndx: %d\n", rxndx);
+  nllvdbg("Entry rxndx[%d]: %d\n", qid, rxndx);
 
   while ((rxdesc->addr & EMACRXD_ADDR_OWNER) != 0)
     {
@@ -1556,13 +1647,15 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
 
       if ((rxdesc->status & EMACRXD_STA_SOF) != 0)
         {
-          /* Skip previous fragments */
+          /* Skip previous fragments.  Loop incrementing the index to the
+           * start fragment until it is equal to the index with the SOF mark
+           */
 
-          while (rxndx != priv->xfrq[qid].rxndx)
+          while (rxndx != xfrq->rxndx)
             {
               /* Give ownership back to the EMAC */
 
-              rxdesc = &priv->xfrq[qid].rxdesc[priv->xfrq[qid].rxndx];
+              rxdesc = &xfrq->rxdesc[xfrq->rxndx];
               rxdesc->addr &= ~(EMACRXD_ADDR_OWNER);
 
               /* Flush the modified RX descriptor to RAM */
@@ -1571,11 +1664,11 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
                                 (uintptr_t)rxdesc +
                                 sizeof(struct emac_rxdesc_s));
 
-              /* Increment the RX index */
+              /* Increment the RX index to the start fragment */
 
-              if (++priv->xfrq[qid].rxndx >= priv->xfrq[qid].nrxbuffers)
+              if (++xfrq->rxndx >= xfrq->nrxbuffers)
                 {
-                  priv->xfrq[qid].rxndx = 0;
+                  xfrq->rxndx = 0;
                 }
             }
 
@@ -1589,9 +1682,12 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
           isframe = true;
         }
 
-      /* Increment the working index */
+      /* Increment the working index. rxndx points to the next fragment
+       * in this frame (or, if the LAST bit was set, to the first fragment
+       * of the next frame).
+       */
 
-      if (++rxndx >= priv->xfrq[qid].nrxbuffers)
+      if (++rxndx >= xfrq->nrxbuffers)
         {
           rxndx = 0;
         }
@@ -1600,14 +1696,14 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
 
       if (isframe)
         {
-          if (rxndx == priv->xfrq[qid].rxndx)
+          if (rxndx == xfrq->rxndx)
             {
-              nllvdbg("ERROR: No EOF (Invalid of buffers too small)\n");
+              nllvdbg("ERROR: No EOF (Invalid or buffers too small)\n");
               do
                 {
                   /* Give ownership back to the EMAC */
 
-                  rxdesc = &priv->xfrq[qid].rxdesc[priv->xfrq[qid].rxndx];
+                  rxdesc = &xfrq->rxdesc[xfrq->rxndx];
                   rxdesc->addr &= ~(EMACRXD_ADDR_OWNER);
 
                   /* Flush the modified RX descriptor to RAM */
@@ -1618,12 +1714,13 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
 
                   /* Increment the RX index */
 
-                  if (++priv->xfrq[qid].rxndx >= priv->xfrq[qid].nrxbuffers)
+                  if (++xfrq->rxndx >= xfrq->nrxbuffers)
                     {
-                      priv->xfrq[qid].rxndx = 0;
+                      xfrq->rxndx = 0;
                     }
                 }
-              while (rxndx != priv->xfrq[qid].rxndx);
+              while (rxndx != xfrq->rxndx);
+
               return -EIO;
             }
 
@@ -1637,16 +1734,15 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
 
           /* Get the data source.  Invalidate the source memory region to
            * force reload from RAM.
-           *
-           * REVISIT:  If the rxdesc is not aligned with the cacheline
-           * boundary then won't this also invalidate some surrounding
-           * memory?
            */
 
           src = (const uint8_t *)(rxdesc->addr & EMACRXD_ADDR_MASK);
           arch_invalidate_dcache((uintptr_t)src, (uintptr_t)src + copylen);
 
-          /* And do the copy */
+          /* Copy the data from the driver managed the ring buffer.  If we
+           * wanted to support zero copy transfers, we would need to make
+           * sure that dev->d_buf and rxdesc->addr refer to the same memory.
+           */
 
           memcpy(dest, src, copylen);
           dest   += copylen;
@@ -1659,18 +1755,18 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
               /* Frame size from the EMAC */
 
               dev->d_len = (rxdesc->status & EMACRXD_STA_FRLEN_MASK);
-              nllvdbg("packet %d-%d (%d)\n",
-                      priv->xfrq[qid].rxndx, rxndx, dev->d_len);
+              nllvdbg("packet %d-%d (%d)\n", xfrq->rxndx, rxndx, dev->d_len);
 
               /* All data have been copied in the application frame buffer,
-               * release the RX descriptor
+               * release the RX descriptor(s).  Loop until all descriptors
+               * have been released up to the start of the next frame.
                */
 
-              while (priv->xfrq[qid].rxndx != rxndx)
+              while (xfrq->rxndx != rxndx)
                 {
                   /* Give ownership back to the EMAC */
 
-                  rxdesc = &priv->xfrq[qid].rxdesc[priv->xfrq[qid].rxndx];
+                  rxdesc = &xfrq->rxdesc[xfrq->rxndx];
                   rxdesc->addr &= ~(EMACRXD_ADDR_OWNER);
 
                   /* Flush the modified RX descriptor to RAM */
@@ -1679,11 +1775,13 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
                                     (uintptr_t)rxdesc +
                                     sizeof(struct emac_rxdesc_s));
 
-                  /* Increment the RX index */
+                  /* Increment the RX index of the descriptor that was just
+                   * released.
+                   */
 
-                  if (++priv->xfrq[qid].rxndx >= priv->xfrq[qid].nrxbuffers)
+                  if (++xfrq->rxndx >= xfrq->nrxbuffers)
                     {
-                      priv->xfrq[qid].rxndx = 0;
+                      xfrq->rxndx = 0;
                     }
                 }
 
@@ -1692,7 +1790,7 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
                */
 
               nllvdbg("rxndx: %d d_len: %d\n",
-                      priv->xfrq[qid].rxndx, dev->d_len);
+                      xfrq->rxndx, dev->d_len);
               if (pktlen < dev->d_len)
                 {
                   nlldbg("ERROR: Buffer size %d; frame size %d\n",
@@ -1704,8 +1802,9 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
             }
         }
 
-      /* We have not encountered the SOF yet... discard this fragment and
-       * keep looking
+      /* We found a descriptor that we own, but we have not encountered the
+       * SOF yet... discard this fragment and keep looking starting at the
+       * next fragment.
        */
 
       else
@@ -1719,18 +1818,21 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
           arch_clean_dcache((uintptr_t)rxdesc,
                             (uintptr_t)rxdesc +
                             sizeof(struct emac_rxdesc_s));
-          priv->xfrq[qid].rxndx = rxndx;
+
+          /* rxndx already points to the next fragment to be examined.
+           * Use it to update the candidate Start-of-Frame.
+           */
+
+          xfrq->rxndx = rxndx;
         }
 
-    /* Process the next buffer */
-
-    rxdesc = &priv->xfrq[qid].rxdesc[rxndx];
-
-    /* Invalidate the RX descriptor to force re-fetching from RAM
-     *
-     * REVISIT:  If the rxdesc is not aligned with the cacheline boundary
-     * then won't this also invalidate some surrounding memory?
+    /* Set-up to process the next fragment.  Get the RX descriptor
+     * associated with the next fragment.
      */
+
+    rxdesc = &xfrq->rxdesc[rxndx];
+
+    /* Invalidate the RX descriptor to force re-fetching from RAM */
 
     arch_invalidate_dcache((uintptr_t)rxdesc,
                            (uintptr_t)rxdesc + sizeof(struct emac_rxdesc_s));
@@ -1738,8 +1840,8 @@ static int sam_recvframe(struct sam_emac_s *priv, int qid)
 
   /* No packet was found */
 
-  priv->xfrq[qid].rxndx = rxndx;
-  nllvdbg("rxndx: %d\n", priv->xfrq[qid].rxndx);
+  xfrq->rxndx = rxndx;
+  nllvdbg("Exit rxndx[%d]: %d\n", qid, xfrq->rxndx);
   return -EAGAIN;
 }
 
@@ -1917,6 +2019,7 @@ static void sam_receive(struct sam_emac_s *priv, int qid)
 static void sam_txdone(struct sam_emac_s *priv, int qid)
 {
   struct emac_txdesc_s *txdesc;
+  struct sam_queue_s *xfrq;
   uint16_t tail;
 
   /* Are there any outstanding transmissions?  Loop until either (1) all of
@@ -1924,17 +2027,14 @@ static void sam_txdone(struct sam_emac_s *priv, int qid)
    * first descriptor that is still in use by the hardware.
    */
 
-  tail = priv->xfrq[qid].txtail;
-  while (tail != priv->xfrq[qid].txhead)
+  xfrq = &priv->xfrq[qid];
+  tail = xfrq->txtail;
+
+  while (tail != xfrq->txhead)
     {
       /* Yes.. check the next buffer at the tail of the list */
 
-      txdesc = &priv->xfrq[qid].txdesc[tail];
-
-      /* REVISIT:  If the rxdesc is not aligned with the cacheline boundary
-       * then won't this also invalidate some surrounding memory?
-       */
-
+      txdesc = &xfrq->txdesc[tail];
       arch_invalidate_dcache((uintptr_t)txdesc,
                              (uintptr_t)txdesc + sizeof(struct emac_txdesc_s));
 
@@ -1953,27 +2053,27 @@ static void sam_txdone(struct sam_emac_s *priv, int qid)
 
       /* Process all buffers of the current transmitted frame */
 
-      while (tail != priv->xfrq[qid].txhead &&
+      while (tail != xfrq->txhead &&
              (txdesc->status & EMACTXD_STA_LAST) == 0)
         {
           /* Increment the tail index */
 
-          if (++tail > priv->xfrq[qid].ntxbuffers)
+          if (++tail >= xfrq->ntxbuffers)
             {
               tail = 0;
             }
 
           /* Get the next TX descriptor */
 
-          txdesc = &priv->xfrq[qid].txdesc[tail];
+          txdesc = &xfrq->txdesc[tail];
           arch_invalidate_dcache((uintptr_t)txdesc,
                                  (uintptr_t)txdesc + sizeof(struct emac_txdesc_s));
         }
 
       /* Go to first buffer of the next frame */
 
-      if (tail != priv->xfrq[qid].txhead &&
-          ++tail > priv->xfrq[qid].ntxbuffers)
+      if (tail != xfrq->txhead &&
+          ++tail >= xfrq->ntxbuffers)
         {
           tail = 0;
         }
@@ -1988,7 +2088,7 @@ static void sam_txdone(struct sam_emac_s *priv, int qid)
 
   /* Save the new tail index */
 
-  priv->xfrq[qid].txtail = tail;
+  xfrq->txtail = tail;
 
   /* Then poll uIP for new XMIT data */
 
@@ -2016,6 +2116,7 @@ static void sam_txdone(struct sam_emac_s *priv, int qid)
 static void sam_txerr_interrupt(FAR struct sam_emac_s *priv, int qid)
 {
   struct emac_txdesc_s *txdesc;
+  struct sam_queue_s *xfrq;
   uint32_t regval;
   uint16_t tail;
 
@@ -2049,42 +2150,41 @@ static void sam_txerr_interrupt(FAR struct sam_emac_s *priv, int qid)
 
   /* Treat frames in TX queue including the ones that caused the error. */
 
-  tail = priv->xfrq[qid].txtail;
-  while (tail != priv->xfrq[qid].txhead)
-    {
-      txdesc = &priv->xfrq[qid].txdesc[tail];
+  xfrq = &priv->xfrq[qid];
+  tail = xfrq->txtail;
 
-      /* Make hw descriptor updates visible to CPU.
-       * REVISIT:  This could possibily invalidate the memory outside of
-       * the txdesc, depending on the size and alignment of the cache lines.
-       */
+  while (tail != xfrq->txhead)
+    {
+      txdesc = &xfrq->txdesc[tail];
+
+      /* Make H/W updates to the TX descriptor visible to the CPU. */
 
       arch_invalidate_dcache((uintptr_t)txdesc,
                              (uintptr_t)txdesc + sizeof(struct emac_txdesc_s));
 
       /* Go to the last buffer descriptor of the frame */
 
-      while (tail != priv->xfrq[qid].txhead &&
+      while (tail != xfrq->txhead &&
              (txdesc->status & EMACTXD_STA_LAST) == 0)
         {
           /* Increment the tail index */
 
-          if (++tail > priv->xfrq[qid].ntxbuffers)
+          if (++tail >= xfrq->ntxbuffers)
             {
               tail = 0;
             }
 
           /* Get the next TX descriptor */
 
-          txdesc = &priv->xfrq[qid].txdesc[tail];
+          txdesc = &xfrq->txdesc[tail];
           arch_invalidate_dcache((uintptr_t)txdesc,
                                  (uintptr_t)txdesc + sizeof(struct emac_txdesc_s));
         }
 
       /* Go to first buffer of the next frame */
 
-      if (tail != priv->xfrq[qid].txhead &&
-          ++tail > priv->xfrq[qid].ntxbuffers)
+      if (tail != xfrq->txhead &&
+          ++tail >= xfrq->ntxbuffers)
         {
           tail = 0;
         }
@@ -2092,7 +2192,7 @@ static void sam_txerr_interrupt(FAR struct sam_emac_s *priv, int qid)
 
   /* Save the new tail index */
 
-  priv->xfrq[qid].txtail = tail;
+  xfrq->txtail = tail;
 
   /* Reset TX queue */
 
@@ -4369,12 +4469,19 @@ static inline void sam_ethgpioconfig(struct sam_emac_s *priv)
 
 static void sam_txreset(struct sam_emac_s *priv, int qid)
 {
-  uint8_t *txbuffer = priv->xfrq[qid].txbuffer;
-  struct emac_txdesc_s *txdesc = priv->xfrq[qid].txdesc;
+  struct emac_txdesc_s *txdesc;
+  struct sam_queue_s *xfrq;
+  uint8_t *txbuffer;
   uintptr_t bufaddr;
   uintptr_t regaddr;
   uint32_t regval;
   int ndx;
+
+  /* Get some convenience pointers */
+
+  xfrq     = &priv->xfrq[qid];
+  txdesc   = xfrq->txdesc;
+  txbuffer = xfrq->txbuffer;
 
   /* Disable TX */
 
@@ -4384,12 +4491,12 @@ static void sam_txreset(struct sam_emac_s *priv, int qid)
 
   /* Configure the TX descriptors. */
 
-  priv->xfrq[qid].txhead = 0;
-  priv->xfrq[qid].txtail = 0;
+  xfrq->txhead = 0;
+  xfrq->txtail = 0;
 
-  for (ndx = 0; ndx < priv->xfrq[qid].ntxbuffers; ndx++)
+  for (ndx = 0; ndx < xfrq->ntxbuffers; ndx++)
     {
-      bufaddr = (uintptr_t)&txbuffer[ndx * priv->xfrq[qid].txbufsize];
+      bufaddr = (uintptr_t)&txbuffer[ndx * xfrq->txbufsize];
 
       /* Set the buffer address and mark the descriptor as in used by firmware */
 
@@ -4399,14 +4506,14 @@ static void sam_txreset(struct sam_emac_s *priv, int qid)
 
   /* Mark the final descriptor in the list */
 
-  txdesc[priv->xfrq[qid].ntxbuffers - 1].status =
+  txdesc[xfrq->ntxbuffers - 1].status =
     EMACTXD_STA_USED | EMACTXD_STA_WRAP;
 
   /* Flush the entire TX descriptor table to RAM */
 
   arch_clean_dcache((uintptr_t)txdesc,
                     (uintptr_t)txdesc +
-                    priv->xfrq[qid].ntxbuffers * sizeof(struct emac_txdesc_s));
+                    xfrq->ntxbuffers * sizeof(struct emac_txdesc_s));
 
   /* Set the Transmit Buffer Queue Pointer Register */
 
@@ -4433,12 +4540,19 @@ static void sam_txreset(struct sam_emac_s *priv, int qid)
 
 static void sam_rxreset(struct sam_emac_s *priv, int qid)
 {
-  struct emac_rxdesc_s *rxdesc = priv->xfrq[qid].rxdesc;
-  uint8_t *rxbuffer = priv->xfrq[qid].rxbuffer;
+  struct emac_rxdesc_s *rxdesc;
+  struct sam_queue_s *xfrq;
+  uint8_t *rxbuffer;
   uintptr_t bufaddr;
   uintptr_t regaddr;
   uint32_t regval;
   int ndx;
+
+  /* Get some convenience pointers */
+
+  xfrq     = &priv->xfrq[qid];
+  rxdesc   = xfrq->rxdesc;
+  rxbuffer = xfrq->rxbuffer;
 
   /* Disable RX */
 
@@ -4448,29 +4562,29 @@ static void sam_rxreset(struct sam_emac_s *priv, int qid)
 
   /* Configure the RX descriptors. */
 
-  priv->xfrq[qid].rxndx = 0;
-  for (ndx = 0; ndx < priv->attr->nrxbuffers; ndx++)
-  {
-    bufaddr = (uintptr_t)&rxbuffer[ndx * priv->xfrq[qid].rxbufsize];
-    DEBUGASSERT((bufaddr & ~EMACRXD_ADDR_MASK) == 0);
+  xfrq->rxndx = 0;
+  for (ndx = 0; ndx < xfrq->nrxbuffers; ndx++)
+    {
+      bufaddr = (uintptr_t)&rxbuffer[ndx * xfrq->rxbufsize];
+      DEBUGASSERT((bufaddr & ~EMACRXD_ADDR_MASK) == 0);
 
-    /* Set the buffer address and remove EMACRXD_ADDR_OWNER and
-     * EMACRXD_ADDR_WRAP.
-     */
+      /* Set the buffer address and remove EMACRXD_ADDR_OWNER and
+       * EMACRXD_ADDR_WRAP.
+       */
 
-    rxdesc[ndx].addr   = bufaddr;
-    rxdesc[ndx].status = 0;
-  }
+      rxdesc[ndx].addr   = bufaddr;
+      rxdesc[ndx].status = 0;
+    }
 
   /* Mark the final descriptor in the list */
 
-  rxdesc[priv->attr->nrxbuffers - 1].addr |= EMACRXD_ADDR_WRAP;
+  rxdesc[xfrq->nrxbuffers - 1].addr |= EMACRXD_ADDR_WRAP;
 
   /* Flush the entire RX descriptor table to RAM */
 
   arch_clean_dcache((uintptr_t)rxdesc,
                     (uintptr_t)rxdesc +
-                    priv->attr->nrxbuffers * sizeof(struct emac_rxdesc_s));
+                    xfrq->nrxbuffers * sizeof(struct emac_rxdesc_s));
 
   /* Set the Receive Buffer Queue Pointer Register */
 
@@ -5072,8 +5186,8 @@ errout:
  *      netdev ioctl.  The application level code have gotten the MAC
  *      address from some configuration parameter or by accessing some
  *      non-volatile storage containing the address.  This is the
- *      "cannonically correct" way to set the MAC address.
- *   2) Alterntively, the board logic may support some other less obvious
+ *      "canonically correct" way to set the MAC address.
+ *   2) Alternatively, the board logic may support some other less obvious
  *      non-volatile storage and the board-level boot-up code may access
  *      this and use this interface to set the Ethernet MAC address more
  *      directly.  This is mostly a kludge for the case where you just don't

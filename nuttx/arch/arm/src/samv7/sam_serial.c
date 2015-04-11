@@ -710,9 +710,9 @@ static inline void sam_serialout(struct sam_dev_s *priv, int offset, uint32_t va
 
 static inline void sam_restoreusartint(struct sam_dev_s *priv, uint32_t imr)
 {
-  /* Restore the previous interrupt state */
+  /* Restore the previous interrupt state (assuming all interrupts disabled) */
 
-  sam_serialout(priv, SAM_UART_IMR_OFFSET, imr);
+  sam_serialout(priv, SAM_UART_IER_OFFSET, imr);
 }
 
 /****************************************************************************
@@ -1210,6 +1210,7 @@ static int sam_ioctl(struct file *filep, int cmd, unsigned long arg)
         struct termios  *termiosp = (struct termios*)arg;
         struct sam_dev_s *priv     = (struct sam_dev_s *)dev->priv;
         uint32_t baud;
+        uint32_t imr;
         uint8_t parity;
         uint8_t nbits;
         bool stop2;
@@ -1294,7 +1295,12 @@ static int sam_ioctl(struct file *filep, int cmd, unsigned long arg)
              * implement TCSADRAIN / TCSAFLUSH
              */
 
+            sam_disableallints(priv, &imr);
             ret = sam_setup(dev);
+
+            /* Restore the interrupt state */
+
+            sam_restoreusartint(priv, imr);
           }
       }
       break;

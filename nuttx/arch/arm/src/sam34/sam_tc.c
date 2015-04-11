@@ -47,7 +47,7 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <nuttx/timer.h>
+#include <nuttx/timers/timer.h>
 #include <arch/board/board.h>
 
 #include "up_arch.h"
@@ -60,7 +60,7 @@
     defined(CONFIG_SAM34_TC5))
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 /* Clocking *****************************************************************/
 

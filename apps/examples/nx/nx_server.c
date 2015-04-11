@@ -1,7 +1,7 @@
 /****************************************************************************
  * examples/nx/nx_server.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,8 @@
 
 #include <nuttx/config.h>
 
+#include <sys/boardctl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -47,6 +49,7 @@
 #include <debug.h>
 
 #include <nuttx/arch.h>
+#include <nuttx/board.h>
 #include <nuttx/nx/nx.h>
 
 #ifdef CONFIG_NX_LCDDRIVER
@@ -92,10 +95,11 @@ int nx_servertask(int argc, char *argv[])
   /* Use external graphics driver initialization */
 
   printf("nxeg_initialize: Initializing external graphics device\n");
-  dev = up_nxdrvinit(CONFIG_EXAMPLES_NX_DEVNO);
+  dev = boardctl(BOARDIOC_GRAPHICS_SETUP, CONFIG_EXAMPLES_NX_DEVNO);
   if (!dev)
     {
-      printf("nxeg_initialize: up_nxdrvinit failed, devno=%d\n", CONFIG_EXAMPLES_NX_DEVNO);
+      printf("nxeg_initialize: boardctl failed, devno=%d\n",
+             CONFIG_EXAMPLES_NX_DEVNO);
       g_exitcode = NXEXIT_EXTINITIALIZE;
       return ERROR;
     }
@@ -104,19 +108,20 @@ int nx_servertask(int argc, char *argv[])
   /* Initialize the LCD device */
 
   printf("nx_servertask: Initializing LCD\n");
-  ret = up_lcdinitialize();
+  ret = board_lcd_initialize();
   if (ret < 0)
     {
-      printf("nx_servertask: up_lcdinitialize failed: %d\n", -ret);
+      printf("nx_servertask: board_lcd_initialize failed: %d\n", -ret);
       return 1;
     }
 
   /* Get the device instance */
 
-  dev = up_lcdgetdev(CONFIG_EXAMPLES_NX_DEVNO);
+  dev = board_lcd_getdev(CONFIG_EXAMPLES_NX_DEVNO);
   if (!dev)
     {
-      printf("nx_servertask: up_lcdgetdev failed, devno=%d\n", CONFIG_EXAMPLES_NX_DEVNO);
+      printf("nx_servertask: board_lcd_getdev failed, devno=%d\n",
+             CONFIG_EXAMPLES_NX_DEVNO);
       return 2;
     }
 

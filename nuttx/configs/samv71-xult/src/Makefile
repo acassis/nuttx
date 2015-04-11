@@ -86,11 +86,32 @@ ifeq ($(CONFIG_USBMSC),y)
 CSRCS += sam_usbmsc.c
 endif
 
+ifeq ($(CONFIG_AUDIO_WM8904),y)
+ifeq ($(CONFIG_SAMV7_TWIHS0),y)
+ifeq ($(CONFIG_SAMV7_SSC0),y)
+CSRCS += sam_wm8904.c
+endif
+endif
+endif
+
+ifeq ($(CONFIG_AUDIO_NULL),y)
+CSRCS += sam_audio_null.c
+endif
+
 ifeq ($(CONFIG_MTD_CONFIG),y)
 ifeq ($(CONFIG_SAMV7_TWIHS0),y)
 ifeq ($(CONFIG_MTD_AT24XX),y)
 CSRCS += sam_at24config.c
 endif
+endif
+endif
+
+ifeq ($(CONFIG_SAMV71XULT_MXTXPLND),y)
+ifeq ($(CONFIG_LCD),y)
+CSRCS += sam_ili9488.c
+endif
+ifeq ($(CONFIG_INPUT_MXT),y)
+CSRCS += sam_maxtouch.c
 endif
 endif
 

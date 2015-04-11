@@ -10037,3 +10037,108 @@
 	  reliably. (4) Attempt to apply some consistency in the tiva arch/
 	  level's interface to the config/board/ level driver configuration.
 	  From Calvin Maguranis (2015-03-23).
+	* arch/mips/src/pic32mz: Various fixes for Ethernet support.  Still
+	  not fully functional.  From Kristopher Tate (2015-030-29).
+	* arch/arm/src/armv7-m:  Add configuration option and logic to support
+	  the D-Cache in write-through mode (2015-03-29).
+	* arch/arm/src/stm32/Kconfig, stm32_lse.c, stm32_lsi.c, stm32_rtc.c/.h,
+	  stm32_rtcc.c, stm32_rtcounter.c, and stm32f*_rcc.c: The
+	  STM32F4Discovery board doesn't come with a Low speed external
+	  oscillator so the default LSE source for the RTC doesn't work. In
+	  stm32_rtcc.c the up_rtcinitialize() logic doesn't work with the LSI.
+	  The check on RTC_MAGIC on the BK0R register lead to rtc_setup() call
+	  that rightfully enables the lsi clock; but the next times, when the
+	  rtc is already setup, the rtc_resume() call does NOT start the lsi
+	  clock! The right place to put LSE/LSI initialisation is inside
+	  stm32_stdclockconfig() in stm32fxxxxx_rcc.c.  Doing this I checked
+	  the possible uses of the LSI and the LSE sources: the LSI can be used
+	  for RTC and/or the IWDG, while the LSE only for the RTC (and to output
+	  the MCO1 pin). This change is not verifed for any other platforms.
+	  From Leo Aloe3132
+	* Rename arch_nshinitialize() to board_app_initialize() (2015-03-30).
+	* ./*.mk, configs/.gitignore, Makefile, boardctl.c, include/nuttx/fs/ioctl,
+	  include/sys/boardctl.h, syscall.h, and syscall/:  Add a new non-
+	  standard OS interface called boardctl().  This is similar to a driver
+	  IOCTL call.  But this is an IOCTL call directly on the board logic.
+	  This function will eventually replace all of the ad hoc OS interfaces
+	  that are current used to perform application specific initialization
+	  and application driver test configuration.  It essentially formalizes
+	  and institutionalizes these rogue interface in to at least a single
+	  crazy call (2015-03-31).
+	* configs/: Modify all configurations:  Make sure that
+	  CONFIG_LIB_BOARDCTL=y appears wherever CONFIG_NSH_ARCHINIT=y appears.
+	  Remove support for CONFIG_NSH_ARCHMAC.  It is not used and there are
+	  better ways to do that operation (2015-03-31).
+	* configs/Kconfig, boardctl.c, all touchscreen driver setup functions,
+	  include/board.h, include/sys/boardctl.h, and
+	  include/nuttx/input/touchscreen.h: arch_tcinitialize() and
+	  arch_tcunitinitialize() renamed to board_tsc_setup() and
+	  board_tsc_teardown().  These are not long called directly by
+	  applications but only indirectly throught the crappy boardctl() OS
+	  interface (2015-03-31).
+	* configs/Kconfig, boardctl.c, include/nuttx/board.h, include/sys/boardctl.h,
+	  and several ADC files in configs/<board>/src/:  Rename adc_devinit() to
+	  board_adc_setup().  Add support to the boardctl() interface so that it
+	  can call board_adc_setup() on behalf of an application.  Make sure that
+	  the proper features are enabled in the defconfig files that have
+	  CONFIG_EXAMPLES_ADC=y (2015-03-31).
+	* configs/*/defconfig:  Make sure that all defconfig files that require
+	  external graphics intiialization also enable the correct boarctl()
+	  settings (2015-03-31).
+	* include/nuttx/board.h, include/sys/boardctl.h, nuttx/configs/Kconfig and
+	  boardctl.c, and board configurations and PWM implementations: Rename
+	  pwm_devinit() to board_pwm_setup().  Add CONFIG_BOARDCTL_PWMTEST that
+	  will enable calling board_pwm_setup() from boardctl().  In all
+	  configurations that enable the apps/examples/pwm test, make sure that
+	  boardctl() support is properly enabled (2015-03-31).
+	* Move include/nuttx/timer.h, rtc.h and watchdog.h to include/nuttx/timers/.
+	  (2015-04-01).
+	* drivers/timer/cs2100-cp.c and include/nuttx/timers/cs2100-cp.h: Add a
+	  very basic driver for the CS2100-CP Fractional-N Multipler chip (2015-04-02).
+	* configs/, graphics/, include/nuttx:  More renaming: up_lcdinitialize->board_lcd_initialize,
+	  up_lcdgetdev->board_lcd_getdev, up_lcduninitialize->board_lcd_uninitialize
+	  (2015-04-04).
+	* include/nuttx/nx, libnx/nx, libnx/nxtk: Add a new 'capped' parameter to
+	  nx_drawline(), nxtk_drawlinetoolbar(), and nxtk_drawlinewindow()
+	  (2015-04-05).
+	* libnx/nx/nx_drawline.c, libnx/nxtk/nxtk_drawlinetoolbar.c and
+	  nxtk_drawlinewindow.c: Implement line caps by drawing a file circle at
+	  the each endpoint of a line with a radius equal to half of the width
+	  of the line (2015-04-05).
+	* include/time.h, nuttx/time.h, libc/time/lib_dayofweek.c and
+	  lib_gmtimer.c: Implements CONFIG_TIME_EXTENDED as we discussed
+	  relative to providing the last 3 members of the tm struct and support
+	  for filling them in and even using the wday in the STM32 RTC. From
+	  David Sidrane.
+	* arch/arm/src/sam34/sam_serial.c and samv7/sam_serial.c:  A side-effect
+	  of changing serial settings via TERMIOS (such as tcsetattr) is that
+	  serial interrupts were being left disabled.  This is not a problem if
+	  the serial configuration is changed when there are no open references
+	  to the serial device.  In that case, serial interrupts are disabled and
+	  will not be enabled enabled until the serial device is first opened.
+	  But it is fatal if the serial device is already opened and if there is
+	  a task waiting to receive data.  In that case, the side-effect of
+	  disabling interrupts is fatal:  That task is then left hanging with
+	  interrupts disabled (2015-04-08)
+	* arch/arm/src/sama5/sam_serial.c:  Backport support for flowcontrol and
+	  termios from SAM3/4 -- UNVERIFIED. (2015-04-08).
+	* arch/arm/src/sam34/sam_serial.c and samv7/sam_serial.c: The IMR
+	  register is read-only.  This means that sam_restoreints() did not
+	  actually re-enable UART interrupts (2015-04-08).
+	* sigaddset() and sigdelset(): Need to set errno if a bad signal number
+	  is received (2015-04-09).
+	* sighold(), sigrelse(), sigignore(), sigset() and sigpause():  New
+	  signal handling functions (2015-04-09).
+	* Fixes to asinh(), atanh(), and sinh():  The 'basic' expansions all
+	  exhibited bad cancellation errors near zero (<= 1E-10). This can be
+	  easily seen e.g. with x = 1E-30, the results are all zero though they
+	  should be extremely close to x. The cutoff values (1E-5, 1E-9) are
+	  chosen so that the next term in the Taylor series is negligible (for
+	  double). Functions could maybe be optimized to use only first term (x)
+	  and a smaller cutoff, just bigger than where the cancellation occurs
+	  (2015-04-09).
+	* syscall/syscall.csv: Last changes to message queue prototypes did not
+	  make it into call gate logic (2015-04-09).
+	* syscall/syscall_stublookup.c: Fix some errors that crept in recently
+	  (2015-04-09).
+

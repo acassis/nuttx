@@ -1,5 +1,5 @@
 /****************************************************************************
- * config/stm32f4discovery/src/kl_nsh.c
+ * config/zp214xpa/src/lpc2148_appinit.c
  *
  *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -40,37 +40,27 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
-#include <stdio.h>
-#include <syslog.h>
+#include <nuttx/board.h>
 
-#ifdef CONFIG_NSH_LIBRARY
-
-/****************************************************************************
- * Pre-Processor Definitions
- ****************************************************************************/
+#ifdef CONFIG_LIB_BOARDCTL
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: nsh_archinitialize
+ * Name: board_app_initialize
  *
  * Description:
- *   Perform architecture specific initialization
+ *   Perform application specific initialization.  This function is never
+ *   called directly from application code, but only indirectly via the
+ *   (non-standard) boardctl() interface using the command BOARDIOC_INIT.
  *
- *   CONFIG_NSH_ARCHINIT=y :
- *     Called from the NSH library
- *
- *   CONFIG_BOARD_INITIALIZE=y, CONFIG_NSH_LIBRARY=y, &&
- *   CONFIG_NSH_ARCHINIT=n :
- *     Called from board_initialize().
- *
- ****************************************************************************/
+ *****************************************************************************/
 
-int nsh_archinitialize(void)
+int board_app_initialize(void)
 {
   return OK;
 }
 
-#endif /* CONFIG_NSH_LIBRARY */
+#endif /* CONFIG_LIB_BOARDCTL */

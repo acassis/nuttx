@@ -1,5 +1,5 @@
 /****************************************************************************
- * config/stm32f4discovery/src/kl_nsh.c
+ * config/stm32f4discovery/src/kl_appinit.c
  *
  *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -43,10 +43,12 @@
 #include <stdio.h>
 #include <syslog.h>
 
-#ifdef CONFIG_NSH_LIBRARY
+#include <nuttx/board.h>
+
+#ifdef CONFIG_LIB_BOARDCTL
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************
@@ -54,21 +56,16 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: nsh_archinitialize
+ * Name: board_app_initialize
  *
  * Description:
- *   Perform architecture specific initialization
+ *   Perform application specific initialization.  This function is never
+ *   called directly from application code, but only indirectly via the
+ *   (non-standard) boardctl() interface using the command BOARDIOC_INIT.
  *
- *   CONFIG_NSH_ARCHINIT=y :
- *     Called from the NSH library
- *
- *   CONFIG_BOARD_INITIALIZE=y, CONFIG_NSH_LIBRARY=y, &&
- *   CONFIG_NSH_ARCHINIT=n :
- *     Called from board_initialize().
- *
- ****************************************************************************/
+ *****************************************************************************/
 
-int nsh_archinitialize(void)
+int board_app_initialize(void)
 {
 #if defined(CONFIG_SENSORS_ADXL345)
   int ret;
@@ -82,4 +79,4 @@ int nsh_archinitialize(void)
   return OK;
 }
 
-#endif /* CONFIG_NSH_LIBRARY */
+#endif /* CONFIG_LIB_BOARDCTL */

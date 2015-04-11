@@ -415,7 +415,7 @@
 
 #  if !defined(CONFIG_SAMA5_PIOE_IRQ)
 #    warning CONFIG_SAMA5_PIOE_IRQ is required for audio support
-#    undef HAVE_HSMCI
+#    undef HAVE_WM8904
 #  endif
 
 #  ifndef CONFIG_AUDIO_FORMAT_PCM
@@ -1066,24 +1066,6 @@ int sam_usbhost_initialize(void);
 
 #ifdef HAVE_NETWORK
 void weak_function sam_netinitialize(void);
-#endif
-
-/************************************************************************************
- * Name: nsh_archinitialize
- *
- * Description:
- *   Perform architecture specific initialization for NSH.
- *
- *   CONFIG_NSH_ARCHINIT=y :
- *     Called from the NSH library
- *
- *   CONFIG_BOARD_INITIALIZE=y, CONFIG_NSH_LIBRARY=y, && CONFIG_NSH_ARCHINIT=n :
- *     Called from board_initialize().
- *
- ************************************************************************************/
-
-#ifdef CONFIG_NSH_LIBRARY
-int nsh_archinitialize(void);
 #endif
 
 /****************************************************************************

@@ -62,12 +62,12 @@
  */
 
 #ifdef HAVE_RTC_DRIVER
-#  include <nuttx/rtc.h>
+#  include <nuttx/timers/rtc.h>
 #  include "stm32_rtc.h"
 #endif
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************

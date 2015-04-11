@@ -96,7 +96,7 @@
  *    PMC_MCKR_CSS_SLOW   Slow Clock
  *    PMC_MCKR_CSS_MAIN   Main Clock
  *    PMC_MCKR_CSS_PLLA   PLLA Clock
- *    MC_MCKR_CSS_UPLL    Divided UPLL Clock
+ *    PMC_MCKR_CSS_UPLL   Divided UPLL Clock
  *
  *  BOARD_PMC_MCKR_PRES - Source clock pre-scaler.  May be one of:
  *
@@ -105,7 +105,7 @@
  *    PMC_MCKR_PRES_DIV4  Selected clock divided by 4
  *    PMC_MCKR_PRES_DIV8  Selected clock divided by 8
  *    PMC_MCKR_PRES_DIV16 Selected clock divided by 16
- *    MC_MCKR_PRES_DIV32  Selected clock divided by 32
+ *    PMC_MCKR_PRES_DIV32 Selected clock divided by 32
  *    PMC_MCKR_PRES_DIV64 Selected clock divided by 64
  *    PMC_MCKR_PRES_DIV3  Selected clock divided by 3
  *
@@ -115,7 +115,7 @@
  *
  *  BOARD_PMC_MCKR_MDIV - MCK divider.  May be one of:
  *
- *    PMC_MCKR_MDIV_DIV1  Master Clock is Prescaler Output Clock / 1
+ *    PMC_MCKR_MDIV_DIV1  Master Clock = Prescaler Output Clock / 1
  *    PMC_MCKR_MDIV_DIV2  Master Clock = Prescaler Output Clock / 2
  *    PMC_MCKR_MDIV_DIV4  Master Clock = Prescaler Output Clock / 4
  *    PMC_MCKR_MDIV_DIV3  Master Clock = Prescaler Output Clock / 3
@@ -290,10 +290,31 @@
  *      2    PD30   TX0     1       UTXD3
  *    ------ ------ ------- ------- --------
  *
- *    There are alternative pin selections only for UTXD3:
+ *    There are alternative pin selections only for UART3 TXD:
  */
 
 #define GPIO_UART3_TXD  GPIO_UART3_TXD_1
+
+
+/* - Arduino Communications.  Additional UART/USART connections are available
+ *  on the Arduino Communications connection J505:
+ *
+ *   ------ ------ ------- ------- --------
+ *   Pin on SAMV71 Arduino Arduino SAMV71
+ *   J503   PIO    Name    Pin     Function
+ *   ------ ------ ------- ------- --------
+ *     3    PD18   RX1     0       URXD4
+ *     4    PD19   TX1     0       UTXD4
+ *     5    PD15   RX2     0       RXD2
+ *     6    PD16   TX2     0       TXD2
+ *     7    PB0    RX3     0       RXD0
+ *     8    PB1    TX3     1       TXD0
+ *   ------ ------ ------- ------- --------
+ *
+ *    There are alternative pin selections only for UART4 TXD:
+ */
+
+#define GPIO_UART4_TXD  GPIO_UART4_TXD_1
 
 /*  - SAMV7-XULT EXTn connectors.  USART pins are also available the EXTn
  *    connectors.  The following are labelled in the User Guide for USART
@@ -329,13 +350,154 @@
  *    There are no alternative pin selections for USART1.
  */
 
-/* SSC
+/* WM8904 Audio Codec
+ *
+ * SAMV71 Interface        WM8904 Interface
+ * ---- ------------ ------- ----------------------------------
+ * PIO  Usage        Pin     Function
+ * ---- ------------ ------- ----------------------------------
+ * PA3  TWD0         SDA     I2C control interface, data line
+ * PA4  TWCK0        SCLK    I2C control interface, clock line
+ * PA10 RD           ADCDAT  Digital audio output (microphone)
+ * PB18 PCK2         MCLK    Master clock
+ * PB0  TF           LRCLK   Left/right data alignment clock
+ * PB1  TK           BCLK    Bit clock, for synchronization
+ * PD11 GPIO         IRQ     Audio interrupt
+ * PD24 RF           LRCLK   Left/right data alignment clock
+ * PD26 TD           DACDAT  Digital audio input (headphone)
+ * ---- ------------ ------- ----------------------------------
+ *
+ * SSC
  *
  * Alternative pin selections are available only for SSC0 TD.
  * On the SAMV71-XULT board, PD26 supports the I2S TD function
  */
 
 #define GPIO_SSC0_TD   GPIO_SSC0_TD_1
+
+/* maXTouch Xplained Pro Standard Extension Header **********************************
+ * -----------------------------------------------
+ * This LCD could be connected either via EXT1 or EXT2 using the 2x10
+ * 20-pin cable and the maXTouch Xplained Pro standard extension
+ * header.  Access is then performed in SPI mode.
+ *
+ * ---- -------- ---- ----------- ---- ----------- ----------------------------------
+ *                       SAMV71-XULT               maxTouch Xplained Pro
+ * PIN  FUNCTION EXT1 FUNC        EXT2 FUNC        Description
+ * ---- -------- ---- ----------- ---- ----------- ----------------------------------
+ *  1   ID        -    -           -    -          Communication line to ID chip
+ *  2   GND       -    -           -    -          Ground
+ *  3   N/C      PC31  -          PD30  -
+ *  4   N/C      PA19  -          PC13  -
+ *  5   GPIO     PB3  GPIO        PA6  GPIO        Command/Data Select
+ *  6   N/C      PB2   -          PD11  -
+ *  7   PWM      PA0  PWMC0_PWMH0 PC19 PWMC0_PMWH2 Backlight control
+ *  8   N/C      PC30  -          PD26  -
+ *  9   GPIO/IRQ PD28 GPIO        PA2  GPIO        IRQ from maXTouch controller
+ *  10  GPIO     PA5  GPIO        PA24 GPIO        RESET signal
+ *  11  I2C SDA  PA3  TWID0       PA3  TWID0       maXTouch I2C Data line
+ *  12  I2C SCL  PA4  TWICK0      PA4  TWICK0      maXTouch I2C Clock line
+ *  13  N/C      PB0   -          PA21  -
+ *  14  N/C      PB1   -          PB4   -
+ *  15  CS       PD25 GPIO        PD27 GPIO        CS line for LCD controller
+ *  16  SPI MOSI PD21 SPI0_MOSI   PD21 SPI0_MOSI   SPI Data to LCD controller
+ *  17  SPI MISO PD20 SPI0_MISO   PD20 SPI0_MISO   SPI Data from LCD controller
+ *  18  SPI SCK  PD22 SPI0_SPCK   PD22 SPI0_SPCK   SPI Clock line
+ *  19  GND       -    -           -      -        Ground
+ *  20  VCC       -    -           -      -        Target supply voltage
+ * ---- -------- ---- ----------- ---- ----------- ----------------------------------
+ *
+ * There are no alternatives for SPI0 and TWI0 pins.  Only the PWM pins require any
+ * disambiguration.
+ */
+
+#ifdef CONFIG_SAMV71XULT_MXTXPLND
+#  if defined(CONFIG_SAMV71XULT_MXTXPLND_EXT1)
+
+#    define GPIO_PWMC0_H0     GPIO_PWMC0_H0_1
+#    define GPIO_MXTXLND_PWM  GPIO_PWMC0_H0_1
+#    define GPIO_SPI0_NPCS1   GPIO_SPI0_NPCS1_2
+
+#  elif defined(CONFIG_SAMV71XULT_MXTXPLND_EXT2)
+
+#    define GPIO_PWMC0_H2     GPIO_PWMC0_H2_5
+#    define GPIO_MXTXLND_PWM  GPIO_PWMC0_H2_5
+
+/* maXTouch Xplained Pro Xplained Pro LCD Connector *********************************
+ *
+ * Only the parallel is supported by this BSP (via SMC/EBI).  The switch mode
+ * selector on the back of the maXtouch should be set in the OFF-ON-OFF
+ * positions to select 16-bit color mode.
+ *
+ * ----------------- ------------- -------------------------------------------------
+ *        LCD            SAMV71    Description
+ * Pin  Function     Pin  Function
+ * ---- ------------ ---- -------- -------------------------------------------------
+ *  1   ID            -    -       Chip ID communication line
+ *  2   GND           -   GND      Ground
+ *  3   D0           PC0  D0       Data line
+ *  4   D1           PC1  D1       Data line
+ *  5   D2           PC2  D2       Data line
+ *  6   D3           PC3  D3       Data line
+ *  7   GND           -   GND      Ground
+ *  8   D4           PC4  D4       Data line
+ *  9   D5           PC5  D5       Data line
+ * 10   D6           PC6  D6       Data line
+ * 11   D7           PC7  D7       Data line
+ * 12   GND           -   GND      Ground
+ * 13   D8           PE0  D8       Data line
+ * 14   D9           PE1  D9       Data line
+ * 15   D10          PE2  D10      Data line
+ * 16   D11          PE3  D11      Data line
+ * 17   GND           -   GND      Ground
+ * 18   D12          PE4  D12      Data line
+ * 19   D13          PE5  D13      Data line
+ * 20   D14          PA15 D14      Data line
+ * 21   D15          PA16 D15      Data line
+ * 22   GND           -   GND      Ground
+ * 23   D16           -    -       Data line
+ * 24   D17           -    -       Data line
+ * 25   N/C           -    -
+ * 26   N/C           -    -
+ * 27   GND           -   GND      Ground
+ * 28   N/C           -    -
+ * 29   N/C           -    -
+ * 30   N/C           -    -
+ * 31   N/C           -    -
+ * 32   GND           -   GND      Ground
+ * 33   PCLK/        PC30 GPIO     SMC: Pixel clock Display RAM select.
+ *      CMD_DATA_SEL               SPI: One address line of the MCU for displays where
+ *                                      it is possible to select either the register
+ *                                      or the data interface
+ * 34   VSYNC/CS     PD19 NCS3     SMC: Vertical synchronization.
+ *                                 SPI: Chip select
+ * 35   HSYNC/WE     PC8  NWE      SMC: Horizontal synchronization
+ *                                 SPI: Write enable signal
+ * 36   DATA ENABLE/ PC11 NRD      SMC: Data enable signal
+ *      RE                         SPI: Read enable signal
+ * 37   SPI SCK       -    -       SPI: Clock for SPI
+ * 38   SPI MOSI      -    -       SPI: Master out slave in line of SPI
+ * 39   SPI MISO      -    -       SPI: Master in slave out line of SPI
+ * 40   SPI SS        -    -       SPI: Slave select for SPI
+ * 41   N/C           -    -
+ * 42   TWI SDA      PA3  TWD0     I2C data line (maXTouch®)
+ * 43   TWI SCL      PA4  TWCK0    I2C clock line (maXTouch)
+ * 44   IRQ1         PD28 WKUP5    maXTouch interrupt line
+ * 45   N/C          PA2  WKUP2
+ * 46   PWM          PC9  TIOB7    Backlight control
+ * 47   RESET        PC13 GPIO     Reset for both display and maxTouch
+ * 48   VCC           -    -       3.3V power supply for extension board
+ * 49   VCC           -    -       3.3V power supply for extension board
+ * 50   GND           -    -       Ground
+ * ---- ------------ ---- -------- --------------------------------------------------
+ */
+
+#  elif defined(CONFIG_SAMV71XULT_MXTXPLND_LCD)
+
+#    define GPIO_SMC_NCS3     GPIO_SMC_NCS3_2
+
+#  endif
+#endif /* CONFIG_SAMV71XULT_MXTXPLND */
 
 /************************************************************************************
  * Public Types
@@ -387,11 +549,7 @@ void sam_setleds(uint8_t ledset);
  *
  ************************************************************************************/
 
-#if defined(CONFIG_SAM4EEK_LCD_RGB565)
 void sam_lcdclear(uint16_t color);
-#else /* if defined(CONFIG_SAM4EEK_LCD_RGB24) defined(CONFIG_SAM4EEK_LCD_RGB32) */
-void sam_lcdclear(uint32_t color);
-#endif
 
 #undef EXTERN
 #if defined(__cplusplus)

@@ -1,7 +1,7 @@
 /****************************************************************************
  * examples/nxhello/nxhello_main.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
+#include <sys/boardctl.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -52,13 +53,15 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <nuttx/arch.h>
+#include <nuttx/board.h>
+
 #ifdef CONFIG_NX_LCDDRIVER
 #  include <nuttx/lcd/lcd.h>
 #else
 #  include <nuttx/video/fb.h>
 #endif
 
-#include <nuttx/arch.h>
 #include <nuttx/nx/nx.h>
 #include <nuttx/nx/nxglib.h>
 #include <nuttx/nx/nxfonts.h>
@@ -126,10 +129,10 @@ static inline int nxhello_initialize(void)
   /* Use external graphics driver initialization */
 
   printf("nxhello_initialize: Initializing external graphics device\n");
-  dev = up_nxdrvinit(CONFIG_EXAMPLES_NXHELLO_DEVNO);
+  dev = boardctl(BOARDIOC_GRAPHICS_SETUP, CONFIG_EXAMPLES_NXHELLO_DEVNO);
   if (!dev)
     {
-      printf("nxhello_initialize: up_nxdrvinit failed, devno=%d\n",
+      printf("nxhello_initialize: boardctl failed, devno=%d\n",
              CONFIG_EXAMPLES_NXHELLO_DEVNO);
       g_nxhello.code = NXEXIT_EXTINITIALIZE;
       return ERROR;
@@ -141,20 +144,21 @@ static inline int nxhello_initialize(void)
   /* Initialize the LCD device */
 
   printf("nxhello_initialize: Initializing LCD\n");
-  ret = up_lcdinitialize();
+  ret = board_lcd_initialize();
   if (ret < 0)
     {
-      printf("nxhello_initialize: up_lcdinitialize failed: %d\n", -ret);
+      printf("nxhello_initialize: board_lcd_initialize failed: %d\n", -ret);
       g_nxhello.code = NXEXIT_LCDINITIALIZE;
       return ERROR;
     }
 
   /* Get the device instance */
 
-  dev = up_lcdgetdev(CONFIG_EXAMPLES_NXHELLO_DEVNO);
+  dev = board_lcd_getdev(CONFIG_EXAMPLES_NXHELLO_DEVNO);
   if (!dev)
     {
-      printf("nxhello_initialize: up_lcdgetdev failed, devno=%d\n", CONFIG_EXAMPLES_NXHELLO_DEVNO);
+      printf("nxhello_initialize: board_lcd_getdev failed, devno=%d\n",
+             CONFIG_EXAMPLES_NXHELLO_DEVNO);
       g_nxhello.code = NXEXIT_LCDGETDEV;
       return ERROR;
     }

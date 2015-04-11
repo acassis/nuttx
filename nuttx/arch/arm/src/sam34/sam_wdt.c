@@ -47,7 +47,7 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <nuttx/watchdog.h>
+#include <nuttx/timers/watchog.h>
 #include <arch/board/board.h>
 
 #include "up_arch.h"
@@ -56,7 +56,7 @@
 #if defined(CONFIG_WATCHDOG) && defined(CONFIG_SAM34_WDT)
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 /* Clocking *****************************************************************/
 /* The minimum frequency of the WWDG clock is:

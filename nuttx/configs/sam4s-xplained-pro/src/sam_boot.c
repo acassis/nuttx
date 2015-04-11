@@ -42,13 +42,13 @@
 #include <debug.h>
 
 #include <nuttx/board.h>
-#include <nuttx/watchdog.h>
+#include <nuttx/timers/watchdog.h>
 #include <arch/board/board.h>
 
 #include "sam4s-xplained-pro.h"
 
 /************************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ************************************************************************************/
 
 /************************************************************************************

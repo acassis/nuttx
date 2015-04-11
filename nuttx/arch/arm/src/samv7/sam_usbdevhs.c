@@ -4141,7 +4141,7 @@ static int sam_pullup(FAR struct usbdev_s *dev, bool enable)
       /* Un-freeze clocking.
        *
        * When the clock is frozen, on certain bits in the USBCH_CTRL
-       * register can be modified (FRZCLK, USBE, and LS).  In addtion,
+       * register can be modified (FRZCLK, USBE, and LS).  In addition,
        * only the asynchronous interrupt sources can trigger the USB
        * interrupt:
        *
@@ -4209,7 +4209,7 @@ static int sam_pullup(FAR struct usbdev_s *dev, bool enable)
     {
       /* DETACH=1: USBHS is detached, UTMI transceiver is suspended. */
 
-      regval = sam_getreg(SAM_USBHS_DEVCTRL);
+      regval  = sam_getreg(SAM_USBHS_DEVCTRL);
       regval |= USBHS_DEVCTRL_DETACH;
       sam_putreg(regval, SAM_USBHS_DEVCTRL);
 
@@ -4357,20 +4357,24 @@ static void sam_hw_setup(struct sam_usbdev_s *priv)
    * unfreeze clocking (FRZCLK = 0)
    */
 
-  regval |= USBHS_CTRL_USBE;
+  regval |= USBHS_CTRL_UIMOD_DEVICE;
   sam_putreg(regval, SAM_USBHS_CTRL);
 
-  regval |= USBHS_CTRL_UIMOD_DEVICE;
+  regval |= USBHS_CTRL_USBE;
   sam_putreg(regval, SAM_USBHS_CTRL);
 
   regval &= ~USBHS_CTRL_FRZCLK;
   sam_putreg(regval, SAM_USBHS_CTRL);
 
-  /* Select High Speed */
+  /* Select High Speed or force Full Speed */
 
   regval  = sam_getreg(SAM_USBHS_DEVCTRL);
   regval &= ~USBHS_DEVCTRL_SPDCONF_MASK;
+#ifdef CONFIG_SAMV7_USBDEVHS_LOWPOWER
+  regval |= USBHS_DEVCTRL_SPDCONF_LOWPOWER;
+#else
   regval |= USBHS_DEVCTRL_SPDCONF_NORMAL;
+#endif
   sam_putreg(regval, SAM_USBHS_DEVCTRL);
 
   /* Wait for UTMI clocking to be usable */
@@ -4383,7 +4387,7 @@ static void sam_hw_setup(struct sam_usbdev_s *priv)
   regval &= ~USBHS_DEVCTRL_LS;
   sam_putreg(regval, SAM_USBHS_DEVCTRL);
 
-  /* Reset and disable all endpoints, initializing endpoint 0. */
+  /* Reset and disable all endpoints, re-initializing endpoint 0. */
 
   sam_epset_reset(priv, SAM_EPSET_ALL);
   sam_ep0_configure(priv);
@@ -4533,13 +4537,20 @@ static void sam_hw_shutdown(struct sam_usbdev_s *priv)
 
   sam_putreg(USBHS_DEVINT_ALL, SAM_USBHS_DEVICR);
 
-  /* Disconnect the device */
+  /* DETACH=1: USBHS is detached, UTMI transceiver is suspended. */
 
-  sam_pullup(&priv->usbdev, false);
+  regval  = sam_getreg(SAM_USBHS_DEVCTRL);
+  regval |= USBHS_DEVCTRL_DETACH;
+  sam_putreg(regval, SAM_USBHS_DEVCTRL);
+
+  /* Freeze clocking */
+
+  regval  = sam_getreg(SAM_USBHS_CTRL);
+  regval |= USBHS_CTRL_FRZCLK;
+  sam_putreg(regval, SAM_USBHS_CTRL);
 
   /* Disable USB hardware */
 
-  regval = sam_getreg(SAM_USBHS_CTRL);
   regval &= ~USBHS_CTRL_USBE;
   sam_putreg(regval, SAM_USBHS_CTRL);
 

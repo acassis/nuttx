@@ -124,7 +124,7 @@ struct timespec
  * REVISIT: This structure could be packed better using uint8_t's and
  * uint16_t's.  The standard definition does, however, call out type int for
  * all of the members.  NOTE: Any changes to this structure must be also be
- * reflected in struct rtc_time defined in include/nuttx/rtc.h; these two
+ * reflected in struct rtc_time defined in include/nuttx/timers/rtc.h; these two
  * structures must be cast compatible.
  */
 
@@ -136,7 +136,7 @@ struct tm
   int tm_mday;    /* Day of the month (1-31) */
   int tm_mon;     /* Month (0-11) */
   int tm_year;    /* Years since 1900 */
-#ifdef CONFIG_LIBC_LOCALTIME
+#if defined(CONFIG_LIBC_LOCALTIME) || defined(CONFIG_TIME_EXTENDED)
   int tm_wday;    /* Day of the week (0-6) */
   int tm_yday;    /* Day of the year (0-365) */
   int tm_isdst;   /* Non-0 if daylight savings time is in effect */

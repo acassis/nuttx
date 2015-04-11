@@ -1223,3 +1223,30 @@
 	  from Juha Niskanen (2015-02-20).
 	* apps/netutils/Kconfig, Make.defs, and pppd/: Add a PPP daemon.  From
 	  Max Neklyudov (2015-03-11).
+	* Rename arch_nshinitialize() to board_app_initialize() (2015-03-30).
+	* apps/nshlib:  NSH initialization now calls boardctl(BOARDIOC_INIT)
+	  instead of board_app_initaliaze().   Remove support for
+	  CONFIG_NSH_ARCHMAC.  It is not used and there are better ways to do
+	  that operation (2015-03-31).
+	* apps/examples/touchscreen:  No longer calls arch_tcinitialize() or
+	  arch_tcuninitialize().  Instead the new OS interface boardctl() is
+	  called to perform these test operations on the touchscreen driver
+	  (2015-03-31).
+	* apps/examples/adc: Change apps/examples/adc to that is now calls
+	  boardctl() instead of adc_devinit() in order to initalize the ADC
+	  device(2015-03-31).
+	* apps/examples/pwm/: Replace calls to pwm_devinit() in
+	  apps/examples/pwm with calls to boardctl() (2015-03-31).
+	* apps/examples/:  More renaming: up_lcdinitialize->board_lcd_initialize,
+	  up_lcdgetdev->board_lcd_getdev, up_lcduninitialize->board_lcd_uninitialize
+	  (2015-04-04).
+	* apps/examples/nxlines/: Add the new 'capped' parameter to nx_drawline()
+	  calls (2015-04-05).
+	* apps/modbus/tcp:  Fix some complile problems when TCP is enabled
+	  (2015-04-06).
+	* apps/system: Clean up Kconfig menus.  The way it worked before, it was
+	  difficult to see what was enabled and what was not.  menus replaced
+	  with menuconfig (2015-04-07).
+	* apps/examples/ostest/sigprocmask.c: Add a simple test of sigprocmask,
+	  sighold, and sigrelse (2015-04-09).
+

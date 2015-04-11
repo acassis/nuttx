@@ -48,7 +48,7 @@
 #include <debug.h>
 
 #include <nuttx/kmalloc.h>
-#include <nuttx/timer.h>
+#include <nuttx/timers/timer.h>
 
 #include <arch/board/board.h>
 
@@ -57,7 +57,7 @@
 #if defined(CONFIG_TIMER) && defined(CONFIG_TIVA_TIMER)
 
 /****************************************************************************
- * Pre-Processor Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************

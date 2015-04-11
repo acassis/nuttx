@@ -3,12 +3,14 @@
 # see misc/tools/kconfig-language.txt.
 #
 
+menu "Timer Driver Support"
+
 menuconfig TIMER
 	bool "Timer Support"
 	default n
 	---help---
 		This selection enables building of the "upper-half" timer
-		driver. See include/nuttx/timer.h for further timer driver
+		driver. See include/nuttx/timers/timer.h for further timer driver
 		information.
 
 menuconfig RTC
@@ -16,7 +18,7 @@ menuconfig RTC
 	default n
 	---help---
 		This selection enables configuration of a real time clock (RTCdriver.
-		See include/nuttx/rtc.h for further RTC driver information.
+		See include/nuttx/timers/rtc.h for further RTC driver information.
 		Most RTC drivers are MCU specific and may require other specific
 		settings.
 
@@ -73,7 +75,7 @@ config RTC_DRIVER
 	default n
 	---help---
 		This selection enables building of the "upper-half" RTC
-		driver. See include/nuttx/rtc.h for further RTC driver
+		driver. See include/nuttx/timers/rtc.h for further RTC driver
 		information.
 
 if RTC_DRIVER
@@ -122,7 +124,7 @@ menuconfig WATCHDOG
 	default n
 	---help---
 		This selection enables building of the "upper-half" watchdog timer
-		driver. See include/nuttx/watchdog.h for further watchdog timer driver
+		driver. See include/nuttx/timers/watchdog.h for further watchdog timer driver
 		information.
 
 if WATCHDOG
@@ -132,3 +134,21 @@ config WATCHDOG_DEVPATH
 	default "/dev/watchdog0"
 
 endif # WATCHDOG
+
+config TIMERS_CS2100CP
+	bool "CS2100-CP Fraction-N Clock Multiplier"
+	depends on I2C
+	select I2C_TRANSFER
+
+if TIMERS_CS2100CP
+
+config CS2100CP_DEBUG
+	bool "Enable CS2100-CP Debug Features"
+	depends on DEBUG
+
+config CS2100CP_REGDEBUG
+	bool "Enable CS2100-CP Register Debug"
+	depends on DEBUG
+
+endif # TIMERS_CS2100CP
+endmenu  # Timer Driver Support
