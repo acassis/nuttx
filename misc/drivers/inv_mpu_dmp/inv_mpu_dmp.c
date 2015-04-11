@@ -1150,22 +1150,45 @@ int dmp_set_interrupt_mode(struct dmp_s* dmp, uint8_t mode)
 }
 
 
-
-/*
- *  Name: dmp_read_fifo
+/*******************************************************************************
+ *  Name: dmp_fifo_packet_nbr
+ * 
  *  Description:
- *      Get one packet from the FIFO.
+ *      Get number of complete packet into the FIFO.
  *   return a non-zero error code.
  *  Parameters
- *   gyro        Gyro data in hardware units.
- *   accel       Accel data in hardware units.
- *   quat        3-axis quaternion data in hardware units.
- *   timestamp   Timestamp in milliseconds.
+ *   inst   instance of inv_mpu driver.
+ *   data   fifo data structure.
+ *  Return:
+ *   number of complete packet in fifo, negative value in case of error.
+ ******************************************************************************/
+int dmp_fifo_packet_nbr(struct dmp_s* dmp)
+{
+    int level;
+
+    level = mpu_read_fifo_level(dmp->inst);
+
+    if ( level < 0 )
+        return level;
+
+    if ( dmp->packet_length <= 0 )
+        return 0;
+
+    return ( level / dmp->packet_length );
+}
+
+/*******************************************************************************
+ *  Name: dmp_read_fifo
+ * 
+ *  Description:
+ *      Get one packet from the FIFO.
+ *  Parameters
+ *   inst   instance of inv_mpu driver.
+ *   data   fifo data structure.
  *  Return:
  *   1 complete packet read successful, negative value in case of error.
- */ 
-int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel, 
-                  int32_t * quat ) 
+ ******************************************************************************/
+int dmp_read_fifo(struct dmp_s* dmp, struct mpu_fifo_dmp_s* data ) 
 {
     uint8_t fifo_data[MAX_PACKET_LENGTH];
     uint8_t ii;
@@ -1191,22 +1214,22 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
         int32_t quat_q14[4], quat_mag_sq;
 #endif
 
-        quat[0] = ((int32_t) fifo_data[ 0] << 24) | \
-                  ((int32_t) fifo_data[ 1] << 16) | \
-                  ((int32_t) fifo_data[ 2] <<  8) | \
-                  ((int32_t) fifo_data[ 3] <<  0) ;
-        quat[1] = ((int32_t) fifo_data[ 4] << 24) | \
-                  ((int32_t) fifo_data[ 5] << 16) | \
-                  ((int32_t) fifo_data[ 6] <<  8) | \
-                  ((int32_t) fifo_data[ 7] <<  0) ;
-        quat[2] = ((int32_t) fifo_data[ 8] << 24) | \
-                  ((int32_t) fifo_data[ 9] << 16) | \
-                  ((int32_t) fifo_data[10] <<  8) | \
-                  ((int32_t) fifo_data[11] <<  0) ;
-        quat[3] = ((int32_t) fifo_data[12] << 24) | \
-                  ((int32_t) fifo_data[13] << 16) | \
-                  ((int32_t) fifo_data[14] <<  8) | \
-                  ((int32_t) fifo_data[15] <<  0) ;
+        data->quat.w = ((int32_t) fifo_data[ 0] << 24) | \
+                       ((int32_t) fifo_data[ 1] << 16) | \
+                       ((int32_t) fifo_data[ 2] <<  8) | \
+                       ((int32_t) fifo_data[ 3] <<  0) ;
+        data->quat.x = ((int32_t) fifo_data[ 4] << 24) | \
+                       ((int32_t) fifo_data[ 5] << 16) | \
+                       ((int32_t) fifo_data[ 6] <<  8) | \
+                       ((int32_t) fifo_data[ 7] <<  0) ;
+        data->quat.y = ((int32_t) fifo_data[ 8] << 24) | \
+                       ((int32_t) fifo_data[ 9] << 16) | \
+                       ((int32_t) fifo_data[10] <<  8) | \
+                       ((int32_t) fifo_data[11] <<  0) ;
+        data->quat.z = ((int32_t) fifo_data[12] << 24) | \
+                       ((int32_t) fifo_data[13] << 16) | \
+                       ((int32_t) fifo_data[14] <<  8) | \
+                       ((int32_t) fifo_data[15] <<  0) ;
 
         ii += 16;
 
@@ -1218,10 +1241,10 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
          * down the quaternion data to avoid int32_t int32_t math. 
          */
 
-        quat_q14[0] = quat[0] >> 16;
-        quat_q14[1] = quat[1] >> 16;
-        quat_q14[2] = quat[2] >> 16;
-        quat_q14[3] = quat[3] >> 16;
+        quat_q14[0] = data->quat.w >> 16;
+        quat_q14[1] = data->quat.x >> 16;
+        quat_q14[2] = data->quat.y >> 16;
+        quat_q14[3] = data->quat.z >> 16;
 
         quat_mag_sq = quat_q14[0] * quat_q14[0] + \
                       quat_q14[1] * quat_q14[1] + \
@@ -1246,17 +1269,17 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
 
     if (dmp->feature_mask & DMP_FEATURE_SEND_RAW_ACCEL)
     {
-        accel[0] = ((int16_t) fifo_data[ii + 0] << 8) | fifo_data[ii + 1];
-        accel[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
-        accel[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
+        data->accel.x = ((int16_t) fifo_data[ii + 0] << 8) | fifo_data[ii + 1];
+        data->accel.y = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
+        data->accel.z = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
     }
 
     if (dmp->feature_mask & DMP_FEATURE_SEND_ANY_GYRO)
     {
-        gyro[0] = ((int16_t) fifo_data[ii + 0] << 8) | fifo_data[ii + 1];
-        gyro[1] = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
-        gyro[2] = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
+        data->gyro.x = ((int16_t) fifo_data[ii + 0] << 8) | fifo_data[ii + 1];
+        data->gyro.y = ((int16_t) fifo_data[ii + 2] << 8) | fifo_data[ii + 3];
+        data->gyro.z = ((int16_t) fifo_data[ii + 4] << 8) | fifo_data[ii + 5];
         ii += 6;
     }
 
@@ -1266,7 +1289,7 @@ int dmp_read_fifo(struct dmp_s* dmp, int16_t * gyro, int16_t * accel,
     if (dmp->feature_mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
         decode_gesture(dmp,fifo_data + ii);
 
-    return 0;
+    return ii;
 }
 
 

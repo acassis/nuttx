@@ -119,13 +119,14 @@
 
 #define MPU_FREQUENCY       _SNIOC(0x0002)
 
-/* MPU_LOAD_FIRMWARE returns load firmware
+
+/* MPU_RESET_FIFO reset mpu fifo.
  *
- * Argument: A reference to a firmware binary, with specific context header 
- * struct mpu_firmware_s.
+ * Argument: None
+ *
  */
 
-#define MPU_LOAD_FIRMWARE   _SNIOC(0x0003)
+#define MPU_RESET_FIFO      _SNIOC(0x0004)
 
 
 /********************************************************************************************
@@ -322,6 +323,7 @@ int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
 
 int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data);
 
+int mpu_fifo_packet_nbr(struct mpu_inst_s* inst);
 int mpu_read_fifo_level(struct mpu_inst_s* inst);
 int mpu_read_fifo_stream(struct mpu_inst_s* inst,uint8_t *data, int size);
 

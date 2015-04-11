@@ -234,60 +234,94 @@ struct motion_int_cache_s {
 /* Debug **********************************************************************/
 /* CONFIG_DEBUG_I2C + CONFIG_DEBUG enables general I2C debug output. */
 
-/* Cached chip configuration data.
- * TODO: A lot of these can be handled with a bitmask.
- */
-struct chip_cfg_s {
-    /* Matches gyro_cfg >> 3 & 0x03 */
-    uint8_t gyro_fsr;
-    /* Matches accel_cfg >> 3 & 0x03 */
-    uint8_t accel_fsr;
-    /* Enabled sensors. Uses same masks as fifo_en, NOT pwr_mgmt_2. */
-    uint8_t sensors;
-    /* Matches config register. */
-    uint8_t lpf;
-    uint8_t clk_src;
-    /* Sample rate, NOT rate divider. */
-    uint16_t sample_rate;
-    /* Matches fifo_en register. */
-    uint8_t fifo_enable;
+/* Gyro driver state variables. */
+struct mpu_inst_s {
+    struct mpu_low_s*   low;
+
     /* Matches fifo packet size in function of fifo_en register. */
+
     uint8_t     packet_size;
+
+    /* Matches gyro_cfg >> 3 & 0x03 */
+
+    uint8_t gyro_fsr;
+
+    /* Matches accel_cfg >> 3 & 0x03 */
+
+    uint8_t accel_fsr;
+
+    /* Enabled sensors. Uses same masks as fifo_en, NOT pwr_mgmt_2. */
+
+    uint8_t sensors;
+
+    /* Matches config register. */
+
+    uint8_t lpf;
+
+    uint8_t clk_src;
+
+    /* Sample rate, NOT rate divider. */
+
+    uint16_t sample_rate;
+
+    /* Matches fifo_en register. */
+
+    uint8_t fifo_enable;
+
     /* Matches int enable register. */
+
     uint8_t int_enable;
+
     /* 1 if devices on auxiliary I2C bus appear on the primary. */
+
     uint8_t bypass_mode;
+
     /* 1 if half-sensitivity.
      * NOTE: This doesn't belong here, but everything else in hw_s is const,
      * and this allows us to save some precious RAM.
      */
-    uint8_t accel_half;
-    /* 1 if device in low-power accel-only mode. */
-    uint8_t lp_accel_mode;
-    /* 1 if interrupts are only triggered on motion events. */
-    uint8_t int_motion_only;
-    struct motion_int_cache_s cache;
-    /* 1 for active low interrupts. */
-    uint8_t active_low_int;
-    /* 1 for latched interrupts. */
-    uint8_t latched_int;
-    /* 1 if DMP is enabled. */
-    uint8_t dmp_on;
-    /* Ensures that DMP will only be loaded once. */
-    uint8_t dmp_loaded;
-    /* Sampling rate used when DMP is enabled. */
-    uint16_t dmp_sample_rate;
-#ifdef CONFIG_SENSOR_AK89XX_SECONDARY
-    /* Compass sample rate. */
-    uint16_t compass_sample_rate;
-    uint8_t compass_addr;
-#endif
-};
 
-/* Gyro driver state variables. */
-struct mpu_inst_s {
-    struct mpu_low_s*   low;
-    struct chip_cfg_s   chip_cfg;
+    uint8_t accel_half;
+
+    /* 1 if device in low-power accel-only mode. */
+
+    uint8_t lp_accel_mode;
+
+    /* 1 if interrupts are only triggered on motion events. */
+
+    uint8_t int_motion_only;
+
+    struct motion_int_cache_s cache;
+
+    /* 1 for active low interrupts. */
+
+    uint8_t active_low_int;
+    
+    /* 1 for latched interrupts. */
+
+    uint8_t latched_int;
+
+    /* 1 if DMP is enabled. */
+
+    uint8_t dmp_on;
+    
+    /* Ensures that DMP will only be loaded once. */
+
+    uint8_t dmp_loaded;
+
+    /* Sampling rate used when DMP is enabled. */
+
+    uint16_t dmp_sample_rate;
+
+#ifdef CONFIG_SENSOR_AK89XX_SECONDARY
+
+    /* Compass sample rate. */
+    
+    uint16_t compass_sample_rate;
+    
+    uint8_t compass_addr;
+
+#endif
 };
 
 /****************************************************************************
@@ -385,7 +419,7 @@ static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
 {
     uint8_t tmp;
 
-    if (inst->chip_cfg.dmp_on) 
+    if (inst->dmp_on) 
     {
         tmp = 0x00;
         if (enable)
@@ -393,14 +427,14 @@ static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
 
         if ( mpu_write8(inst,INV_MPU_INT_ENABLE,tmp) < 0 )
             return -1;
-        inst->chip_cfg.int_enable = tmp;
+        inst->int_enable = tmp;
     } 
     else 
     {
-        if (!inst->chip_cfg.sensors)
+        if (!inst->sensors)
             return -1;
 
-        if (enable && inst->chip_cfg.int_enable)
+        if (enable && inst->int_enable)
             return 0;
 
         tmp = 0x00;
@@ -410,7 +444,7 @@ static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
         if ( mpu_write(inst,INV_MPU_INT_ENABLE,&tmp,1) < 0 )
             return -1;
 
-        inst->chip_cfg.int_enable = tmp;
+        inst->int_enable = tmp;
 
     }
     return 0;
@@ -536,7 +570,7 @@ int mpu_reset_default(struct mpu_inst_s* inst)
     if ( mpu_write8(inst,INV_MPU_PWR_MGMT_1,0) < 0 )
         return -1;
 
-    inst->chip_cfg.accel_half = 0;
+    inst->accel_half = 0;
 
 #ifdef CONFIG_SENSOR_MPU6500
 
@@ -550,32 +584,32 @@ int mpu_reset_default(struct mpu_inst_s* inst)
 
     /* Set to invalid values to ensure no I2C writes are skipped. */
 
-    inst->chip_cfg.sensors = 0xFF;
-    inst->chip_cfg.gyro_fsr = 0xFF;
-    inst->chip_cfg.accel_fsr = 0xFF;
-    inst->chip_cfg.lpf = 0xFF;
-    inst->chip_cfg.sample_rate = 0xFFFF;
-    inst->chip_cfg.fifo_enable = 0xFF;
-    inst->chip_cfg.bypass_mode = 0xFF;
+    inst->sensors = 0xFF;
+    inst->gyro_fsr = 0xFF;
+    inst->accel_fsr = 0xFF;
+    inst->lpf = 0xFF;
+    inst->sample_rate = 0xFFFF;
+    inst->fifo_enable = 0xFF;
+    inst->bypass_mode = 0xFF;
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
-    inst->chip_cfg.compass_sample_rate = 0xFFFF;
+    inst->compass_sample_rate = 0xFFFF;
 #endif
 
     /* mpu_set_sensors_enable always preserves this setting. */
 
-    inst->chip_cfg.clk_src = MPU_CLK_PLL;
+    inst->clk_src = MPU_CLK_PLL;
 
     /* Handled in next call to mpu_set_bypass. */
 
-    memset(&inst->chip_cfg.cache, 0, sizeof(inst->chip_cfg.cache));
+    memset(&inst->cache, 0, sizeof(inst->cache));
 
-    inst->chip_cfg.active_low_int   = 1;
-    inst->chip_cfg.latched_int      = 0;
-    inst->chip_cfg.int_motion_only  = 0;
-    inst->chip_cfg.lp_accel_mode    = 0;
-    inst->chip_cfg.dmp_on           = 0;
-    inst->chip_cfg.dmp_loaded       = 0;
-    inst->chip_cfg.dmp_sample_rate  = 0;
+    inst->active_low_int   = 1;
+    inst->latched_int      = 0;
+    inst->int_motion_only  = 0;
+    inst->lp_accel_mode    = 0;
+    inst->dmp_on           = 0;
+    inst->dmp_loaded       = 0;
+    inst->dmp_sample_rate  = 0;
 
     if ( mpu_set_gyro_fsr(      inst,2000) < 0 )
         return -1;
@@ -646,7 +680,7 @@ int mpu_lp_accel_mode(struct mpu_inst_s* inst, uint8_t rate)
         if ( mpu_write(inst,INV_MPU_PWR_MGMT_1,tmp,2) < 0 )
             return -1;
 
-        inst->chip_cfg.lp_accel_mode = 0;
+        inst->lp_accel_mode = 0;
 
         return 0;
     }
@@ -733,9 +767,9 @@ int mpu_lp_accel_mode(struct mpu_inst_s* inst, uint8_t rate)
         return -1;
 #endif
 
-    inst->chip_cfg.sensors = MPU_XYZ_ACCEL;
-    inst->chip_cfg.clk_src = 0;
-    inst->chip_cfg.lp_accel_mode = 1;
+    inst->sensors = MPU_XYZ_ACCEL;
+    inst->clk_src = 0;
+    inst->lp_accel_mode = 1;
 
     if ( mpu_set_fifo_config(inst,0) < 0 )
         return -1;
@@ -761,7 +795,7 @@ int mpu_get_accel_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data)
 {
     uint8_t tmp[6];
 
-    if (!(inst->chip_cfg.sensors & MPU_XYZ_ACCEL))
+    if (!(inst->sensors & MPU_XYZ_ACCEL))
         return -1;
 
     if ( mpu_read(inst,INV_MPU_RAW_ACCEL, tmp, 6) < 0 )
@@ -792,7 +826,7 @@ int mpu_get_gyro_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data )
 {
     uint8_t tmp[6];
 
-    if (!(inst->chip_cfg.sensors & MPU_XYZ_GYRO))
+    if (!(inst->sensors & MPU_XYZ_GYRO))
         return -1;
 
     if ( mpu_read(inst,INV_MPU_RAW_GYRO, tmp, 6) < 0 )
@@ -824,7 +858,7 @@ int mpu_get_compass_raw(struct mpu_inst_s* inst, struct mpu_axes_s *data)
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
     uint8_t tmp[9];
 
-    if (!(inst->chip_cfg.sensors & MPU_XYZ_COMPASS))
+    if (!(inst->sensors & MPU_XYZ_COMPASS))
         return -1;
 
     if ( mpu_read(inst,INV_AK89_RAW_COMPASS, tmp, 8) < 0 )
@@ -878,7 +912,7 @@ int mpu_get_temperature(struct mpu_inst_s* inst, int32_t *temp_degre )
     uint8_t tmp[2];
     int16_t raw;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
     if ( mpu_read(inst,INV_MPU_TEMP, tmp, 2) < 0 )
@@ -1077,7 +1111,7 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
 {
     uint8_t regval;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
     if ( mpu_write8(inst,INV_MPU_INT_ENABLE,0) < 0 )
@@ -1089,7 +1123,7 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
     if ( mpu_write8(inst,INV_MPU_USER_CTRL, 0) < 0 )
         return -1;
 
-    if (inst->chip_cfg.dmp_on) 
+    if (inst->dmp_on) 
     {
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,BIT_FIFO_RST | BIT_DMP_RST) < 0 )
             return -1;
@@ -1097,14 +1131,14 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
         up_mdelay(50);
 
         regval = BIT_DMP_EN | BIT_FIFO_EN;
-        if (inst->chip_cfg.sensors & MPU_XYZ_COMPASS)
+        if (inst->sensors & MPU_XYZ_COMPASS)
             regval |= BIT_AUX_IF_EN;
 
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,regval) < 0 )
             return -1;
 
         regval = 0;
-        if (inst->chip_cfg.int_enable)
+        if (inst->int_enable)
             regval = BIT_DMP_INT_EN;
 
         if ( mpu_write8(inst,INV_MPU_INT_ENABLE,regval) < 0 )
@@ -1120,8 +1154,8 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,BIT_FIFO_RST) < 0 )
             return -1;
 
-        if (  (inst->chip_cfg.bypass_mode                   ) || 
-              ( !(inst->chip_cfg.sensors & MPU_XYZ_COMPASS  ) ) )
+        if (  (inst->bypass_mode                   ) || 
+              ( !(inst->sensors & MPU_XYZ_COMPASS  ) ) )
         {
             regval = BIT_FIFO_EN;
         }
@@ -1136,13 +1170,13 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
         up_mdelay(50);
 
         regval = 0;
-        if (inst->chip_cfg.int_enable)
+        if (inst->int_enable)
             regval = BIT_DATA_RDY_EN;
 
         if ( mpu_write8(inst,INV_MPU_INT_ENABLE,regval) < 0 )
             return -1;
 
-        if ( mpu_write8(inst,INV_MPU_FIFO_EN,inst->chip_cfg.fifo_enable) < 0 )
+        if ( mpu_write8(inst,INV_MPU_FIFO_EN,inst->fifo_enable) < 0 )
             return -1;
 
     }
@@ -1165,7 +1199,7 @@ int mpu_reset_fifo(struct mpu_inst_s* inst)
 
 int mpu_get_accel_fsr(struct mpu_inst_s* inst,uint8_t *fsr)
 {
-    switch (inst->chip_cfg.accel_fsr) 
+    switch (inst->accel_fsr) 
     {
         case MPU_ACC_FSR_2G:  *fsr = 2; break;
         case MPU_ACC_FSR_4G:  *fsr = 4; break;
@@ -1174,7 +1208,7 @@ int mpu_get_accel_fsr(struct mpu_inst_s* inst,uint8_t *fsr)
         default: return -1;
     }
 
-    if (inst->chip_cfg.accel_half)
+    if (inst->accel_half)
         *fsr <<= 1;
 
     return 0;
@@ -1198,7 +1232,7 @@ int mpu_set_accel_fsr(struct mpu_inst_s* inst, uint8_t fsr)
 {
     uint8_t regval;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
     switch (fsr) 
@@ -1210,13 +1244,13 @@ int mpu_set_accel_fsr(struct mpu_inst_s* inst, uint8_t fsr)
         default: return -1;
     }
 
-    if (inst->chip_cfg.accel_fsr == (regval >> 3))
+    if (inst->accel_fsr == (regval >> 3))
         return 0;
 
     if ( mpu_write8(inst,INV_MPU_ACCEL_CFG,regval) < 0 )
         return -1;
 
-    inst->chip_cfg.accel_fsr = regval >> 3;
+    inst->accel_fsr = regval >> 3;
 
     return 0;
 }
@@ -1237,7 +1271,7 @@ int mpu_set_accel_fsr(struct mpu_inst_s* inst, uint8_t fsr)
 
 int mpu_get_gyro_fsr(struct mpu_inst_s* inst,uint16_t *fsr)
 {
-    switch (inst->chip_cfg.gyro_fsr) 
+    switch (inst->gyro_fsr) 
     {
         case MPU_GYRO_FSR_250DPS:   *fsr =  250; break;
         case MPU_GYRO_FSR_500DPS:   *fsr =  500; break;
@@ -1266,7 +1300,7 @@ int mpu_set_gyro_fsr(struct mpu_inst_s* inst,uint16_t fsr)
 {
     uint8_t regval;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
     switch (fsr) 
@@ -1278,13 +1312,13 @@ int mpu_set_gyro_fsr(struct mpu_inst_s* inst,uint16_t fsr)
         default: return -1;
     }
 
-    if (inst->chip_cfg.gyro_fsr == (regval >> 3))
+    if (inst->gyro_fsr == (regval >> 3))
         return 0;
     
     if ( mpu_write8(inst,INV_MPU_GYRO_CFG,regval) < 0 )
         return -1;
 
-    inst->chip_cfg.gyro_fsr = regval >> 3;
+    inst->gyro_fsr = regval >> 3;
 
     return 0;
 }
@@ -1305,7 +1339,7 @@ int mpu_set_gyro_fsr(struct mpu_inst_s* inst,uint16_t fsr)
 
 int mpu_get_lpf(struct mpu_inst_s* inst,uint16_t *lpf)
 {
-    switch (inst->chip_cfg.lpf) 
+    switch (inst->lpf) 
     {
         case MPU_LPF_188HZ: *lpf = 188; break;
         case MPU_LPF_98HZ : *lpf =  98; break;
@@ -1338,7 +1372,7 @@ int mpu_set_lpf(struct mpu_inst_s* inst,uint16_t lpf)
 {
     uint8_t regval;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
     if (lpf >= 188)
@@ -1366,13 +1400,13 @@ int mpu_set_lpf(struct mpu_inst_s* inst,uint16_t lpf)
         regval = MPU_LPF_5HZ;
     }
 
-    if (inst->chip_cfg.lpf == regval)
+    if (inst->lpf == regval)
         return 0;
 
     if ( mpu_write8(inst,INV_MPU_LPF,regval) < 0 )
         return -1;
 
-    inst->chip_cfg.lpf = regval;
+    inst->lpf = regval;
 
     return 0;
 }
@@ -1393,10 +1427,10 @@ int mpu_set_lpf(struct mpu_inst_s* inst,uint16_t lpf)
 
 int mpu_get_sample_rate(struct mpu_inst_s* inst,uint16_t *rate)
 {
-    if (inst->chip_cfg.dmp_on)
+    if (inst->dmp_on)
         return -1;
 
-    *rate = inst->chip_cfg.sample_rate;
+    *rate = inst->sample_rate;
 
     return 0;
 }
@@ -1420,13 +1454,13 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 {
     uint8_t regval;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
-    if (inst->chip_cfg.dmp_on)
+    if (inst->dmp_on)
         return -1;
 
-    if (inst->chip_cfg.lp_accel_mode) 
+    if (inst->lp_accel_mode) 
     {
 
         /* Just stay in low-power accel mode. */
@@ -1455,7 +1489,7 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
     }
 
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
-    rate = inst->chip_cfg.sample_rate;
+    rate = inst->sample_rate;
     if ( rate > MAX_COMPASS_SAMPLE_RATE )
         rate = MAX_COMPASS_SAMPLE_RATE;
 #endif 
@@ -1467,7 +1501,7 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 
     /* set effective rate setted */
 
-    inst->chip_cfg.sample_rate = 1000 / (1 + regval);
+    inst->sample_rate = 1000 / (1 + regval);
 
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
     mpu_set_compass_sample_rate(inst,regval);
@@ -1475,7 +1509,7 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 
     /* Automatically set LPF to 1/2 sampling rate. */
 
-    if ( mpu_set_lpf(inst, inst->chip_cfg.sample_rate /2 ) < 0 )
+    if ( mpu_set_lpf(inst, inst->sample_rate /2 ) < 0 )
     	return -1;
 
     return 0;
@@ -1498,7 +1532,7 @@ int mpu_set_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 int mpu_get_compass_sample_rate(struct mpu_inst_s* inst,uint16_t *rate)
 {
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
-    *rate = inst->chip_cfg.compass_sample_rate;
+    *rate = inst->compass_sample_rate;
     return 0;
 #else
     *rate = 0;
@@ -1530,16 +1564,16 @@ int mpu_set_compass_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 {
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
     uint8_t regval;
-    if ( (rate == 0) || (rate > inst->chip_cfg.sample_rate) || 
+    if ( (rate == 0) || (rate > inst->sample_rate) || 
          (rate > MAX_COMPASS_SAMPLE_RATE) )
         return -1;
 
-    regval = inst->chip_cfg.sample_rate / rate - 1;
+    regval = inst->sample_rate / rate - 1;
 
     if ( akm_write(inst,INV_AK89_S4_CTRL,&regval,1) < 0 )
         return -1;
 
-    inst->chip_cfg.compass_sample_rate = inst->chip_cfg.sample_rate/(regval+1);
+    inst->compass_sample_rate = inst->sample_rate/(regval+1);
 
     return 0;
 #else
@@ -1563,7 +1597,7 @@ int mpu_set_compass_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 
 int mpu_get_gyro_sensibilty(struct mpu_inst_s* inst,float *sensitivity)
 {
-    switch (inst->chip_cfg.gyro_fsr) 
+    switch (inst->gyro_fsr) 
     {
         case MPU_GYRO_FSR_250DPS:  *sensitivity = 131.f; break;
         case MPU_GYRO_FSR_500DPS:  *sensitivity = 65.5f; break;
@@ -1590,7 +1624,7 @@ int mpu_get_gyro_sensibilty(struct mpu_inst_s* inst,float *sensitivity)
 
 int mpu_get_accel_sensibilty(struct mpu_inst_s* inst,uint16_t *sensitivity)
 {
-    switch (inst->chip_cfg.accel_fsr) 
+    switch (inst->accel_fsr) 
     {
         case MPU_ACC_FSR_2G:  *sensitivity = 16384; break;
         case MPU_ACC_FSR_4G:  *sensitivity =  8092; break;
@@ -1599,7 +1633,7 @@ int mpu_get_accel_sensibilty(struct mpu_inst_s* inst,uint16_t *sensitivity)
         default: return -1;
     }
 
-    if (inst->chip_cfg.accel_half)
+    if (inst->accel_half)
         *sensitivity >>= 1;
 
     return 0;
@@ -1627,7 +1661,7 @@ int mpu_get_accel_sensibilty(struct mpu_inst_s* inst,uint16_t *sensitivity)
 
 int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors)
 {
-    *sensors = inst->chip_cfg.fifo_enable;
+    *sensors = inst->fifo_enable;
     return 0;
 }
 
@@ -1660,43 +1694,43 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
 
     sensors &= ~MPU_XYZ_COMPASS;
 
-    if (inst->chip_cfg.dmp_on)
+    if (inst->dmp_on)
         return 0;
 
-    if (!(inst->chip_cfg.sensors))
+    if (!(inst->sensors))
         return -1;
 
-    prev = inst->chip_cfg.fifo_enable;
-    inst->chip_cfg.fifo_enable = sensors & inst->chip_cfg.sensors;
+    prev = inst->fifo_enable;
+    inst->fifo_enable = sensors & inst->sensors;
 
-    if (inst->chip_cfg.fifo_enable != sensors)
+    if (inst->fifo_enable != sensors)
     {
-        inst->chip_cfg.fifo_enable = prev;
+        inst->fifo_enable = prev;
         return -1;
     }
 
-    if ( mpu_set_int_enable(inst, (sensors || inst->chip_cfg.lp_accel_mode) ) < 0 )
+    if ( mpu_set_int_enable(inst, (sensors || inst->lp_accel_mode) ) < 0 )
     	return -1;
 
     if (sensors) 
     {
         if ( mpu_reset_fifo(inst) < 0) 
         {
-            inst->chip_cfg.fifo_enable = prev;
+            inst->fifo_enable = prev;
             return -1;
         }
     }
 
-    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO)
+    if (inst->fifo_enable & MPU_X_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO)
+    if (inst->fifo_enable & MPU_Y_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO)
+    if (inst->fifo_enable & MPU_Z_GYRO)
         packet_size += 2;
-    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL)
+    if (inst->fifo_enable & MPU_XYZ_ACCEL)
         packet_size += 6;
 
-    inst->chip_cfg.packet_size = packet_size;
+    inst->packet_size = packet_size;
 
     return 0;
 }
@@ -1724,7 +1758,7 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
 
 int mpu_get_sensors_enable(struct mpu_inst_s* inst, uint8_t* sensors)
 {
-    *sensors = inst->chip_cfg.sensors = 0;
+    *sensors = inst->sensors = 0;
     return 0;
 }
 
@@ -1765,11 +1799,11 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
 
     if ( mpu_write8(inst,INV_MPU_PWR_MGMT_1,regval) < 0 ) 
     {
-        inst->chip_cfg.sensors = 0;
+        inst->sensors = 0;
         return -1;
     }
 
-    inst->chip_cfg.clk_src = regval & ~BIT_SLEEP;
+    inst->clk_src = regval & ~BIT_SLEEP;
 
     regval = 0;
     if (!(sensors & MPU_X_GYRO))
@@ -1783,7 +1817,7 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
 
     if ( mpu_write8(inst,INV_MPU_PWR_MGMT_2,regval) < 0 ) 
     {
-        inst->chip_cfg.sensors = 0;
+        inst->sensors = 0;
         return -1;
     }
 
@@ -1811,7 +1845,7 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
         user_ctrl &= ~BIT_AUX_IF_EN;
     }
 
-    if (inst->chip_cfg.dmp_on)
+    if (inst->dmp_on)
         user_ctrl |= BIT_DMP_EN;
     else
         user_ctrl &= ~BIT_DMP_EN;
@@ -1825,8 +1859,8 @@ int mpu_set_sensors_enable(struct mpu_inst_s* inst, uint8_t sensors)
         return -1;
 #endif
 
-    inst->chip_cfg.sensors = sensors;
-    inst->chip_cfg.lp_accel_mode = 0;
+    inst->sensors = sensors;
+    inst->lp_accel_mode = 0;
 
     up_mdelay(50);
 
@@ -1853,7 +1887,7 @@ int mpu_get_int_status(struct mpu_inst_s* inst, uint8_t *mpu_int_status,
 {
     uint8_t tmp[2];
 
-    if (!inst->chip_cfg.sensors)
+    if (!inst->sensors)
         return -1;
 
     if ( mpu_read(inst,INV_MPU_DMP_INT_STATUS, tmp, 2) < 0 )
@@ -1898,16 +1932,16 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
 
     uint8_t *ptr;
     uint8_t buf[MAX_PACKET_LENGTH];
-    uint8_t packet_size = inst->chip_cfg.packet_size;
+    uint8_t packet_size = inst->packet_size;
     int fifo_level;
 
-    if (inst->chip_cfg.dmp_on)
+    if (inst->dmp_on)
         return -1;
 
-    if (!inst->chip_cfg.sensors)
+    if (!inst->sensors)
         return -1;
 
-    if (!inst->chip_cfg.fifo_enable)
+    if (!inst->fifo_enable)
         return -1;
 
     fifo_level = mpu_read_fifo_level(inst);
@@ -1925,7 +1959,7 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
 
     ptr = buf;
 
-    if (inst->chip_cfg.fifo_enable & MPU_XYZ_ACCEL) 
+    if (inst->fifo_enable & MPU_XYZ_ACCEL) 
     {
         data->accel.x = (*ptr++) << 8;
         data->accel.x|= (*ptr++);
@@ -1935,23 +1969,50 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
         data->accel.z|= (*ptr++);
     }
 
-    if (inst->chip_cfg.fifo_enable & MPU_X_GYRO) 
+    if (inst->fifo_enable & MPU_X_GYRO) 
     {
         data->gyro.x = (*ptr++) << 8;
         data->gyro.x|= (*ptr++);
     }
-    if (inst->chip_cfg.fifo_enable & MPU_Y_GYRO) 
+    if (inst->fifo_enable & MPU_Y_GYRO) 
     {
         data->gyro.y = (*ptr++) << 8;
         data->gyro.y|= (*ptr++);
     }
-    if (inst->chip_cfg.fifo_enable & MPU_Z_GYRO) 
+    if (inst->fifo_enable & MPU_Z_GYRO) 
     {
         data->gyro.z = (*ptr++) << 8;
         data->gyro.z|= (*ptr++);
     }
 
     return (ptr - buf);
+}
+
+/*******************************************************************************
+ * Name: mpu_read_fifo_packet_nbr
+ *
+ * Description:
+ *  Get number of complet packet in fifo.
+ *
+ * Params
+ *  inst        instance of inv_mpu driver.
+ *
+ * Return
+ *  number of complete packet in fifo, negative value in case of error.
+ ******************************************************************************/
+int mpu_fifo_packet_nbr(struct mpu_inst_s* inst )
+{
+    int level;
+
+    level = mpu_read_fifo_level(inst);
+
+    if ( level < 0 )
+        return level;
+
+    if ( inst->packet_size <= 0 )
+        return 0;
+
+    return ( level / inst->packet_size );
 }
 
 /*******************************************************************************
@@ -2039,7 +2100,7 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on)
     /* bypass doesn't work in SPI mode, use internal I2C master */
 #ifndef CONFIG_SENSOR_MPU_SPI
 
-    if (inst->chip_cfg.bypass_mode == bypass_on)
+    if (inst->bypass_mode == bypass_on)
         return 0;
 
     /* Enable I2C master mode if compass is being used. */
@@ -2060,7 +2121,7 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on)
     else 
     {
 
-        if (inst->chip_cfg.sensors & MPU_XYZ_COMPASS)
+        if (inst->sensors & MPU_XYZ_COMPASS)
             regval |= BIT_AUX_IF_EN;
 
         if ( mpu_write8(inst,INV_MPU_USER_CTRL,regval) < 0 )
@@ -2071,16 +2132,16 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on)
 
     up_mdelay(3);
 
-    if (inst->chip_cfg.active_low_int)
+    if (inst->active_low_int)
         regval |= BIT_ACTL;
 
-    if (inst->chip_cfg.latched_int)
+    if (inst->latched_int)
         regval |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
 
     if ( mpu_write8(inst,INV_MPU_INT_PIN_CFG,regval) < 0 )
         return -1;
 
-    inst->chip_cfg.bypass_mode = bypass_on;
+    inst->bypass_mode = bypass_on;
 #endif
 
     return 0;
@@ -2102,7 +2163,7 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on)
 
 int mpu_set_int_level(struct mpu_inst_s* inst,bool active_low)
 {
-    inst->chip_cfg.active_low_int = active_low;
+    inst->active_low_int = active_low;
     return 0;
 }
 
@@ -2125,7 +2186,7 @@ int mpu_set_int_latched(struct mpu_inst_s* inst, bool enable)
 {
     uint8_t regval;
 
-    if (inst->chip_cfg.latched_int == enable)
+    if (inst->latched_int == enable)
         return 0;
 
     regval = 0;
@@ -2133,16 +2194,16 @@ int mpu_set_int_latched(struct mpu_inst_s* inst, bool enable)
     if (enable)
         regval |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
 
-    if (inst->chip_cfg.bypass_mode)
+    if (inst->bypass_mode)
         regval |= BIT_BYPASS_EN;
 
-    if (inst->chip_cfg.active_low_int)
+    if (inst->active_low_int)
         regval |= BIT_ACTL;
 
     if ( mpu_write8(inst,INV_MPU_INT_PIN_CFG,regval) < 0 )
         return -1;
 
-    inst->chip_cfg.latched_int = enable;
+    inst->latched_int = enable;
 
     return 0;
 }
@@ -2173,7 +2234,7 @@ int mpu_write_mem(struct mpu_inst_s* inst, uint16_t mem_addr, uint16_t length,
     if (!data)
         return -1;
 /* I don't see why I need to enable sensors to read or write memory 
- *    if (!inst->chip_cfg.sensors)
+ *    if (!inst->sensors)
  *        return -1;
  */
 
@@ -2221,7 +2282,7 @@ int mpu_read_mem(struct mpu_inst_s* inst, uint16_t mem_addr, uint16_t length,
         return -1;
 
 /* I don't see why I need to enable sensors to read or write memory 
- *    if (!inst->chip_cfg.sensors)
+ *    if (!inst->sensors)
  *        return -1;
  */
 
@@ -2277,7 +2338,7 @@ int mpu_load_firmware(struct mpu_inst_s* inst, uint16_t length,
 
     /* DMP should only be loaded once. */
 
-    if (inst->chip_cfg.dmp_loaded)
+    if (inst->dmp_loaded)
         return -1;
 
     if (!firmware)
@@ -2312,8 +2373,8 @@ int mpu_load_firmware(struct mpu_inst_s* inst, uint16_t length,
     if (mpu_write(inst,INV_MPU_PRGM_START_H,tmp,2) < 0 )
         return -1;
 
-    inst->chip_cfg.dmp_loaded = 1;
-    inst->chip_cfg.dmp_sample_rate = sample_rate;
+    inst->dmp_loaded = 1;
+    inst->dmp_sample_rate = sample_rate;
 
     return 0;
 }
@@ -2334,10 +2395,10 @@ int mpu_load_firmware(struct mpu_inst_s* inst, uint16_t length,
 int mpu_set_dmp_on(struct mpu_inst_s* inst)
 {
 
-    if (inst->chip_cfg.dmp_on )
+    if (inst->dmp_on )
         return 0;
 
-    if (!inst->chip_cfg.dmp_loaded)
+    if (!inst->dmp_loaded)
         return -1;
 
     /* Disable data ready interrupt. */
@@ -2352,7 +2413,7 @@ int mpu_set_dmp_on(struct mpu_inst_s* inst)
 
     /* Keep constant sample rate, FIFO rate controlled by DMP. */
 
-    if ( mpu_set_sample_rate(inst, inst->chip_cfg.dmp_sample_rate) < 0 )
+    if ( mpu_set_sample_rate(inst, inst->dmp_sample_rate) < 0 )
         return -1;
 
     /* Remove FIFO elements. */
@@ -2360,7 +2421,7 @@ int mpu_set_dmp_on(struct mpu_inst_s* inst)
     if ( mpu_write8(inst, INV_MPU_FIFO_EN, 0) < 0 )
         return -1;
 
-    inst->chip_cfg.dmp_on = 1;
+    inst->dmp_on = 1;
 
     /* Enable DMP interrupt. */
 
@@ -2389,7 +2450,7 @@ int mpu_set_dmp_on(struct mpu_inst_s* inst)
 int mpu_set_dmp_off(struct mpu_inst_s* inst)
 {
 
-    if ( ! inst->chip_cfg.dmp_on )
+    if ( ! inst->dmp_on )
         return 0;
 
     /* Disable DMP interrupt. */
@@ -2399,10 +2460,10 @@ int mpu_set_dmp_off(struct mpu_inst_s* inst)
 
     /* Restore FIFO settings. */
 
-    if ( mpu_write8(inst, INV_MPU_FIFO_EN, inst->chip_cfg.fifo_enable) < 0 )
+    if ( mpu_write8(inst, INV_MPU_FIFO_EN, inst->fifo_enable) < 0 )
         return -1;
 
-    inst->chip_cfg.dmp_on = 0;
+    inst->dmp_on = 0;
 
     if ( mpu_reset_fifo(inst) < 0 )
         return -1;
@@ -2425,7 +2486,7 @@ int mpu_set_dmp_off(struct mpu_inst_s* inst)
 
 int mpu_get_dmp_state(struct mpu_inst_s* inst, bool *enabled)
 {
-    *enabled = inst->chip_cfg.dmp_on;
+    *enabled = inst->dmp_on;
     return 0;
 }
 
@@ -2485,7 +2546,7 @@ static int mpu_setup_compass(struct mpu_inst_s* inst)
     /* Slave 0 reads from AKM data registers. */
 
     if ( mpu_write8(inst,INV_AK89_S0_ADDR,
-                    BIT_I2C_READ|inst->chip_cfg.compass_addr) < 0 )
+                    BIT_I2C_READ|inst->compass_addr) < 0 )
         return -1;
 
     /* Compass reads start at this register. */
@@ -2500,7 +2561,7 @@ static int mpu_setup_compass(struct mpu_inst_s* inst)
 
     /* Slave 1 changes AKM measurement mode. */
 
-    if ( mpu_write8(inst,INV_AK89_S1_ADDR,inst->chip_cfg.compass_addr) < 0 )
+    if ( mpu_write8(inst,INV_AK89_S1_ADDR,inst->compass_addr) < 0 )
         return -1;
 
     /* AKM measurement mode register. */
@@ -2641,28 +2702,28 @@ int mpu_lp_motion_interrupt(struct mpu_inst_s* inst,uint16_t thresh,
             return -1;
 #endif
 
-        if (!inst->chip_cfg.int_motion_only) 
+        if (!inst->int_motion_only) 
         {
 
             /* Store current settings for later. */
 
-            if (inst->chip_cfg.dmp_on) 
+            if (inst->dmp_on) 
             {
                 mpu_set_dmp_off(inst);
-                inst->chip_cfg.cache.dmp_on = 1;
+                inst->cache.dmp_on = 1;
             } 
             else
             {
-                inst->chip_cfg.cache.dmp_on = 0;
+                inst->cache.dmp_on = 0;
             }
 
-            mpu_get_gyro_fsr(       inst, &inst->chip_cfg.cache.gyro_fsr     );
-            mpu_get_accel_fsr(      inst, &inst->chip_cfg.cache.accel_fsr    );
-            mpu_get_lpf(            inst, &inst->chip_cfg.cache.lpf          );
-            mpu_get_sample_rate(    inst, &inst->chip_cfg.cache.sample_rate  );
-            mpu_get_fifo_config(    inst, &inst->chip_cfg.cache.fifo_sensors );
+            mpu_get_gyro_fsr(       inst, &inst->cache.gyro_fsr     );
+            mpu_get_accel_fsr(      inst, &inst->cache.accel_fsr    );
+            mpu_get_lpf(            inst, &inst->cache.lpf          );
+            mpu_get_sample_rate(    inst, &inst->cache.sample_rate  );
+            mpu_get_fifo_config(    inst, &inst->cache.fifo_sensors );
 
-            inst->chip_cfg.cache.sensors_on = inst->chip_cfg.sensors;
+            inst->cache.sensors_on = inst->sensors;
         }
 
 #if defined MPU6500
@@ -2726,7 +2787,7 @@ int mpu_lp_motion_interrupt(struct mpu_inst_s* inst,uint16_t thresh,
         if (mpu_write(inst,INV_MPU_INT_ENABLE,BIT_MOT_INT_EN) < 0 )
             goto lp_int_restore;
 
-        inst->chip_cfg.int_motion_only = 1;
+        inst->int_motion_only = 1;
 
         return 0;
 
@@ -2738,8 +2799,8 @@ int mpu_lp_motion_interrupt(struct mpu_inst_s* inst,uint16_t thresh,
         /* Don't "restore" the previous state if no state has been saved. */
 
         int ii;
-        char *cache_ptr = (char*)&inst->chip_cfg.cache;
-        for (ii = 0; ii < sizeof(inst->chip_cfg.cache); ii++) 
+        char *cache_ptr = (char*)&inst->cache;
+        for (ii = 0; ii < sizeof(inst->cache); ii++) 
         {
             if (cache_ptr[ii] != 0)
                 goto lp_int_restore;
@@ -2751,28 +2812,28 @@ int mpu_lp_motion_interrupt(struct mpu_inst_s* inst,uint16_t thresh,
     }
 lp_int_restore:
     /* Set to invalid values to ensure no I2C writes are skipped. */
-    inst->chip_cfg.gyro_fsr = 0xFF;
-    inst->chip_cfg.accel_fsr = 0xFF;
-    inst->chip_cfg.lpf = 0xFF;
-    inst->chip_cfg.sample_rate = 0xFFFF;
-    inst->chip_cfg.sensors = 0xFF;
-    inst->chip_cfg.fifo_enable = 0xFF;
-    inst->chip_cfg.clk_src = MPU_CLK_PLL;
+    inst->gyro_fsr = 0xFF;
+    inst->accel_fsr = 0xFF;
+    inst->lpf = 0xFF;
+    inst->sample_rate = 0xFFFF;
+    inst->sensors = 0xFF;
+    inst->fifo_enable = 0xFF;
+    inst->clk_src = MPU_CLK_PLL;
 
-    if ( mpu_set_sensors_enable(inst, inst->chip_cfg.cache.sensors_on   ) < 0 )
+    if ( mpu_set_sensors_enable(inst, inst->cache.sensors_on   ) < 0 )
             return -1;
-    if ( mpu_set_gyro_fsr(      inst, inst->chip_cfg.cache.gyro_fsr     ) < 0 )
+    if ( mpu_set_gyro_fsr(      inst, inst->cache.gyro_fsr     ) < 0 )
             return -1;
-    if ( mpu_set_accel_fsr(     inst, inst->chip_cfg.cache.accel_fsr    ) < 0 )
+    if ( mpu_set_accel_fsr(     inst, inst->cache.accel_fsr    ) < 0 )
             return -1;
-    if ( mpu_set_lpf(           inst, inst->chip_cfg.cache.lpf          ) < 0 )
+    if ( mpu_set_lpf(           inst, inst->cache.lpf          ) < 0 )
             return -1;
-    if ( mpu_set_sample_rate(   inst, inst->chip_cfg.cache.sample_rate  ) < 0 )
+    if ( mpu_set_sample_rate(   inst, inst->cache.sample_rate  ) < 0 )
             return -1;
-    if ( mpu_set_fifo_config(   inst, inst->chip_cfg.cache.fifo_sensors ) < 0 )
+    if ( mpu_set_fifo_config(   inst, inst->cache.fifo_sensors ) < 0 )
             return -1;
 
-    if (inst->chip_cfg.cache.dmp_on)
+    if (inst->cache.dmp_on)
         if ( mpu_set_dmp_on(inst) < 0 )
             return -1;
 
@@ -2784,7 +2845,7 @@ lp_int_restore:
         goto lp_int_restore;
 #endif
 
-    inst->chip_cfg.int_motion_only = 0;
+    inst->int_motion_only = 0;
     return 0;
 }
 
@@ -2889,20 +2950,20 @@ static int compass_self_test(void)
         return -1;
 
     tmp[0] = AKM_POWER_DOWN;
-    if ( mpu_write(inst->chip_cfg.compass_addr, AKM_REG_CNTL, 1, tmp))
+    if ( mpu_write(inst->compass_addr, AKM_REG_CNTL, 1, tmp))
         return 0x07;
 
     tmp[0] = AKM_BIT_SELF_TEST;
-    if (i2c_write(inst->chip_cfg.compass_addr, AKM_REG_ASTC, 1, tmp))
+    if (i2c_write(inst->compass_addr, AKM_REG_ASTC, 1, tmp))
         goto AKM_restore;
 
     tmp[0] = AKM_MODE_SELF_TEST;
-    if (i2c_write(inst->chip_cfg.compass_addr, AKM_REG_CNTL, 1, tmp))
+    if (i2c_write(inst->compass_addr, AKM_REG_CNTL, 1, tmp))
         goto AKM_restore;
 
     do {
         up_mdelay(10);
-        if (i2c_read(inst->chip_cfg.compass_addr, AKM_REG_ST1, 1, tmp))
+        if (i2c_read(inst->compass_addr, AKM_REG_ST1, 1, tmp))
             goto AKM_restore;
         if (tmp[0] & AKM_DATA_READY)
             break;
@@ -2910,7 +2971,7 @@ static int compass_self_test(void)
     if (!(tmp[0] & AKM_DATA_READY))
         goto AKM_restore;
 
-    if (i2c_read(inst->chip_cfg.compass_addr, AKM_REG_HXL, 6, tmp))
+    if (i2c_read(inst->compass_addr, AKM_REG_HXL, 6, tmp))
         goto AKM_restore;
 
     result = 0;
@@ -2937,9 +2998,9 @@ static int compass_self_test(void)
 #endif
 AKM_restore:
     tmp[0] = 0 | INV_AK89_HIGH_SENS;
-    i2c_write(inst->chip_cfg.compass_addr, AKM_REG_ASTC, 1, tmp);
+    i2c_write(inst->compass_addr, AKM_REG_ASTC, 1, tmp);
     tmp[0] = INV_AK89_HIGH_SENS;
-    i2c_write(inst->chip_cfg.compass_addr, AKM_REG_CNTL, 1, tmp);
+    i2c_write(inst->compass_addr, AKM_REG_CNTL, 1, tmp);
     mpu_set_bypass(inst,false);
     return result;
 }
@@ -3433,7 +3494,7 @@ int mpu_run_6500_self_test(long *gyro, long *accel)
 
     invdbg("Starting MPU6500 HWST!\r\n");
 
-    if (inst->chip_cfg.dmp_on) {
+    if (inst->dmp_on) {
         mpu_set_dmp_off(inst);
         dmp_was_on = 1;
     } else
@@ -3444,7 +3505,7 @@ int mpu_run_6500_self_test(long *gyro, long *accel)
     mpu_get_accel_fsr(inst,&accel_fsr);
     mpu_get_lpf(inst,&lpf);
     mpu_get_sample_rate(inst,&sample_rate);
-    sensors_on = inst->chip_cfg.sensors;
+    sensors_on = inst->sensors;
     mpu_get_fifo_config(inst,&fifo_sensors);
 
     invdbg("Retrieving Biases\r\n");
@@ -3501,13 +3562,13 @@ restore:
 
     /* Set to invalid values to ensure no I2C writes are skipped. */
 
-	inst->chip_cfg.gyro_fsr     = 0xFF;
-	inst->chip_cfg.accel_fsr    = 0xFF;
-	inst->chip_cfg.lpf          = 0xFF;
-	inst->chip_cfg.sample_rate  = 0xFFFF;
-	inst->chip_cfg.sensors      = 0xFF;
-	inst->chip_cfg.fifo_enable  = 0xFF;
-	inst->chip_cfg.clk_src      = INV_CLK_PLL;
+	inst->gyro_fsr     = 0xFF;
+	inst->accel_fsr    = 0xFF;
+	inst->lpf          = 0xFF;
+	inst->sample_rate  = 0xFFFF;
+	inst->sensors      = 0xFF;
+	inst->fifo_enable  = 0xFF;
+	inst->clk_src      = INV_CLK_PLL;
 
 	if ( mpu_set_gyro_fsr(      inst, gyro_fsr      ) < 0 )
             return -1;
@@ -3552,7 +3613,7 @@ int mpu_run_self_test(struct mpu_inst_s inst,long *gyro, long *accel)
     uint16_t gyro_fsr, sample_rate, lpf;
     uint8_t dmp_was_on;
 
-    if (inst->chip_cfg.dmp_on) {
+    if (inst->dmp_on) {
         mpu_set_dmp_off(inst);
         dmp_was_on = 1;
     } else
@@ -3563,7 +3624,7 @@ int mpu_run_self_test(struct mpu_inst_s inst,long *gyro, long *accel)
     mpu_get_accel_fsr(inst,&accel_fsr);
     mpu_get_lpf(inst,&lpf);
     mpu_get_sample_rate(inst,&sample_rate);
-    sensors_on = inst->chip_cfg.sensors;
+    sensors_on = inst->sensors;
     mpu_get_fifo_config(inst,&fifo_sensors);
 
     /* For older chips, the self-test will be different. */
@@ -3615,13 +3676,13 @@ restore:
 
     /* Set to invalid values to ensure no I2C writes are skipped. */
 
-    inst->chip_cfg.gyro_fsr     = 0xFF;
-    inst->chip_cfg.accel_fsr    = 0xFF;
-    inst->chip_cfg.lpf          = 0xFF;
-    inst->chip_cfg.sample_rate  = 0xFFFF;
-    inst->chip_cfg.sensors      = 0xFF;
-    inst->chip_cfg.fifo_enable  = 0xFF;
-    inst->chip_cfg.clk_src      = INV_CLK_PLL;
+    inst->gyro_fsr     = 0xFF;
+    inst->accel_fsr    = 0xFF;
+    inst->lpf          = 0xFF;
+    inst->sample_rate  = 0xFFFF;
+    inst->sensors      = 0xFF;
+    inst->fifo_enable  = 0xFF;
+    inst->clk_src      = INV_CLK_PLL;
 
 	if ( mpu_set_gyro_fsr(      inst, gyro_fsr      ) < 0 )
             return -1;

@@ -144,7 +144,7 @@ config INVENSENSE_I2C
 endchoice
 
 config INVENSENSE_DMP
-	bool "Enable Invensense motion Driver."
+	bool "Enable Invensense motion Driver (DMP)."
 	default n
 	---help---
 		Enables support of motion coprocessor driver.

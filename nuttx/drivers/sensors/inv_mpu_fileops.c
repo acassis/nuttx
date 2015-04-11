@@ -100,9 +100,7 @@ struct mpu_dev_s {
 #ifdef CONFIG_INVENSENSE_DMP
     struct dmp_s *dmp;
 #endif
-    int     fifo_level;
-    uint8_t mpu_int_status;
-    uint8_t dmp_int_status;
+    int     pkt_in_fifo;
     sem_t   exclsem;
 #ifndef CONFIG_DISABLE_POLL
     sem_t   *poll_sem;
@@ -188,9 +186,29 @@ static int mpu_takesem(FAR sem_t *sem, bool errout)
 
 #define mpu_givesem(sem) (void)sem_post(sem)
 
+/******************************************************************************
+ * Name: mpu_get_packet_nbr
+ ******************************************************************************/
+static inline int mpu_get_packet_nbr(struct mpu_dev_s* dev)
+{
+    int ret;
+
+#ifdef CONFIG_INVENSENSE_DMP
+    if ( dev->dmp )
+    {
+        ret = dmp_fifo_packet_nbr(dev->dmp);
+    }
+    else
+#endif
+    {
+        ret = mpu_fifo_packet_nbr(dev->inst);
+    }
+
+    return ret;
+}
 
 /****************************************************************************
- * Name: efm32_lcd_kbd_open
+ * Name: mpu_set_next_poll
  ****************************************************************************/
 #if !defined(CONFIG_DISABLE_POLL) && !defined(BOARD_INV_MPU_IRQ)
 static void mpu_set_next_poll(struct mpu_dev_s* dev)
@@ -222,26 +240,23 @@ static void mpu_worker(FAR void *arg)
         return;
     }
 
-    if ( mpu_get_int_status(dev->inst, &dev->mpu_int_status, 
-                             &dev->dmp_int_status) < 0 )
+    dev->pkt_in_fifo =  mpu_get_packet_nbr(dev);
+
+    if ( dev->pkt_in_fifo < 0 )
     {
-        MPU_LOG("Cannot get interrupts status !\n");
+        MPU_LOG("Cannot number of packet in fifo !\n");
     }
-    else
+    else if ( dev->pkt_in_fifo > 0 )
     {
-        MPU_LOG("mpu_int_status 0x%02X dmp_int_status 0x%02X \n");
+        MPU_LOG("There is %d packet in fifo\n",dev->pkt_in_fifo);
 
-        if ( dev->mpu_int_status & MPU_INT_STATUS_DATA_READY )
+        MPU_LOG("Data ready !\n");
+
+        /* add event to waiting semaphore */
+
+        if ( dev->poll_sem )
         {
-
-            MPU_LOG("Data ready !\n");
-
-            /* add event to waiting semaphore */
-
-            if ( dev->poll_sem )
-            {
-                sem_post( dev->poll_sem );
-            }
+            sem_post( dev->poll_sem );
         }
     }
 
@@ -365,6 +380,13 @@ static int mpu_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
         return res;
     }
 
+    /* don't read if interrupt have already confirm that some data are ready */
+
+    if( dev->pkt_in_fifo <= 0  )
+    {
+        dev->pkt_in_fifo = mpu_get_packet_nbr(dev);
+    }
+
     if (setup)
     {
 
@@ -379,7 +401,7 @@ static int mpu_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
             goto errout;
         }
 
-        if( dev->mpu_int_status & MPU_INT_STATUS_DATA_READY )
+        if( dev->pkt_in_fifo > 0  )
         {
             fds->revents |= (fds->events & POLLIN);
         }
@@ -397,6 +419,11 @@ static int mpu_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
     else if ( dev->poll_sem == fds->sem )
     {
         dev->poll_sem = NULL;
+
+        if( dev->pkt_in_fifo > 0  )
+        {
+            fds->revents |= (fds->events & POLLIN);
+        }
     }
 errout:
     mpu_givesem(&dev->exclsem);
@@ -417,9 +444,7 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
     FAR struct mpu_dev_s *dev    = inode->i_private;
 
     int ret;
-    int level;
-
-    snvdbg("len=%d\n", len);
+    int size = 0;
 
     /* Get exclusive access to the driver data structure */
 
@@ -429,56 +454,43 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
         return -EINTR;
     }
 
-
-    /* Read accelerometer X Y Z axes */
-
-    level = mpu_read_fifo_level(dev->inst);
-
-    while ( len > 0 )
+    if( dev->pkt_in_fifo <= 0  )
     {
+        dev->pkt_in_fifo = mpu_get_packet_nbr(dev);
+    }
+
+    while ( ( size < len ) && (dev->pkt_in_fifo > 0 ) )
+    {
+        ret = 0;
 #ifdef CONFIG_INVENSENSE_DMP
         if ( dev->dmp )
         {
-            if ( len < sizeof(struct mpu_fifo_dmp_s) )
-                ret = -1; 
-            if ( ret == 0 )
-                ret = dmp_read_fifo(dev->dmp, (struct mpu_fifo_dmp_s*)buffer);
+            ret = dmp_read_fifo(dev->dmp, (struct mpu_fifo_dmp_s*)buffer);
             if ( ret > 0 )
-                len -= sizeof(struct mpu_fifo_dmp_s);
+                size += sizeof(struct mpu_fifo_dmp_s);
         }
         else
 #endif
         {
-            if ( len < sizeof(struct mpu_fifo_mpu_s) )
-                ret = -1; 
-            if ( ret == 0 )
-                ret = mpu_read_fifo(dev->inst, (struct mpu_fifo_mpu_s*)buffer);
+            ret = mpu_read_fifo(dev->inst, (struct mpu_fifo_mpu_s*)buffer);
             if ( ret > 0 )
-                len -= sizeof(struct mpu_fifo_mpu_s);
+                size += sizeof(struct mpu_fifo_mpu_s);
         }
 
         if ( ret <= 0 )
             break;
 
-        if ( level <= ret )
-        {
-            level = 0;
-            dev->mpu_int_status &= ~MPU_INT_STATUS_DATA_READY;
-        }
-        else
-        {
-            level -= ret;
-        }
+        dev->pkt_in_fifo --;
     }
 
-    dev->fifo_level = level;
 
     mpu_givesem(&dev->exclsem);
+
 
     if ( ret < 0 )
         return ret;
 
-    return len;
+    return size;
 }
 
 /****************************************************************************
@@ -503,6 +515,10 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
             ret = mpu_set_sensors_enable(dev->inst,arg);
             if ( ret == 0 )
                 ret = mpu_set_fifo_config(dev->inst,arg);
+            break;
+
+        case MPU_RESET_FIFO:
+            ret = mpu_reset_fifo(dev->inst);
             break;
 
         case MPU_FREQUENCY:
