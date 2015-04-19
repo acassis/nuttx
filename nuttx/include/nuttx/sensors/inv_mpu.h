@@ -119,6 +119,13 @@
 
 #define MPU_FREQUENCY       _SNIOC(0x0002)
 
+/* MPU_GET_TEMP read temperature sensors.
+ *
+ * Argument: pointer to int32_t filled with temperature in degree.
+ */
+
+#define MPU_GET_TEMP        _SNIOC(0x0003)
+
 
 /* MPU_RESET_FIFO reset mpu fifo.
  *
@@ -128,6 +135,50 @@
 
 #define MPU_RESET_FIFO      _SNIOC(0x0004)
 
+
+/* MPU_SET_ACCEL_OFF set accelerometer offset.
+ *
+ * Argument: struct mpu_axes_s
+ *
+ */
+
+#define MPU_SET_ACCEL_OFF   _SNIOC(0x0005)
+
+
+/* MPU_SET_GYRO_OFF set gyroscope offset.
+ *
+ * Argument: struct mpu_axes_s
+ *
+ */
+
+#define MPU_SET_GYRO_OFF    _SNIOC(0x0006)
+
+
+/* MPU_GET_ACCEL_OFF set accelerometer offset.
+ *
+ * Argument: struct mpu_axes_s
+ *
+ */
+
+#define MPU_GET_ACCEL_OFF   _SNIOC(0x0007)
+
+
+/* MPU_GET_GYRO_OFF set gyroscope offset.
+ *
+ * Argument: struct mpu_axes_s
+ *
+ */
+
+#define MPU_GET_GYRO_OFF    _SNIOC(0x0008)
+
+
+/* MPU_CALIBRATION do a accelerometer and gyroscope calibrated offset.
+ *
+ * Argument: struct mpu_axes_s
+ *
+ */
+
+#define MPU_CALIBRATION   _SNIOC(0x0009)
 
 /********************************************************************************************
  * Public Types
@@ -173,13 +224,13 @@ struct mpu_quat_s {
     int16_t z;
 };
 
-struct mpu_fifo_mpu_s {
+struct mpu_data_mpu_s {
     struct mpu_axes_s accel;
     struct mpu_axes_s gyro;
     struct mpu_axes_s comp;
 };
 
-struct mpu_fifo_dmp_s {
+struct mpu_data_dmp_s {
     struct mpu_quat_s   quat;
     struct mpu_axes_s   accel;
     struct mpu_axes_s   gyro;
@@ -321,7 +372,7 @@ int mpu_set_int_latched(struct mpu_inst_s* inst,bool enable);
 int mpu_set_fifo_config(struct mpu_inst_s* inst,uint8_t sensors);
 int mpu_get_fifo_config(struct mpu_inst_s* inst,uint8_t *sensors);
 
-int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data);
+int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_data_mpu_s *data);
 
 int mpu_fifo_packet_nbr(struct mpu_inst_s* inst);
 int mpu_read_fifo_level(struct mpu_inst_s* inst);
@@ -345,7 +396,10 @@ int mpu_set_bypass(struct mpu_inst_s* inst, bool bypass_on);
 int mpu_set_dmp_on(struct mpu_inst_s* inst);
 int mpu_set_dmp_off(struct mpu_inst_s* inst);
 
+int mpu_calibration(struct mpu_inst_s* inst, struct mpu_data_mpu_s* sensors_off, 
+                    int samples_nbr);
 
+int mpu_set_accel_off_safe(struct mpu_inst_s* inst,struct mpu_axes_s *accel_off);
 
 #if 0
 

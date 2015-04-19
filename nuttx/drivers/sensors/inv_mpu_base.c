@@ -92,10 +92,12 @@
 #   include "inv_mpu6050_reg.h"
 #endif
 
+#define __ACCEL_OFF_SOFT 1
+
 /* Debug **********************************************************************/
 
 #ifdef CONFIG_INVENSENSE_DEBUG
-#  define invdbg dbg
+#  define invdbg  dbg
 #  define invvdbg vdbg
 #else
 #  define invdbg(x...)
@@ -238,6 +240,18 @@ struct motion_int_cache_s {
 struct mpu_inst_s {
     struct mpu_low_s*   low;
 
+    /* Factory value setted after reset of accelerometer offset register. */
+
+    uint16_t factory_accel_off_x;   /* INV_MPU_XA_OFFSET_H/L */
+    uint16_t factory_accel_off_y;   /* INV_MPU_YA_OFFSET_H/L */
+    uint16_t factory_accel_off_z;   /* INV_MPU_ZA_OFFSET_H/L */
+
+#ifdef __ACCEL_OFF_SOFT
+    int16_t accel_off_x;   
+    int16_t accel_off_y;   
+    int16_t accel_off_z;   
+#endif
+
     /* Matches fifo packet size in function of fifo_en register. */
 
     uint8_t     packet_size;
@@ -364,7 +378,21 @@ static inline int mpu_write8(struct mpu_inst_s* inst,int reg_off,uint8_t val)
 {
     int ret;
     ret = inst->low->ops->mpu_write(inst->low,reg_off,&val,1);
-    invvdbg("MPU Write in 0x%02X <= 0x%02X => return %d.\n",reg_off,val,ret);
+    invvdbg("MPU Write8 in 0x%02X <= 0x%02X => return %d.\n",reg_off,val,ret);
+    return ret;
+}
+
+static inline int mpu_write16(struct mpu_inst_s* inst,int reg_off,uint16_t val)
+{
+    int ret;
+    uint8_t buf[2];
+
+    buf[0] = val >> 8;
+    buf[1] = val & 0xFF;
+
+    ret = inst->low->ops->mpu_write(inst->low,reg_off,buf,2);
+    invvdbg("MPU Write in 0x%02X <= 0x%02X(%d) => return %d.\n",reg_off,val,val,
+            ret);
     return ret;
 }
 
@@ -375,6 +403,19 @@ static inline int mpu_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
     ret = inst->low->ops->mpu_read(inst->low,reg_off,buf,size);
     invvdbg("MPU Read  %d bytes in 0x%02X. First is 0x%02X => return %d.\n",
             size,reg_off,*buf,ret);
+    return ret;
+}
+
+static inline int mpu_read16(struct mpu_inst_s* inst,int reg_off,uint16_t *val)
+{
+    int ret;
+    uint8_t buf[2];
+
+    ret = inst->low->ops->mpu_read(inst->low,reg_off,buf,2);
+    *val = buf[0] >> 8 | buf[1];
+
+    invvdbg("MPU Read16 at 0x%02X = 0x%04X(%d) => return %d.\n", reg_off, *val,
+            *val,ret);
     return ret;
 }
 
@@ -417,17 +458,17 @@ static inline int akm_read(struct mpu_inst_s* inst,int reg_off,uint8_t *buf,
 
 static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
 {
-    uint8_t tmp;
+    uint8_t regval;
 
     if (inst->dmp_on) 
     {
-        tmp = 0x00;
+        regval = 0x00;
         if (enable)
-            tmp = BIT_DMP_INT_EN;
+            regval = BIT_DMP_INT_EN;
 
-        if ( mpu_write8(inst,INV_MPU_INT_ENABLE,tmp) < 0 )
+        if ( mpu_write8(inst,INV_MPU_INT_ENABLE,regval) < 0 )
             return -1;
-        inst->int_enable = tmp;
+        inst->int_enable = regval;
     } 
     else 
     {
@@ -437,14 +478,14 @@ static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
         if (enable && inst->int_enable)
             return 0;
 
-        tmp = 0x00;
+        regval = 0x00;
         if (enable)
-            tmp = BIT_DATA_RDY_EN;
+            regval = BIT_DATA_RDY_EN;
 
-        if ( mpu_write(inst,INV_MPU_INT_ENABLE,&tmp,1) < 0 )
+        if ( mpu_write8(inst,INV_MPU_INT_ENABLE,regval) < 0 )
             return -1;
 
-        inst->int_enable = tmp;
+        inst->int_enable = regval;
 
     }
     return 0;
@@ -622,6 +663,19 @@ int mpu_reset_default(struct mpu_inst_s* inst)
     if ( mpu_set_fifo_config(   inst,   0) < 0 )
         return -1;
 
+    /* backup factory offset register */
+
+    if ( mpu_read16(inst, INV_MPU_XA_OFFSET_H, &inst->factory_accel_off_x) < 0 )
+        return -1;
+    if ( mpu_read16(inst, INV_MPU_YA_OFFSET_H, &inst->factory_accel_off_y) < 0 )
+        return -1;
+    if ( mpu_read16(inst, INV_MPU_ZA_OFFSET_H, &inst->factory_accel_off_z) < 0 )
+        return -1;
+
+    invvdbg("XA_OFFSET:0x%04X XA_OFFSET:0x%04X XA_OFFSET:0x%04X.\n",
+            inst->factory_accel_off_x, inst->factory_accel_off_y,
+            inst->factory_accel_off_z);
+
 #ifdef CONFIG_SENSOR_AK89XX_SECONDARY
     if ( mpu_setup_compass(inst) < 0 )
         return -1;
@@ -760,7 +814,7 @@ int mpu_lp_accel_mode(struct mpu_inst_s* inst, uint8_t rate)
     else 
         return -1;
 
-    if ( mpu_write(inst,INV_MPU_LP_ACCEL_ODR,tmp,1) < 0 )
+    if ( mpu_write8(inst,INV_MPU_LP_ACCEL_ODR,tmp[0]) < 0 )
         return -1;
 
     if ( mpu_write8(inst,INV_MPU_PWR_MGMT_1,BIT_LPA_CYCLE) < 0 )
@@ -920,7 +974,7 @@ int mpu_get_temperature(struct mpu_inst_s* inst, int32_t *temp_degre )
 
     raw = (tmp[0] << 8) | tmp[1];
 
-    *temp_degre = ( ( ((long)raw) + INV_MPU_TEMP_RAW_OFFSET ) 
+    *temp_degre = ( ( ((int32_t)raw) + INV_MPU_TEMP_RAW_OFFSET ) 
                     / INV_MPU_TEMP_SENSIBILITY );
 
     return 0;
@@ -943,24 +997,70 @@ int mpu_get_temperature(struct mpu_inst_s* inst, int32_t *temp_degre )
 
 int mpu_get_accel_off(struct mpu_inst_s* inst, struct mpu_axes_s *accel_off) 
 {
-    uint8_t data[2];
+    uint16_t regval;
 
     /* due to space between register we cannot do it in one read */
 
-    if ( mpu_read(inst, INV_MPU_XA_OFFSET_H, data, 2) < 0 )
+    if ( mpu_read16(inst, INV_MPU_XA_OFFSET_H, &regval) < 0 )
         return -1;
 
-    accel_off->x = ((long)data[0]<<8) | data[1];
+    accel_off->x = regval >> 1;
 
-    if ( mpu_read(inst, INV_MPU_YA_OFFSET_H, data, 2) < 0 )
+    if ( mpu_read16(inst, INV_MPU_YA_OFFSET_H, &regval) < 0 )
         return -1;
 
-    accel_off->y = ((long)data[0]<<8) | data[1];
+    accel_off->y = regval >> 1;
 
-    if ( mpu_read(inst, INV_MPU_ZA_OFFSET_H, data, 2) < 0 )
+    if ( mpu_read16(inst, INV_MPU_ZA_OFFSET_H, &regval) < 0 )
         return -1;
 
-    accel_off->z = ((long)data[0]<<8) | data[1];
+    accel_off->z = regval >> 1;
+
+    return 0;
+}
+
+/*******************************************************************************
+ * Name: mpu_set_accel_off_safe
+ *
+ * Description:
+ *  Set offset of accelerometer safely 
+ *      * stop accelerometer.
+ *      * set offset of accelerometer.
+ *      * start accelerometer.
+ *      * configure fifo again.
+ *  The register is initialized with OTP factory trim values.
+ * 
+ * Params
+ *  inst        instance of inv_mpu driver.
+ *  gyro_off    setted structure with the accelerometer offset.
+ *
+ * Return
+ *  0 on success, negative value in case of error.
+ ******************************************************************************/
+
+int mpu_set_accel_off_safe(struct mpu_inst_s* inst,struct mpu_axes_s *accel_off)
+{
+#ifndef __ACCEL_OFF_SOFT
+
+    uint8_t en;
+
+    if ( mpu_get_sensors_enable(inst,&en) < 0 )
+        return -1;
+
+    if ( mpu_set_sensors_enable(inst,0) < 0 )
+        return -1;
+#endif
+
+    if ( mpu_set_accel_off(inst,accel_off) < 0 )
+        return -1;
+
+#ifndef __ACCEL_OFF_SOFT
+    if ( mpu_set_sensors_enable(inst,en) < 0 )
+        return -1;
+#endif
+
+    if ( mpu_reset_fifo(inst) < 0 )
+        return -1;
 
     return 0;
 }
@@ -982,51 +1082,34 @@ int mpu_get_accel_off(struct mpu_inst_s* inst, struct mpu_axes_s *accel_off)
 
 int mpu_set_accel_off(struct mpu_inst_s* inst,struct mpu_axes_s *accel_off)
 {
-    uint8_t data[2] = {0, 0};
-    struct mpu_axes_s old_accel_off;
-    uint8_t mask_bit;
-
-    if( mpu_get_accel_off(inst, &old_accel_off) < 0 )
-        return -1;
+#ifndef __ACCEL_OFF_SOFT
+    uint16_t regval;
 
     /* X */
 
-    if(old_accel_off.x & 1)
-        mask_bit = 0x01;
+    regval  = inst->factory_accel_off_x - (accel_off->x << 1);
 
-    old_accel_off.x -= accel_off->x;
-
-    data[0] =  (old_accel_off.x >> 8) & 0xff;
-    data[1] = ((old_accel_off.x     ) & 0xff)|mask_bit;
-
-    if ( mpu_write(inst, INV_MPU_XA_OFFSET_H, data, 2) < 0)
+    if ( mpu_write16(inst, INV_MPU_XA_OFFSET_H, regval) < 0)
         return -1;
 
     /* Y */
 
-    if(old_accel_off.y & 1)
-        mask_bit = 0x01;
+    regval  = inst->factory_accel_off_y - (accel_off->y << 1);
 
-    old_accel_off.y -= accel_off->y;
-
-    data[0] =  (old_accel_off.y >> 8) & 0xff;
-    data[1] = ((old_accel_off.y     ) & 0xff)|mask_bit;
-
-    if ( mpu_write(inst, INV_MPU_YA_OFFSET_H, data, 2) < 0)
+    if ( mpu_write16(inst, INV_MPU_YA_OFFSET_H, regval) < 0)
         return -1;
 
     /* Z */
 
-    if(old_accel_off.z & 1)
-        mask_bit = 0x01;
+    regval  = inst->factory_accel_off_z - (accel_off->z << 1);
 
-    old_accel_off.z -= accel_off->z;
-
-    data[0] =  (old_accel_off.z >> 8) & 0xff;
-    data[1] = ((old_accel_off.z     ) & 0xff)|mask_bit;
-
-    if ( mpu_write(inst, INV_MPU_ZA_OFFSET_H, data, 2) < 0)
+    if ( mpu_write16(inst, INV_MPU_ZA_OFFSET_H, regval) < 0)
         return -1;
+#else
+    inst->accel_off_x -= accel_off->x;
+    inst->accel_off_y -= accel_off->y;
+    inst->accel_off_z -= accel_off->z;
+#endif
 
     return 0;
 }
@@ -1049,14 +1132,22 @@ int mpu_set_accel_off(struct mpu_inst_s* inst,struct mpu_axes_s *accel_off)
 
 int mpu_get_gyro_off(struct mpu_inst_s* inst, struct mpu_axes_s *gyro_off) 
 {
-    uint8_t data[6];
+    uint16_t regval;
 
-    if ( mpu_read(inst, INV_MPU_XG_OFFSET_H, data, 6) < 0 )
+    if ( mpu_read16(inst, INV_MPU_XG_OFFSET_H, &regval) < 0 )
         return -1;
 
-    gyro_off->x = ((int16_t)data[0]<<8) | data[1];
-    gyro_off->y = ((int16_t)data[2]<<8) | data[3];
-    gyro_off->z = ((int16_t)data[4]<<8) | data[5];
+    gyro_off->x = regval;
+
+    if ( mpu_read16(inst, INV_MPU_YG_OFFSET_H, &regval) < 0 )
+        return -1;
+
+    gyro_off->y = regval;
+
+    if ( mpu_read16(inst, INV_MPU_ZG_OFFSET_H, &regval) < 0 )
+        return -1;
+
+    gyro_off->z = regval;
 
     return 0;
 }
@@ -1078,17 +1169,16 @@ int mpu_get_gyro_off(struct mpu_inst_s* inst, struct mpu_axes_s *gyro_off)
 
 int mpu_set_gyro_off(struct mpu_inst_s* inst, struct mpu_axes_s *gyro_off)
 {
-    uint8_t data[6];
 
-    data[0] = (gyro_off->x >> 8 ) & 0xff;
-    data[1] = (gyro_off->x      ) & 0xff;
-    data[2] = (gyro_off->y >> 8 ) & 0xff;
-    data[3] = (gyro_off->y      ) & 0xff;
-    data[4] = (gyro_off->z >> 8 ) & 0xff;
-    data[5] = (gyro_off->z      ) & 0xff;
-
-    if ( mpu_write(inst, INV_MPU_XG_OFFSET_H, data, 6) < 0 )
+    if ( mpu_write16(inst, INV_MPU_XG_OFFSET_H, (-gyro_off->x)) < 0 )
         return -1;
+
+    if ( mpu_write16(inst, INV_MPU_YG_OFFSET_H, (-gyro_off->y)) < 0 )
+        return -1;
+
+    if ( mpu_write16(inst, INV_MPU_ZG_OFFSET_H, (-gyro_off->z)) < 0 )
+        return -1;
+
 
     return 0;
 }
@@ -1758,7 +1848,7 @@ int mpu_set_fifo_config(struct mpu_inst_s* inst, uint8_t sensors)
 
 int mpu_get_sensors_enable(struct mpu_inst_s* inst, uint8_t* sensors)
 {
-    *sensors = inst->sensors = 0;
+    *sensors = inst->sensors;
     return 0;
 }
 
@@ -1925,7 +2015,7 @@ int mpu_get_int_status(struct mpu_inst_s* inst, uint8_t *mpu_int_status,
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
+int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_data_mpu_s *data)
 {
 
     /* Assumes maximum packet size is gyro (6) + accel (6). */
@@ -1967,6 +2057,13 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_fifo_mpu_s *data)
         data->accel.y|= (*ptr++);
         data->accel.z = (*ptr++) << 8;
         data->accel.z|= (*ptr++);
+
+#ifdef __ACCEL_OFF_SOFT
+        data->accel.x += inst->accel_off_x;
+        data->accel.y += inst->accel_off_y;
+        data->accel.z += inst->accel_off_z;
+#endif
+
     }
 
     if (inst->fifo_enable & MPU_X_GYRO) 
@@ -2849,6 +2946,122 @@ lp_int_restore:
     return 0;
 }
 
+
+/*******************************************************************************
+ * Name: mpu_calibration
+ *
+ * Description:
+ *
+ * Params
+ *  inst        instance of inv_mpu driver.
+ *  axes_off    result of calibration.
+ *  samples_nbr number of sample for calitration.
+ *
+ * Return
+ *  0 on success, negative value in case of error.
+ ******************************************************************************/
+
+int mpu_calibration(struct mpu_inst_s* inst, struct mpu_data_mpu_s* sensors_off, 
+                    int samples_nbr)
+{
+    int i;
+    uint16_t rate;
+    time_t end;
+    struct mpu_axes_s axes_off;
+
+    int32_t accel_x = 0;
+    int32_t accel_y = 0;
+    int32_t accel_z = 0;
+    int32_t gyro_x  = 0;
+    int32_t gyro_y  = 0;
+    int32_t gyro_z  = 0;
+
+    axes_off.x = 0;
+    axes_off.y = 0;
+    axes_off.z = 0;
+
+    if ( inst->dmp_on ) 
+        return -1;
+
+    /* reset offset */
+
+    if ( mpu_set_accel_off(inst,&axes_off) < 0 )
+        return -1;
+
+    if ( mpu_set_gyro_off(inst,&axes_off) < 0 )
+        return -1;
+
+    /* wait sensors stabilisation */
+
+    usleep(500000);
+
+
+    if ( mpu_get_sample_rate(inst, &rate) < 0 )
+        return -1;
+
+    /* add 1 to avoid rounding */
+
+    if ( mpu_reset_fifo(inst) < 0 )
+        return -1;
+
+    end = 1 + time(NULL) + ( samples_nbr / rate );
+
+    i = samples_nbr;
+    
+    while( i -- )
+    {
+        int ret;
+        struct mpu_data_mpu_s axes;
+
+        do{
+
+            if ( end < time(NULL) )
+                return -1;
+
+            ret = mpu_read_fifo( inst ,&axes );
+            
+        }while( ret <= 0 );
+
+        invdbg("A %6d %6d %6d G %6d %6d %6d.\n",
+               axes.accel.x, axes.accel.y, axes.accel.z,
+               axes.gyro.x, axes.gyro.y, axes.gyro.z
+              );
+
+        accel_x += axes.accel.x;
+        accel_y += axes.accel.y;
+        accel_z += axes.accel.z;
+
+        gyro_x  += axes.gyro.x ;
+        gyro_y  += axes.gyro.y ;
+        gyro_z  += axes.gyro.z ;
+    }
+
+    accel_x /= samples_nbr;
+    accel_y /= samples_nbr;
+    accel_z /= samples_nbr;
+
+    /* gyro offset is tune in half point */
+
+    gyro_x  /= samples_nbr/2;
+    gyro_y  /= samples_nbr/2;
+    gyro_z  /= samples_nbr/2;
+
+    sensors_off->accel.x = accel_x;
+    sensors_off->accel.y = accel_y;
+    sensors_off->accel.z = accel_z;
+    sensors_off->gyro.x  = gyro_x;
+    sensors_off->gyro.y  = gyro_y;
+    sensors_off->gyro.z  = gyro_z;
+
+    invdbg("Offset => A %6d %6d %6d G %6d %6d %6d.\n",
+           sensors_off->accel.x, sensors_off->accel.y, sensors_off->accel.z,
+           sensors_off->gyro.x,  sensors_off->gyro.y,  sensors_off->gyro.z
+          );
+
+    return 0;
+
+}
+
 /* Self test not implemented yet ! sorry */
 #if 0
 
@@ -3205,40 +3418,39 @@ static int accel_6500_self_test(long *bias_regular, long *bias_st)
             result |= 1 << i;	//Error condition
         }
     }
-}
-else {
-    /* Self Test Pass/Fail Criteria B */
-    accel_st_al_min = teinst->min_g * 65536.f;
-    accel_st_al_max = teinst->max_g * 65536.f;
+    else {
+        /* Self Test Pass/Fail Criteria B */
+        accel_st_al_min = teinst->min_g * 65536.f;
+        accel_st_al_max = teinst->max_g * 65536.f;
 
-    invdbg("ACCEL:CRITERIA B\r\n");
-    invdbg("Min MG: %7.4f\r\n", accel_st_al_min/1.f);
-    invdbg("Max MG: %7.4f\r\n", accel_st_al_max/1.f);
+        invdbg("ACCEL:CRITERIA B\r\n");
+        invdbg("Min MG: %7.4f\r\n", accel_st_al_min/1.f);
+        invdbg("Max MG: %7.4f\r\n", accel_st_al_max/1.f);
 
-    for (i = 0; i < 3; i++) {
-        st_shift_cust[i] = bias_st[i] - bias_regular[i];
+        for (i = 0; i < 3; i++) {
+            st_shift_cust[i] = bias_st[i] - bias_regular[i];
 
-        invdbg("Bias_shift=%7.4f, st=%7.4f, reg=%7.4f\n", st_shift_cust[i]/1.f, bias_st[i]/1.f, bias_regular[i]/1.f);
-        if(st_shift_cust[i] < accel_st_al_min || st_shift_cust[i] > accel_st_al_max) {
-            invdbg("Accel FAIL axis:%d <= 225mg or >= 675mg\n", i);
-            result |= 1 << i;	//Error condition
+            invdbg("Bias_shift=%7.4f, st=%7.4f, reg=%7.4f\n", st_shift_cust[i]/1.f, bias_st[i]/1.f, bias_regular[i]/1.f);
+            if(st_shift_cust[i] < accel_st_al_min || st_shift_cust[i] > accel_st_al_max) {
+                invdbg("Accel FAIL axis:%d <= 225mg or >= 675mg\n", i);
+                result |= 1 << i;	//Error condition
+            }
         }
     }
-}
 
-if(result == 0) {
-    /* Self Test Pass/Fail Criteria C */
-    accel_offset_max = teinst->max_g_offset * 65536.f;
-    invdbg("Accel:CRITERIA C: bias less than %7.4f\n", accel_offset_max/1.f);
-    for (i = 0; i < 3; i++) {
-        if(fabs(bias_regular[i]) > accel_offset_max) {
-            invdbg("FAILED: Accel axis:%d = %d > 500mg\n", i, bias_regular[i]);
-            result |= 1 << i;	//Error condition
+    if(result == 0) {
+        /* Self Test Pass/Fail Criteria C */
+        accel_offset_max = teinst->max_g_offset * 65536.f;
+        invdbg("Accel:CRITERIA C: bias less than %7.4f\n", accel_offset_max/1.f);
+        for (i = 0; i < 3; i++) {
+            if(fabs(bias_regular[i]) > accel_offset_max) {
+                invdbg("FAILED: Accel axis:%d = %d > 500mg\n", i, bias_regular[i]);
+                result |= 1 << i;	//Error condition
+            }
         }
     }
-}
 
-return result;
+    return result;
 }
 
 static int gyro_6500_self_test(long *bias_regular, long *bias_st)
@@ -3289,38 +3501,36 @@ static int gyro_6500_self_test(long *bias_regular, long *bias_st)
             result |= 1 << i;	//Error condition
         }
     }
-}
-else {
-    /* Self Test Pass/Fail Criteria B */
-    gyro_st_al_max = teinst->max_dps * 65536.f;
+    else {
+        /* Self Test Pass/Fail Criteria B */
+        gyro_st_al_max = teinst->max_dps * 65536.f;
 
-    invdbg("GYRO:CRITERIA B\r\n");
-    invdbg("Max DPS: %7.4f\r\n", gyro_st_al_max/1.f);
-}
-
-for (i = 0; i < 3; i++) {
-    st_shift_cust[i] = bias_st[i] - bias_regular[i];
-
-    invdbg("Bias_shift=%7.4f, st=%7.4f, reg=%7.4f\n", st_shift_cust[i]/1.f, bias_st[i]/1.f, bias_regular[i]/1.f);
-    if(st_shift_cust[i] < gyro_st_al_max) {
-        invdbg("GYRO FAIL axis:%d greater than 60dps\n", i);
-        result |= 1 << i;	//Error condition
+        invdbg("GYRO:CRITERIA B\r\n");
+        invdbg("Max DPS: %7.4f\r\n", gyro_st_al_max/1.f);
     }
-}
-}
 
-if(result == 0) {
-    /* Self Test Pass/Fail Criteria C */
-    gyro_offset_max = teinst->min_dps * 65536.f;
-    invdbg("Gyro:CRITERIA C: bias less than %7.4f\n", gyro_offset_max/1.f);
     for (i = 0; i < 3; i++) {
-        if(fabs(bias_regular[i]) > gyro_offset_max) {
-            invdbg("FAILED: Gyro axis:%d = %d > 20dps\n", i, bias_regular[i]);
+        st_shift_cust[i] = bias_st[i] - bias_regular[i];
+
+        invdbg("Bias_shift=%7.4f, st=%7.4f, reg=%7.4f\n", st_shift_cust[i]/1.f, bias_st[i]/1.f, bias_regular[i]/1.f);
+        if(st_shift_cust[i] < gyro_st_al_max) {
+            invdbg("GYRO FAIL axis:%d greater than 60dps\n", i);
             result |= 1 << i;	//Error condition
         }
     }
-}
-return result;
+
+    if(result == 0) {
+        /* Self Test Pass/Fail Criteria C */
+        gyro_offset_max = teinst->min_dps * 65536.f;
+        invdbg("Gyro:CRITERIA C: bias less than %7.4f\n", gyro_offset_max/1.f);
+        for (i = 0; i < 3; i++) {
+            if(fabs(bias_regular[i]) > gyro_offset_max) {
+                invdbg("FAILED: Gyro axis:%d = %d > 20dps\n", i, bias_regular[i]);
+                result |= 1 << i;	//Error condition
+            }
+        }
+    }
+    return result;
 }
 
 static int get_st_6500_biases(long *gyro, long *accel, uint8_t hw_test)

@@ -85,8 +85,12 @@
                                         DMP_FEATURE_SEND_RAW_GYRO   )
 #endif
 
-#ifndef BOARD_DEFAULT_DMP_HZ
-#   define BOARD_DEFAULT_DMP_HZ (10) /* in Hz */
+#ifndef __DEFAULT_DMP_HZ
+#   define __DEFAULT_DMP_HZ (10) /* in Hz */
+#endif
+
+#ifndef __CALIBRATION_SAMPLE_NBR
+#   define __CALIBRATION_SAMPLE_NBR (10*__DEFAULT_DMP_HZ) /* 10 second */
 #endif
 
 /****************************************************************************
@@ -297,7 +301,7 @@ static int mpu_open(FAR struct file *filep)
             ret = dmp_enable_feature(dev->dmp,BOARD_ENABLES_DMP_FEATURES);
 
         if ( ret == 0 )
-            ret = dmp_set_fifo_rate(dev->dmp,BOARD_DEFAULT_DMP_HZ);
+            ret = dmp_set_fifo_rate(dev->dmp,__DEFAULT_DMP_HZ);
 
         if ( ret == 0 )
             ret = mpu_set_dmp_on(dev->inst);
@@ -465,16 +469,16 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 #ifdef CONFIG_INVENSENSE_DMP
         if ( dev->dmp )
         {
-            ret = dmp_read_fifo(dev->dmp, (struct mpu_fifo_dmp_s*)buffer);
+            ret = dmp_read_fifo(dev->dmp, (struct mpu_data_dmp_s*)buffer);
             if ( ret > 0 )
-                size += sizeof(struct mpu_fifo_dmp_s);
+                size += sizeof(struct mpu_data_dmp_s);
         }
         else
 #endif
         {
-            ret = mpu_read_fifo(dev->inst, (struct mpu_fifo_mpu_s*)buffer);
+            ret = mpu_read_fifo(dev->inst, (struct mpu_data_mpu_s*)buffer);
             if ( ret > 0 )
-                size += sizeof(struct mpu_fifo_mpu_s);
+                size += sizeof(struct mpu_data_mpu_s);
         }
 
         if ( ret <= 0 )
@@ -519,6 +523,33 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 
         case MPU_RESET_FIFO:
             ret = mpu_reset_fifo(dev->inst);
+            break;
+
+        case MPU_GET_TEMP:
+            ret = mpu_get_temperature(dev->inst,(int32_t*)arg);
+            break;
+
+        case MPU_SET_GYRO_OFF:
+            ret = mpu_set_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
+            if ( ret >= 0 )
+                ret = mpu_reset_fifo(dev->inst);
+            break;
+
+        case MPU_SET_ACCEL_OFF:
+            ret = mpu_set_accel_off_safe(dev->inst,(struct mpu_axes_s*)arg);
+            break;
+
+        case MPU_GET_GYRO_OFF:
+            ret = mpu_get_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
+            break;
+
+        case MPU_GET_ACCEL_OFF:
+            ret = mpu_get_accel_off(dev->inst,(struct mpu_axes_s*)arg);
+            break;
+
+        case MPU_CALIBRATION:
+            ret = mpu_calibration(dev->inst,(struct mpu_data_mpu_s*)arg,
+                                  __CALIBRATION_SAMPLE_NBR);
             break;
 
         case MPU_FREQUENCY:

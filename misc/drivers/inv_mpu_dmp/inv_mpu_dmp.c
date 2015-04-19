@@ -1188,7 +1188,7 @@ int dmp_fifo_packet_nbr(struct dmp_s* dmp)
  *  Return:
  *   1 complete packet read successful, negative value in case of error.
  ******************************************************************************/
-int dmp_read_fifo(struct dmp_s* dmp, struct mpu_fifo_dmp_s* data ) 
+int dmp_read_fifo(struct dmp_s* dmp, struct mpu_data_dmp_s* data ) 
 {
     uint8_t fifo_data[MAX_PACKET_LENGTH];
     uint8_t ii;
