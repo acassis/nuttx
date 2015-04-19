@@ -60,13 +60,11 @@
 #include "ppp.h"
 #include "chat.h"
 
+#include <apps/netutils/pppd.h>
+
 #if PPP_ARCH_HAVE_MODEM_RESET
 extern void ppp_arch_modem_reset(const char *tty);
 #endif
-
-/*
-socat /dev/ttyUSB2,raw,echo=0,b115200,crtscts=0 /dev/ttyUSB7,raw,echo=0,b115200,crtscts=0
-*/
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -80,37 +78,6 @@ socat /dev/ttyUSB2,raw,echo=0,b115200,crtscts=0 /dev/ttyUSB7,raw,echo=0,b115200,
  * Private Data
  ****************************************************************************/
 
-/* This type describes the state of the NTP client daemon.  Only once
- * instance of the NTP daemon is permitted in this implementation.  This
- * limitation is due only to this global data structure.
- */
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-static struct chat_script_s connect_script =
-{
-  .timeout = 30,
-  .lines =
-  {
-    {"AT",                                 "OK"},
-    {"AT+CGDCONT = 1,\"IP\",\"internet\"", "OK"},
-    {"ATD*99***1#",                        "CONNECT"},
-    {0, 0}
-  },
-};
-
-static struct chat_script_s disconnect_script =
-{
-  .timeout = 30,
-  .lines =
-  {
-    {"ATZ",                                "OK"},
-    {0, 0}
-  },
-};
-
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -123,12 +90,12 @@ static int make_nonblock(int fd)
 {
   int flags;
 
-  if( (flags = fcntl(fd, F_GETFL, 0)) < 0) 
+  if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
     {
       return flags;
     }
 
-  if( (flags = fcntl(fd, F_SETFL, flags | O_NONBLOCK)) < 0 )
+  if ((flags = fcntl(fd, F_SETFL, flags | O_NONBLOCK)) < 0)
     {
       return flags;
     }
@@ -145,7 +112,7 @@ static int tun_alloc(char *dev)
   struct ifreq ifr;
   int fd, err;
 
-  if( (fd = open("/dev/tun", O_RDWR)) < 0 )
+  if ((fd = open("/dev/tun", O_RDWR)) < 0)
       return fd;
 
   printf("tun fd:%i\n", fd);
@@ -158,12 +125,12 @@ static int tun_alloc(char *dev)
 
   memset(&ifr, 0, sizeof(ifr));
   ifr.ifr_flags = IFF_TUN;
-  if( *dev )
+  if (*dev)
     {
       strncpy(ifr.ifr_name, dev, IFNAMSIZ);
     }
 
-  if( (err = ioctl(fd, TUNSETIFF, (unsigned long)&ifr)) < 0 ) 
+  if ((err = ioctl(fd, TUNSETIFF, (unsigned long)&ifr)) < 0)
     {
       close(fd);
       return err;
@@ -183,7 +150,7 @@ static int open_tty(char *dev)
   int fd;
   int err;
 
-  if( (fd = open(dev, O_RDWR)) < 0 )
+  if ((fd = open(dev, O_RDWR)) < 0)
       return fd;
 
   if ((err = make_nonblock(fd)) < 0)
@@ -207,17 +174,20 @@ static u8_t ppp_check_errors(struct ppp_context_s *ctx)
 
   /* Check Errors */
 
-  if(ctx->lcp_state & (LCP_TX_TIMEOUT | LCP_RX_TIMEOUT | LCP_TERM_PEER))
+  if (ctx->lcp_state & (LCP_TX_TIMEOUT | LCP_RX_TIMEOUT | LCP_TERM_PEER))
     {
       ret = 1;
     }
 
-  if(ctx->pap_state & (PAP_TX_AUTH_FAIL | PAP_RX_AUTH_FAIL | PAP_TX_TIMEOUT | PAP_RX_TIMEOUT))
+#ifdef CONFIG_NETUTILS_PPPD_PAP
+  if (ctx->pap_state & (PAP_TX_AUTH_FAIL | PAP_RX_AUTH_FAIL |
+                        PAP_TX_TIMEOUT | PAP_RX_TIMEOUT))
     {
       ret = 2;
     }
+#endif /* CONFIG_NETUTILS_PPPD_PAP */
 
-  if(ctx->ipcp_state & (IPCP_TX_TIMEOUT))
+  if (ctx->ipcp_state & (IPCP_TX_TIMEOUT))
     {
       ret = 3;
     }
@@ -237,7 +207,7 @@ void ppp_reconnect(struct ppp_context_s *ctx)
 {
   int ret;
   int retry = PPP_MAX_CONNECT;
-
+  struct pppd_settings_s *pppd_settings = ctx->settings;
   netlib_ifdown((char*)ctx->ifname);
 
   lcp_disconnect(ctx, ++ctx->ppp_id);
@@ -248,20 +218,20 @@ void ppp_reconnect(struct ppp_context_s *ctx)
   sleep(2);
   write(ctx->tty_fd, "ATE1\r\n", 6);
 
-  if (ctx->disconnect_script)
+  if (pppd_settings->disconnect_script)
     {
-      ret = ppp_chat(ctx->tty_fd, ctx->disconnect_script, 1 /*echo on*/);
+      ret = ppp_chat(ctx->tty_fd, pppd_settings->disconnect_script, 1 /*echo on*/);
       if (ret < 0)
         {
           printf("ppp: disconnect script failed\n");
         }
     }
 
-  if (ctx->connect_script)
+  if (pppd_settings->connect_script)
     {
       do
         {
-          ret = ppp_chat(ctx->tty_fd, ctx->connect_script, 1 /*echo on*/);
+          ret = ppp_chat(ctx->tty_fd, pppd_settings->connect_script, 1 /*echo on*/);
           if (ret < 0)
             {
               printf("ppp: connect script failed\n");
@@ -270,7 +240,7 @@ void ppp_reconnect(struct ppp_context_s *ctx)
                 {
                   retry = PPP_MAX_CONNECT;
 #if PPP_ARCH_HAVE_MODEM_RESET
-                  ppp_arch_modem_reset((char*)ctx->ttyname);
+                  ppp_arch_modem_reset(pppd_settings->ttyname);
 #endif
                   sleep(45);
                 }
@@ -343,10 +313,10 @@ int ppp_arch_putchar(struct ppp_context_s *ctx, u8_t c)
 }
 
 /****************************************************************************
- * Name: pppd_main
+ * Name: pppd
  ****************************************************************************/
 
-int pppd_main(int argc, char **argv)
+int pppd(struct pppd_settings_s *pppd_settings)
 {
   struct pollfd fds[2];
   int ret;
@@ -354,15 +324,9 @@ int pppd_main(int argc, char **argv)
 
   ctx = (struct ppp_context_s*)malloc(sizeof(struct ppp_context_s));
   memset(ctx, 0, sizeof(struct ppp_context_s));
-
-  strcpy((char*)ctx->pap_username, PAP_USERNAME);
-  strcpy((char*)ctx->pap_password, PAP_PASSWORD);
   strcpy((char*)ctx->ifname, "ppp%d");
-  strcpy((char*)ctx->ttyname, "/dev/ttyS2");
 
-  ctx->connect_script = &connect_script;
-  ctx->disconnect_script = &disconnect_script;
-
+  ctx->settings = pppd_settings;
   ctx->if_fd = tun_alloc((char*)ctx->ifname);
   if (ctx->if_fd < 0)
     {
@@ -370,7 +334,7 @@ int pppd_main(int argc, char **argv)
       return 2;
     }
 
-  ctx->tty_fd = open_tty((char*)ctx->ttyname);
+  ctx->tty_fd = open_tty(pppd_settings->ttyname);
   if (ctx->tty_fd < 0)
     {
       close(ctx->tty_fd);
@@ -416,11 +380,9 @@ int pppd_main(int argc, char **argv)
           if (ctx->ip_len > 0)
             {
               ret = write(ctx->if_fd, ctx->ip_buf, ctx->ip_len);
-              //printf("write to tun :%i\n", ret);
               ctx->ip_len = 0;
 
               ret = read(ctx->if_fd, ctx->ip_buf, PPP_RX_BUFFER_SIZE);
-              //printf("read (after write) from tun :%i\n", ret);
               if (ret > 0)
                 {
                   ctx->ip_len = ret;

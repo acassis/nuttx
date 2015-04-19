@@ -660,7 +660,7 @@
 	* examples/dchpd: Added a tiny DHCP server example
 	* net/uip: Correct UDP bind behavior.  It should select a valid port number
 	  if it receives a port number of zero.
-	* netutils/dhcpd:  Corrrect for ZDS compiler.  Fix issue with re-use of a
+	* netutils/dhcpd:  correct for ZDS compiler.  Fix issue with re-use of a
 	  port number. Fixed a number of broadcast-related problems.
 	* eZ80Acclaim!: Add a tiny webserver configuration
 	* eZ80Acclaim!: Fixed an important bug in the EMAC Tx timeout logic. It was
@@ -9187,7 +9187,7 @@
 	  untested (2014-12-10).
 	* configs/tm4c123g-launchpad/src/tm4c_at24.c, tm4c_bringup.c, and other
 	  files:  Add initialization logic for an external AT24 EEPROM.  This
-	  is intended only to suppport testing of the Tiva I2C driver
+	  is intended only to support testing of the Tiva I2C driver
 	  (2014-12-10).
 	* libnx/Makefile, libnx/nxfonts/nxfonts_x11-misc-fixed-*.h, Make.defs,
 	  Makefile.sources, nxfonts_bitmaps.c, graphics/Kconfig, and
@@ -9752,7 +9752,7 @@
 	* configs/freedom-kl26z: Add board support for the Freedom KL26Z board.
 	  From Derek B. Noonburg (2015-02-11).
 
-7.9 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+7.9 2015-04-14 Gregory Nutt <gnutt@nuttx.org>
 
 	* arch/arm/src/tiva:  Add support for the TM4C1294.  Contributed by
 	  Frank Sautter (2015-02-11).
@@ -9828,7 +9828,7 @@
 	* arch/arm/src/tiva/:  Updated files to allow for ADC triggering by the
 	  timer. I’ve cleaned up some parts of the ADC code, too, and fleshed
 	  out the PWM triggering ioctl.  From Calvin Maguranis (2015-02-17).
-	* configs/tm4c123g-launchpad: Add ADC suppport.  From Calvin Maguranis
+	* configs/tm4c123g-launchpad: Add ADC support.  From Calvin Maguranis
 	  (2015-02-17).
 	* fs/fat/fs_mkfatfs.c:  Use DMA memory for mkfatfs when needed. This makes
 	  mkfatfs use fat_dma_alloc() when CONFIG_FAT_DMAMEMORY is set. This is
@@ -9842,7 +9842,7 @@
 	  value of nanoseconds in struct tm.  From Juha Niskanen (2015-02-20).
 	* tm4c123g-launchpad: Add board button interrupt logic.  From Calvin
 	  Maguranis (2015-02-20).
-	* "Tiva: Move GPIIO prototypes out of arch/arm/include/tiva/irq.h to
+	* "Tiva: Move GPIO prototypes out of arch/arm/include/tiva/irq.h to
 	  arch/arm/tiva/tiva_gpio.h where they belong (2015-02-20).
 	* arch/arm/src/tiva: Tiva GPIO clean-up by Calvin Maguranis (2015-02-20).
 	* arch/arm/src/stm32/stm32_pwr.c, stm32_pwr.h, and stm32_rtcc.c: Changes
@@ -9857,7 +9857,7 @@
 	  context to one of the files. From David Sidrane (2015-02-21).
 	* configs/pic32mx-starterkit:  Rename from pic32-starterkit to make
 	  room on the namespace for a pic3mz-starterkit.  Update src/ directory
-	  file naming to match currnet standard.  Refresh configurations.  Move
+	  file naming to match current standard.  Refresh configurations.  Move
 	  linker scripts to a new scripts/directory.  Make sure that it builds
 	  using the Pinquino toolchain (2015-02-21).
 	* arch/mips/src/mips32/Toolchain.mk: Current Pinguino toolchain uses
@@ -9878,7 +9878,7 @@
 	  problems when trying to open the can bus from two different tasks.
 	  SourceForge Patch #46 from Anonymous (2015-02-23).
 	* Tiva TM4c1294: Updates from Frank Sautter (2015-02-24).
-	* fs/aio: Corrrect some backward tests in aio_read() and aio_write():
+	* fs/aio: correct some backward tests in aio_read() and aio_write():
 	  Socket descriptors have higher numbers than file descriptors.  In
 	  aio_contain(),  Copy u.ptr (void *) when initializing aioc and not
 	  the case specific u.aioc_filep.  From Michal Ulianko (2015-02-24).
@@ -9983,7 +9983,7 @@
 	* drivers/mmcsd/mmcsd_spi.c: Debugging and manuals (this one
 	  https://www.sdcard.org/downloads/pls/simplified_specs/part1_410.pdf
 	  and this one https://www.sdcard.org/downloads/pls/simplified_specs/part1_410.pdf)
-	  shows that ACMD23 must be preceeded with CMD55 command as any other
+	  shows that ACMD23 must be preceded with CMD55 command as any other
 	  ACMD commands. Also, after the block reading wait loop must be
 	  inserted before writing the next block of data to the sd card.  From
 	  Dmitry Nikolaev via Jussi Kivilinna (2015-03-13).
@@ -10141,4 +10141,111 @@
 	  make it into call gate logic (2015-04-09).
 	* syscall/syscall_stublookup.c: Fix some errors that crept in recently
 	  (2015-04-09).
+	* libc/time/lib_localtime.c: Inconsistent configuration name:
+	  CONFIG_LIBC_TZDIR vs CONFIG_LIBC_TZ_TZDIR.  Former wins (2015-04-11).
+	* libc/time/lib_calendar2utc.c and lib_mktime.c: Fix an error in time
+	  initialization when there is not RTC and the time is initialized from
+	  a fixed configured value. The call to clock_calendar2utc() was
+	  returning the time in units of seconds.  The initialization logic,
+	  however, was expecting to get time in units of days.  This problem
+	  has been there forever but obviously has not significant impact to
+	  behavior in systems where time is not visible (2015-04-12).
+	* fs/fat/fs_fat32utils.c:  Fix misthink when CONFIG_ENDIAN_BIG=y.  From
+	  Lwazi Dube (2015-04-12).
+	* include/nuttx/net/netdev.h, net/devif/ipv6_input.c,
+	  icmpv6/icmpv6_rsolicit.c and net/icmpv6/icmpv6_solicit.c: Use common
+	  macro(s) for calculating link layer header length.  From Brennan
+	  Ashton (2015-04-13).
+	* apps/netutils/pppd/Kconfig, pppd.c, and ntpv3.h (removed):  Remove
+	  ntpclient header file in and NTP client references from the pppd
+	  dir.  From Brennan Ashton (2015-04-13).
+	* configs/galileo: Remove all references to the Galileo board.  That
+	  port is not going to happen (I don't even have the hardware anymore)
+	  (2015-04-13).
+	* drivers/input/max11802.c:  Fix possible unmatched IRQ restore.  Noted
+	  by Juha Niskanen (2015-04-14).
+	* atexit(): Fix reference to undefined variable in certain
+	  configurations.  From Juha Niskanen (2015-04-14).
+
+7.10 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+
+	* configs/sim/src/sim.h, sim_zoneinfo.c, Makefile, and sim_boot.c: Add
+	  logic to test localtime and TZ database.  See apps/system/README.txt
+	  for info (2015-04-15).
+	* libc/Kconfig: Fix defaults for timezone limits.  They need to be much
+	  larger (2015-04-15).
+	* Watchdog files:  Fix repeated typo wachog.h in several watchdog
+	  drivers (2015-04-15).
+	* configs/boardctl.c and Kconfig:  Add missing causing that caused
+	  failures of PWM test (2015-04-15).
+	* arch/arm/src/stm32: Defines a second interface for the dma2d controller.
+	  Controlling both LTDC and DMA2D was unpractical from the programmers
+	  view because both controllers are to different. LTDC only controls the
+	  display visibility but the DMA2D controller changes the content of the
+	  frame buffer (buffer of the layer).
+
+	  The main features are:
+
+	  1. DMA2D interface
+	     Supports the nuttx pixel formats:
+	     - FB_FMT_RGB8
+	     - FB_FMT_RGB24
+	     - FB_FMT_RGB16_565
+	     Dynamic layer allocation during runtime for the supported formats
+	     - The number of allocatable layer can be configured.
+	     Supported dma2d operation:
+	     - blit (Copy content from source to destination layer) also works
+	       with selectable area.
+	     - blend (Blend two layer and copy the result to a destination layer
+	       which canbe a third layer or one of the source layer) also works
+	       awith selectablerea.
+	     - fillarea (Fill a defined area of the whole layer with a specific
+	       color)
+
+	  As a result of that the dma2d controller can't transfer data from the
+	  core coupled memory, CCM is disabled but usable by the ccm allocator.
+	  Currently the ccm allocator is used for allocating the layer structure
+	  only. For the dma memory (layers frame buffer) memory is allocated from
+	  heap 2 and 3.
+
+	  2. LTDC interface
+	     I have changed the api for the currently non implemented operations:
+	     - blit (Copy content from a dma2d layer to an ltdc layer) also works with
+	       selectable area.
+	     - blend (Blend two dma2d layer and copy the result to a destination ltdc
+	       layer) also  works with selectable area.
+
+	       Note! ltdc layer is a layer referenced by the ltdc interface. dma2d layer
+	       is a layer referenced by the dma2d interface.
+
+	       One of the most important questions for me was, How can i flexible use an
+	       ltdc layer with the dma2d interface, e.g. as source layer for dma2d
+	       operations?
+	       Get the layer id of the related dma2d layer by a special flag when using
+	       getlid() function of the ltdc interface and use the layer id to reference
+	       the specific dma2d layer by the dma2d interface.
+
+	       The ltdc coupled dma2d layers are predefined and can't be dynamically
+	       allocated of freed. They use the same frame buffer memory and the same
+	       color lookup table.
+
+	     Changes:
+	     - layer internal format of the clut table
+	     - interrupt handling for register reload (vertical vblank) instead using
+	       waiting loop
+	     - small fixes and refactoring
+	  From Marco Krahl (2015-04-16).
+	* Add support for the new DMA2D features to the STM32F429i-Disco LTDC
+	  configuration.  From Marco Krahl (2015-04-16).
+	* stdlib.h:  MAX_RAND should be RAND_MAX (2015-04-16).
+	* STM32F429i Disco: (1) Fix a bad return value if the LCD driver is already
+	  initialized. (2) The LCD driver initialization is now performed during the
+	  early boot sequence.  (3) Increased the size of the message queue from 32
+	  to 64 in the lcd configuration.  From Marco, ocram.lhark@yahoo.com
+	  (2015-04-17).
+	* STM23 RTC: Fix an error introduced into stm32_pwr_enablebkp().  That
+	  function must preserve the previous state of backup domain access on
+	  return (2015-04-19).
+	* include/nuttx/usb/hub.h: Add USB hub header file from Kaushal Parikh
+	  (2015-04-18).
 

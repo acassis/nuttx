@@ -37,14 +37,13 @@
 -include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
-APPNAME = pppd
-PRIORITY = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_NETUTILS_PPPD_STACKSIZE)
-
 ASRCS =
 CSRCS =
 
-CSRCS += pppd.c chat.c ppp.c ahdlc.c lcp.c pap.c ipcp.c
+CSRCS += pppd.c chat.c ppp.c ahdlc.c lcp.c ipcp.c
+ifeq ($(CONFIG_NETUTILS_PPPD_PAP),y)
+CSRCS += pap.c
+endif
 
 AOBJS = $(ASRCS:.S=$(OBJEXT))
 COBJS = $(CSRCS:.c=$(OBJEXT))
@@ -83,16 +82,7 @@ $(COBJS): %$(OBJEXT): %.c
 
 install:
 
-# Register application
-
-ifeq ($(CONFIG_NSH_BUILTIN_APPS),y)
-$(BUILTIN_REGISTRY)$(DELIM)$(APPNAME)_main.bdat: $(DEPCONFIG) Makefile
-	$(call REGISTER,$(APPNAME),$(PRIORITY),$(STACKSIZE),$(APPNAME)_main)
-
-context: $(BUILTIN_REGISTRY)$(DELIM)$(APPNAME)_main.bdat
-else
 context:
-endif
 
 .depend: Makefile $(SRCS)
 	$(Q) $(MKDEP) $(ROOTDEPPATH) "$(CC)" -- $(CFLAGS) -- $(SRCS) >Make.dep

@@ -1217,7 +1217,7 @@
 	  standard post-pended prefix value, rather than the full 128-bit netmask
 	  (2015-02-06).
 
-7.9 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+7.9 2015-04-14 Gregory Nutt <gnutt@nuttx.org>
 
 	* apps/examples/ostest: Improved error checking for sem_timedwait()
 	  from Juha Niskanen (2015-02-20).
@@ -1249,4 +1249,32 @@
 	  with menuconfig (2015-04-07).
 	* apps/examples/ostest/sigprocmask.c: Add a simple test of sigprocmask,
 	  sighold, and sigrelse (2015-04-09).
+	* apps/modbus: Includes extensions to support RTU master mode by
+	  Armink(383016632@qq.com):
+	  https://github.com/armink/FreeModbus_Slave-Master-RTT-STM32.  Ported
+	  to NuttX by Darcy Gong.
+	* apps/nshlib:  Allow NSH 'date' command with no hardware RTC.  Thisi
+	  command is useful without an RTC too.  Also, this permits testing on
+	  the simulator which never has an RTC (2015-04-11).
+	* apps/netutils/ppp: Make pppd PAP authentication optional.  From
+	  Brennan Ashton
+	* apps/examples/pppd:  Add PPPD test case.  Split out from
+	  apps/netutils/pppd by Brennan Ashton.
+	* apps/netutils/pppd: Spit up pppd utils.  From Brennan Ashton.
+	* apps/system/zoneinfo:  All logic to build timezone info.  Does not do
+	  much else yet (2015-04-14).
 
+7.10 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+
+	* apps/system/zoneinfo:  Add logic to build a ROMFS file system
+	  containing the timezone data (2015-04-15).
+	* apps/nshlib/nsh_timcmds.c: Check return values from time functions
+	  (2015-04-15).
+	* apps/examples/nxlines:  Fix missing right bracket that causes
+	  compile error when CONFIG_NX_XYINPUT=y.  From Librae (2015-04-16).
+	* apps/examples: When boardctl() fails, need to print errno not the
+	  returned value which will always be -1 (2015-04-16).
+	* apps/examples: Correct use of the BOARDIOC_GRAPHICS_SETUP boardctl()
+	  call (2015-04-16).
+	* apps/examples/ltdc:  Add testing support for the STM32 LTDC's 2D
+	  DMA. From Marco Krahl (2015-04-16).
