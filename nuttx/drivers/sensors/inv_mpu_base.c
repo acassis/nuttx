@@ -503,21 +503,17 @@ static int mpu_set_int_enable(struct mpu_inst_s* inst, bool enable)
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-int inv_mpu_reg_dump(struct mpu_inst_s* inst)
+int mpu_reg_dump(struct mpu_inst_s* inst)
 {
-    uint8_t ii;
     uint8_t data;
+    const struct mpu_reg_desc_s * reg_desc = mpu6500_reg_desc;
 
-    for (ii = 0; ii < INV_MPU_NUM_REG; ii++) 
+    while (reg_desc->desc != NULL )
     {
-
-        if (ii == INV_MPU_FIFO_R_W || ii == INV_MPU_MEM_R_W)
-            continue;
-
-        if ( mpu_read(inst, ii, &data, 1) < 0 )
+        if ( mpu_read(inst, reg_desc->reg, &data, 1) < 0 )
             return -1;
 
-        invdbg("%#5x: %#5x\r\n", ii, data);
+        dbg("%#5x: %#5x (%s)\n", reg_desc->reg, data,reg_desc->desc);
 
     }
     return 0;
@@ -1672,7 +1668,7 @@ int mpu_set_compass_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
 }
 
 /*******************************************************************************
- * Name: mpu_get_gyro_sensibilty
+ * Name: mpu_get_gyro_sensibility
  *
  * Description:
  *  Get gyro sensitivity scale factor.
@@ -1685,7 +1681,7 @@ int mpu_set_compass_sample_rate(struct mpu_inst_s* inst,uint16_t rate)
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-int mpu_get_gyro_sensibilty(struct mpu_inst_s* inst,float *sensitivity)
+int mpu_get_gyro_sensibility(struct mpu_inst_s* inst,float *sensitivity)
 {
     switch (inst->gyro_fsr) 
     {
@@ -1699,20 +1695,20 @@ int mpu_get_gyro_sensibilty(struct mpu_inst_s* inst,float *sensitivity)
 }
 
 /*******************************************************************************
- * Name: mpu_get_accel_sensibilty
+ * Name: mpu_get_accel_sensibility
  *
  * Description:
  *  Get accel sensitivity scale factor.
  * 
  * Params
  *  inst        instance of inv_mpu driver.
- *  sensitivity Conversion from hardware units to dps.
+ *  sensitivity Conversion from hardware units to mG.
  *
  * Return
  *  0 on success, negative value in case of error.
  ******************************************************************************/
 
-int mpu_get_accel_sensibilty(struct mpu_inst_s* inst,uint16_t *sensitivity)
+int mpu_get_accel_sensibility(struct mpu_inst_s* inst,uint16_t *sensitivity)
 {
     switch (inst->accel_fsr) 
     {

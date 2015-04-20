@@ -178,7 +178,15 @@
  *
  */
 
-#define MPU_CALIBRATION   _SNIOC(0x0009)
+#define MPU_CALIBRATION     _SNIOC(0x0009)
+
+/* MPU_DUMP_REG dump all register.
+ *
+ * Argument: None
+ *
+ */
+
+#define MPU_DUMP_REG        _SNIOC(0x000A)
 
 /********************************************************************************************
  * Public Types
@@ -234,6 +242,11 @@ struct mpu_data_dmp_s {
     struct mpu_quat_s   quat;
     struct mpu_axes_s   accel;
     struct mpu_axes_s   gyro;
+};
+
+struct mpu_reg_desc_s {
+    const char * desc;
+    uint8_t reg;
 };
 
 struct mpu_low_s;
@@ -328,8 +341,8 @@ int mpu_get_compass_fsr(struct mpu_inst_s* inst,uint16_t *fsr);
 
 /* sensibility */
 
-int mpu_get_accel_sensibilty(   struct mpu_inst_s* inst, uint16_t *sens);
-int mpu_get_gyro_sensibilty(    struct mpu_inst_s* inst, float *sens);
+int mpu_get_accel_sensibility(   struct mpu_inst_s* inst, uint16_t *sens);
+int mpu_get_gyro_sensibility(    struct mpu_inst_s* inst, float *sens);
 
 /* sample rate */
 

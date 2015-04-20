@@ -79,6 +79,14 @@
 #   define BOARD_DEFAULT_MPU_HZ (10) /* in Hz */
 #endif
 
+#ifndef BOARD_DEFAULT_GYRO_FSR
+#   define BOARD_DEFAULT_GYRO_FSR (2000) /* in DPS */
+#endif
+
+#ifndef BOARD_DEFAULT_ACCEL_FSR
+#   define BOARD_DEFAULT_ACCEL_FSR (16) /* in G */
+#endif
+
 #ifndef BOARD_ENABLES_DMP_FEATURES
 #   define BOARD_ENABLES_DMP_FEATURES ( DMP_FEATURE_6X_LP_QUAT      | \
                                         DMP_FEATURE_SEND_RAW_ACCEL  | \
@@ -552,6 +560,10 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
                                   __CALIBRATION_SAMPLE_NBR);
             break;
 
+        case MPU_DUMP_REG:
+            ret = mpu_reg_dump(dev->inst);
+            break;
+
         case MPU_FREQUENCY:
             if ( arg < UINT16_MAX )
             {
@@ -676,6 +688,13 @@ int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
 
     if ( ret == 0 )
         ret = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
+
+    if ( ret == 0 )
+        ret = mpu_set_accel_fsr(dev->inst,BOARD_DEFAULT_ACCEL_FSR);
+
+    if ( ret == 0 )
+        ret = mpu_set_gyro_fsr(dev->inst,BOARD_DEFAULT_GYRO_FSR);
+
 
 #ifdef CONFIG_INVENSENSE_DMP
     if ( dev->dmp == NULL )

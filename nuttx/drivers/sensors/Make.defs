@@ -45,6 +45,8 @@ ifeq ($(CONFIG_SENSORS_INVENSENSE),y)
 
   CSRCS += inv_mpu_base.c
   CSRCS += inv_mpu_fileops.c
+  CSRCS += inv_mpu6500_reg.c
+  CSRCS += inv_mpu6050_reg.c
 
 # Include add-on DMP Invensense driver if present and selected (see misc/drivers)
 

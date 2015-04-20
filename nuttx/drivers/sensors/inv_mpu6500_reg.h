@@ -127,5 +127,9 @@
 #define INV_MPU_MIN_GYRO_DPS        (20.f)  /* 20 dps for Gyro */
 #define INV_MPU_MAX_ACCEL_G_OFFSET  (.5f)   /* 500 mg for Accel */
 
+struct mpu_reg_desc_s;
+
+extern const struct mpu_reg_desc_s mpu6500_reg_desc[];
+
 #endif  /* _DRIVERS_SENSOR_INV_MPU6500_H_ */
 
