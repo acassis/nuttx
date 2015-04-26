@@ -91,6 +91,15 @@ config PNBFANO_BOARD_BPP
 		Pixels per pixel to use.  Valid options include 1, 2, 4, 8, 16, 24,
 		and 32.  Default is 32.
 
+config PNBFANO_AUTO_USBDEV_MSC
+	bool "Enable Automatic usbmsc."
+	depends on USBDEV
+	default y if PNBFANO_BOARD_V1
+	---help---
+		Enables automatic enable/disable usbmsc on usb connection/disconnection
+		of usb cable.
+
+
 endmenu
 
 endif

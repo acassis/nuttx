@@ -331,4 +331,9 @@ void efm32_setled(int led, bool ledon);
 void efm32_setleds(uint8_t ledset);
 #endif
 
+int efm32_usbdev_is_connected(void);
+int efm32_usbdev_is_enable(void);
+int efm32_usbdev_disable_usbmsc(void);
+int efm32_usbdev_enable_usbmsc(void);
+
 #endif /* __CONFIGS_EFM32_PNBFANO_INCLUDE_BOARD_H */

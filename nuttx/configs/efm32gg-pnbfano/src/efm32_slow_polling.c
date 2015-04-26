@@ -92,7 +92,8 @@ static void efm32_slow_poll_worker(FAR void *arg)
 
     EFM32_SLOW_POLL_LOG("slow poll work...\n");
 
-#if CONFIG_USBDEV
+#if ( defined( CONFIG_PNBFANO_AUTO_USBDEV_MSC ) || \
+      defined (CONFIG_USBDEV_TRACE) )
     efm32_usbdev_slow_poll();
 #endif
 

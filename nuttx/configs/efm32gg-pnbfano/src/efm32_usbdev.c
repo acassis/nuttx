@@ -66,13 +66,14 @@
 #ifdef CONFIG_USBDEV_TRACE
 #   include <nuttx/usb/usbdev_trace.h>
 
-#ifndef TRACE_BITSET
-//#  define TRACE_BITSET              (TRACE_ALLBITS)
-#  define TRACE_BITSET              (0)
+#   ifndef TRACE_BITSET
+//#       define TRACE_BITSET              (TRACE_ALLBITS)
+#       define TRACE_BITSET              (0)
 #endif
 
 #endif
 
+#include <arch/board/board.h>
 
 /******************************************************************************\
  * Definitions
@@ -86,8 +87,6 @@
  * Private Functions
  ******************************************************************************/
 
-static int efm32_usbmsc_connect(void);
-static int efm32_usbmsc_discon(void);
 
 /******************************************************************************\
  * Private Data
@@ -291,11 +290,100 @@ static int usbmsc_enumerate(struct usbtrace_s *trace, void *arg)
 #endif
 
 
-static int efm32_usbmsc_connect(void)
+
+/******************************************************************************
+ * Public Functions
+ *****************************************************************************/
+
+/*******************************************************************************
+ * Name:  efm32_usbdev_init
+ *
+ * Description:
+ *   initialization of usbdev board specifique part
+ *
+ ******************************************************************************/
+int efm32_usbdev_init(void)
+{
+#ifdef CONFIG_USBDEV_TRACE
+    usbtrace_enable(TRACE_BITSET);
+#endif
+
+    /* Enable voltage regulator output sensing to detect usb plug/unplug */
+
+    modifyreg32(EFM32_USB_CTRL,0,_USB_CTRL_VREGOSEN_MASK);
+
+    return 0;
+}
+
+/*******************************************************************************
+ * Name:  efm32_usbdev_is_connected
+ *
+ * Description:
+ *   Check VBUS to detect usb connection/disconnection.
+ *
+ * Return 
+ *  1 on connected
+ *  0 on not connected
+ * -1 error (USB not active).
+ *
+ ******************************************************************************/
+int efm32_usbdev_is_connected(void)
+{
+
+    /* check USB regulator output sensing only if Active */
+
+    if ( ( getreg32(EFM32_USB_CTRL) & _USB_CTRL_VREGOSEN_MASK ) == 0 )
+        return -1;
+
+    /* Check regulator output */
+
+    if ( getreg32(EFM32_USB_STATUS) & _USB_STATUS_VREGOS_MASK )
+        return 1;
+
+    return 0;
+}
+
+/*******************************************************************************
+ * Name:  efm32_usbdev_is_enable
+ *
+ * Description:
+ *   disable usbmsc
+ * Return 
+ *  1 on enabled
+ *  0 on disabled
+ *
+ ******************************************************************************/
+int efm32_usbdev_is_enable(void)
+{
+    if ( handle )
+        return 1;
+    return 0;
+}
+
+/*******************************************************************************
+ * Name:  efm32_usbdev_enable_usbmsc
+ *
+ * Description:
+ *   disable usbmsc
+ * Return 
+ *  1 on enabled
+ *  0 on disabled
+ * -1 on error.
+ *
+ ******************************************************************************/
+int efm32_usbdev_enable_usbmsc(void)
 {
 #ifdef CONFIG_USBMSC
     int ret = 0;
+#endif
 
+    if ( handle )
+    {
+        speLOG(LOG_DEBUG,"Already connected with NLUNS=%d\n", __USBMSC_NLUNS);
+        return 0;
+    }
+
+#ifdef CONFIG_USBMSC
     if ( ret >= 0 )
     {
         speLOG(LOG_INFO,"Configuring with NLUNS=%d\n", __USBMSC_NLUNS);
@@ -333,46 +421,33 @@ static int efm32_usbmsc_connect(void)
 
     if ( ret < 0 )
     {
-        efm32_usbmsc_discon();
+        efm32_usbdev_disable_usbmsc();
         return -1;
     }
 
     return 0;
 }
 
-static int efm32_usbmsc_discon(void)
-{
-#ifdef CONFIG_USBMSC
-    if ( handle )
-    {
-        speLOG(LOG_ERR,"USB uninitialization\n");
-        usbmsc_uninitialize(handle);
-        handle = NULL;
-    }
-#endif
-
-    return 0;
-}
-/******************************************************************************
- * Public Functions
- *****************************************************************************/
-
 /*******************************************************************************
- * Name:  efm32_usbdev_init
+ * Name:  efm32_usbdev_disable_usbmsc
  *
  * Description:
- *   initialization of usbdev board specifique part
+ *   disable usbmsc
  *
  ******************************************************************************/
-int efm32_usbdev_init(void)
+int efm32_usbdev_disable_usbmsc(void)
 {
-#ifdef CONFIG_USBDEV_TRACE
-    usbtrace_enable(TRACE_BITSET);
+    if ( handle == NULL )
+    {
+        speLOG(LOG_DEBUG,"USB Already uninitialized\n");
+        return 0;
+    }
+
+#ifdef CONFIG_USBMSC
+    speLOG(LOG_ERR,"USB uninitialization\n");
+    usbmsc_uninitialize(handle);
+    handle = NULL;
 #endif
-
-    /* Enable voltage regulator output sensing to detect usb plug/unplug */
-
-    modifyreg32(EFM32_USB_CTRL,0,_USB_CTRL_VREGOSEN_MASK);
 
     return 0;
 }
@@ -388,6 +463,7 @@ int efm32_usbdev_init(void)
 void efm32_usbdev_slow_poll(void)
 {
 
+#ifdef CONFIG_PNBFANO_AUTO_USBDEV_MSC
     /* check USB regulator output sensing only if Active */
 
     if ( getreg32(EFM32_USB_CTRL) & _USB_CTRL_VREGOSEN_MASK )
@@ -395,23 +471,18 @@ void efm32_usbdev_slow_poll(void)
         /* Check regulator output */
         if ( getreg32(EFM32_USB_STATUS) & _USB_STATUS_VREGOS_MASK )
         {
-            if ( handle == NULL )
-            {
-                efm32_usbmsc_connect();
-            }
+            efm32_usbdev_enable_usbmsc();
         }
         else
         {
-            if ( handle != NULL )
-            {
-                efm32_usbmsc_discon();
-            }
+            efm32_usbdev_disable_usbmsc();
         }
     }
     else
     {
         speLOG(LOG_WARNING,"USB regulator output sensing disabled !\n");
     }
+#endif
 
 #ifdef CONFIG_USBDEV_TRACE
     {
