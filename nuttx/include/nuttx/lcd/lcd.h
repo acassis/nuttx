@@ -115,6 +115,18 @@ struct lcd_planeinfo_s
    */
 
   uint8_t  bpp;
+
+#ifdef CONFIG_NX_MANUAL_REFRESH
+  /* This method can be used to refresh all LCD:
+   * When CONFIG_NX_MANUAL_REFRESH is enable putrun will only put data into 
+   * a frame buffer. Call this function to valid changes.
+   *
+   *  None
+   */
+
+  int (*refresh)(void);
+#endif
+
 };
 
 /* This structure defines an LCD interface */

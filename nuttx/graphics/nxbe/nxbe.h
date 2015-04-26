@@ -465,6 +465,25 @@ void nxbe_clipnull(FAR struct nxbe_clipops_s *cops,
                    FAR struct nxbe_plane_s *plane,
                    FAR const struct nxgl_rect_s *rect);
 
+/****************************************************************************
+ * Name: nxbe_refresh
+ *
+ * Description:
+ *   Refresh screen. apply all change on screen.
+ *
+ * Input Parameters:
+ *   wnd  - The window structure reference
+ *
+ * Return:
+ *   None
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NX_MANUAL_REFRESH
+void nxbe_refresh(FAR struct nxbe_window_s *wnd);
+#endif
+
+
 #undef EXTERN
 #if defined(__cplusplus)
 }

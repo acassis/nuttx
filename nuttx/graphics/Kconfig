@@ -39,6 +39,16 @@ config NX_BGCOLOR
 		logic would have to be extended if you want to support multiple
 		color planes.
 
+config NX_MANUAL_REFRESH
+	bool "Manual screen refresh"
+	default n
+	depends on NX_LCDDRIVER
+	---help---
+		Data will be stored in a frame buffer and it will apply only when 
+		nx_refresh is called.
+		Currently work only on st7565 driver.
+
+
 config NX_WRITEONLY
 	bool "Write-only Graphics Device"
 	default y if NX_LCDDRIVER && LCD_NOGETRUN

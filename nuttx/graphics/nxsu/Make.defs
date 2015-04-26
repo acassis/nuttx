@@ -42,3 +42,8 @@ NX_CSRCS += nx_openwindow.c nx_raise.c nx_redrawreq.c nx_releasebkgd.c
 NX_CSRCS += nx_requestbkgd.c nx_setpixel.c nx_setsize.c nx_setbgcolor.c
 NX_CSRCS += nx_setposition.c nx_constructwindow.c nxsu_redrawreq.c
 NX_CSRCS += nxsu_reportposition.c
+
+ifeq ($(CONFIG_NX_MANUAL_REFRESH),y)
+    NX_CSRCS += nx_refresh.c
+endif
+

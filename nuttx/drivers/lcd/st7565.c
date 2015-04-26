@@ -236,6 +236,12 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col,
 static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t * buffer,
                          size_t npixels);
 
+static void up_refresh(FAR struct st7565_dev_s *priv);
+
+#ifdef CONFIG_NX_MANUAL_REFRESH
+static int st7565_refresh(void);
+#endif
+
 /* LCD Configuration */
 
 static int st7565_getvideoinfo(FAR struct lcd_dev_s *dev,
@@ -299,6 +305,9 @@ static const struct lcd_planeinfo_s g_planeinfo =
 {
   .putrun  = st7565_putrun,           /* Put a run into LCD memory */
   .getrun  = st7565_getrun,           /* Get a run from LCD memory */
+#ifdef CONFIG_NX_MANUAL_REFRESH
+  .refresh = st7565_refresh,          /* refresh all screen */
+#endif
   .buffer  = (uint8_t *) g_runbuffer, /* Run scratch buffer */
   .bpp     = ST7565_BPP,              /* Bits-per-pixel */
 };
@@ -567,6 +576,8 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col,
 #endif
     }
 
+#ifndef CONFIG_NX_MANUAL_REFRESH
+
   /* Select and lock the device */
 
   st7565_select(priv);
@@ -592,6 +603,8 @@ static int st7565_putrun(fb_coord_t row, fb_coord_t col,
   /* Unlock and de-select the device */
 
   st7565_deselect(priv);
+
+#endif
 
   return OK;
 }
@@ -723,6 +736,27 @@ static int st7565_getrun(fb_coord_t row, fb_coord_t col, FAR uint8_t * buffer,
 
   return OK;
 }
+
+/**************************************************************************************
+ * Name:  st7565_refresh
+ *
+ * Description:
+ *   refresh all screen
+ *
+ *
+ **************************************************************************************/
+
+#ifdef CONFIG_NX_MANUAL_REFRESH
+static int st7565_refresh(void)
+{
+
+  FAR struct st7565_dev_s *priv = &g_st7565dev;
+
+  up_refresh(priv);
+
+  return 0;
+}
+#endif
 
 /**************************************************************************************
  * Name:  st7565_getvideoinfo
@@ -892,21 +926,18 @@ static int st7565_setcontrast(struct lcd_dev_s *dev, unsigned int contrast)
 }
 
 /**************************************************************************************
- * Name:  up_clear
+ * Name:  up_refresh
  *
  * Description:
- *   Clear the display.
+ *   refresh all screen
+ *
  *
  **************************************************************************************/
 
-static inline void up_clear(FAR struct st7565_dev_s *priv)
+static void up_refresh(FAR struct st7565_dev_s *priv)
 {
-  int page;
+
   int i;
-
-  /* Clear the framebuffer */
-
-  memset(priv->fb, 0x00, ST7565_FBSIZE);
 
   /* Select and lock the device */
 
@@ -914,7 +945,7 @@ static inline void up_clear(FAR struct st7565_dev_s *priv)
 
   /* Go throw all 8 pages */
 
-  for (page = 0, i = 0; i < 8; i++)
+  for (i = 0; i < 8; i++)
     {
       /* Select command transfer */
 
@@ -932,13 +963,32 @@ static inline void up_clear(FAR struct st7565_dev_s *priv)
 
       /* Then transfer all 96 columns of data */
 
-      (void)st7565_send_data_buf(priv, &priv->fb[page * ST7565_XRES],
+      (void)st7565_send_data_buf(priv, &priv->fb[i * ST7565_XRES],
                                  ST7565_XRES);
     }
 
   /* Unlock and de-select the device */
 
   st7565_deselect(priv);
+
+}
+/**************************************************************************************
+ * Name:  up_clear
+ *
+ * Description:
+ *   Clear the display.
+ *
+ **************************************************************************************/
+
+static inline void up_clear(FAR struct st7565_dev_s *priv)
+{
+
+  /* Clear the framebuffer */
+
+  memset(priv->fb, 0x00, ST7565_FBSIZE);
+
+  up_refresh(priv);
+
 }
 
 /**************************************************************************************

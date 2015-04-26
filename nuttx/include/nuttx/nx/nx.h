@@ -931,6 +931,24 @@ int nx_mousein(NXHANDLE handle, nxgl_coord_t x, nxgl_coord_t y, uint8_t buttons)
 #endif
 
 /****************************************************************************
+ * Name: nx_refresh
+ *
+ * Description:
+ *  Refresh all screen, appply all change to screen.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Return:
+ *   OK on success; ERROR on failure with errno set appropriately
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NX_MANUAL_REFRESH
+int nx_refresh(NXWINDOW hwnd);
+#endif
+
+/****************************************************************************
  * NX-Internal Functions
  ****************************************************************************/
 
