@@ -1,8 +1,10 @@
 /****************************************************************************
- * arch/z80/src/z180/z180_irq.c
+ * arch/arm/src/stm32/stm32_exti_pwr.c
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright (C) 2009, 2011-2012, 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Haltian Ltd. All rights reserved.
+ *   Authors: Gregory Nutt <gnutt@nuttx.org>
+ *            Dmitry Nikolaev <dmitry.nikolaev@haltian.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,68 +40,65 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/irq.h>
+#include <nuttx/arch.h>
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <errno.h>
 
-#include <nuttx/arch.h>
-#include <nuttx/irq.h>
+#include <arch/irq.h>
 
-#include <arch/io.h>
-
-#include "switch.h"
-#include "z180_iomap.h"
-#include "up_internal.h"
+#include "up_arch.h"
+#include "chip.h"
+#include "stm32_gpio.h"
+#include "stm32_exti.h"
+#include "stm32_exti_pwr.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/* This holds a references to the current interrupt level register storage
- * structure.  If is non-NULL only during interrupt processing.
- */
-
-volatile chipreg_t *current_regs;
-
-/* This holds the value of the MMU's CBR register.  This value is set to the
- * interrupted tasks's CBR on interrupt entry, changed to the new task's CBR if
- * an interrupt level context switch occurs, and restored on interrupt exit.  In
- * this way, the CBR is always correct on interrupt exit.
- */
-
-uint8_t current_cbr;
-
-/* The interrupt vector table is exported by z180_vectors.asm or
- * z180_romvectors.asm with the name up_vectors:
- */
-
-extern uintptr_t up_vectors[16];
-
-/****************************************************************************
  * Private Data
  ****************************************************************************/
 
+/* Interrupt handlers attached to the PVD EXTI */
+
+static xcpt_t stm32_exti_pvd_callback;
+
 /****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+ /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: z180_seti
+ * Name: stm32_exti_pvd_isr
  *
  * Description:
- *   Input byte from port p
+ *   EXTI PVD interrupt service routine/dispatcher
  *
  ****************************************************************************/
 
-static void z180_seti(uint8_t value) __naked
+static int stm32_exti_pvd_isr(int irq, void *context)
 {
-  __asm
-	ld      a, 4(ix)	;value
-	ld      l, a
-  __endasm;
+  int ret = OK;
+
+  /* Clear the pending EXTI interrupt */
+
+  putreg32(EXTI_PVD_LINE, STM32_EXTI_PR);
+
+  /* And dispatch the interrupt to the handler */
+
+  if (stm32_exti_pvd_callback)
+    {
+      ret = stm32_exti_pvd_callback(irq, context);
+    }
+
+  return ret;
 }
 
 /****************************************************************************
@@ -107,77 +106,64 @@ static void z180_seti(uint8_t value) __naked
  ****************************************************************************/
 
 /****************************************************************************
- * Name: irqsave
+ * Name: stm32_exti_pvd
  *
  * Description:
- *   Disable all interrupts; return previous interrupt state
+ *   Sets/clears EXTI PVD interrupt.
+ *
+ * Parameters:
+ *  - rising/falling edge: enables interrupt on rising/falling edge
+ *  - event:  generate event when set
+ *  - func:   when non-NULL, generate interrupt
+ *
+ * Returns:
+ *   The previous value of the interrupt handler function pointer.  This
+ *   value may, for example, be used to restore the previous handler when
+ *   multiple handlers are used.
  *
  ****************************************************************************/
 
-irqstate_t irqsave(void) __naked
+xcpt_t stm32_exti_pvd(bool risingedge, bool fallingedge, bool event,
+                      xcpt_t func)
 {
-  __asm
-	ld	a, i		; AF Parity bit holds interrupt state
-	di			; Interrupts are disabled
-	push	af		; Return AF in HL
-	pop	hl		;
-	ret			;
-  __endasm;
-}
+  xcpt_t oldhandler;
 
-/****************************************************************************
- * Name: irqrestore
- *
- * Description:
- *   Restore previous interrupt state
- *
- ****************************************************************************/
+  /* Get the previous GPIO IRQ handler; Save the new IRQ handler. */
 
-void irqrestore(irqstate_t flags) __naked
-{
-  __asm
-	di			; Assume disabled
-	pop	hl		; HL = return address
-	pop	af		; AF Parity bit holds interrupt state
-	jp	po, statedisable
-	ei
-statedisable:
-	push	af		; Restore stack
-	push	hl		;
-	ret			; and return
-  __endasm;
-}
+  oldhandler = stm32_exti_pvd_callback;
+  stm32_exti_pvd_callback = func;
 
-/****************************************************************************
- * Name: up_irqinitialize
- *
- * Description:
- *   Initialize and enable interrupts
- *
- ****************************************************************************/
+  /* Install external interrupt handlers (if not already attached) */
 
-void up_irqinitialize(void)
-{
-  uint16_t vectaddr = (uint16_t)up_vectors;
-  uint8_t regval;
+  if (func)
+    {
+      irq_attach(STM32_IRQ_PVD, stm32_exti_pvd_isr);
+      up_enable_irq(STM32_IRQ_PVD);
+    }
+  else
+    {
+      up_disable_irq(STM32_IRQ_PVD);
+    }
 
-  /* Initialize the I and IL registers so that the interrupt vector table
-   * is used.
-   */
+  /* Configure rising/falling edges */
 
-  regval = (uint8_t)(vectaddr >> 8);
-  z180_seti(regval);
+  modifyreg32(STM32_EXTI_RTSR,
+              risingedge ? 0 : EXTI_PVD_LINE,
+              risingedge ? EXTI_PVD_LINE : 0);
+  modifyreg32(STM32_EXTI_FTSR,
+              fallingedge ? 0 : EXTI_PVD_LINE,
+              fallingedge ? EXTI_PVD_LINE : 0);
 
-  regval = (uint8_t)(vectaddr & IL_MASK);
-  outp(Z180_INT_IL, regval);
+  /* Enable Events and Interrupts */
 
-  /* Disable external interrupts */
+  modifyreg32(STM32_EXTI_EMR,
+              event ? 0 : EXTI_PVD_LINE,
+              event ? EXTI_PVD_LINE : 0);
+  modifyreg32(STM32_EXTI_IMR,
+              func ? 0 : EXTI_PVD_LINE,
+              func ? EXTI_PVD_LINE : 0);
 
-  outp(Z180_INT_ITC, 0);
+  /* Return the old IRQ handler */
 
-  /* And finally, enable interrupts (including the timer) */
-
-#ifndef CONFIG_SUPPRESS_INTERRUPTS
-  irqrestore(Z180_C_FLAG);
-#endif
+  return oldhandler;
 }

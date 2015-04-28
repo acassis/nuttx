@@ -4526,7 +4526,7 @@
 	* arch/arm/src/Makefile:  The variable NUTTX already includes
 	  the extension $(EXEEXT).  So remove the second extension
 	  $(NUTTX)$(EXEEXT) in two places (2013-4-7).
-	* arch/arm/src/lpc17xx/lpc17_gpioint.c:  Disable interrrupts in
+	* arch/arm/src/lpc17xx/lpc17_gpioint.c:  Disable interrupts in
 	  lpc17_setintedge().  This logic must be atomic because it can be
 	  re-entered before it completes enabled interrupts, sometimes
 	  leaving the interrupts in a strange state (2013-4-7).
@@ -10252,4 +10252,16 @@
 	  domain write access when setting the time.  From Darcy Gong (2015-04-19).
 	* include/time.h:  Add prototypes for localtime() and localtimer_r()
 	  (2015-04-21).
-
+	* include/assert.h: Wrap definitions of assertion macros in do while.
+	  Suggested by orbitalfox (2015-04-22).
+	* sched/semaphore/sem_wait.c:  Missing comma on debug statement caused
+	  compile error with DEBUG on.  Why hasn't that been noted before?
+	  (2015-04-23).
+	* drivers/lcd and include/nuttx/drivers: RA8875 LCD driver contributed
+	  by Marten Svanfeldt (2015-04-24).
+	* arch/arm/src/stm32/chip/stm32_pwr.c and .h: Adds support for STM32's
+	  Programmable Voltage Detector (PVD) feature. Register access is behind
+	  CONFIG_STM32_ENERGYLITE as the feature has not been verified for
+	  F1/F2/F4 etc. manuals. Tested on STM32L1. PVD interrupt looks generic,
+	  at least #defines it needs are in headers for every chip variant.  By
+	  Dmitry Nikolaev, submitted by Juha Niskanen (2015-04-28).
