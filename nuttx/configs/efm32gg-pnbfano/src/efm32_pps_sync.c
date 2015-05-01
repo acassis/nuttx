@@ -105,6 +105,10 @@ static const struct file_operations gpio_pps_ops =
  ****************************************************************************/
 typedef struct 
 {
+    /* open counter */
+
+    int     open_count;
+
     /* Poll event semaphore */
 
     sem_t   *poll_sem;
@@ -378,6 +382,7 @@ int efm32_gpio_pps_init( void )
 
     memset(dev,0,sizeof(*dev));
 
+    //dev->open_count = 0; already done */
     //dev->poll_sem = NULL; already done */
     sem_init(&dev->rd_sem, 0, 0);
     sem_init(&dev->mutex,  0, 1);
@@ -408,12 +413,22 @@ int efm32_gpio_pps_init( void )
 
 static int efm32_gpio_pps_open(file_t * filep)
 {
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR efm32_gpio_pps_t *dev    = inode->i_private;
 
     ASSERT( dev != NULL );
 
-    efm32_gpioirqenable(GPIO_PPS_IRQ);
+    res = efm32_gpio_pps_takesem(&dev->mutex, true);
+    if (res < 0)
+        return res;
+
+    dev->open_count++;
+
+    if ( dev->open_count == 1 )
+        efm32_gpioirqenable(GPIO_PPS_IRQ);
+
+    efm32_gpio_pps_givesem( &dev->mutex );
 
     return OK;
 }
@@ -424,12 +439,22 @@ static int efm32_gpio_pps_open(file_t * filep)
 
 static int efm32_gpio_pps_close(file_t * filep)
 {
-    //FAR struct inode *inode     = filep->f_inode;
-    //FAR efm32_gpio_pps_t *dev    = inode->i_private;
+    int res;
+    FAR struct inode *inode     = filep->f_inode;
+    FAR efm32_gpio_pps_t *dev    = inode->i_private;
 
-    efm32_gpioirqdisable(GPIO_PPS_IRQ);
+    res = efm32_gpio_pps_takesem(&dev->mutex, true);
+    if (res < 0)
+        return res;
 
-    /* nothing to do */
+    dev->open_count--;
+
+    DEBUGASSERT(dev->open_count >= 0);
+
+    if ( dev->open_count == 0 )
+        efm32_gpioirqdisable(GPIO_PPS_IRQ);
+
+    efm32_gpio_pps_givesem( &dev->mutex );
 
     return OK;
 }
@@ -441,15 +466,17 @@ static int efm32_gpio_pps_close(file_t * filep)
 
 static int efm32_gpio_pps_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR efm32_gpio_pps_t *dev    = inode->i_private;
 
-    int res = 0;
     irqstate_t flags;
 
     ASSERT( dev != NULL );
 
-    sem_wait( &dev->mutex );
+    res = efm32_gpio_pps_takesem(&dev->mutex, true);
+    if (res < 0)
+        return res;
 
     switch(cmd)
     {
@@ -466,7 +493,7 @@ static int efm32_gpio_pps_ioctl(FAR struct file *filep, int cmd, unsigned long a
             return -EINVAL;
     }
 
-    sem_post( &dev->mutex );
+    efm32_gpio_pps_givesem( &dev->mutex );
 
     return res;
 }
@@ -478,23 +505,13 @@ static int efm32_gpio_pps_ioctl(FAR struct file *filep, int cmd, unsigned long a
 #ifndef CONFIG_DISABLE_POLL
 static int efm32_gpio_pps_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
 {
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR efm32_gpio_pps_t *dev    = inode->i_private;
 
-    int res = 0;
-
-    /* Are we setting up the poll?  Or tearing it down? */
-
     res = efm32_gpio_pps_takesem(&dev->mutex, true);
-
     if (res < 0)
-    {
-        /* A signal received while waiting for access to the poll data
-         * will abort the operation.
-         */
-
         return res;
-    }
 
     if (setup)
     {
@@ -545,6 +562,7 @@ errout:
 
 static ssize_t efm32_gpio_pps_read(file_t * filep, FAR char *buf, size_t buflen)
 {
+    int res;
     FAR struct inode *inode      = filep->f_inode;
     FAR efm32_gpio_pps_t *dev    = inode->i_private;
 
@@ -557,7 +575,9 @@ static ssize_t efm32_gpio_pps_read(file_t * filep, FAR char *buf, size_t buflen)
         return -EINVAL;
     }
 
-    sem_wait( &dev->mutex );
+    res = efm32_gpio_pps_takesem(&dev->mutex, true);
+    if (res < 0)
+        return res;
 
     while (size < buflen)
     {
@@ -598,7 +618,7 @@ static ssize_t efm32_gpio_pps_read(file_t * filep, FAR char *buf, size_t buflen)
         size += len; 
     }
 
-    sem_post( &dev->mutex );
+    efm32_gpio_pps_givesem( &dev->mutex );
 
     return size;
 }

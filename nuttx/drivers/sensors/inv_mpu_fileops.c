@@ -108,6 +108,7 @@
 typedef FAR struct file file_t;
 
 struct mpu_dev_s {
+    int     open_count;
     struct mpu_inst_s* inst;
 #ifdef CONFIG_INVENSENSE_DMP
     struct dmp_s *dmp;
@@ -203,20 +204,20 @@ static int mpu_takesem(FAR sem_t *sem, bool errout)
  ******************************************************************************/
 static inline int mpu_get_packet_nbr(struct mpu_dev_s* dev)
 {
-    int ret;
+    int res;
 
 #ifdef CONFIG_INVENSENSE_DMP
     if ( dev->dmp )
     {
-        ret = dmp_fifo_packet_nbr(dev->dmp);
+        res = dmp_fifo_packet_nbr(dev->dmp);
     }
     else
 #endif
     {
-        ret = mpu_fifo_packet_nbr(dev->inst);
+        res = mpu_fifo_packet_nbr(dev->inst);
     }
 
-    return ret;
+    return res;
 }
 
 /****************************************************************************
@@ -244,13 +245,12 @@ static void mpu_set_next_poll(struct mpu_dev_s* dev)
 #ifndef CONFIG_DISABLE_POLL
 static void mpu_worker(FAR void *arg)
 {
+    int res;
     struct mpu_dev_s *dev = (struct mpu_dev_s*)arg;
 
-    if ( mpu_takesem(&dev->exclsem, true) < 0 )
-    {
-        MPU_LOG("Cannot take semaphore !\n");
+    res = mpu_takesem(&dev->exclsem, true);
+    if ( res < 0 )
         return;
-    }
 
     dev->pkt_in_fifo =  mpu_get_packet_nbr(dev);
 
@@ -292,33 +292,39 @@ static void mpu_worker(FAR void *arg)
 
 static int mpu_open(FAR struct file *filep)
 {
-    int ret = 0;
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev   = inode->i_private;
 
-    if ( mpu_takesem(&dev->exclsem, true) < 0 )
-    {
-        MPU_LOG("Cannot take semaphore !\n");
-        return -1;
-    }
+    res = mpu_takesem(&dev->exclsem, true);
+    if ( res < 0 )
+        return res;
 
+    dev->open_count ++;
+
+    if ( dev->open_count == 1 )
+    {
 #ifdef CONFIG_INVENSENSE_DMP
-    if ( dev->dmp )
-    {
-        if ( ret == 0 )
-            ret = dmp_enable_feature(dev->dmp,BOARD_ENABLES_DMP_FEATURES);
+        if ( dev->dmp )
+        {
+            if ( res == 0 )
+                res = dmp_enable_feature(dev->dmp,BOARD_ENABLES_DMP_FEATURES);
 
-        if ( ret == 0 )
-            ret = dmp_set_fifo_rate(dev->dmp,__DEFAULT_DMP_HZ);
+            if ( res == 0 )
+                res = dmp_set_fifo_rate(dev->dmp,__DEFAULT_DMP_HZ);
 
-        if ( ret == 0 )
-            ret = mpu_set_dmp_on(dev->inst);
-    }
+            if ( res == 0 )
+                res = mpu_set_dmp_on(dev->inst);
+        }
 #endif
+    }
+
+    if ( res < 0 )
+        dev->open_count --;
 
     mpu_givesem(&dev->exclsem);
 
-    return ret;
+    return res;
 }
 
 /****************************************************************************
@@ -331,35 +337,39 @@ static int mpu_open(FAR struct file *filep)
 
 static int mpu_close(FAR struct file *filep)
 {
-    int ret;
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev   = inode->i_private;
 
-    if ( mpu_takesem(&dev->exclsem, true) < 0 )
-    {
-        MPU_LOG("Cannot take semaphore !\n");
-        return -1;
-    }
+    res = mpu_takesem(&dev->exclsem, true);
+    if ( res < 0 )
+        return res;
 
+    dev->open_count--;
+
+    DEBUGASSERT(dev->open_count >= 0);
+
+    if ( dev->open_count == 0 )
+    {
 #ifdef CONFIG_INVENSENSE_DMP
-    if ( dev->dmp )
-    {
-        if ( dmp_enable_feature(dev->dmp,0) < 0 )
-            MPU_LOG("Cannot disable dmp feature !\n");
+        if ( dev->dmp )
+        {
+            if ( dmp_enable_feature(dev->dmp,0) < 0 )
+                MPU_LOG("Cannot disable dmp feature !\n");
 
-        if ( mpu_set_dmp_off(dev->inst) < 0 )
-            MPU_LOG("Cannot turn off dmp !\n");
-    }
+            if ( mpu_set_dmp_off(dev->inst) < 0 )
+                MPU_LOG("Cannot turn off dmp !\n");
+        }
 #endif
+        res = mpu_set_sensors_enable(dev->inst,0);
 
-    ret = mpu_set_sensors_enable(dev->inst,0);
-
-    if ( ret >= 0 )
-        ret = mpu_reset_fifo(dev->inst);
+        if ( res >= 0 )
+            res = mpu_reset_fifo(dev->inst);
+    }
 
     mpu_givesem(&dev->exclsem);
 
-    return ret;
+    return res;
 }
 
 /****************************************************************************
@@ -373,24 +383,13 @@ static int mpu_close(FAR struct file *filep)
 #ifndef CONFIG_DISABLE_POLL
 static int mpu_poll(file_t * filep, FAR struct pollfd *fds, bool setup)
 {
-
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev    = inode->i_private;
 
-    int res = 0;
-
-    /* Are we setting up the poll?  Or tearing it down? */
-
     res = mpu_takesem(&dev->exclsem, true);
-
-    if (res < 0)
-    {
-        /* A signal received while waiting for access to the poll data
-         * will abort the operation.
-         */
-
+    if ( res < 0 )
         return res;
-    }
 
     /* don't read if interrupt have already confirm that some data are ready */
 
@@ -452,19 +451,15 @@ errout:
 
 static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 {
+    int res;
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev    = inode->i_private;
 
-    int ret;
     int size = 0;
 
-    /* Get exclusive access to the driver data structure */
-
-    if ( mpu_takesem(&dev->exclsem, true) < 0 )
-    {
-        MPU_LOG("Cannot take semaphore !\n");
-        return -EINTR;
-    }
+    res = mpu_takesem(&dev->exclsem, true);
+    if ( res < 0 )
+        return res;
 
     if( dev->pkt_in_fifo <= 0  )
     {
@@ -473,23 +468,23 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 
     while ( ( size < len ) && (dev->pkt_in_fifo > 0 ) )
     {
-        ret = 0;
+        res = 0;
 #ifdef CONFIG_INVENSENSE_DMP
         if ( dev->dmp )
         {
-            ret = dmp_read_fifo(dev->dmp, (struct mpu_data_dmp_s*)buffer);
-            if ( ret > 0 )
+            res = dmp_read_fifo(dev->dmp, (struct mpu_data_dmp_s*)buffer);
+            if ( res > 0 )
                 size += sizeof(struct mpu_data_dmp_s);
         }
         else
 #endif
         {
-            ret = mpu_read_fifo(dev->inst, (struct mpu_data_mpu_s*)buffer);
-            if ( ret > 0 )
+            res = mpu_read_fifo(dev->inst, (struct mpu_data_mpu_s*)buffer);
+            if ( res > 0 )
                 size += sizeof(struct mpu_data_mpu_s);
         }
 
-        if ( ret <= 0 )
+        if ( res <= 0 )
             break;
 
         dev->pkt_in_fifo --;
@@ -499,8 +494,8 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
     mpu_givesem(&dev->exclsem);
 
 
-    if ( ret < 0 )
-        return ret;
+    if ( res < 0 )
+        return res;
 
     return size;
 }
@@ -515,7 +510,7 @@ static ssize_t mpu_read(FAR struct file *filep, FAR char *buffer, size_t len)
 
 static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
-    int ret = -EINVAL;
+    int res = -EINVAL;
 
     FAR struct inode *inode     = filep->f_inode;
     FAR struct mpu_dev_s *dev   = inode->i_private;
@@ -524,44 +519,44 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     {
 
         case MPU_ENABLE:
-            ret = mpu_set_sensors_enable(dev->inst,arg);
-            if ( ret == 0 )
-                ret = mpu_set_fifo_config(dev->inst,arg);
+            res = mpu_set_sensors_enable(dev->inst,arg);
+            if ( res == 0 )
+                res = mpu_set_fifo_config(dev->inst,arg);
             break;
 
         case MPU_RESET_FIFO:
-            ret = mpu_reset_fifo(dev->inst);
+            res = mpu_reset_fifo(dev->inst);
             break;
 
         case MPU_GET_TEMP:
-            ret = mpu_get_temperature(dev->inst,(int32_t*)arg);
+            res = mpu_get_temperature(dev->inst,(int32_t*)arg);
             break;
 
         case MPU_SET_GYRO_OFF:
-            ret = mpu_set_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
-            if ( ret >= 0 )
-                ret = mpu_reset_fifo(dev->inst);
+            res = mpu_set_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
+            if ( res >= 0 )
+                res = mpu_reset_fifo(dev->inst);
             break;
 
         case MPU_SET_ACCEL_OFF:
-            ret = mpu_set_accel_off_safe(dev->inst,(struct mpu_axes_s*)arg);
+            res = mpu_set_accel_off_safe(dev->inst,(struct mpu_axes_s*)arg);
             break;
 
         case MPU_GET_GYRO_OFF:
-            ret = mpu_get_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
+            res = mpu_get_gyro_off(dev->inst,(struct mpu_axes_s*)arg);
             break;
 
         case MPU_GET_ACCEL_OFF:
-            ret = mpu_get_accel_off(dev->inst,(struct mpu_axes_s*)arg);
+            res = mpu_get_accel_off(dev->inst,(struct mpu_axes_s*)arg);
             break;
 
         case MPU_CALIBRATION:
-            ret = mpu_calibration(dev->inst,(struct mpu_data_mpu_s*)arg,
+            res = mpu_calibration(dev->inst,(struct mpu_data_mpu_s*)arg,
                                   __CALIBRATION_SAMPLE_NBR);
             break;
 
         case MPU_DUMP_REG:
-            ret = mpu_reg_dump(dev->inst);
+            res = mpu_reg_dump(dev->inst);
             break;
 
         case MPU_FREQUENCY:
@@ -570,18 +565,18 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 #ifdef CONFIG_INVENSENSE_DMP
                 if ( dev->dmp )
                 {
-                    ret = dmp_set_fifo_rate(dev->dmp,arg);
+                    res = dmp_set_fifo_rate(dev->dmp,arg);
                 }
                 else
 #endif
                 {
-                    ret = mpu_set_sample_rate(dev->inst,arg);
+                    res = mpu_set_sample_rate(dev->inst,arg);
                 }
             }
             break;
 
     }
-    return ret;
+    return res;
 }
 
 
@@ -596,8 +591,8 @@ static int mpu_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 
 static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
 {
+  int res;
   FAR struct mpu_dev_s *priv = (FAR struct mpu_dev_s *)arg;
-  int ret;
 
   DEBUGASSERT(priv && priv->config == config);
 
@@ -617,10 +612,10 @@ static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
        * action should be required to protect the work queue.
        */
 
-      ret = work_queue(HPWORK, &priv->work, mpu_worker, priv, 0);
-      if (ret != 0)
+      res = work_queue(HPWORK, &priv->work, mpu_worker, priv, 0);
+      if (res != 0)
         {
-          snlldbg("Failed to queue work: %d\n", ret);
+          snlldbg("Failed to queue work: %d\n", res);
         }
     }
 
@@ -652,8 +647,8 @@ static void mpu_interrupt(FAR struct mpu_config_s *config, FAR void *arg)
 
 int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
 {
+    int res = 0;
     FAR struct mpu_dev_s *dev;
-    int ret = 0;
 
     /* Allocate the MPU driver instance */
 
@@ -678,22 +673,22 @@ int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
      * Wake up all sensors. 
      */
 
-    if ( ret == 0 )
-        ret = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
+    if ( res == 0 )
+        res = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
 
     /* Push both gyro and accel data into the FIFO at default rate. */
 
-    if ( ret == 0 )
-        ret = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
+    if ( res == 0 )
+        res = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
 
-    if ( ret == 0 )
-        ret = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
+    if ( res == 0 )
+        res = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
 
-    if ( ret == 0 )
-        ret = mpu_set_accel_fsr(dev->inst,BOARD_DEFAULT_ACCEL_FSR);
+    if ( res == 0 )
+        res = mpu_set_accel_fsr(dev->inst,BOARD_DEFAULT_ACCEL_FSR);
 
-    if ( ret == 0 )
-        ret = mpu_set_gyro_fsr(dev->inst,BOARD_DEFAULT_GYRO_FSR);
+    if ( res == 0 )
+        res = mpu_set_gyro_fsr(dev->inst,BOARD_DEFAULT_GYRO_FSR);
 
 
 #ifdef CONFIG_INVENSENSE_DMP
@@ -705,19 +700,19 @@ int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
 
     /* Register the character driver */
 
-    ret = register_driver(path, &g_mpu_fops, 0666, dev);
+    res = register_driver(path, &g_mpu_fops, 0666, dev);
 
-    if (ret < 0)
+    if (res < 0)
     {
-        sndbg("ERROR: Failed to register driver %s: %d\n", devname, ret);
-        return ret;
+        sndbg("ERROR: Failed to register driver %s: %d\n", devname, res);
+        return res;
     }
 
 #ifndef CONFIG_DISABLE_POLL
     mpu_set_next_poll(dev);
 #endif
 
-    return ret;
+    return res;
 }
 
 #endif /* CONFIG_SENSORS_INVENSENSE */
