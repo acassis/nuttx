@@ -30,6 +30,53 @@ config USBHOST_ISOC_DISABLE
 		On some architectures, selecting this setting will reduce driver size
 		by disabling isochronous endpoint support
 
+config USBHOST_HAVE_ASYNCH
+	bool
+	default n
+
+config USBHOST_ASYNCH
+	bool "Asynchronous transfer support"
+	default n
+	depends on USBHOST_HAVE_ASYNCH
+	---help---
+		Select if the host controller driver needs to support asynchronous
+		I/O transfer.  This may be required, for example, to receive
+		infrequent, asynchronous input from an interrupt pipe.
+
+config USBHOST_HUB
+	bool "USB Hub Support"
+	default n
+	depends on USBHOST_HAVE_ASYNCH && !USBHOST_INT_DISABLE
+	select USBHOST_ASYNCH
+	---help---
+		Select this option to build in support for USB hubs.
+
+if USBHOST_HUB
+
+config USBHOST_HUB_POLLMSEC
+	int "USB Hub Polling Interval (MSec)"
+	default 400
+	---help---
+		On higher end host controllers (OHCI and EHCI), the asynchronous,
+		interrupt IN transfers will pend until data is available from the
+		hub.  On lower end host controllers (like STM32 and EFM32), the
+		transfer will fail immediately when the device NAKs the first
+		attempted interrupt IN transfer (with result == EGAIN) and the hub
+		class driver will fall back to polling the hub.
+
+		For the case of the higher end controllers, this polling interval
+		is not critical since it would really only be used in the event of
+		failures to communicate with the hub.
+
+		But for the lower end host controllers, the asynchronous transfers
+		are ineffective and this polling interval becomes a critical
+		parameter that must be tuned to tradeoff CPU usage with
+		responsiveness to hub-related events (It would, I suppose, be more
+		efficient to use synchronous transfers with these lower end host
+		controllers).
+
+endif # USBHOST_HUB
+
 config USBHOST_MSC
 	bool "Mass Storage Class Support"
 	default n

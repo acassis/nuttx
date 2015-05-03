@@ -1,7 +1,7 @@
 /****************************************************************************
  * config/olimex-lpc1766stk/src/lpc17_nsh.c
  *
- *   Copyright (C) 2010, 2013-2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2010, 2013-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -246,6 +246,19 @@ static int nsh_usbhostinitialize(void)
    */
 
   syslog(LOG_INFO, "Register class drivers\n");
+
+#ifdef CONFIG_USBHOST_HUB
+  /* Initialize USB hub support */
+
+  ret = usbhost_hub_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: usbhost_hub_initialize failed: %d\n", ret);
+    }
+#endif
+
+  /* Initialize mass storage support */
+
   ret = usbhost_storageinit();
   if (ret != OK)
     {
