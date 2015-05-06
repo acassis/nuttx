@@ -110,11 +110,11 @@
 #endif
 
 #ifdef NSH_HAVEUSBHOST
-#  ifndef CONFIG_USBHOST_DEFPRIO
-#    define CONFIG_USBHOST_DEFPRIO 50
+#  ifndef CONFIG_LPC1766STK_USBHOST_PRIO
+#    define CONFIG_LPC1766STK_USBHOST_PRIO 50
 #  endif
-#  ifndef CONFIG_USBHOST_STACKSIZE
-#    define CONFIG_USBHOST_STACKSIZE 1024
+#  ifndef CONFIG_LPC1766STK_USBHOST_STACKSIZE
+#    define CONFIG_LPC1766STK_USBHOST_STACKSIZE 1024
 #  endif
 #endif
 
@@ -257,13 +257,25 @@ static int nsh_usbhostinitialize(void)
     }
 #endif
 
+#ifdef CONFIG_USBHOST_MSC
   /* Initialize mass storage support */
 
-  ret = usbhost_storageinit();
+  ret = usbhost_msc_initialize();
   if (ret != OK)
     {
-      syslog(LOG_ERR, "ERROR: Failed to register the mass storage class\n");
+      syslog(LOG_ERR, "ERROR: Failed to register the mass storage class: %d\n", ret);
     }
+#endif
+
+#ifdef CONFIG_USBHOST_CDCACM
+  /* Register the CDC/ACM serial class */
+
+  ret = usbhost_cdcacm_initialize();
+  if (ret != OK)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to register the CDC/ACM serial class: %d\n", eret);
+    }
+#endif
 
   /* Then get an instance of the USB host interface */
 
@@ -275,8 +287,8 @@ static int nsh_usbhostinitialize(void)
 
       syslog(LOG_ERR, "ERROR: Start nsh_waiter\n");
 
-      pid = task_create("usbhost", CONFIG_USBHOST_DEFPRIO,
-                        CONFIG_USBHOST_STACKSIZE,
+      pid = task_create("usbhost", CONFIG_LPC1766STK_USBHOST_PRIO,
+                        CONFIG_LPC1766STK_USBHOST_STACKSIZE,
                         (main_t)nsh_waiter, (FAR char * const *)NULL);
       return pid < 0 ? -ENOEXEC : OK;
     }

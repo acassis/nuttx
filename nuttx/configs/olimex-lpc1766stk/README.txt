@@ -982,19 +982,17 @@ Configuration Sub-Directories
           When I ran into stack size issues, I just increased the size of
           all threads that had smaller stacks.
 
-          CONFIG_EXAMPLES_HIDKBD_STACKSIZE=2048   : Was 1024
-          CONFIG_HIDKBD_STACKSIZE=2048            : Was 1024
-          CONFIG_SCHED_HPWORKSTACKSIZE=2048       : Was 1024 (1024 is probably ok)
+          CONFIG_EXAMPLES_HIDKBD_STACKSIZE=2048    : Was 1024
+          CONFIG_HIDKBD_STACKSIZE=2048             : Was 1024
+          CONFIG_SCHED_HPWORKSTACKSIZE=2048        : Was 1024 (1024 is probably ok)
+          CONFIG_LPC1766STK_USBHOST_STACKSIZE=1536 | Was 1024
 
        STATUS:
-         2015-04-26: The hub basically works.  I do get crashes in the LPC16 USB host driver
-                     when removing the keyboard from the hub.  It looks like that crash
-                     occurs consistently the 4th time that the keyboard is removed.  The
-                     crash seems seems to be due to a corrupt addess in the callback from
-                     the new asynchronous I/O.  Should not be too hard to fix.
-
-                     Also, the code does not enumerate the hub if it is connected at the
-                     time of power up.
+         2015-05-03: The hub basically works.  The only problem that I see is
+                     that the code does not enumerate the hub if it is
+                     connected at the time of reset up.  It does not a power-up
+                     reset, but not with the reset button.  This sounds like
+                     a hardwares reset issue on the board to me.
 
   hidmouse:
     This configuration directory supports a variant of an NSH configution.

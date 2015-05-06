@@ -59,6 +59,7 @@
 #include "up_arch.h"
 #include "cache.h"
 
+#include "chip.h"
 #include "sam_periphclks.h"
 #include "sam_memories.h"
 #include "sam_usbhost.h"
@@ -95,11 +96,18 @@
 #  define CONFIG_SAMA5_EHCI_NQTDS (SAM_EHCI_NRHPORT + 3)
 #endif
 
+/* Buffers must be aligned to the cache line size */
+
+#define DCACHE_LINEMASK (ARMV7A_DCACHE_LINESIZE -1)
+
 /* Configurable size of a request/descriptor buffers */
 
 #ifndef CONFIG_SAMA5_EHCI_BUFSIZE
 #  define CONFIG_SAMA5_EHCI_BUFSIZE 128
 #endif
+
+#define SAMA5_EHCI_BUFSIZE \
+  ((CONFIG_SAMA5_EHCI_BUFSIZE + DCACHE_LINEMASK) & ~DCACHE_LINEMASK)
 
 /* Debug options */
 
@@ -413,7 +421,7 @@ static int sam_ctrlin(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep0,
          FAR const struct usb_ctrlreq_s *req, FAR uint8_t *buffer);
 static int sam_ctrlout(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep0,
          FAR const struct usb_ctrlreq_s *req, FAR const uint8_t *buffer);
-static int sam_transfer(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
+static ssize_t sam_transfer(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
          FAR uint8_t *buffer, size_t buflen);
 #ifdef CONFIG_USBHOST_ASYNCH
 static int sam_asynch(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
@@ -2440,6 +2448,7 @@ static inline int sam_asynch_setup(struct sam_rhport_s *rhport,
 static void sam_asynch_completion(struct sam_epinfo_s *epinfo)
 {
   usbhost_asynch_t callback;
+  ssize_t nbytes;
   void *arg;
   int result;
 
@@ -2451,15 +2460,23 @@ static void sam_asynch_completion(struct sam_epinfo_s *epinfo)
   callback         = epinfo->callback;
   arg              = epinfo->arg;
   result           = epinfo->result;
+  nbytes           = epinfo->xfrd;
 
   epinfo->callback = NULL;
   epinfo->arg      = NULL;
   epinfo->result   = OK;
   epinfo->iocwait  = false;
 
-  /* Then perform the callback */
+  /* Then perform the callback.  Provide the number of bytes successfully
+   * transferred or the negated errno value in the event of a failure.
+   */
 
-  callback(arg, result);
+  if (result < 0)
+    {
+      nbytes = (ssize_t)result;
+    }
+
+  callback(arg, nbytes);
 }
 #endif
 
@@ -3626,7 +3643,15 @@ static int sam_enumerate(FAR struct usbhost_connection_s *conn,
   ret = usbhost_enumerate(hport, &hport->devclass);
   if (ret < 0)
     {
+      /* Failed to enumerate */
+
       usbhost_trace2(EHCI_TRACE2_CLASSENUM_FAILED, hport->port + 1, -ret);
+
+      /* If this is a root hub port, then marking the hub port not connected will
+       * cause sam_wait() to return and we will try the connection again.
+       */
+
+      hport->connected = false;
     }
 
   return ret;
@@ -3832,12 +3857,15 @@ static int sam_alloc(FAR struct usbhost_driver_s *drvr,
   int ret = -ENOMEM;
   DEBUGASSERT(drvr && buffer && maxlen);
 
-  /* There is no special requirements for transfer/descriptor buffers. */
+  /* The only special requirements for transfer/descriptor buffers are that (1)
+   * they be aligned to a cache line boundary and (2) they are a multiple of the
+   * cache line size in length.
+   */
 
-  *buffer = (FAR uint8_t *)kmm_malloc(CONFIG_SAMA5_EHCI_BUFSIZE);
+  *buffer = (FAR uint8_t *)kmm_memalign(ARMV7A_DCACHE_LINESIZE, SAMA5_EHCI_BUFSIZE);
   if (*buffer)
     {
-      *maxlen = CONFIG_SAMA5_EHCI_BUFSIZE;
+      *maxlen = SAMA5_EHCI_BUFSIZE;
       ret = OK;
     }
 
@@ -3909,11 +3937,14 @@ static int sam_ioalloc(FAR struct usbhost_driver_s *drvr, FAR uint8_t **buffer,
 {
   DEBUGASSERT(drvr && buffer && buflen > 0);
 
-  /* The only special requirements for I/O buffers are they might need to be user
-   * accessible (depending on how the class driver implements its buffering).
+  /* The only special requirements for I/O buffers are that (1) they be aligned to a
+   * cache line boundary, (2) they are a multiple of the cache line size in length,
+   * and (3) they might need to be user accessible (depending on how the class driver
+   * implements its buffering).
    */
 
-  *buffer = (FAR uint8_t *)kumm_malloc(buflen);
+  buflen  = (buflen + DCACHE_LINEMASK) & ~DCACHE_LINEMASK;
+  *buffer = (FAR uint8_t *)kumm_memalign(ARMV7A_DCACHE_LINESIZE, buflen);
   return *buffer ? OK : -ENOMEM;
 }
 
@@ -4077,8 +4108,9 @@ static int sam_ctrlout(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep0,
  *   buflen - The length of the data to be sent or received.
  *
  * Returned Values:
- *   On success, zero (OK) is returned. On a failure, a negated errno value is
- *   returned indicating the nature of the failure:
+ *   On success, a non-negative value is returned that indicates the number
+ *   of bytes successfully transferred.  On a failure, a negated errno value is
+ *   returned that indicates the nature of the failure:
  *
  *     EAGAIN - If devices NAKs the transfer (or NYET or other error where
  *              it may be appropriate to restart the entire transaction).
@@ -4092,8 +4124,8 @@ static int sam_ctrlout(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep0,
  *
  *******************************************************************************/
 
-static int sam_transfer(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
-                        FAR uint8_t *buffer, size_t buflen)
+static ssize_t sam_transfer(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
+                            FAR uint8_t *buffer, size_t buflen)
 {
   struct sam_rhport_s *rhport = (struct sam_rhport_s *)drvr;
   struct sam_epinfo_s *epinfo = (struct sam_epinfo_s *)ep;
@@ -4152,13 +4184,13 @@ static int sam_transfer(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep,
 
   nbytes = sam_transfer_wait(epinfo);
   sam_givesem(&g_ehci.exclsem);
-  return nbytes >= 0 ? OK : (int)nbytes;
+  return nbytes;
 
 errout_with_iocwait:
   epinfo->iocwait = false;
 errout_with_sem:
   sam_givesem(&g_ehci.exclsem);
-  return ret;
+  return (ssize_t)ret;
 }
 
 /*******************************************************************************
@@ -4481,13 +4513,8 @@ static int sam_connect(FAR struct usbhost_driver_s *drvr,
 static void sam_disconnect(FAR struct usbhost_driver_s *drvr,
                            FAR struct usbhost_hubport_s *hport)
 {
-  struct sam_rhport_s *rhport = (struct sam_rhport_s *)drvr;
-  DEBUGASSERT(rhport != NULL && hport != NULL);
-
-  /* Unbind the class */
-  /* REVISIT:  Is there more that needs to be done? */
-
-  rhport->hport.hport.devclass = NULL;
+  DEBUGASSERT(hport != NULL);
+  hport->devclass = NULL;
 }
 
 /*******************************************************************************

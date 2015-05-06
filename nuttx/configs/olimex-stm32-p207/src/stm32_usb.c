@@ -73,7 +73,11 @@
 #endif
 
 #ifndef CONFIG_USBHOST_STACKSIZE
-#  define CONFIG_USBHOST_STACKSIZE 1024
+#  ifdef CONFIG_USBHOST_HUB
+#    define CONFIG_USBHOST_STACKSIZE 1536
+#  else
+#    define CONFIG_USBHOST_STACKSIZE 1024
+#  endif
 #endif
 
 /************************************************************************************
@@ -171,6 +175,8 @@ int stm32_usbhost_initialize(void)
    * that we care about:
    */
 
+  uvdbg("Register class drivers\n");
+
 #ifdef CONFIG_USBHOST_HUB
   /* Initialize USB hub class support */
 
@@ -181,14 +187,25 @@ int stm32_usbhost_initialize(void)
     }
 #endif
 
-  /* Initialize Mass Storage Class support */
+#ifdef CONFIG_USBHOST_MSC
+  /* Register the USB host Mass Storage Class */
 
-  uvdbg("Register class drivers\n");
-  ret = usbhost_storageinit();
+  ret = usbhost_msc_initialize();
   if (ret != OK)
     {
-      udbg("Failed to register the mass storage class\n");
+      udbg("ERROR: Failed to register the mass storage class: %d\n", ret);
     }
+#endif
+
+#ifdef CONFIG_USBHOST_CDCACM
+  /* Register the CDC/ACM serial class */
+
+  ret = usbhost_cdcacm_initialize();
+  if (ret != OK)
+    {
+      udbg("ERROR: Failed to register the CDC/ACM serial class: %d\n", ret);
+    }
+#endif
 
   /* Then get an instance of the USB host interface */
 

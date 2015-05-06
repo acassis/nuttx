@@ -82,11 +82,19 @@
 #  error Low-priority work queue support is required (CONFIG_SCHED_LPWORK)
 #endif
 
+#ifndef CONFIG_USBHOST_ASYNCH
+#  error Asynchronous transfer support is required (CONFIG_USBHOST_ASYNCH)
+#endif
+
+#ifndef CONFIG_USBHOST_HUB_POLLMSEC
+#  define CONFIG_USBHOST_HUB_POLLMSEC 400
+#endif
+
 /* Perform polling actions with a delay on the low priority work queue, if
  * configured
  */
 
-#define POLL_DELAY          MSEC2TICK(400)
+#define POLL_DELAY          MSEC2TICK(CONFIG_USBHOST_HUB_POLLMSEC)
 
 /* Used in usbhost_cfgdesc() */
 
@@ -158,7 +166,7 @@ static void usbhost_disconnect_event(FAR void *arg);
 
 static inline uint16_t usbhost_getle16(const uint8_t *val);
 static void usbhost_putle16(uint8_t *dest, uint16_t val);
-static void usbhost_callback(FAR void *arg, int result);
+static void usbhost_callback(FAR void *arg, ssize_t nbytes);
 
 /* struct usbhost_registry_s methods */
 
@@ -825,7 +833,7 @@ static void usbhost_hub_event(FAR void *arg)
                 }
 
               debouncetime += 25;
-              up_mdelay(25);
+              usleep(25*1000);
             }
 
           if (ret < 0 || debouncetime >= 1500)
@@ -853,7 +861,7 @@ static void usbhost_hub_event(FAR void *arg)
                   continue;
                 }
 
-              up_mdelay(100);
+              usleep(100*1000);
 
               ctrlreq->type = USB_REQ_DIR_IN | USBHUB_REQ_TYPE_PORT;
               ctrlreq->req  = USBHUB_REQ_GETSTATUS;
@@ -1140,8 +1148,9 @@ static void usbhost_putle16(uint8_t *dest, uint16_t val)
  *   Handle end of transfer callback.
  *
  * Input Parameters:
- *   dest - A pointer to the first byte to save the little endian value.
- *   val - The 16-bit value to be saved.
+ *   arg - The argument provided with the asynchronous I/O was setup
+ *   nbytes - The number of bytes actually transferred (or a negated errno
+ *     value;
  *
  * Returned Values:
  *   None
@@ -1151,7 +1160,7 @@ static void usbhost_putle16(uint8_t *dest, uint16_t val)
  *
  ****************************************************************************/
 
-static void usbhost_callback(FAR void *arg, int result)
+static void usbhost_callback(FAR void *arg, ssize_t nbytes)
 {
   FAR struct usbhost_class_s *hubclass;
   FAR struct usbhost_hubpriv_s *priv;
@@ -1165,22 +1174,22 @@ static void usbhost_callback(FAR void *arg, int result)
    * transfer will pend until data is available (OHCI and EHCI).  On lower
    * end host controllers (like STM32 and EFM32), the transfer will fail
    * immediately when the device NAKs the first attempted interrupt IN
-   * transfer (with result == EAGAIN).  In that case (or in the case of
+   * transfer (with nbytes == -EAGAIN).  In that case (or in the case of
    * other errors), we must fall back to polling.
    */
 
-  if (result != OK)
+  if (nbytes < 0)
     {
       /* This debug output is good to know, but really a nuisance for
        * those configurations where we have to fall back to polling.
-       * FIX:  Don't output the message is the result is EAGAIN.
+       * FIX:  Don't output the message is the result is -EAGAIN.
        */
 
 #if defined(CONFIG_DEBUG_USB) && !defined(CONFIG_DEBUG_VERBOSE)
-      if (result != EAGAIN)
+      if (nbytes != -EAGAIN)
 #endif
         {
-          ulldbg("ERROR: Transfer failed: %d\n", result);
+          ulldbg("ERROR: Transfer failed: %d\n", (int)nbytes);
         }
 
       /* Indicate there there is nothing to do.  So when the work is

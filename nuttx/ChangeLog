@@ -10288,4 +10288,30 @@
 	  a separate branch up until this point.  The interfaces are complete
 	  and most platforms have been verified (still a little to be done
 	  however). (2015-05-02)
-
+	* arch/arm/src/lpc31xx/lpc31_ehci.c, chip.h, sama5/sam_ehci.c, and
+	  chip.h:  Fix cache related problem in LPC31 and SAMA5Dx EHCI drivers.
+	  All buffers are now aligned with the cache line size in both starting
+	  address and in length.  This cause major problems in unlucky builds
+	  where the USB host buffers where unaligned and abbutting other data.
+	  The cache flush and invalidate operations could be subverted by
+	  accesses to adjacent data or could have unexpected side effects.  This
+	  bug has been in the ECHI drivers forever, but was only revealed due to
+	  unlucky memory allocations during the integration of the hub feature
+	  (2015-05-03).
+	* arch/arm/src/lpc17xx/lpc17_usbhost.c:  Correct some initialization of
+	  data structures.  When hub support is enabled, it would overwrite the
+	  end of an array and clobber some OS data structures (2015-05-03).
+	* configs/olimex-lpc1766stk:  Make stacks usage configurable for USB
+	  host waiter. It needs to be a lot deeper when hub support is enabled
+	  (2015-05-03).
+	* fs/vfs/fs_poll.c: Fix resource leak and memory corruption on poll
+	  failure.  From Jussi Kivilinna (2015-05-04).
+	* All USB host drivers in arch/ and all USB class drivers in drivers/usbhost:
+	  Modify the transfer() and asynch() methods so that the actual size of
+	  the transfer is returned.  Unverified on initial commit (2015-05-05).
+	* drivers/usbhost/usbhost_cdcacm.c: Add initial implementation of a host-
+	  side CDC/ACM driver.  Completely untested on initial commit (2015-05-06).
+	* configs/, drivers/usbhost/usbhost_storage.c, and included/nuttx/usb/usbhost.h:
+	  Rename usbhost_storageinit() to usbhost_msc_initialize().  Add calls
+	  to usbhost_cdcacm_initialize() if CONFIG_USBHOST_CDCACM is selected
+	 (2015-05-06).
