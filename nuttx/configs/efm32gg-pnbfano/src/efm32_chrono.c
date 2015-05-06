@@ -53,9 +53,9 @@
 #include "efm32_gpio.h"
 #include "efm32gg-pnbfano.h"
 
-//#define EFM32_GPIO_CHRONO_LOG(...)
+#define EFM32_GPIO_CHRONO_LOG(...)
 //#define EFM32_GPIO_CHRONO_LOG(lvl,...) lldbg(__VA_ARGS__)
-#define EFM32_GPIO_CHRONO_LOG(...) syslog(__VA_ARGS__)
+//#define EFM32_GPIO_CHRONO_LOG(...) syslog(__VA_ARGS__)
 
 #ifndef CONFIG_EFM32_GPIO_CHRONO_BUFSIZE
 #  define CONFIG_EFM32_GPIO_CHRONO_BUFSIZE 64
@@ -231,6 +231,12 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
         EFM32_GPIO_CHRONO_LOG(LOG_WARNING,"Buffer overflow\n");
         return -1; 
     }
+
+    EFM32_GPIO_CHRONO_LOG(LOG_NOTICE,
+                          "IRQ timespec %8d.%3d\n",
+                          tp.tv_sec,
+                          tp.tv_nsec/1000000
+                         );
 
     ptr = &dev->buf[dev->wr_idx];
 

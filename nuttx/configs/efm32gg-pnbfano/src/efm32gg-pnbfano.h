@@ -96,6 +96,21 @@
 #define GPIO_LCD_PWM_DEV      "/dev/pwm0"
 
 
+/* ADC GPIO:
+ *
+ * The pnbfano board has a Pulse Per Second GPIO input. 
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * VBAT(PD6)              VBAT 
+ * VTEMP(PD5)             Temperature
+ * --------------------- ---------------------
+ */
+
+#  define GPIO_VBAT     (GPIO_INPUT|GPIO_PORTD|GPIO_PIN6)
+#  define GPIO_VTEMP    (GPIO_INPUT|GPIO_PORTD|GPIO_PIN5)
+
 /* PPS GPIO:
  *
  * The pnbfano board has a Pulse Per Second GPIO input. 
