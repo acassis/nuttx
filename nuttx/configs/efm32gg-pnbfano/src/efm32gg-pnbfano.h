@@ -204,6 +204,8 @@
 /* SDHC Slot: */
 #define PNBFANO_SDCARD_MINOR 0
 
+
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
@@ -211,6 +213,9 @@
 int efm32_slow_poll_init(void);
 
 int efm32_initialize_spi_devices(void);
+
+int efm32_initialize_acmp(void);
+int efm32_initialize_vcmp(void);
 
 int up_lcdinitialize(void);
 

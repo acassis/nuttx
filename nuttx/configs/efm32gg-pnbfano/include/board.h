@@ -310,6 +310,37 @@
 #define BOARD_I2C1_SCL   (GPIO_PORTC|GPIO_PIN5|GPIO_OUTPUT_WIREDAND|GPIO_OUTPUT_SET)
 #define BOARD_I2C1_ROUTE_LOCATION _I2C_ROUTE_LOCATION_LOC0
 
+/* VCMP:
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * VDD                   level 3.1 V 
+ * --------------------- ---------------------
+ */
+#define BOARD_VCMP_HALFBIAS  1      /* Enable half bias          */
+#define BOARD_VCMP_BIASPROG  8      /* Half bias 8 => 1µA        */
+#define BOARD_VCMP_WARMUP    0      /* 4 cycle (quickest)        */
+#define BOARD_VCMP_LEVEL    (3.1)   /* Set to 3V1               */
+
+/* ACMP:
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * VBAT (PD6)             10V
+ * --------------------- ---------------------
+ */
+//#define BOARD_ACMP_ENABLE
+#define BOARD_ACMP_WARMUP    0 /* 4 cycle (quickest)*/
+#define BOARD_ACMP_LEVEL    -1 /* TODO BOARD_ACMP_LEVEL     */
+#define BOARD_ACMP_INPUT     0 /* CH0 */
+#define BOARD_ACMP_LOCATION  0 /* Location 0 */
+
+
+
+#define BOARD_SDHC_BLOCK_DEV_PATH   "/dev/mmcsd0"
+#define BOARD_SDHC_MOUNT_PATH       "/mnt"
 
 /****************************************************************************
  * Public Function Prototypes
@@ -324,6 +355,8 @@
  *   are available to control the LEDs from user applications.
  *
  ****************************************************************************/
+
+int board_format_sdcard(void);
 
 #ifndef CONFIG_ARCH_LEDS
 void efm32_ledinit(void);

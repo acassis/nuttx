@@ -54,8 +54,8 @@
 #include "efm32gg-pnbfano.h"
 
 #define EFM32_GPIO_CHRONO_LOG(...)
-//#define EFM32_GPIO_CHRONO_LOG(lvl,...) lldbg(__VA_ARGS__)
-//#define EFM32_GPIO_CHRONO_LOG(...) syslog(__VA_ARGS__)
+//#define EFM32_GPIO_CHRONO_LOG(lvl,...)    lldbg("CHRONO:"__VA_ARGS__)
+//#define EFM32_GPIO_CHRONO_LOG(...)        syslog("CHRONO:"__VA_ARGS__)
 
 #ifndef CONFIG_EFM32_GPIO_CHRONO_BUFSIZE
 #  define CONFIG_EFM32_GPIO_CHRONO_BUFSIZE 64

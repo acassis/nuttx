@@ -40,6 +40,8 @@
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 
+#include <arch/board/board.h>
+
 #include <sys/mount.h>
 
 #include "efm32_start.h"
@@ -53,6 +55,8 @@
 #include <nuttx/nx/nx.h>
 #include <syslog.h>
 
+#include <nuttx/fs/mkfatfs.h>
+
 #include <time.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -65,7 +69,7 @@
 
 #include "efm32_rmu.h"
 
-
+#define LEN(x)              (sizeof(x)/sizeof(*(x)))
 
 /****************************************************************************
  * Public Functions
@@ -191,6 +195,37 @@ int efm32_initialize_mpu(int devno)
     return OK;
 }
 
+int board_format_sdcard(void)
+{
+    struct fat_format_s fmt = FAT_FORMAT_INITIALIZER;
+
+    syslog(LOG_NOTICE,"Umount SDCARD.\n");
+
+    if ( umount(BOARD_SDHC_MOUNT_PATH) < 0 )
+    {
+        syslog(LOG_ERR,"umount failed!\n");
+    }
+
+    syslog(LOG_NOTICE,"Format.\n");
+
+    fmt.ff_fattype = 32;
+    strncpy((char*)fmt.ff_volumelabel,"PnbFano",LEN(fmt.ff_volumelabel)); /* Volume label */
+    if ( mkfatfs(BOARD_SDHC_BLOCK_DEV_PATH,&fmt) < 0 )
+    {
+        syslog(LOG_ERR,"format failed!\n");
+        return -1;
+    }
+
+    syslog(LOG_NOTICE,"Mount SDCARD.\n");
+    if ( mount(BOARD_SDHC_BLOCK_DEV_PATH,BOARD_SDHC_MOUNT_PATH,"vfat",0,NULL) 
+         < 0 )
+    {
+        syslog(LOG_ERR,"Cannot Mount SDcard\n");
+        return -1;
+    }
+    return 0;
+}
+
 /****************************************************************************
  * Name: board_initialize
  *
@@ -254,7 +289,8 @@ void board_initialize(void)
     }
 
     syslog(LOG_NOTICE,"Mount SDCARD.\n");
-    if ( mount("/dev/mmcsd0","/mnt","vfat",0,NULL) < 0 )
+    if ( mount(BOARD_SDHC_BLOCK_DEV_PATH,BOARD_SDHC_MOUNT_PATH,"vfat",0,NULL) 
+         < 0 )
     {
         syslog(LOG_ERR,"Cannot Mount SDcard\n");
     }
@@ -271,6 +307,9 @@ void board_initialize(void)
         syslog(LOG_ERR,"Cannot initialize usbdev\n");
     }
 
+    efm32_initialize_vcmp();
+
+    efm32_initialize_acmp();
 
     syslog(LOG_NOTICE,"Board Ready \n");
 
