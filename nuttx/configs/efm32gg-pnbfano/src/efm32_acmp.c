@@ -118,9 +118,9 @@ int efm32_acmp_irq(int irq, FAR void* context)
 
 
 
-int efm32_initialize_acmp(void)
+int efm32_acmp_initialize(void)
 {
-    int regval;
+    uint32_t regval;
 
 
     acmp_putreg(EFM32_ACMP_CTRL_OFFSET      , _ACMP_CTRL_RESETVALUE);

@@ -56,6 +56,7 @@
 
 #include "efm32_rmu.h"
 #include "efm32_rtc.h"
+#include "efm32_bitband.h"
 #include "clock/clock.h"
 
 /************************************************************************************
@@ -132,7 +133,7 @@
 #   define __BASETIME_NSEC_OFF_REG EFM32_BURTC_RET_REG(1)
 #endif
 
-#ifndef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG
 #  define burtcdbg lldbg
 #else
 #  define burtcdbg(x...)
@@ -242,16 +243,19 @@ static int efm32_rtc_burtc_interrupt(int irq, void *context)
 static void efm32_rtc_burtc_init(void)
 {
   uint32_t regval;
+  uint32_t regval2;
 
   regval = g_efm32_rstcause;
+  regval2 = getreg32(EFM32_BURTC_CTRL);
 
-  if (!(getreg32(EFM32_BURTC_CTRL) & BURTC_CTRL_RSTEN)
-      && !(regval & RMU_RSTCAUSE_BUBODREG)
-      && !(regval & RMU_RSTCAUSE_BUBODUNREG)
-      && !(regval & RMU_RSTCAUSE_BUBODBUVIN)
-      && !(regval & RMU_RSTCAUSE_EXTRST)
-      && !(regval & RMU_RSTCAUSE_PORST)
-)
+  burtcdbg("BURTC RESETCAUSE=0x%08X BURTC_CTRL=0x%08X\n",regval,regval2);
+
+  if ( ! ( regval2 & BURTC_CTRL_RSTEN       ) && \
+       ! ( regval  & RMU_RSTCAUSE_BUBODREG  ) && \
+       ! ( regval  & RMU_RSTCAUSE_BUBODUNREG) && \
+       ! ( regval  & RMU_RSTCAUSE_BUBODBUVIN) && \
+       ! ( regval  & RMU_RSTCAUSE_EXTRST    ) && \
+       ! ( regval  & RMU_RSTCAUSE_PORST     )    )
     {
       g_efm32_burtc_reset_status = getreg32(EFM32_BURTC_STATUS);
 
@@ -261,19 +265,22 @@ static void efm32_rtc_burtc_init(void)
 
       /* restore saved base time */
 
-      g_basetime.tv_sec   = __BASETIME_SEC__OFF_REG;
+      g_basetime.tv_sec   = getreg32(__BASETIME_SEC__OFF_REG);
 #ifdef CONFIG_RTC_HIRES
-      g_basetime.tv_nsec  = __BASETIME_NSEC_OFF_REG;
+      g_basetime.tv_nsec  = getreg32(__BASETIME_NSEC_OFF_REG);
 #else
       g_basetime.tv_nsec  = 0;
 #endif
+      burtcdbg("BURTC OK\n");
 
       return;
     }
 
+  burtcdbg("BURTC RESETED\n");
+
   /* Disable reset of BackupDomain */
 
-  modifyreg32(EFM32_RMU_CTRL,_RMU_CTRL_BURSTEN_MASK,0);
+  bitband_set_peripheral(EFM32_RMU_CTRL,_RMU_CTRL_BURSTEN_SHIFT,0);
 
   /* Make sure all registers are updated simultaneously */
 
@@ -462,6 +469,8 @@ int up_rtc_gettime(FAR struct timespec *tp)
   tp->tv_sec  = t;
   tp->tv_nsec = hires_val * (1000000000/CONFIG_RTC_FREQUENCY);
 
+  //burtcdbg("\ngettime %d.%09d t=%6d h=%6d\n",tp->tv_sec,tp->tv_nsec,t,hires_val);
+
   return OK;
 }
 #endif
@@ -490,6 +499,8 @@ int up_rtc_settime(FAR const struct timespec *tp)
   putreg32(g_basetime.tv_sec, __BASETIME_SEC__OFF_REG);
 #ifdef CONFIG_RTC_HIRES
   putreg32(g_basetime.tv_nsec,__BASETIME_NSEC_OFF_REG);
+#else 
+  g_basetime.tv_nsec = 0;
 #endif
 
   irqrestore(flags);

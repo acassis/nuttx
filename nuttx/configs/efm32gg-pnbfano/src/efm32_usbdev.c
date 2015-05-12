@@ -74,6 +74,7 @@
 #endif
 
 #include <arch/board/board.h>
+#include "efm32gg-pnbfano.h"
 
 /******************************************************************************\
  * Definitions

@@ -357,16 +357,17 @@
  ****************************************************************************/
 
 int board_format_sdcard(void);
+int board_mount_sdcard(void);
+int board_umount_sdcard(void);
+int board_is_usb_connected(void);
+int board_is_usb_enabled(void);
+int board_enable_usbmsc(void);
+int board_disable_usbmsc(void);
 
 #ifndef CONFIG_ARCH_LEDS
 void efm32_ledinit(void);
 void efm32_setled(int led, bool ledon);
 void efm32_setleds(uint8_t ledset);
 #endif
-
-int efm32_usbdev_is_connected(void);
-int efm32_usbdev_is_enable(void);
-int efm32_usbdev_disable_usbmsc(void);
-int efm32_usbdev_enable_usbmsc(void);
 
 #endif /* __CONFIGS_EFM32_PNBFANO_INCLUDE_BOARD_H */

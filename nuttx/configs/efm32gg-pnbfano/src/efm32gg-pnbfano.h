@@ -214,8 +214,15 @@ int efm32_slow_poll_init(void);
 
 int efm32_initialize_spi_devices(void);
 
-int efm32_initialize_acmp(void);
-int efm32_initialize_vcmp(void);
+int efm32_emu_initialize(void);
+int efm32_acmp_initialize(void);
+int efm32_vcmp_initialize(void);
+
+int efm32_usbdev_is_connected(void);
+int efm32_usbdev_is_enable(void);
+int efm32_usbdev_disable_usbmsc(void);
+int efm32_usbdev_enable_usbmsc(void);
+
 
 int up_lcdinitialize(void);
 

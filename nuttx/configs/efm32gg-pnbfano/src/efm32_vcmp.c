@@ -116,9 +116,9 @@ int efm32_vcmp_irq(int irq, FAR void* context)
 
 
 
-int efm32_initialize_vcmp(void)
+int efm32_vcmp_initialize(void)
 {
-    int regval;
+    uint32_t regval;
 
     DEBUGASSERT(BOARD_VCMP_BIASPROG >=0);
     DEBUGASSERT(BOARD_VCMP_WARMUP   >=0);

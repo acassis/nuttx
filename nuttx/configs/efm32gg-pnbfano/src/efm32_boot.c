@@ -90,6 +90,14 @@ void efm32_boardinitialize(void)
 
     efm32_rmu_initialize();
 
+    efm32_emu_initialize();
+
+    efm32_vcmp_initialize();
+              
+#ifdef BOARD_ACMP_ENABLE
+    efm32_acmp_initialize();
+#endif
+
     /* test log Message */
 
 	syslog(LOG_DEBUG,"EFM32 Board initialization.\n");
@@ -195,32 +203,85 @@ int efm32_initialize_mpu(int devno)
     return OK;
 }
 
-int board_format_sdcard(void)
+int board_mount_sdcard(void)
 {
-    struct fat_format_s fmt = FAT_FORMAT_INITIALIZER;
-
-    syslog(LOG_NOTICE,"Umount SDCARD.\n");
-
-    if ( umount(BOARD_SDHC_MOUNT_PATH) < 0 )
-    {
-        syslog(LOG_ERR,"umount failed!\n");
-    }
-
-    syslog(LOG_NOTICE,"Format.\n");
-
-    fmt.ff_fattype = 32;
-    strncpy((char*)fmt.ff_volumelabel,"PnbFano",LEN(fmt.ff_volumelabel)); /* Volume label */
-    if ( mkfatfs(BOARD_SDHC_BLOCK_DEV_PATH,&fmt) < 0 )
-    {
-        syslog(LOG_ERR,"format failed!\n");
-        return -1;
-    }
-
     syslog(LOG_NOTICE,"Mount SDCARD.\n");
     if ( mount(BOARD_SDHC_BLOCK_DEV_PATH,BOARD_SDHC_MOUNT_PATH,"vfat",0,NULL) 
          < 0 )
     {
         syslog(LOG_ERR,"Cannot Mount SDcard\n");
+        return -1;
+    }
+    return 0;
+}
+
+int board_umount_sdcard(void)
+{
+    syslog(LOG_NOTICE,"Umount SDCARD.\n");
+    if ( umount(BOARD_SDHC_MOUNT_PATH) < 0 )
+    {
+        syslog(LOG_ERR,"umount failed!\n");
+        return -1;
+    }
+    return 0;
+}
+
+int board_is_usb_connected(void)
+{
+    int ret;
+    ret = efm32_usbdev_is_connected();
+    if ( ret < 0 )
+    {
+        syslog(LOG_ERR,"Cannot check is usb is connected!\n");
+        return -1;
+    }
+    return ret;
+}
+
+int board_is_usb_enabled(void)
+{
+    int ret;
+    ret = efm32_usbdev_is_enable();
+    if ( ret < 0 )
+    {
+        syslog(LOG_ERR,"Cannot check is usb is enabled!\n");
+        return -1;
+    }
+    return ret;
+}
+
+int board_enable_usbmsc(void)
+{
+    syslog(LOG_NOTICE,"Enable USBMSC.\n");
+    if (  efm32_usbdev_enable_usbmsc() < 0 )
+    {
+        syslog(LOG_ERR,"Enable USBMSC failed!\n");
+        return -1;
+    }
+    return 0;
+}
+
+int board_disable_usbmsc(void)
+{
+    syslog(LOG_NOTICE,"Disable USBMSC.\n");
+    if (  efm32_usbdev_disable_usbmsc() < 0 )
+    {
+        syslog(LOG_ERR,"Disable USBMSC failed!\n");
+        return -1;
+    }
+    return 0;
+}
+
+
+int board_format_sdcard(void)
+{
+    struct fat_format_s fmt = FAT_FORMAT_INITIALIZER;
+    syslog(LOG_NOTICE,"Format.\n");
+    fmt.ff_fattype = 32;
+    strncpy((char*)fmt.ff_volumelabel,"PnbFano",LEN(fmt.ff_volumelabel)); /* Volume label */
+    if ( mkfatfs(BOARD_SDHC_BLOCK_DEV_PATH,&fmt) < 0 )
+    {
+        syslog(LOG_ERR,"format failed!\n");
         return -1;
     }
     return 0;
@@ -288,13 +349,6 @@ void board_initialize(void)
         syslog(LOG_ERR,"Cannot initialize SDcard\n");
     }
 
-    syslog(LOG_NOTICE,"Mount SDCARD.\n");
-    if ( mount(BOARD_SDHC_BLOCK_DEV_PATH,BOARD_SDHC_MOUNT_PATH,"vfat",0,NULL) 
-         < 0 )
-    {
-        syslog(LOG_ERR,"Cannot Mount SDcard\n");
-    }
-
     syslog(LOG_NOTICE,"Start slow polling \n");
     if ( efm32_slow_poll_init() < 0 )
     {
@@ -307,9 +361,7 @@ void board_initialize(void)
         syslog(LOG_ERR,"Cannot initialize usbdev\n");
     }
 
-    efm32_initialize_vcmp();
-
-    efm32_initialize_acmp();
+    board_mount_sdcard();
 
     syslog(LOG_NOTICE,"Board Ready \n");
 
