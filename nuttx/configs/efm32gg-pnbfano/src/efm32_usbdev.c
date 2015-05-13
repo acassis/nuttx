@@ -440,12 +440,12 @@ int efm32_usbdev_disable_usbmsc(void)
 {
     if ( handle == NULL )
     {
-        speLOG(LOG_DEBUG,"USB Already uninitialized\n");
-        return 0;
+        speLOG(LOG_ERR,"USB Already uninitialized\n");
+        return -1;
     }
 
 #ifdef CONFIG_USBMSC
-    speLOG(LOG_ERR,"USB uninitialization\n");
+    speLOG(LOG_NOTICE,"USB uninitialization\n");
     usbmsc_uninitialize(handle);
     handle = NULL;
 #endif
