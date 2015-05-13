@@ -175,6 +175,10 @@ void sigprocmask_test(void);
 
 void sighand_test(void);
 
+/* signest.c ****************************************************************/
+
+void signest_test(void);
+
 /* posixtimers.c ************************************************************/
 
 void timer_test(void);

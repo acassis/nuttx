@@ -46,6 +46,10 @@ ifeq ($(CONFIG_SAMV7_SDRAMC),y)
 CSRCS += sam_sdram.c
 endif
 
+ifeq ($(CONFIG_HAVE_CXX),y)
+CSRCS += sam_cxxinitialize.c
+endif
+
 ifeq ($(CONFIG_NSH_ARCHINIT),y)
 CSRCS += sam_nsh.c sam_bringup.c
 else ifeq ($(CONFIG_BOARD_INITIALIZE),y)
@@ -111,7 +115,7 @@ ifeq ($(CONFIG_LCD),y)
 CSRCS += sam_ili9488.c
 endif
 ifeq ($(CONFIG_INPUT_MXT),y)
-CSRCS += sam_maxtouch.c
+CSRCS += sam_maxtouch.c sam_atmxtconfig.c
 endif
 endif
 

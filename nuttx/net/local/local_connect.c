@@ -60,6 +60,26 @@
  ****************************************************************************/
 
 /****************************************************************************
+ * Name: local_generate_instance_id
+ ****************************************************************************/
+
+static int32_t local_generate_instance_id(void)
+{
+  static int32_t g_next_instance_id = 0;
+  int32_t id;
+
+  /* Called from local_connect with net_lock held. */
+
+  id = g_next_instance_id++;
+  if (g_next_instance_id < 0)
+    {
+      g_next_instance_id = 0;
+    }
+
+  return id;
+}
+
+/****************************************************************************
  * Name: _local_semtake() and _local_semgive()
  *
  * Description:
@@ -135,6 +155,8 @@ int inline local_stream_connect(FAR struct local_conn_s *client,
     {
       ndbg("ERROR: Failed to create FIFOs for %s: %d\n",
            client->lc_path, ret);
+
+      net_unlock(state);
       return ret;
     }
 
@@ -147,6 +169,8 @@ int inline local_stream_connect(FAR struct local_conn_s *client,
     {
       ndbg("ERROR: Failed to open write-only FIFOs for %s: %d\n",
            client->lc_path, ret);
+
+      net_unlock(state);
       goto errout_with_fifos;
     }
 
@@ -156,6 +180,7 @@ int inline local_stream_connect(FAR struct local_conn_s *client,
 
   dq_addlast(&client->lc_node, &server->u.server.lc_waiters);
   client->lc_state = LOCAL_STATE_ACCEPT;
+  local_accept_pollnotify(server, POLLIN);
   _local_semgive(&server->lc_waitsem);
   net_unlock(state);
 
@@ -193,6 +218,7 @@ int inline local_stream_connect(FAR struct local_conn_s *client,
 
 errout_with_outfd:
   (void)close(client->lc_outfd);
+  client->lc_outfd = -1;
 
 errout_with_fifos:
   (void)local_release_fifos(client);
@@ -280,6 +306,7 @@ int psock_local_connect(FAR struct socket *psock,
                 client->lc_proto = conn->lc_proto;
                 strncpy(client->lc_path, unaddr->sun_path, UNIX_PATH_MAX-1);
                 client->lc_path[UNIX_PATH_MAX-1] = '\0';
+                client->lc_instance_id = local_generate_instance_id();
 
                 /* The client is now bound to an address */
 
@@ -293,8 +320,11 @@ int psock_local_connect(FAR struct socket *psock,
                                                _SS_ISNONBLOCK(psock->s_flags),
                                                state);
                   }
+                else
+                  {
+                    net_unlock(state);
+                  }
 
-                net_unlock(state);
                 return ret;
               }
           }
