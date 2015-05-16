@@ -10370,4 +10370,22 @@
 	* maXTouch Xplained Pro:  The above TWIHS fix was the last barrier to
 	  getting the touchscreen workingoin the maXTouch Xplained Pro LCD
 	  (2015-05-12).
-
+	* net/route/ and net/netdev/netdev_ioctl.c: Complete implementation of
+	  the IPv6 routing logic.  From Max Neklyudov (2015-05-13).
+	* net/udp/: Add inclusion of assert.h in networking files where needed
+	  to avoid compilation errors.  From Max Neklyudov (2015-05-13).
+	* /net/route/netdev_router.c: Fix bug in IPv6 router from Max Neklyudov
+	  (2015-05-13).
+	* sched/pthread/pthread_kill.c: Re-implemened pthread_kill().  It was
+	  just a simple wrapper around kill() but since the correct dispatching
+	  of singles for multi-threaded task groups has been implemented,
+	  calling kill() does not do what pthread_kill() is supposed to do.  The
+	  corrected implementation of pthread_kill() will direct the signal
+	  specifically to the specific pthread and no other (2015-05-13).
+	* arch/arm/include/samdl, arch/arm/src/samdl, configs/samd20-xplained:
+	  Rename the samd/ directories and configuratino varialbes to samdl to
+	  all the same directory structure to support the SAML21 (2015-05-14).
+	* arch/arm/include/samdl and arch/arm/src/samdl: And chip definitions,
+	  configuration framework, and placeholder memory map and pin
+	  configuration files for SAML21 support.  Still incomplete on initial
+	  commit (2015-05-14).

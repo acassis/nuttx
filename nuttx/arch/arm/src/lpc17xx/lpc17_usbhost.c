@@ -192,7 +192,7 @@ struct lpc17_xfrinfo_s
   uint8_t *buffer;            /* Transfer buffer start */
   uint16_t buflen;            /* Buffer length */
   uint16_t xfrd;              /* Number of bytes transferred */
-  
+
 #ifdef CONFIG_USBHOST_ASYNCH
 #if LPC17_IOBUFFERS > 0
   /* Remember the allocated DMA buffer address so that it can be freed when
@@ -858,22 +858,30 @@ static void lpc17_free_xfrinfo(struct lpc17_xfrinfo_s *xfrinfo)
 static inline int lpc17_addctrled(struct lpc17_usbhost_s *priv,
                                   struct lpc17_ed_s *ed)
 {
+  irqstate_t flags;
   uint32_t regval;
+
+  /* Disable control list processing while we modify the list */
+
+  flags   = irqsave();
+  regval = lpc17_getreg(LPC17_USBHOST_CTRL);
+  regval &= ~OHCI_CTRL_CLE;
+  lpc17_putreg(regval, LPC17_USBHOST_CTRL);
 
   /* Add the new bulk ED to the head of the bulk list */
 
   ed->hw.nexted = lpc17_getreg(LPC17_USBHOST_CTRLHEADED);
   lpc17_putreg((uint32_t)ed, LPC17_USBHOST_CTRLHEADED);
 
-  /* ControlListEnable.  This bit is set to enable the processing of the
-   * Control list.  Note: once enabled, it remains enabled and we may even
-   * complete list processing before we get the bit set.  We really
-   * should never modify the control list while CLE is set.
-   */
+  /* Re-enable control list processing. */
+
+  lpc17_putreg(0, LPC17_USBHOST_CTRLED);
 
   regval = lpc17_getreg(LPC17_USBHOST_CTRL);
   regval |= OHCI_CTRL_CLE;
   lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+
+  irqrestore(flags);
   return OK;
 }
 
@@ -891,11 +899,17 @@ static inline int lpc17_remctrled(struct lpc17_usbhost_s *priv,
   struct lpc17_ed_s *curr;
   struct lpc17_ed_s *prev;
   struct lpc17_ed_s *head;
+  irqstate_t flags;
   uint32_t regval;
 
-  /* Find the ED in the control list.  NOTE: We really should never be mucking
-   * with the control list while CLE is set.
-   */
+  /* Disable control list processing while we modify the list */
+
+  flags   = irqsave();
+  regval = lpc17_getreg(LPC17_USBHOST_CTRL);
+  regval &= ~OHCI_CTRL_CLE;
+  lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+
+  /* Find the ED in the control list. */
 
   head = (struct lpc17_ed_s *)lpc17_getreg(LPC17_USBHOST_CTRLHEADED);
   for (prev = NULL, curr = head;
@@ -918,17 +932,6 @@ static inline int lpc17_remctrled(struct lpc17_usbhost_s *priv,
 
           head = (struct lpc17_ed_s *)ed->hw.nexted;
           lpc17_putreg((uint32_t)head, LPC17_USBHOST_CTRLHEADED);
-
-          /* If the control list is now empty, then disable it.
-           * This should never happen!
-           */
-
-          if (head == NULL)
-            {
-              regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
-              regval &= ~OHCI_CTRL_CLE;
-              lpc17_putreg(regval, LPC17_USBHOST_CTRL);
-            }
         }
       else
         {
@@ -946,6 +949,21 @@ static inline int lpc17_remctrled(struct lpc17_usbhost_s *priv,
       ed->hw.nexted = 0;
     }
 
+  /* Re-enable control list processing if the control list is still non-empty
+   * after removing the ED node.
+   */
+
+  lpc17_putreg(0, LPC17_USBHOST_CTRLED);
+  if (lpc17_getreg(LPC17_USBHOST_CTRLHEADED) != 0)
+    {
+      /* If the control list is now empty, then disable it */
+
+      regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
+      regval &= ~OHCI_CTRL_CLE;
+      lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+    }
+
+  irqrestore(flags);
   return OK;
 }
 
@@ -961,21 +979,30 @@ static inline int lpc17_addbulked(struct lpc17_usbhost_s *priv,
                                   struct lpc17_ed_s *ed)
 {
 #ifndef CONFIG_USBHOST_BULK_DISABLE
+  irqstate_t flags;
   uint32_t regval;
+
+  /* Disable bulk list processing while we modify the list */
+
+  flags   = irqsave();
+  regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
+  regval &= ~OHCI_CTRL_BLE;
+  lpc17_putreg(regval, LPC17_USBHOST_CTRL);
 
   /* Add the new bulk ED to the head of the bulk list */
 
   ed->hw.nexted = lpc17_getreg(LPC17_USBHOST_BULKHEADED);
   lpc17_putreg((uint32_t)ed, LPC17_USBHOST_BULKHEADED);
 
-  /* BulkListEnable. This bit is set to enable the processing of the
-   * Bulk list.  Note: once enabled, it remains.  We really should
-   * never modify the bulk list while BLE is set.
-   */
+  /* Re-enable bulk list processing. */
+
+  lpc17_putreg(0, LPC17_USBHOST_BULKED);
 
   regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
   regval |= OHCI_CTRL_BLE;
   lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+
+  irqrestore(flags);
   return OK;
 #else
   return -ENOSYS;
@@ -997,18 +1024,24 @@ static inline int lpc17_rembulked(struct lpc17_usbhost_s *priv,
   struct lpc17_ed_s *curr;
   struct lpc17_ed_s *prev;
   struct lpc17_ed_s *head;
+  irqstate_t flags;
   uint32_t regval;
 
-  /* Find the ED in the bulk list.  NOTE: We really should never be mucking
-   * with the bulk list while BLE is set.
-   */
+  /* Disable bulk list processing while we modify the list */
+
+  flags   = irqsave();
+  regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
+  regval &= ~OHCI_CTRL_BLE;
+  lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+
+  /* Find the ED in the bulk list. */
 
   head = (struct lpc17_ed_s *)lpc17_getreg(LPC17_USBHOST_BULKHEADED);
   for (prev = NULL, curr = head;
        curr && curr != ed;
        prev = curr, curr = (struct lpc17_ed_s *)curr->hw.nexted);
 
-  /* Hmmm.. It would be a bug if we do not find the ED in the bulk list. */
+  /* It would be a bug if we do not find the ED in the bulk list. */
 
   DEBUGASSERT(curr != NULL);
 
@@ -1024,15 +1057,6 @@ static inline int lpc17_rembulked(struct lpc17_usbhost_s *priv,
 
           head = (struct lpc17_ed_s *)ed->hw.nexted;
           lpc17_putreg((uint32_t)head, LPC17_USBHOST_BULKHEADED);
-
-          /* If the bulk list is now empty, then disable it */
-
-          if (head == NULL);
-            {
-              regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
-              regval &= ~OHCI_CTRL_BLE;
-              lpc17_putreg(regval, LPC17_USBHOST_CTRL);
-            }
         }
       else
         {
@@ -1044,6 +1068,21 @@ static inline int lpc17_rembulked(struct lpc17_usbhost_s *priv,
         }
     }
 
+  /* Re-enable bulk list processing if the bulk list is still non-empty
+   * after removing the ED node.
+   */
+
+  lpc17_putreg(0, LPC17_USBHOST_BULKED);
+  if (lpc17_getreg(LPC17_USBHOST_BULKHEADED) != 0)
+    {
+      /* If the bulk list is now empty, then disable it */
+
+      regval  = lpc17_getreg(LPC17_USBHOST_CTRL);
+      regval |= OHCI_CTRL_BLE;
+      lpc17_putreg(regval, LPC17_USBHOST_CTRL);
+    }
+
+  irqrestore(flags);
   return OK;
 #else
   return -ENOSYS;
@@ -1747,87 +1786,107 @@ static int lpc17_usbinterrupt(int irq, void *context)
            * cleared in the interrupt status register.
            */
 
-          td = (struct lpc17_gtd_s *)HCCA->donehead;
+          td = (struct lpc17_gtd_s *)(HCCA->donehead & HCCA_DONEHEAD_MASK);
           HCCA->donehead = 0;
 
           /* Process each TD in the write done list */
 
           for (; td; td = next)
             {
+              /* REVISIT: I have encountered bad TDs in the done list linked
+               * after at least one good TD.  This is some consequence of how
+               * transfers are being cancelled.  But for now, I have only
+               * this work-around.
+               */
+
+              if ((uintptr_t)td < LPC17_TDFREE_BASE ||
+                  (uintptr_t)td >= (LPC17_TDFREE_BASE + LPC17_TD_SIZE*CONFIG_USBHOST_NTDS))
+                {
+                  break;
+                }
+
               /* Get the ED in which this TD was enqueued */
 
               ed      = td->ed;
-              DEBUGASSERT(ed != NULL && ed->xfrinfo != NULL);
+              DEBUGASSERT(ed != NULL);
+
+              /* If there is a transfer in progress, then the xfrinfo pointer will be
+               * non-NULL.  But it appears that a NULL pointer may be received with a
+               * spurious interrupt such as may occur after a transfer is cancelled.
+               */
+
               xfrinfo = ed->xfrinfo;
-
-              /* Save the condition code from the (single) TD status/control
-               * word.
-               */
-
-              xfrinfo->tdstatus = (td->hw.ctrl & GTD_STATUS_CC_MASK) >> GTD_STATUS_CC_SHIFT;
-
-#ifdef CONFIG_DEBUG_USB
-              if (xfrinfo->tdstatus != TD_CC_NOERROR)
+              if (xfrinfo)
                 {
-                  /* The transfer failed for some reason... dump some diagnostic info. */
-
-                  ulldbg("ERROR: ED xfrtype:%d TD CTRL:%08x/CC:%d RHPORTST1:%08x\n",
-                         ed->xfrtype, td->hw.ctrl, xfrinfo->tdstatus,
-                         lpc17_getreg(LPC17_USBHOST_RHPORTST1));
-                }
-#endif
-
-              /* Determine the number of bytes actually transfer by
-               * subtracting the buffer start address from the CBP.  A value
-               * of zero means that all bytes were transferred.
-               */
-
-              tmp = (uintptr_t)td->hw.cbp;
-              if (tmp == 0)
-                {
-                  /* Set the (fake) CBP to the end of the buffer + 1 */
-
-                  tmp = xfrinfo->buflen;
-                }
-              else
-                {
-                  DEBUGASSERT(tmp >= (uintptr_t)xfrinfo->buffer);
-
-                  /* Determine the size of the transfer by subtracting the
-                   * current buffer pointer (CBP) from the initial buffer
-                   * pointer (on packet receipt only).
+                  /* Save the condition code from the (single) TD status/control
+                   * word.
                    */
 
-                  tmp -= (uintptr_t)xfrinfo->buffer;
-                  DEBUGASSERT(tmp < UINT16_MAX);
-                }
+                  xfrinfo->tdstatus = (td->hw.ctrl & GTD_STATUS_CC_MASK) >> GTD_STATUS_CC_SHIFT;
 
-              xfrinfo->xfrd = (uint16_t)tmp;
+#ifdef CONFIG_DEBUG_USB
+                  if (xfrinfo->tdstatus != TD_CC_NOERROR)
+                    {
+                      /* The transfer failed for some reason... dump some diagnostic info. */
 
-              /* Return the TD to the free list */
+                      ulldbg("ERROR: ED xfrtype:%d TD CTRL:%08x/CC:%d RHPORTST1:%08x\n",
+                             ed->xfrtype, td->hw.ctrl, xfrinfo->tdstatus,
+                             lpc17_getreg(LPC17_USBHOST_RHPORTST1));
+                    }
+#endif
 
-              next = (struct lpc17_gtd_s *)td->hw.nexttd;
-              lpc17_tdfree(td);
+                  /* Determine the number of bytes actually transfer by
+                   * subtracting the buffer start address from the CBP.  A
+                   * value of zero means that all bytes were transferred.
+                   */
 
-              if (xfrinfo->wdhwait)
-                {
-                  /* Wake up the thread waiting for the WDH event */
+                  tmp = (uintptr_t)td->hw.cbp;
+                  if (tmp == 0)
+                    {
+                      /* Set the (fake) CBP to the end of the buffer + 1 */
 
-                  lpc17_givesem(&ed->wdhsem);
-                  xfrinfo->wdhwait = false;
-                }
+                      tmp = xfrinfo->buflen;
+                    }
+                  else
+                    {
+                      DEBUGASSERT(tmp >= (uintptr_t)xfrinfo->buffer);
+
+                      /* Determine the size of the transfer by subtracting
+                       * the current buffer pointer (CBP) from the initial
+                       * buffer pointer (on packet receipt only).
+                       */
+
+                      tmp -= (uintptr_t)xfrinfo->buffer;
+                      DEBUGASSERT(tmp < UINT16_MAX);
+                    }
+
+                  xfrinfo->xfrd = (uint16_t)tmp;
+
+                  /* Return the TD to the free list */
+
+                  next = (struct lpc17_gtd_s *)td->hw.nexttd;
+                  lpc17_tdfree(td);
+
+                  if (xfrinfo->wdhwait)
+                    {
+                      /* Wake up the thread waiting for the WDH event */
+
+                      lpc17_givesem(&ed->wdhsem);
+                      xfrinfo->wdhwait = false;
+                    }
 
 #ifdef CONFIG_USBHOST_ASYNCH
-              /* Perform any pending callbacks for the case of asynchronous
-               * transfers.
-               */
+                  /* Perform any pending callbacks for the case of
+                   * asynchronous transfers.
+                   */
 
-              else if (xfrinfo->callback)
-                {
-                  DEBUGASSERT(xfrinfo->wdhwait == false);
-                  lpc17_asynch_completion(priv, ed);
-                }
+                  else if (xfrinfo->callback)
+                    {
+                      DEBUGASSERT(xfrinfo->wdhwait == false);
+                      lpc17_asynch_completion(priv, ed);
+                    }
 #endif
+                }
             }
         }
 
@@ -3246,6 +3305,7 @@ static int lpc17_cancel(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep)
   struct lpc17_gtd_s *td;
   struct lpc17_gtd_s *next;
   struct lpc17_xfrinfo_s *xfrinfo;
+  uint32_t ctrl;
   irqstate_t flags;
 
   DEBUGASSERT(priv != NULL && ed != NULL);
@@ -3269,15 +3329,42 @@ static int lpc17_cancel(FAR struct usbhost_driver_s *drvr, usbhost_ep_t ep)
       if (xfrinfo->wdhwait)
 #endif
         {
-          /* We really need some kind of atomic test and set to do this right */
+          /* Control endpoints should not come through this path and
+           * isochronous endpoints are not yet implemented.  So we only have
+           * to distinguish bulk and interrupt endpoints.
+           */
 
-          td           = (struct lpc17_gtd_s *)(ed->hw.headp & ED_HEADP_ADDR_MASK);
-          ed->hw.headp = LPC17_TDTAIL_ADDR;
-          ed->xfrinfo  = NULL;
+          if (ed->xfrtype == USB_EP_ATTR_XFER_BULK)
+            {
+              /* Disable bulk list processing while we modify the list */
 
-          /* Free all transfer descriptors that were connected to the ED */
+              ctrl  = lpc17_getreg(LPC17_USBHOST_CTRL);
+              lpc17_putreg(ctrl & ~OHCI_CTRL_BLE, LPC17_USBHOST_CTRL);
 
-          DEBUGASSERT(td != (struct lpc17_gtd_s *)LPC17_TDTAIL_ADDR);
+              /* Remove the TDs attached to the ED, keeping the ED in the list */
+
+              td           = (struct lpc17_gtd_s *)(ed->hw.headp & ED_HEADP_ADDR_MASK);
+              ed->hw.headp = LPC17_TDTAIL_ADDR;
+              ed->xfrinfo  = NULL;
+
+              /* Re-enable bulk list processing, if it was enabled before */
+
+              lpc17_putreg(0, LPC17_USBHOST_BULKED);
+              lpc17_putreg(ctrl, LPC17_USBHOST_CTRL);
+            }
+          else
+            {
+              /* Remove the TDs attached to the ED, keeping the Ed in the list */
+
+              td           = (struct lpc17_gtd_s *)(ed->hw.headp & ED_HEADP_ADDR_MASK);
+              ed->hw.headp = LPC17_TDTAIL_ADDR;
+              ed->xfrinfo  = NULL;
+            }
+
+          /* Free all transfer descriptors that were connected to the ED.  In
+           * some race conditions with the hardware, this might be none.
+           */
+
           while (td != (struct lpc17_gtd_s *)LPC17_TDTAIL_ADDR)
             {
               next = (struct lpc17_gtd_s *)td->hw.nexttd;

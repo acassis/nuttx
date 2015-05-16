@@ -1,7 +1,7 @@
 /************************************************************************
  * sched/pthread/pthread_kill.c
  *
- *   Copyright (C) 2007, 2009, 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2009, 2011, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,8 +45,12 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <nuttx/sched.h>
+
+#include "signal/signal.h"
+
 /************************************************************************
- * Global Functions
+ * Public Functions
  ************************************************************************/
 
 /************************************************************************
@@ -80,6 +84,76 @@
 
 int pthread_kill(pthread_t thread, int signo)
 {
+#ifdef HAVE_GROUP_MEMBERS
+  /* If group members are support then pthread_kill() differs from kill().
+   * kill(), in this case, must following the POSIX rules for delivery of
+   * signals in the group environment.  Otherwise, kill(), like
+   * pthread_kill() will just deliver the signal to the thread ID it is
+   * requested to use.
+   */
+
+#ifdef CONFIG_SCHED_HAVE_PARENT
+  FAR struct tcb_s *rtcb = (FAR struct tcb_s *)g_readytorun.head;
+#endif
+  FAR struct tcb_s *stcb;
+  siginfo_t info;
+  int ret;
+
+  /* Make sure that the signal is valid */
+
+  if (!GOOD_SIGNO(signo))
+    {
+      ret = -EINVAL;
+      goto errout;
+    }
+
+  /* Keep things stationary through the following */
+
+  sched_lock();
+
+  /* Create the siginfo structure */
+
+  info.si_signo           = signo;
+  info.si_code            = SI_USER;
+  info.si_value.sival_ptr = NULL;
+#ifdef CONFIG_SCHED_HAVE_PARENT
+  info.si_pid             = rtcb->pid;
+  info.si_status          = OK;
+#endif
+
+  /* Get the TCB associated with the thread */
+
+  stcb = sched_gettcb((pid_t)thread);
+  if (!stcb)
+    {
+      ret = -ESRCH;
+      goto errout_with_lock;
+    }
+
+  /* Dispatch the signal to thread, bypassing normal task group thread
+   * dispatch rules.
+   */
+
+  ret = sig_tcbdispatch(stcb, &info);
+  sched_unlock();
+
+  if (ret < 0)
+    {
+      goto errout;
+    }
+
+  return OK;
+
+errout_with_lock:
+  sched_unlock();
+errout:
+  return -ret;
+
+#else
+  /* If group members are not supported then pthread_kill is basically the
+   * same as kill().
+   */
+
   int ret;
 
   set_errno(EINVAL);
@@ -90,6 +164,5 @@ int pthread_kill(pthread_t thread, int signo)
     }
 
   return ret;
+#endif
 }
-
-
