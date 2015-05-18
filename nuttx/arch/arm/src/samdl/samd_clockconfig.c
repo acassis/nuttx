@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/samdl/sam_clockconfig.c
+ * arch/arm/src/samdl/samd_clockconfig.c
  *
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -7,11 +7,11 @@
  * References:
  *   1. "Atmel SAM D20J / SAM D20G / SAM D20E ARM-Based Microcontroller
  *      Datasheet", 42129J–SAM–12/2013
- *   2. Atmel sample code.  This code has an ASF license with is compatible
- *      with the NuttX BSD license, but includes the provision that this
- *      code not be used in non-Atmel products.  That sample code was used
- *      only as a reference so I believe that only the NuttX BSD license
- *      applies.
+ *   2. Atmel sample code for the SAMD20.  This code has an ASF license
+ *      with is compatible with the NuttX BSD license, but includes the
+ *      provision that this code not be used in non-Atmel products.  That
+ *      sample code was used only as a reference so I believe that only the
+ *      NuttX BSD license applies.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -54,9 +54,9 @@
 
 #include "up_arch.h"
 
-#include "chip/sam_pm.h"
-#include "chip/sam_sysctrl.h"
-#include "chip/sam_gclk.h"
+#include "chip/samd_pm.h"
+#include "chip/samd_sysctrl.h"
+#include "chip/samd_gclk.h"
 #include "chip/sam_nvmctrl.h"
 #include "chip/sam_fuses.h"
 

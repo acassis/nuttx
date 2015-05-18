@@ -44,9 +44,11 @@
 
 #include <stdbool.h>
 
+#include "chip/sam_sercom.h"
+
 #include "up_arch.h"
 #include "sam_config.h"
-#include "chip/sam_pm.h"
+#include "sam_pm.h"
 
 /****************************************************************************
  * Pre-processor Definitions

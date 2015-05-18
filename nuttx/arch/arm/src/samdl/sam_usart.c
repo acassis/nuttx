@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/samdl/sam_usart.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,13 +42,11 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "chip/sam_pinmap.h"
-#include "chip/sam_gclk.h"
-#include "chip/sam_usart.h"
+#include "sam_pinmap.h"
+#include "sam_gclk.h"
+#include "sam_usart.h"
 
 #include <arch/board/board.h>
-
-#include "sam_usart.h"
 
 /****************************************************************************
  * Pre-processor Definitions

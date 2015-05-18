@@ -1,7 +1,7 @@
-/************************************************************************************
- * arch/arm/src/samdl/chip.h
+/****************************************************************************
+ * arch/arm/src/samdl/sam_i2c_master.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,51 +31,59 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ************************************************************************************/
+ ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_SAMDL_CHIP_H
-#define __ARCH_ARM_SRC_SAMDL_CHIP_H
+#ifndef __ARCH_ARM_SRC_SAMDL_SAM_I2C_MASTER_H
+#define __ARCH_ARM_SRC_SAMDL_SAM_I2C_MASTER_H
 
-/************************************************************************************
+/****************************************************************************
  * Included Files
- ************************************************************************************/
+ ****************************************************************************/
 
 #include <nuttx/config.h>
 
-/* Include the chip capabilities file */
-
-#include <arch/samdl/chip.h>
-
-/* Define the number of interrupt vectors that need to be supported for this chip */
-
-#define ARMV6M_PERIPHERAL_INTERRUPTS 25
-
-/* Include the memory map file.  Other chip hardware files should then include
- * this file for the proper setup.
- */
+#include "sam_config.h"
 
 #if defined(CONFIG_ARCH_FAMILY_SAMD20)
-#  include "chip/samd20_memorymap.h"
+#  include "chip/samd_i2c_master.h"
 #elif defined(CONFIG_ARCH_FAMILY_SAML21)
-#  include "chip/saml21_memorymap.h"
-#else
-#  error Unrecognized SAMD/L architecture
+#  include "chip/saml_i2c_master.h"
 #endif
 
-/************************************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- ************************************************************************************/
+ ****************************************************************************/
 
-/************************************************************************************
+/****************************************************************************
  * Public Types
- ************************************************************************************/
+ ****************************************************************************/
 
-/************************************************************************************
+/****************************************************************************
+ * Inline Functions
+ ****************************************************************************/
+
+#ifndef __ASSEMBLY__
+
+/****************************************************************************
  * Public Data
- ************************************************************************************/
+ ****************************************************************************/
 
-/************************************************************************************
- * Public Functions
- ************************************************************************************/
+#undef EXTERN
+#if defined(__cplusplus)
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
 
-#endif /* __ARCH_ARM_SRC_SAMDL_CHIP_H */
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+#undef EXTERN
+#if defined(__cplusplus)
+}
+#endif
+#endif /* __ASSEMBLY__ */
+#endif /* __ARCH_ARM_SRC_SAMDL_SAM_I2C_MASTER_H */
