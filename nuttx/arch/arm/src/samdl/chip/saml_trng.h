@@ -1,12 +1,12 @@
 /********************************************************************************************
- * arch/arm/src/samdl/chip/sam_sercom.h
+ * arch/arm/src/samdl/chip/saml_trng.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * References:
- *   "Atmel SAM D20J / SAM D20G / SAM D20E ARM-Based Microcontroller
- *   Datasheet", 42129J–SAM–12/2013
+ *   "Atmel SAM L21E / SAM L21G / SAM L21J Smart ARM-Based Microcontroller
+ *   Datasheet", Atmel-42385C-SAML21_Datasheet_Preliminary-03/20/15
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,8 +37,8 @@
  *
  ********************************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_SAMDL_CHIP_SAM_SERCOM_H
-#define __ARCH_ARM_SRC_SAMDL_CHIP_SAM_SERCOM_H
+#ifndef __ARCH_ARM_SRC_SAMDL_CHIP_SAML_TRNG_H
+#define __ARCH_ARM_SRC_SAMDL_CHIP_SAML_TRNG_H
 
 /********************************************************************************************
  * Included Files
@@ -48,26 +48,43 @@
 
 #include "chip.h"
 
+#ifdef CONFIG_ARCH_FAMILY_SAML21
+
 /********************************************************************************************
  * Pre-processor Definitions
  ********************************************************************************************/
-/* Two generic clocks are used by the SERCOM: GCLK_SERCOMx_CORE and GCLK_SERCOMx_SLOW.  The
- * core clock (GCLK_SERCOMx_CORE) is required to clock the SERCOM while operating as a
- * master, while the slow clock (GCLK_SERCOM_SLOW) is only required for certain functions.
- * SERCOM modules must share the same slow GCLK channel ID.
- *
- * The baud-rate generator runs off the GCLK_SERCOMx_CORE clock (or, optionally, external
- * clock).
+/* TRNG register offsets *********************************************************************/
+
+#define SAM_TRNG_CTRLA_OFFSET       0x0000  /* Control A register */
+#define SAM_TRNG_EVCTRL_OFFSET      0x0004  /* Event control register */
+#define SAM_TRNG_INTENCLR_OFFSET    0x0008  /* Interrupt enable clear register */
+#define SAM_TRNG_INTENSET_OFFSET    0x0009  /* Interrupt enable set register */
+#define SAM_TRNG_INTFLAG_OFFSET     0x000a  /* Interrupt flag and status clear register */
+#define SAM_TRNG_DATA_OFFSET        0x0020  /* Output data register */
+
+/* TRNG register addresses *******************************************************************/
+
+#define SAM_TRNG_CTRLA              (SAM_TRNG_BASE+SAM_TRNG_CTRLA_OFFSET)
+#define SAM_TRNG_EVCTRL             (SAM_TRNG_BASE+SAM_TRNG_EVCTRL_OFFSET)
+#define SAM_TRNG_INTENCLR           (SAM_TRNG_BASE+SAM_TRNG_INTENCLR_OFFSET)
+#define SAM_TRNG_INTENSET           (SAM_TRNG_BASE+SAM_TRNG_INTENSET_OFFSET)
+#define SAM_TRNG_INTFLAG            (SAM_TRNG_BASE+SAM_TRNG_INTFLAG_OFFSET)
+#define SAM_TRNG_DATA               (SAM_TRNG_BASE+SAM_TRNG_DATA_OFFSET)
+
+/* TRNG register bit definitions *************************************************************/
+
+/* Control register */
+
+#define TRNG_CTRLA_ENABLE            (1 << 1)  /* Bit 1:  Enable */
+#define TRNG_CTRLA_WEN               (1 << 6)  /* Bit 6:  Run in standby */
+
+/* Event control register, Interrupt enable clear, interrupt enable set register, interrupt
+ * flag status registers.
  */
 
-#define SERCOM_GCLK_ID_SLOW          12
-#define SERCOM_GCLK_ID_CORE(n)       (13+(n))
-#  define SERCOM0_GCLK_ID_CORE       13
-#  define SERCOM1_GCLK_ID_CORE       14
-#  define SERCOM2_GCLK_ID_CORE       15
-#  define SERCOM3_GCLK_ID_CORE       16
-#  define SERCOM4_GCLK_ID_CORE       17
-#  define SERCOM5_GCLK_ID_CORE       18
+#define TRNG_EVCTRL_DATARDY          (1 << 0)  /* Bit 0:  Data ready */
+
+/* Data register (32-bit data) */
 
 /********************************************************************************************
  * Public Types
@@ -81,4 +98,5 @@
  * Public Functions
  ********************************************************************************************/
 
-#endif /* __ARCH_ARM_SRC_SAMDL_CHIP_SAM_SERCOM_H */
+#endif /* CONFIG_ARCH_FAMILY_SAML21 */
+#endif /* __ARCH_ARM_SRC_SAMDL_CHIP_SAML_TRNG_H */

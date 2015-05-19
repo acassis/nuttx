@@ -47,7 +47,7 @@
 #include <nuttx/config.h>
 
 #include "chip.h"
-#include "chip/sam_sercom.h"
+#include "chip/saml_sercom.h"
 
 #ifdef CONFIG_ARCH_FAMILY_SAML21
 
@@ -64,9 +64,7 @@
 #define SAM_USART_INTENSET_OFFSET    0x0016  /* Interrupt enable set register */
 #define SAM_USART_INTFLAG_OFFSET     0x0018  /* Interrupt flag and status clear register */
 #define SAM_USART_STATUS_OFFSET      0x001a  /* Status register */
-
 #define SAM_USART_SYNCBUSY_OFFSET    0x001c /* Synchronization busy register */
-
 #define SAM_USART_DATA_OFFSET        0x0018  /* Data register */
 #define SAM_USART_DBGCTRL_OFFSET     0x0030  /* Debug control register */
 
@@ -166,8 +164,8 @@
 #define USART_CTRLA_TXPO_SHIFT       (16)      /* Bits 16-17: Transmit data pinout */
 #define USART_CTRLA_TXPO_MASK        (3 << USART_CTRLA_TXPO_SHIFT)
 #  define USART_CTRLA_TXPAD0_1       (0 <<  USART_CTRLA_TXPO_SHIFT) /* TxD=SERCOM PAD[0]; XCK=PAD[1] */
-#  define USART_CTRLA_TXPAD1         (1 <<  USART_CTRLA_TXPO_SHIFT) /* TxD=SERCOM PAD[1]; XCK=PAD[3] */
-#  define USART_CTRLA_TXPAD0_2       (2 <<  USART_CTRLA_TXPO_SHIFT) /* TxD=SERCOM PAD[2]; RTS=PAD[2]; CTS=PAD[3] */
+#  define USART_CTRLA_TXPAD2         (1 <<  USART_CTRLA_TXPO_SHIFT) /* TxD=SERCOM PAD[2]; XCK=PAD[3] */
+#  define USART_CTRLA_TXPAD0_2       (2 <<  USART_CTRLA_TXPO_SHIFT) /* TxD=SERCOM PAD[0]; RTS=PAD[2]; CTS=PAD[3] */
 #define USART_CTRLA_RXPO_SHIFT       (20)      /* Bits 20-21: Receive data pinout */
 #define USART_CTRLA_RXPO_MASK        (3 << USART_CTRLA_RXPO_SHIFT)
 #  define USART_CTRLA_RXPAD0         (0 << USART_CTRLA_RXPO_SHIFT) /* RxD=SERCOM PAD[0] */
@@ -176,14 +174,14 @@
 #  define USART_CTRLA_RXPAD3         (3 << USART_CTRLA_RXPO_SHIFT) /* RxD=SERCOM PAD[3] */
 #define USART_CTRLA_SAMPA_SHIFT      (22)      /* Bits 22-23: Sample adjustment */
 #define USART_CTRLA_SAMPA_MASK       (3 << USART_CTRLA_SAMPA_SHIFT)
-#  define USART_CTRLA_SAMPA_ 789     (0 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 7-8-9 */
-#  define USART_CTRLA_SAMPA_ 91011   (1 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 9-10-11 */
-#  define USART_CTRLA_SAMPA_ 111213  (2 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 11-12-13 */
-#  define USART_CTRLA_SAMPA_ 131415  (3 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 13-14-15 */
-#  define USART_CTRLA_SAMPA_ 345     (0 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 3-4-5 */
-#  define USART_CTRLA_SAMPA_ 456     (1 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 4-5-6 */
-#  define USART_CTRLA_SAMPA_ 567     (2 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 5-6-7 */
-#  define USART_CTRLA_SAMPA_ 6768    (3 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 6-7-8 */
+#  define USART_CTRLA_SAMPA_789      (0 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 7-8-9 */
+#  define USART_CTRLA_SAMPA_91011    (1 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 9-10-11 */
+#  define USART_CTRLA_SAMPA_111213   (2 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 11-12-13 */
+#  define USART_CTRLA_SAMPA_131415   (3 << USART_CTRLA_SAMPA_SHIFT) /* 16x oversampling 13-14-15 */
+#  define USART_CTRLA_SAMPA_345      (0 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 3-4-5 */
+#  define USART_CTRLA_SAMPA_456      (1 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 4-5-6 */
+#  define USART_CTRLA_SAMPA_567      (2 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 5-6-7 */
+#  define USART_CTRLA_SAMPA_6768     (3 << USART_CTRLA_SAMPA_SHIFT) /* 8x oversampling 6-7-8 */
 #define USART_CTRLA_FORM_SHIFT       (24)      /* Bits 24-27: Frame format */
 #define USART_CTRLA_FORM_MASK        (7 << USART_CTRLA_FORM_SHIFT)
 #  define USART_CTRLA_FORM_NOPARITY  (0 << USART_CTRLA_FORM_SHIFT) /* USART frame (no parity) */

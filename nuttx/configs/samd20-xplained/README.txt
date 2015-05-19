@@ -546,7 +546,7 @@ SAMD20 Xplained Pro-specific Configuration Options
     CONFIG_SAMDL_SERCOM4_ISI2C, CONFIG_SAMDL_SERCOM4_ISSPI, or CONFIG_SAMDL_SERCOM4_ISUSART
     CONFIG_SAMDL_SERCOM5_ISI2C, CONFIG_SAMDL_SERCOM5_ISSPI, or CONFIG_SAMDL_SERCOM5_ISUSART
 
-  SAT91SAMD20 specific device driver settings
+  SAMD20 specific device driver settings
 
     CONFIG_USARTn_SERIAL_CONSOLE - selects the USARTn (n=0,1,2,..5) for the
       console and ttys0 (default is the USART4).

@@ -44,11 +44,17 @@
 
 #include <stdbool.h>
 
-#include "chip/sam_sercom.h"
-
 #include "up_arch.h"
 #include "sam_config.h"
-#include "sam_pm.h"
+#include "sam_periphclks.h"
+
+#if defined(CONFIG_ARCH_FAMILY_SAMD20)
+#  include "chip/samd_sercom.h"
+#elif defined(CONFIG_ARCH_FAMILY_SAML21)
+#  include "chip/saml_sercom.h"
+#else
+#  error Unrecognized SAMD/L architecture
+#endif
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -81,23 +87,27 @@ extern "C"
  * Name: sercom_enable
  *
  * Description:
- *   Enable clocking to a SERCOM module in PM
+ *   Enable clocking to a SERCOM module
  *
  * Assumptions/Limitation:
- *   This operation is global and non-atomic.  The caller should disable
- *   interrupts prior to calling this function.
+ *   This operation is global and atomic.  Interrupts will be masked.
  *
  ****************************************************************************/
 
 static inline void sercom_enable(int sercom)
 {
-  uint32_t regval;
+#ifdef SAMDL_HAVE_SERCOM5
+  /* SERCOM5 is a special case */
 
-  /* Enable clocking to the SERCOM module in PM */
-
-  regval  = getreg32(SAM_PM_APBCMASK);
-  regval |= PM_APBCMASK_SERCOM(sercom);
-  putreg32(regval, SAM_PM_APBCMASK);
+  if (sercom == 5)
+    {
+      sam_sercom5_enableperiph();
+    }
+  else
+#endif
+    {
+      sam_sercom_enableperiph(sercom);
+    }
 }
 
 /****************************************************************************
