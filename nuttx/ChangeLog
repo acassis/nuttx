@@ -10398,3 +10398,21 @@
 	  board support with naming changed.  Does not yet build (2015-05-18).
 	* libc/net/lib_inetntoa.c: Correct errors in printing IP address when
 	  type char is signed.  From Max Neklyudov (2015-05-19).
+	* arch/arm/src/efm32/efm32_rtc_burtc.c: Updated EFM32 RTC driver from
+	  Pierre-noel Bouteville (2015-05-19).
+	* arch/arm/src/tiva/chip/tm4c_memorymap.h, tm4c_pinmap.h, and vectors.h.
+	  configs/tm4c1294-launchpad/include/board.h and src/tm4c_autoleds.c: 
+	  Fixes for Tiva TM4C1294NCPDT.  From Frank Sautter.  (2015-05-20).
+	* configs/tm4c1294-launchpad/include/board.h:  Added TM4C1294NCPDT
+	  EN0_LED2 (10/100-Base-Tx); removed all booster pack pin definitions.
+	  From Frank Sautter (2015-05-20).
+	* nuttx/arch/arm/src/sam34/sam_serial.c:  In NONBLOCKING mode serial
+	  does not receive bytes from UART.  This happens because RX interrupt
+	  was disabled in the setup routine.  To fix this I save interrupt
+	  configuration before uart shutdown and restore it after.  From Max
+	  Neklyudov (2015-05-21).
+	* arch/arm/include/lpc11xx and src/lpc11xx:  Support for the LPC11xx
+	  family (the LPC1115 MCU in particular).  Contribuited by Alan Carvalho
+	  de Assis (2015-05-22).
+	* configs/lpcxpresso-lpc1115:  Support for the LPCXpression LPC1115
+	  board.  Contribuited by Alan Carvalho de Assis (2015-05-22).

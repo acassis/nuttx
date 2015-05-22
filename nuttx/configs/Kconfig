@@ -289,6 +289,14 @@ config ARCH_BOARD_LM4F120_LAUNCHPAD
 	---help---
 		Stellaris LM4F120 LaunchPad.
 
+config ARCH_BOARD_LPCXPRESSO_LPC1115
+	bool "NXP LPCXpresso LPC1115"
+	depends on ARCH_CHIP_LPC1115
+	select ARCH_HAVE_LEDS
+	---help---
+		Embedded Artists base board with NXP LPCExpresso LPC1115.  This board
+		is based on the NXP LPC1115.
+
 config ARCH_BOARD_LPCXPRESSO
 	bool "NXP LPCExpresso LPC1768"
 	depends on ARCH_CHIP_LPC1768
@@ -1096,9 +1104,11 @@ config ARCH_BOARD_CUSTOM_DIR
 	---help---
 		If the custom board configuration is selected, then it is necessary
 		to also tell the build system where it can find the board directory
-		for the custom board. This may be either a relative path from the
-		toplevel NuttX directory (like "configs/myboard") or an absolute path
-		to some location outside of the NuttX source tree (like
+		for the custom board.
+
+		In this case, the board directory is assume to lie outside the the
+		NuttX directory.  The provided path must then be a full, absolute
+		path to some location outside of the NuttX source tree (like
 		"~/projects/myboard").
 
 config BOARD_CRASHDUMP
@@ -1188,6 +1198,7 @@ config ARCH_BOARD
 	default "lm4f120-launchpad"        if ARCH_BOARD_LM4F120_LAUNCHPAD
 	default "lpc4330-xplorer"          if ARCH_BOARD_LPC4330_XPLORER
 	default "lpc4357-evb"              if ARCH_BOARD_LPC4357_EVB
+	default "lpcxpresso-lpc1115"       if ARCH_BOARD_LPCXPRESSO_LPC1115
 	default "lpcxpresso-lpc1768"       if ARCH_BOARD_LPCXPRESSO
 	default "maple"                    if ARCH_BOARD_MAPLE
 	default "mbed"                     if ARCH_BOARD_MBED

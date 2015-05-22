@@ -175,56 +175,100 @@
  * be determined by the values written to the DFLL Coarse Value bit group
  * and the DFLL Fine Value bit group in the DFLL Value register.
  *
- *   BOARD_DFLL_OPENLOOP            - Boolean (defined / not defined)
- *   BOARD_DFLL_TRACKAFTERFINELOCK  - Boolean (defined / not defined)
- *   BOARD_DFLL_KEEPLOCKONWAKEUP    - Boolean (defined / not defined)
- *   BOARD_DFLL_ENABLECHILLCYCLE    - Boolean (defined / not defined)
- *   BOARD_DFLL_QUICKLOCK           - Boolean (defined / not defined)
- *   BOARD_DFLL_ONDEMAND            - Boolean (defined / not defined)
- *   BOARD_DFLL_COARSEVALUE         - Value
- *   BOARD_DFLL_FINEVALUE           - Value
+ *   BOARD_DFLL48M_CLOSEDLOOP          - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_OPENLOOP            - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_RECOVERY            - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_TRACKAFTERFINELOCK  - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_KEEPLOCKONWAKEUP    - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_ENABLECHILLCYCLE    - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_QUICKLOCK           - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_RUNINSTDBY          - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_ONDEMAND            - Boolean (defined / not defined)
+ *   BOARD_DFLL48M_COARSEVALUE         - Value
+ *   BOARD_DFLL48M_FINEVALUE           - Value
  *
  * Open Loop mode only:
- *   BOARD_DFLL_COARSEVALUE         - Value
- *   BOARD_DFLL_FINEVALUE           - Value
+ *   BOARD_DFLL48M_COARSEVALUE         - Value
+ *   BOARD_DFLL48M_FINEVALUE           - Value
  *
  * Closed loop mode only:
- *   BOARD_DFLL_GCLKGEN          - See GCLK_CLKCTRL_GEN* definitions
- *   BOARD_DFLL_MULTIPLIER          - Value
- *   BOARD_DFLL_MAXCOARSESTEP       - Value
- *   BOARD_DFLL_MAXFINESTEP         - Value
+ *   BOARD_DFLL48M_REFCLK_CLKGEN       - GCLK index in the range {0..8}
+ *   BOARD_DFLL48M_MULTIPLIER          - Value
+ *   BOARD_DFLL48M_MAXCOARSESTEP       - Value
+ *   BOARD_DFLL48M_MAXFINESTEP         - Value
  *
- *   BOARD_DFLL_FREQUENCY           - The resulting frequency
+ *   BOARD_DFLL48M_FREQUENCY           - The resulting frequency
  */
 
-#define BOARD_DFLL_ENABLE            1
-#undef  BOARD_DFLL_OPENLOOP
-#undef  BOARD_DFLL_ONDEMAND
-#undef  BOARD_DFLL_RUNINSTANDBY
+#define BOARD_DFLL48M_ENABLE            1  /* Use the DFLL48M */
+#define BOARD_DFLL48M_CLOSEDLOOP        1  /* In closed loop mode */
+#undef  BOARD_DFLL48M_OPENLOOP
+#undef  BOARD_DFLL48M_RECOVERY
+#undef  BOARD_DFLL48M_RUNINSTDBY
+#undef  BOARD_DFLL48M_ONDEMAND
+#undef  BOARD_DFLL48M_RUNINSTANDBY
 
 /* DFLL open loop mode configuration */
 
-#define BOARD_DFLL_COARSEVALUE       (0x1f / 4)
-#define BOARD_DFLL_FINEVALUE         (0xff / 4)
+#define BOARD_DFLL48M_COARSEVALUE       (0x1f / 4)
+#define BOARD_DFLL48M_FINEVALUE         (0xff / 4)
 
 /* DFLL closed loop mode configuration */
 
-#define BOARD_DFLL_SRCGCLKGEN         GCLK_CLKCTRL_GEN1
-#define BOARD_DFLL_MULTIPLIER         12
-#define BOARD_DFLL_QUICKLOCK          1
-#define BOARD_DFLL_TRACKAFTERFINELOCK 1
-#define BOARD_DFLL_KEEPLOCKONWAKEUP   1
-#define BOARD_DFLL_ENABLECHILLCYCLE   1
-#define BOARD_DFLL_MAXCOARSESTEP      (0x1f / 4)
-#define BOARD_DFLL_MAXFINESTEP        (0xff / 4)
+#define BOARD_DFLL48M_REFCLK_CLKGEN      1
+#define BOARD_DFLL48M_MULTIPLIER         12
+#define BOARD_DFLL48M_QUICKLOCK          1
+#define BOARD_DFLL48M_TRACKAFTERFINELOCK 1
+#define BOARD_DFLL48M_KEEPLOCKONWAKEUP   1
+#define BOARD_DFLL48M_ENABLECHILLCYCLE   1
+#define BOARD_DFLL48M_MAXCOARSESTEP      (0x1f / 4)
+#define BOARD_DFLL48M_MAXFINESTEP        (0xff / 4)
 
-#define BOARD_DFLL_FREQUENCY          (48000000)
+#define BOARD_DFLL48M_FREQUENCY          (48000000)
+
+/* Fractional Digital Phase Locked Loop configuration.
+ *
+ *   BOARD_FDPLL96M_ENABLE          - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_RUNINSTDBY      - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_ONDEMAND        - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_LBYPASS         - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_WUF             - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_LPEN            - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_FILTER          - See OSCCTRL_DPLLCTRLB_FILTER_* definitions
+ *   BOARD_FDPLL96M_REFCLK          - See  OSCCTRL_DPLLCTRLB_REFLCK_* definitions
+ *   BOARD_FDPLL96M_REFCLK_CLKGEN   - GCLK index in the range {0..8}
+ *   BOARD_FDPLL96M_LOCKTIME_ENABLE - Boolean (defined / not defined)
+ *   BOARD_FDPLL96M_LOCKTIME        - See OSCCTRL_DPLLCTRLB_LTIME_* definitions
+ *   BOARD_FDPLL96M_LOCKTIME_CLKGEN - GCLK index in the range {0..8}
+ *   BOARD_FDPLL96M_REFDIV          - Numeric value, 1 - 2047
+ *   BOARD_FDPLL96M_PRESCALER       - See OSCCTRL_DPLLPRESC_* definitions
+ *   BOARD_FDPLL96M_REFFREQ         - Numeric value
+ *   BOARD_FDPLL96M_FREQUENCY       - Numeric value
+ */
+
+#undef  BOARD_FDPLL96M_ENABLE
+#undef  BOARD_FDPLL96M_RUNINSTDBY
+#define BOARD_FDPLL96M_ONDEMAND           1
+#undef  BOARD_FDPLL96M_LBYPASS
+#undef  BOARD_FDPLL96M_WUF
+#undef  BOARD_FDPLL96M_LPEN
+#define BOARD_FDPLL96M_FILTER             OSCCTRL_DPLLCTRLB_FILTER_DEFAULT
+#define BOARD_FDPLL96M_REFCLK             OSCCTRL_DPLLCTRLB_REFLCK_XOSCK32K
+#define BOARD_FDPLL96M_REFCLK_CLKGEN      1
+#undef  BOARD_FDPLL96M_LOCKTIME_ENABLE
+#define BOARD_FDPLL96M_LOCKTIME           OSCCTRL_DPLLCTRLB_LTIME_NONE
+#define BOARD_FDPLL96M_LOCKTIME_CLKGEN    1
+#define BOARD_FDPLL96M_REFDIV             1
+#define BOARD_FDPLL96M_PRESCALER          OSCCTRL_DPLLPRESC_DIV1
+
+#define BOARD_FDPLL96M_REFFREQ           32768
+#define BOARD_FDPLL96M_FREQUENCY         48000000
 
 /* GCLK Configuration
  *
  * Global enable/disable.
  *
- *   BOARD_GCLK_ENABLE            - Boolean (defined / not defined)
+ *   BOARD_GCLK_ENABLE            - *MUST* be defined
  *
  * For n=1-7:
  *   BOARD_GCLKn_ENABLE           - Boolean (defined / not defined)
@@ -244,7 +288,7 @@
 #define BOARD_GCLK0_CLOCK_SOURCE      GCLK_GENCTRL_SRC_DFLL48M
 #define BOARD_GCLK0_PRESCALER         1
 #undef  BOARD_GCLK0_OUTPUT_ENABLE
-#define BOARD_GCLK0_FREQUENCY         (BOARD_DFLL_FREQUENCY / BOARD_GCLK0_PRESCALER)
+#define BOARD_GCLK0_FREQUENCY         (BOARD_DFLL48M_FREQUENCY / BOARD_GCLK0_PRESCALER)
 
 /* Configure GCLK generator 1 - Drives the DFLL */
 
@@ -320,31 +364,31 @@
 
 /* Main clock dividers
  *
- *    BOARD_CPU_DIVIDER   - See PM_CPUSEL_CPUDIV_* definitions
- *    BOARD_CPU_FRQUENCY  - In Hz
- *    BOARD_CPU_FAILDECT  - Boolean (defined / not defined)
- *    BOARD_APBA_DIVIDER  - See M_APBASEL_APBADIV_* definitions
- *    BOARD_APBA_FRQUENCY - In Hz
- *    BOARD_APBB_DIVIDER  - See M_APBBSEL_APBBDIV_* definitions
- *    BOARD_APBB_FRQUENCY - In Hz
- *    BOARD_APBC_DIVIDER  - See M_APBCSEL_APBCDIV_* definitions
- *    BOARD_APBC_FRQUENCY - In Hz
+ *     BOARD_CPU_DIVIDER        - See MCLK_CPUDIV_DIV* definitions
+ *     BOARD_CPU_FRQUENCY       - In Hz
+ *     BOARD_CPU_FAILDECT       - Boolean (defined / not defined)
+ *     BOARD_LOWPOWER_DIVIDER   - See MCLK_LPDIV_DIV_* definitions
+ *     BOARD_LOWPOWER_FREQUENCY - In Hz
+ *     BOARD_BACKUP_DIVIDER     - See MCLK_BUPDIV_DIV_* definitions
+ *     BOARD_BACKUP_FREQUENCY   - In Hz
  */
 
-#define BOARD_CPU_FAILDECT           1
-#define BOARD_CPU_DIVIDER            PM_CPUSEL_CPUDIV_1
-#define BOARD_APBA_DIVIDER           PM_APBASEL_APBADIV_1
-#define BOARD_APBB_DIVIDER           PM_APBBSEL_APBBDIV_1
-#define BOARD_APBC_DIVIDER           PM_APBCSEL_APBCDIV_1
+#undef  BOARD_CPU_FAILDECT
+#define BOARD_CPU_DIVIDER            MCLK_CPUDIV_DIV1
+#define BOARD_LOWPOWER_DIVIDER       MCLK_LPDIV_DIV1
+#define BOARD_BACKUP_DIVIDER         MCLK_BUPDIV_DIV1
 
 /* Resulting frequencies */
 
 #define BOARD_MCK_FREQUENCY          (BOARD_GCLK_MAIN_FREQUENCY)
 #define BOARD_CPU_FREQUENCY          (BOARD_MCK_FREQUENCY)
-#define BOARD_PBA_FREQUENCY          (BOARD_MCK_FREQUENCY)
-#define BOARD_PBB_FREQUENCY          (BOARD_MCK_FREQUENCY)
-#define BOARD_PBC_FREQUENCY          (BOARD_MCK_FREQUENCY)
-#define BOARD_PBD_FREQUENCY          (BOARD_MCK_FREQUENCY)
+#define BOARD_LOWPOWER_FREQUENCY     (BOARD_MCK_FREQUENCY)
+#define BOARD_BACKUP_FREQUENCY       (BOARD_MCK_FREQUENCY)
+#define BOARD_APBA_FREQUENCY         (BOARD_MCK_FREQUENCY)
+#define BOARD_APBB_FREQUENCY         (BOARD_MCK_FREQUENCY)
+#define BOARD_APBC_FREQUENCY         (BOARD_MCK_FREQUENCY)
+#define BOARD_APBD_FREQUENCY         (BOARD_MCK_FREQUENCY)
+#define BOARD_APBE_FREQUENCY         (BOARD_MCK_FREQUENCY)
 
 /* FLASH wait states
  *
@@ -369,7 +413,8 @@
  * to all SERCOM modules.
  */
 
-#define BOARD_SERCOM_SLOW_GCLKGEN    (GCLK_CLKCTRL_GEN0 >> GCLK_CLKCTRL_GEN_SHIFT)
+#define BOARD_SERCOM_SLOW_GCLKGEN    0
+#define BOARD_SERCOM_SLOW_GCLKCHAN   GCLK_CHAN_SERCOM0_SLOW
 
 /* SERCOM0 SPI is available on EXT1
  *
@@ -381,7 +426,7 @@
  *  18  PA7  SERCOM0 PAD3  SPI SCK
  */
 
-#define BOARD_SERCOM0_GCLKGEN        GCLK_CLKCTRL_GEN0
+#define BOARD_SERCOM0_GCLKGEN        0
 #define BOARD_SERCOM0_MUXCONFIG      (SPI_CTRLA_DOPO_DOPAD231 | SPI_CTRLA_DIPAD0)
 #define BOARD_SERCOM0_PINMAP_PAD0    PORT_SERCOM0_PAD0_2 /* SPI_MISO */
 #define BOARD_SERCOM0_PINMAP_PAD1    0                   /* SPI_SS (not used) */
@@ -400,7 +445,7 @@
  *    20   VCC  VCC  VCC  N/A
  */
 
-#define BOARD_SERCOM1_GCLKGEN        GCLK_CLKCTRL_GEN0
+#define BOARD_SERCOM1_GCLKGEN        0
 #define BOARD_SERCOM1_MUXCONFIG      (USART_CTRLA_TXPAD2 | USART_CTRLA_RXPAD3)
 #define BOARD_SERCOM1_PINMAP_PAD0    0                   /* (not used) */
 #define BOARD_SERCOM1_PINMAP_PAD1    0                   /* (not used) */
@@ -418,8 +463,8 @@
  *   PA23 SERCOM3 PAD[1] / USART RXD
  */
 
-#define BOARD_SERCOM3_GCLKGEN        GCLK_CLKCTRL_GEN0
-#define BOARD_SERCOM3_MUXCONFIG      (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0_1)
+#define BOARD_SERCOM3_GCLKGEN        0
+#define BOARD_SERCOM3_MUXCONFIG      (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0_2)
 #define BOARD_SERCOM3_PINMAP_PAD0    PORT_SERCOM3_PAD0_1 /* USART TX */
 #define BOARD_SERCOM3_PINMAP_PAD1    PORT_SERCOM3_PAD1_1 /* USART RX */
 #define BOARD_SERCOM3_PINMAP_PAD2    0                   /* (not used) */
@@ -437,9 +482,9 @@
  *    20   VCC  VCC  VCC  N/A
  */
 
-#define BOARD_SERCOM4_GCLKGEN        GCLK_CLKCTRL_GEN0
+#define BOARD_SERCOM4_GCLKGEN        0
 
-#define BOARD_SERCOM4_MUXCONFIG    (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0)
+#define BOARD_SERCOM4_MUXCONFIG    (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0_2)
 #define BOARD_SERCOM4_PINMAP_PAD0  PORT_SERCOM4_PAD0_3 /* USART TX */
 #define BOARD_SERCOM4_PINMAP_PAD1  PORT_SERCOM4_PAD1_3 /* USART RX */
 #define BOARD_SERCOM4_PINMAP_PAD2  0
@@ -457,7 +502,7 @@
  *  18  PB23 SERCOM5 PAD3  SPI SCK
  */
 
-#define BOARD_SERCOM5_GCLKGEN        GCLK_CLKCTRL_GEN0
+#define BOARD_SERCOM5_GCLKGEN        0
 #define BOARD_SERCOM5_MUXCONFIG      (SPI_CTRLA_DOPO_DOPAD231 | SPI_CTRLA_DIPAD0)
 #define BOARD_SERCOM5_PINMAP_PAD0    PORT_SERCOM5_PAD0_1 /* SPI_MISO */
 #define BOARD_SERCOM5_PINMAP_PAD1    0                   /* SPI_SS (not used) */

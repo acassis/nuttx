@@ -42,6 +42,9 @@
 
 #include <nuttx/config.h>
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "sam_config.h"
 
 #if defined(CONFIG_ARCH_FAMILY_SAMD20)
@@ -60,11 +63,22 @@
  * Public Types
  ****************************************************************************/
 
+#ifndef __ASSEMBLY__
+
+/* This structure describes the configuration of one GCLK */
+
+struct sam_gclkconfig_s
+{
+  uint8_t  gclk;        /* Clock generator */
+  bool     runstandby;  /* Run clock in standby */
+  bool     output;      /* Output enable */
+  uint8_t  clksrc;      /* Encoded clock source */
+  uint16_t prescaler;   /* Prescaler value */
+};
+
 /****************************************************************************
  * Inline Functions
  ****************************************************************************/
-
-#ifndef __ASSEMBLY__
 
 /****************************************************************************
  * Public Data
@@ -82,6 +96,60 @@ extern "C"
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
+
+/****************************************************************************
+ * Name: sam_gclk_config
+ *
+ * Description:
+ *   Configure a single GCLK(s) based on settings in the config structure.
+ *
+ * Input Parameters:
+ *   config - An instance of struct sam_gclkconfig describing the GCLK
+ *            configuration.
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+void sam_gclk_config(FAR const struct sam_gclkconfig_s *config);
+
+/****************************************************************************
+ * Name: sam_gclk_chan_enable
+ *
+ * Description:
+ *  Configure and enable a GCLK peripheral channel.
+ *
+ * Input Parameters:
+ *   channel - Index of the GCLK channel to be enabled
+ *   srcgen  - The GCLK source generator index
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_ARCH_FAMILY_SAML21
+void sam_gclk_chan_enable(uint8_t channel, uint8_t srcgen);
+#endif
+
+/****************************************************************************
+ * Name: sam_gclk_chan_disable
+ *
+ * Description:
+ *  Disable a GCLK peripheral channel.
+ *
+ * Input Parameters:
+ *   channel - Index of the GCLK channel to be disabled
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_ARCH_FAMILY_SAML21
+void sam_gclk_chan_disable(uint8_t channel);
+#endif
 
 #undef EXTERN
 #if defined(__cplusplus)
