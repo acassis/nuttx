@@ -277,6 +277,23 @@ static const struct sam_gclkconfig_s g_gclkconfig[] =
     .clksrc     = (uint8_t)(BOARD_GCLK7_CLOCK_SOURCE >> GCLK_GENCTRL_SRC_SHIFT),
   }
 #endif
+
+  /* GCLK generator 8 */
+
+#ifdef BOARD_GCLK8_ENABLE
+  ,
+  {
+    .gclk       = 8,
+#ifdef BOARD_GCLK8_RUN_IN_STANDBY
+    .runstandby = true;
+#endif
+#ifdef BOARD_GCLK8_OUTPUT_ENABLE
+    .output     = true;
+#endif
+    .prescaler  = BOARD_GCLK8_PRESCALER,
+    .clksrc     = (uint8_t)(BOARD_GCLK8_CLOCK_SOURCE >> GCLK_GENCTRL_SRC_SHIFT),
+  }
+#endif
 };
 
 #define NGCLKS_ENABLED (sizeof(g_gclkconfig) / sizeof(struct sam_gclkconfig_s))
@@ -323,7 +340,14 @@ static inline void sam_flash_waitstates(void)
 {
   uint32_t regval;
 
+  /* Errate 13134: Correct the default value of the NVMCTRL.CTRLB.MANW bit */
+
   regval  = getreg32(SAM_NVMCTRL_CTRLB);
+  regval |= NVMCTRL_CTRLB_MANW;
+  putreg32(regval, SAM_NVMCTRL_CTRLB);
+
+  /* Set the configured number of flash wait states */
+
   regval &= ~NVMCTRL_CTRLB_RWS_MASK;
   regval |= NVMCTRL_CTRLB_RWS(BOARD_FLASH_WAITSTATES);
   putreg32(regval, SAM_NVMCTRL_CTRLB);
@@ -830,7 +854,7 @@ static inline void sam_dfll48m_config(void)
                OSCCTRL_DFLLCTRL_QLDIS    | OSCCTRL_DFLLCTRL_BPLCKC |
                OSCCTRL_DFLLCTRL_WAITLOCK);
 
-#if defined(BOARD_DFLL48M_CLOSELOOP)
+#if defined(BOARD_DFLL48M_CLOSEDLOOP)
   control |= OSCCTRL_DFLLCTRL_MODE;     /* Closed loop mode */
 #elif defined(BOARD_DFLL48M_RECOVERY)
   control |= OSCCTRL_DFLLCTRL_USBCRM;   /* USB clock recovery mode */
@@ -1226,24 +1250,6 @@ static inline void sam_config_gclks(void)
     {
       sam_gclk_config(&g_gclkconfig[i]);
     }
-
-  /* Enable DFLL reference clock if the DFLL is enabled in closed loop mode */
-
-  sam_dfll48m_refclk();
-
-  /* Enable FDPLL reference clock if the DFLL is enabled */
-
-  sam_fdpll96m_refclk();
-
-  /* Setup CPU and BUS clocks */
-
-  sam_cpu_dividers();
-
-  /* Configure the GCLK_MAIN last as it may depend on the DFLL or other
-   * generators
-   */
-
-  sam_gclk_config(&g_gclkconfig[0]);
 }
 #else
 #  define sam_config_gclks()
@@ -1330,13 +1336,31 @@ void sam_clockconfig(void)
 
   sam_config_gclks();
 
+  /* Enable DFLL reference clock if the DFLL is enabled in closed loop mode */
+
+  sam_dfll48m_refclk();
+
   /* Enable DFLL48M */
 
   sam_dfll48m_enable();
 
+  /* Enable FDPLL reference clock if the DFLL is enabled */
+
+  sam_fdpll96m_refclk();
+
   /* Configure and enable FDPLL96M */
 
   sam_fdpll96m_config();
+
+  /* Setup CPU and BUS clocks */
+
+  sam_cpu_dividers();
+
+  /* Configure the GCLK_MAIN last as it may depend on the DFLL, FDPLL or
+   * other generators
+   */
+
+  sam_gclk_config(&g_gclkconfig[0]);
 
 #if BOARD_CPU_FREQUENCY <= 12000000
   /* If CPU frequency is less than 12MHz, scale down performance level to

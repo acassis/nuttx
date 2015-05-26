@@ -6,7 +6,7 @@
 #
 # Build Setup
 #
-CONFIG_EXPERIMENTAL=y
+# CONFIG_EXPERIMENTAL is not set
 CONFIG_DEFAULT_SMALL=y
 CONFIG_HOST_LINUX=y
 # CONFIG_HOST_OSX is not set
@@ -25,7 +25,7 @@ CONFIG_BUILD_FLAT=y
 #
 # CONFIG_RRLOAD_BINARY is not set
 # CONFIG_INTELHEX_BINARY is not set
-CONFIG_MOTOROLA_SREC=y
+# CONFIG_MOTOROLA_SREC is not set
 CONFIG_RAW_BINARY=y
 # CONFIG_UBOOT_UIMAGE is not set
 
@@ -42,8 +42,9 @@ CONFIG_RAW_BINARY=y
 # Debug Options
 #
 # CONFIG_DEBUG is not set
-CONFIG_ARCH_HAVE_STACKCHECK=y
 # CONFIG_ARCH_HAVE_HEAPCHECK is not set
+CONFIG_ARCH_HAVE_STACKCHECK=y
+# CONFIG_STACK_COLORATION is not set
 # CONFIG_DEBUG_SYMBOLS is not set
 CONFIG_ARCH_HAVE_CUSTOMOPT=y
 # CONFIG_DEBUG_NOOPT is not set
@@ -75,9 +76,10 @@ CONFIG_ARCH="arm"
 # CONFIG_ARCH_CHIP_EFM32 is not set
 # CONFIG_ARCH_CHIP_IMX is not set
 # CONFIG_ARCH_CHIP_KINETIS is not set
-CONFIG_ARCH_CHIP_KL=y
+# CONFIG_ARCH_CHIP_KL is not set
 # CONFIG_ARCH_CHIP_LM is not set
 # CONFIG_ARCH_CHIP_TIVA is not set
+CONFIG_ARCH_CHIP_LPC11XX=y
 # CONFIG_ARCH_CHIP_LPC17XX is not set
 # CONFIG_ARCH_CHIP_LPC214X is not set
 # CONFIG_ARCH_CHIP_LPC2378 is not set
@@ -86,7 +88,9 @@ CONFIG_ARCH_CHIP_KL=y
 # CONFIG_ARCH_CHIP_NUC1XX is not set
 # CONFIG_ARCH_CHIP_SAMA5 is not set
 # CONFIG_ARCH_CHIP_SAMD is not set
+# CONFIG_ARCH_CHIP_SAML is not set
 # CONFIG_ARCH_CHIP_SAM34 is not set
+# CONFIG_ARCH_CHIP_SAMV7 is not set
 # CONFIG_ARCH_CHIP_STM32 is not set
 # CONFIG_ARCH_CHIP_STR71X is not set
 # CONFIG_ARCH_ARM7TDMI is not set
@@ -95,13 +99,16 @@ CONFIG_ARCH_CHIP_KL=y
 CONFIG_ARCH_CORTEXM0=y
 # CONFIG_ARCH_CORTEXM3 is not set
 # CONFIG_ARCH_CORTEXM4 is not set
+# CONFIG_ARCH_CORTEXM7 is not set
 # CONFIG_ARCH_CORTEXA5 is not set
 # CONFIG_ARCH_CORTEXA8 is not set
 CONFIG_ARCH_FAMILY="armv6-m"
-CONFIG_ARCH_CHIP="kl"
+CONFIG_ARCH_CHIP="lpc11xx"
 CONFIG_ARCH_HAVE_CMNVECTOR=y
 # CONFIG_ARMV7M_CMNVECTOR is not set
+# CONFIG_ARMV7M_LAZYFPU is not set
 # CONFIG_ARCH_HAVE_FPU is not set
+# CONFIG_ARCH_HAVE_DPFPU is not set
 
 #
 # ARMV6M Configuration Options
@@ -113,55 +120,36 @@ CONFIG_ARMV6M_TOOLCHAIN_GNU_EABIL=y
 # CONFIG_GPIO_IRQ is not set
 
 #
-# Kinetis Configuration Options
+# LPC11xx Configuration Options
 #
-CONFIG_ARCH_CHIP_MKL25Z128=y
-CONFIG_ARCH_FAMILY_KL2X=y
+# CONFIG_ARCH_CHIP_LPC1114 is not set
+CONFIG_ARCH_CHIP_LPC1115=y
+CONFIG_ARCH_FAMILY_LPC111X=y
 
 #
-# Kinetis Peripheral Support
+# LPC11xx Peripheral Support
 #
-# CONFIG_KL_TRACE is not set
-# CONFIG_KL_FLEXBUS is not set
-CONFIG_KL_UART0=y
-# CONFIG_KL_UART1 is not set
-# CONFIG_KL_UART2 is not set
-# CONFIG_KL_FLEXCAN0 is not set
-# CONFIG_KL_FLEXCAN1 is not set
-CONFIG_KL_SPI0=y
-CONFIG_KL_SPI1=y
-# CONFIG_KL_SPI2 is not set
-# CONFIG_KL_I2C0 is not set
-# CONFIG_KL_I2C1 is not set
-# CONFIG_KL_I2S is not set
-# CONFIG_KL_DAC0 is not set
-# CONFIG_KL_DAC1 is not set
-# CONFIG_KL_ADC0 is not set
-# CONFIG_KL_ADC1 is not set
-# CONFIG_KL_CMP is not set
-# CONFIG_KL_VREF is not set
-# CONFIG_KL_TPM0 is not set
-# CONFIG_KL_TPM1 is not set
-# CONFIG_KL_TPM2 is not set
-# CONFIG_KL_LPTIMER is not set
-# CONFIG_KL_RTC is not set
-# CONFIG_KL_EWM is not set
-# CONFIG_KL_CMT is not set
-# CONFIG_KL_USBOTG is not set
-# CONFIG_KL_USBDCD is not set
-# CONFIG_KL_LLWU is not set
-# CONFIG_KL_TSI is not set
-# CONFIG_KL_FTFL is not set
-# CONFIG_KL_DMA is not set
-# CONFIG_KL_CRC is not set
-# CONFIG_KL_PDB is not set
-# CONFIG_KL_PIT is not set
-CONFIG_KL_SYSTICK_CORECLK=y
-# CONFIG_KL_SYSTICK_CORECLK_DIV16 is not set
+CONFIG_LPC11_INTRCOSC=y
+# CONFIG_LPC11_MAINOSC is not set
+CONFIG_LPC11_SYSTICK_CORECLK=y
+# CONFIG_LPC11_SYSTICK_CORECLK_DIV16 is not set
+CONFIG_LPC11_PLL=y
+CONFIG_LPC11_UART0=y
+# CONFIG_LPC11_CAN0 is not set
+# CONFIG_LPC11_SPI is not set
+# CONFIG_LPC11_SSP0 is not set
+# CONFIG_LPC11_SSP1 is not set
+# CONFIG_LPC11_I2C0 is not set
+# CONFIG_LPC11_TMR0 is not set
+# CONFIG_LPC11_TMR1 is not set
+# CONFIG_LPC11_WDT is not set
+# CONFIG_LPC11_ADC is not set
+# CONFIG_LPC11_FLASH is not set
 
 #
-# Kinetis GPIO Interrupt Configuration
+# Serial driver options
 #
+# CONFIG_SERIAL_TERMIOS is not set
 
 #
 # Architecture Options
@@ -211,16 +199,16 @@ CONFIG_BOOT_RUNFROMFLASH=y
 #
 # Boot Memory Configuration
 #
-CONFIG_RAM_START=0x1FFFF000
-CONFIG_RAM_SIZE=16384
+CONFIG_RAM_START=0x10000000
+CONFIG_RAM_SIZE=8192
 # CONFIG_ARCH_HAVE_SDRAM is not set
 
 #
 # Board Selection
 #
-CONFIG_ARCH_BOARD_FREEDOM_KL25Z=y
+CONFIG_ARCH_BOARD_LPCXPRESSO_LPC1115=y
 # CONFIG_ARCH_BOARD_CUSTOM is not set
-CONFIG_ARCH_BOARD="freedom-kl25z"
+CONFIG_ARCH_BOARD="lpcxpresso-lpc1115"
 
 #
 # Common Board Options
@@ -232,6 +220,7 @@ CONFIG_NSH_MMCSDMINOR=0
 #
 # Board-Specific Options
 #
+# CONFIG_LIB_BOARDCTL is not set
 
 #
 # RTOS Features
@@ -267,7 +256,7 @@ CONFIG_INIT_ENTRYPOINT=y
 CONFIG_USER_ENTRYPOINT="nsh_main"
 CONFIG_RR_INTERVAL=0
 CONFIG_TASK_NAME_SIZE=0
-CONFIG_MAX_TASKS=8
+CONFIG_MAX_TASKS=4
 # CONFIG_SCHED_HAVE_PARENT is not set
 # CONFIG_SCHED_WAITPID is not set
 
@@ -329,15 +318,15 @@ CONFIG_DISABLE_POLL=y
 # CONFIG_PWM is not set
 # CONFIG_ARCH_HAVE_I2CRESET is not set
 # CONFIG_I2C is not set
-CONFIG_SPI=y
-# CONFIG_SPI_OWNBUS is not set
-CONFIG_SPI_EXCHANGE=y
-# CONFIG_SPI_CMDDATA is not set
-# CONFIG_SPI_BITBANG is not set
+# CONFIG_SPI is not set
 # CONFIG_I2S is not set
+
+#
+# Timer Driver Support
+#
+# CONFIG_TIMER is not set
 # CONFIG_RTC is not set
 # CONFIG_WATCHDOG is not set
-# CONFIG_TIMER is not set
 # CONFIG_ANALOG is not set
 # CONFIG_AUDIO_DEVICES is not set
 # CONFIG_VIDEO_DEVICES is not set
@@ -392,8 +381,8 @@ CONFIG_UART0_SERIAL_CONSOLE=y
 #
 # UART0 Configuration
 #
-CONFIG_UART0_RXBUFSIZE=256
-CONFIG_UART0_TXBUFSIZE=256
+CONFIG_UART0_RXBUFSIZE=64
+CONFIG_UART0_TXBUFSIZE=64
 CONFIG_UART0_BAUD=115200
 CONFIG_UART0_BITS=8
 CONFIG_UART0_PARITY=0
@@ -499,6 +488,7 @@ CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE=1536
 # CONFIG_LIBC_STRERROR is not set
 # CONFIG_LIBC_PERROR_STDOUT is not set
 CONFIG_ARCH_LOWPUTC=y
+# CONFIG_TIME_EXTENDED is not set
 CONFIG_LIB_SENDFILE_BUFSIZE=512
 # CONFIG_ARCH_ROMGETC is not set
 # CONFIG_ARCH_OPTIMIZED_FUNCTIONS is not set
@@ -557,10 +547,10 @@ CONFIG_EXAMPLES_NSH=y
 # CONFIG_EXAMPLES_OSTEST is not set
 # CONFIG_EXAMPLES_PIPE is not set
 # CONFIG_EXAMPLES_POLL is not set
+# CONFIG_EXAMPLES_PPPD is not set
 # CONFIG_EXAMPLES_POSIXSPAWN is not set
 # CONFIG_EXAMPLES_QENCODER is not set
 # CONFIG_EXAMPLES_RGMP is not set
-# CONFIG_EXAMPLES_ROMFS is not set
 # CONFIG_EXAMPLES_SENDMAIL is not set
 # CONFIG_EXAMPLES_SERIALBLASTER is not set
 # CONFIG_EXAMPLES_SERIALRX is not set
@@ -572,7 +562,6 @@ CONFIG_EXAMPLES_NSH=y
 # CONFIG_EXAMPLES_THTTPD is not set
 # CONFIG_EXAMPLES_TIFF is not set
 # CONFIG_EXAMPLES_TOUCHSCREEN is not set
-# CONFIG_EXAMPLES_UDP is not set
 # CONFIG_EXAMPLES_WEBSERVER is not set
 # CONFIG_EXAMPLES_USBSERIAL is not set
 # CONFIG_EXAMPLES_USBTERM is not set
@@ -589,6 +578,7 @@ CONFIG_EXAMPLES_NSH=y
 #
 # CONFIG_INTERPRETERS_FICL is not set
 # CONFIG_INTERPRETERS_PCODE is not set
+# CONFIG_INTERPRETERS_MICROPYTHON is not set
 
 #
 # Network Utilities
@@ -598,15 +588,10 @@ CONFIG_EXAMPLES_NSH=y
 # Networking Utilities
 #
 # CONFIG_NETUTILS_CODECS is not set
-# CONFIG_NETUTILS_DHCPD is not set
 # CONFIG_NETUTILS_FTPC is not set
-# CONFIG_NETUTILS_FTPD is not set
 # CONFIG_NETUTILS_JSON is not set
 # CONFIG_NETUTILS_SMTP is not set
-# CONFIG_NETUTILS_TFTPC is not set
 # CONFIG_NETUTILS_THTTPD is not set
-# CONFIG_NETUTILS_NETLIB is not set
-# CONFIG_NETUTILS_WEBCLIENT is not set
 
 #
 # FreeModBus
@@ -638,6 +623,7 @@ CONFIG_NSH_DISABLE_ADDROUTE=y
 CONFIG_NSH_DISABLE_CD=y
 CONFIG_NSH_DISABLE_CP=y
 # CONFIG_NSH_DISABLE_CMP is not set
+CONFIG_NSH_DISABLE_DATE=y
 CONFIG_NSH_DISABLE_DD=y
 CONFIG_NSH_DISABLE_DF=y
 CONFIG_NSH_DISABLE_DELROUTE=y
@@ -658,6 +644,7 @@ CONFIG_NSH_DISABLE_MKDIR=y
 CONFIG_NSH_DISABLE_MKRD=y
 # CONFIG_NSH_DISABLE_MH is not set
 CONFIG_NSH_DISABLE_MOUNT=y
+CONFIG_NSH_DISABLE_MV=y
 # CONFIG_NSH_DISABLE_MW is not set
 # CONFIG_NSH_DISABLE_PS is not set
 CONFIG_NSH_DISABLE_PUT=y
@@ -705,119 +692,19 @@ CONFIG_NSH_CONSOLE=y
 #
 # System Libraries and NSH Add-Ons
 #
-
-#
-# Custom Free Memory Command
-#
 # CONFIG_SYSTEM_FREE is not set
-
-#
-# EMACS-like Command Line Editor
-#
 # CONFIG_SYSTEM_CLE is not set
-
-#
-# CU Minimal Terminal
-#
 # CONFIG_SYSTEM_CUTERM is not set
-
-#
-# FLASH Program Installation
-#
 # CONFIG_SYSTEM_INSTALL is not set
-
-#
-# FLASH Erase-all Command
-#
-
-#
-# Intel HEX to binary conversion
-#
 # CONFIG_SYSTEM_HEX2BIN is not set
-
-#
-# I2C tool
-#
-
-#
-# INI File Parser
-#
 # CONFIG_SYSTEM_INIFILE is not set
-
-#
-# NxPlayer media player library / command Line
-#
-
-#
-# RAM test
-#
 # CONFIG_SYSTEM_RAMTEST is not set
-
-#
-# readline()
-#
 CONFIG_SYSTEM_READLINE=y
 CONFIG_READLINE_ECHO=y
-
-#
-# P-Code Support
-#
-
-#
-# PHY Tool
-#
-
-#
-# Power Off
-#
 # CONFIG_SYSTEM_POWEROFF is not set
-
-#
-# RAMTRON
-#
 # CONFIG_SYSTEM_RAMTRON is not set
-
-#
-# SD Card
-#
 # CONFIG_SYSTEM_SDCARD is not set
-
-#
-# Sudoku
-#
 # CONFIG_SYSTEM_SUDOKU is not set
-
-#
-# Sysinfo
-#
 # CONFIG_SYSTEM_SYSINFO is not set
-
-#
-# VI Work-Alike Editor
-#
 # CONFIG_SYSTEM_VI is not set
-
-#
-# Stack Monitor
-#
-
-#
-# USB CDC/ACM Device Commands
-#
-
-#
-# USB Composite Device Commands
-#
-
-#
-# USB Mass Storage Device Commands
-#
-
-#
-# USB Monitor
-#
-
-#
-# Zmodem Commands
-#
 # CONFIG_SYSTEM_ZMODEM is not set

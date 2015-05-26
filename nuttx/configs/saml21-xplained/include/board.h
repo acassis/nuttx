@@ -60,16 +60,16 @@
  * We will use its default, POR frequency of 4MHz to avoid an additional clock
  * switch.
  *
- * OSC16M             Output = 4MHz
- *  `- GCLK1          Input  = 4MHz Prescaler     = 1  output         = 4MHz
- *      `- DFLL       Input  = 4MHz  Multiplier   = 12 output         = 48MHz
- *          `- GCLK0  Input  = 48MHz Prescaler    = 1  output         = 48MHz
- *              `- PM Input  = 48Mhz CPU divider  = 1  CPU frequency  = 48MHz
- *                                   APBA divider = 1  APBA frequency = 48MHz
- *                                   APBB divider = 1  APBB frequency = 48MHz
- *                                   APBC divider = 1  APBC frequency = 48MHz
- *                                   APBD divider = 1  APBD frequency = 48MHz
- *                                   APBE divider = 1  APBE frequency = 48MHz
+ * OSC16M               Output = 4MHz
+ *  `- GCLK1            Input  = 4MHz Prescaler     = 1  output         = 4MHz
+ *      `- DFLL         Input  = 4MHz  Multiplier   = 12 output         = 48MHz
+ *          `- GCLK0    Input  = 48MHz Prescaler    = 1  output         = 48MHz
+ *              `- MCLK Input  = 48Mhz CPU divider  = 1  CPU frequency  = 48MHz
+ *                                     APBA divider = 1  APBA frequency = 48MHz
+ *                                     APBB divider = 1  APBB frequency = 48MHz
+ *                                     APBC divider = 1  APBC frequency = 48MHz
+ *                                     APBD divider = 1  APBD frequency = 48MHz
+ *                                     APBE divider = 1  APBE frequency = 48MHz
  *
  * The SAML21 Xplained Pro has one on-board crystal:
  *
@@ -152,11 +152,34 @@
  *   BOARD_OSC16M_RUNINSTANDBY  - Boolean (defined / not defined)
  */
 
-#define BOARD_OSC16M_FSEL            OSCCTRL_OSC16MCTRL_FSEL_4MHZ
-#define BOARD_OSC16M_ONDEMAND        1
-#undef  BOARD_OSC16M_RUNINSTANDBY
 
-#define BOARD_OSC16M_FREQUENCY       16000000 /* 16MHz high-accuracy internal oscillator */
+#if defined(CONFIG_SAML21_XPLAINED_OSC16M_4MHZ)
+#  define BOARD_OSC16M_FSEL          OSCCTRL_OSC16MCTRL_FSEL_4MHZ
+#  define BOARD_OSC16M_ONDEMAND      1
+#  undef  BOARD_OSC16M_RUNINSTANDBY
+#  define BOARD_OSC16M_FREQUENCY     4000000  /* 4MHz high-accuracy internal oscillator */
+
+#elif defined(CONFIG_SAML21_XPLAINED_OSC16M_8MHZ)
+#  define BOARD_OSC16M_FSEL          OSCCTRL_OSC16MCTRL_FSEL_8MHZ
+#  define BOARD_OSC16M_ONDEMAND      1
+#  undef  BOARD_OSC16M_RUNINSTANDBY
+#  define BOARD_OSC16M_FREQUENCY     8000000  /* 8MHz high-accuracy internal oscillator */
+
+#elif defined(CONFIG_SAML21_XPLAINED_OSC16M_12MHZ)
+#  define BOARD_OSC16M_FSEL          OSCCTRL_OSC16MCTRL_FSEL_12MHZ
+#  define BOARD_OSC16M_ONDEMAND      1
+#  undef  BOARD_OSC16M_RUNINSTANDBY
+#  define BOARD_OSC16M_FREQUENCY     12000000 /* 12MHz high-accuracy internal oscillator */
+
+#elif defined(CONFIG_SAML21_XPLAINED_OSC16M_16MHZ)
+#  define BOARD_OSC16M_FSEL          OSCCTRL_OSC16MCTRL_FSEL_16MHZ
+#  define BOARD_OSC16M_ONDEMAND      1
+#  undef  BOARD_OSC16M_RUNINSTANDBY
+#  define BOARD_OSC16M_FREQUENCY     16000000 /* 18MHz high-accuracy internal oscillator */
+
+#else
+#  error OSC16M operating freqency not defined (CONFIG_SAML21_XPLAINED_OSC16M_*MHZ)
+#endif
 
 /* OSCULP32K Configuration -- not used. */
 
@@ -166,7 +189,7 @@
  * DFLL output frequency (Fdfll) is given by:
  *
  *  Fdfll = DFLLmul * Frefclk
- *        = 6 * 8000000 = 48MHz
+ *        = 12 * 4000000 = 48MHz
  *
  * Where the reference clock is Generic Clock Channel 0 output of GLCK1.
  * GCLCK1 provides OSC16M, undivided.
@@ -200,31 +223,47 @@
  *   BOARD_DFLL48M_FREQUENCY           - The resulting frequency
  */
 
-#define BOARD_DFLL48M_ENABLE            1  /* Use the DFLL48M */
-#define BOARD_DFLL48M_CLOSEDLOOP        1  /* In closed loop mode */
-#undef  BOARD_DFLL48M_OPENLOOP
-#undef  BOARD_DFLL48M_RECOVERY
-#undef  BOARD_DFLL48M_RUNINSTDBY
-#undef  BOARD_DFLL48M_ONDEMAND
-#undef  BOARD_DFLL48M_RUNINSTANDBY
+#undef BOARD_DFLL48M_ENABLE                1  /* Assume not using the DFLL48M */
+#undef BOARD_DFLL48M_CLOSEDLOOP
+#undef BOARD_DFLL48M_OPENLOOP
+#undef BOARD_DFLL48M_RECOVERY
+
+#ifdef CONFIG_SAML21_XPLAINED_DFLL
+#  define BOARD_DFLL48M_ENABLE             1  /* Using the DFLL48M */
+
+#  if defined(SAML21_XPLAINED_DFLL_OPENLOOP
+#    define BOARD_DFLL48M_OPENLOOP         1  /* In open loop mode */
+#  elif defined(SAML21_XPLAINED_DFLL_CLOSEDLOOP
+#    define BOARD_DFLL48M_CLOSEDLOOP       1  /* In closed loop mode */
+#  elif defined(SAML21_XPLAINED_DFLL_RECOVERY
+#    define BOARD_DFLL48M_RECOVERY         1  /* In USB recover mode */
+#  else
+#    error DFLL mode not provided
+#  endif
+
+/* Mode-independent options */
+
+#  undef  BOARD_DFLL48M_RUNINSTDBY
+#  undef  BOARD_DFLL48M_ONDEMAND
 
 /* DFLL open loop mode configuration */
 
-#define BOARD_DFLL48M_COARSEVALUE       (0x1f / 4)
-#define BOARD_DFLL48M_FINEVALUE         (0xff / 4)
+#  define BOARD_DFLL48M_COARSEVALUE        (0x1f / 4)
+#  define BOARD_DFLL48M_FINEVALUE          (0xff / 4)
 
 /* DFLL closed loop mode configuration */
 
-#define BOARD_DFLL48M_REFCLK_CLKGEN      1
-#define BOARD_DFLL48M_MULTIPLIER         12
-#define BOARD_DFLL48M_QUICKLOCK          1
-#define BOARD_DFLL48M_TRACKAFTERFINELOCK 1
-#define BOARD_DFLL48M_KEEPLOCKONWAKEUP   1
-#define BOARD_DFLL48M_ENABLECHILLCYCLE   1
-#define BOARD_DFLL48M_MAXCOARSESTEP      (0x1f / 4)
-#define BOARD_DFLL48M_MAXFINESTEP        (0xff / 4)
+#  define BOARD_DFLL48M_REFCLK_CLKGEN      1
+#  define BOARD_DFLL48M_MULTIPLIER         (48000000 / BOARD_OSC16M_FREQUENCY)
+#  define BOARD_DFLL48M_QUICKLOCK          1
+#  define BOARD_DFLL48M_TRACKAFTERFINELOCK 1
+#  define BOARD_DFLL48M_KEEPLOCKONWAKEUP   1
+#  define BOARD_DFLL48M_ENABLECHILLCYCLE   1
+#  define BOARD_DFLL48M_MAXCOARSESTEP      (0x1f / 4)
+#  define BOARD_DFLL48M_MAXFINESTEP        (0xff / 4)
 
-#define BOARD_DFLL48M_FREQUENCY          (48000000)
+#  define BOARD_DFLL48M_FREQUENCY          (BOARD_DFLL48M_MULTIPLIER * BOARD_OSC16M_FREQUENCY)
+#endif
 
 /* Fractional Digital Phase Locked Loop configuration.
  *
@@ -248,18 +287,18 @@
 
 #undef  BOARD_FDPLL96M_ENABLE
 #undef  BOARD_FDPLL96M_RUNINSTDBY
-#define BOARD_FDPLL96M_ONDEMAND           1
+#define BOARD_FDPLL96M_ONDEMAND          1
 #undef  BOARD_FDPLL96M_LBYPASS
 #undef  BOARD_FDPLL96M_WUF
 #undef  BOARD_FDPLL96M_LPEN
-#define BOARD_FDPLL96M_FILTER             OSCCTRL_DPLLCTRLB_FILTER_DEFAULT
-#define BOARD_FDPLL96M_REFCLK             OSCCTRL_DPLLCTRLB_REFLCK_XOSCK32K
-#define BOARD_FDPLL96M_REFCLK_CLKGEN      1
+#define BOARD_FDPLL96M_FILTER            OSCCTRL_DPLLCTRLB_FILTER_DEFAULT
+#define BOARD_FDPLL96M_REFCLK            OSCCTRL_DPLLCTRLB_REFLCK_XOSCK32K
+#define BOARD_FDPLL96M_REFCLK_CLKGEN     1
 #undef  BOARD_FDPLL96M_LOCKTIME_ENABLE
-#define BOARD_FDPLL96M_LOCKTIME           OSCCTRL_DPLLCTRLB_LTIME_NONE
-#define BOARD_FDPLL96M_LOCKTIME_CLKGEN    1
-#define BOARD_FDPLL96M_REFDIV             1
-#define BOARD_FDPLL96M_PRESCALER          OSCCTRL_DPLLPRESC_DIV1
+#define BOARD_FDPLL96M_LOCKTIME          OSCCTRL_DPLLCTRLB_LTIME_NONE
+#define BOARD_FDPLL96M_LOCKTIME_CLKGEN   1
+#define BOARD_FDPLL96M_REFDIV            1
+#define BOARD_FDPLL96M_PRESCALER         OSCCTRL_DPLLPRESC_DIV1
 
 #define BOARD_FDPLL96M_REFFREQ           32768
 #define BOARD_FDPLL96M_FREQUENCY         48000000
@@ -284,11 +323,19 @@
 
 /* GCLK generator 0 (Main Clock) - Source is the DFLL */
 
-#undef  BOARD_GCLK0_RUN_IN_STANDBY
-#define BOARD_GCLK0_CLOCK_SOURCE      GCLK_GENCTRL_SRC_DFLL48M
-#define BOARD_GCLK0_PRESCALER         1
-#undef  BOARD_GCLK0_OUTPUT_ENABLE
-#define BOARD_GCLK0_FREQUENCY         (BOARD_DFLL48M_FREQUENCY / BOARD_GCLK0_PRESCALER)
+#ifdef CONFIG_SAML21_XPLAINED_DFLL
+#  undef  BOARD_GCLK0_RUN_IN_STANDBY
+#  define BOARD_GCLK0_CLOCK_SOURCE    GCLK_GENCTRL_SRC_DFLL48M
+#  define BOARD_GCLK0_PRESCALER       1
+#  undef  BOARD_GCLK0_OUTPUT_ENABLE
+#  define BOARD_GCLK0_FREQUENCY       (BOARD_DFLL48M_FREQUENCY / BOARD_GCLK0_PRESCALER)
+#else
+#  undef  BOARD_GCLK0_RUN_IN_STANDBY
+#  define BOARD_GCLK0_CLOCK_SOURCE    GCLK_GENCTRL_SRC_OSC16M
+#  define BOARD_GCLK0_PRESCALER       1
+#  undef  BOARD_GCLK0_OUTPUT_ENABLE
+#  define BOARD_GCLK0_FREQUENCY       (BOARD_OSC16M_FREQUENCY / BOARD_GCLK0_PRESCALER)
+#endif
 
 /* Configure GCLK generator 1 - Drives the DFLL */
 
@@ -306,7 +353,7 @@
 #define BOARD_GCLK2_CLOCK_SOURCE      GCLK_GENCTRL_SRC_OSC32K
 #define BOARD_GCLK2_PRESCALER         32
 #undef  BOARD_GCLK2_OUTPUT_ENABLE
-#define BOARD_GCLK2_FREQUENCY         (BOARD_OSC16M_FREQUENCY / BOARD_GCLK2_PRESCALER)
+#define BOARD_GCLK2_FREQUENCY         (BOARD_OSC32K_FREQUENCY / BOARD_GCLK2_PRESCALER)
 
 /* Configure GCLK generator 3 */
 
@@ -353,6 +400,15 @@
 #undef  BOARD_GCLK7_OUTPUT_ENABLE
 #define BOARD_GCLK7_FREQUENCY         (BOARD_OSC16M_FREQUENCY / BOARD_GCLK7_PRESCALER)
 
+/* Configure GCLK generator 8 */
+
+#undef  BOARD_GCLK8_ENABLE
+#undef  BOARD_GCLK8_RUN_IN_STANDBY
+#define BOARD_GCLK8_CLOCK_SOURCE      GCLK_GENCTRL_SRC_OSC16M
+#define BOARD_GCLK8_PRESCALER         1
+#undef  BOARD_GCLK8_OUTPUT_ENABLE
+#define BOARD_GCLK8_FREQUENCY         (BOARD_OSC16M_FREQUENCY / BOARD_GCLK8_PRESCALER)
+
 /* The source of the main clock is always GCLK_MAIN.  Also called GCLKGEN[0], this is
  * the clock feeding the Power Manager. The Power Manager, in turn, generates main
  * clock which is divided down to produce the CPU, AHB, and APB clocks.
@@ -392,6 +448,7 @@
 
 /* FLASH wait states
  *
+ * REVISIT: These values come from the SAMD20
  * Vdd Range     Wait states    Maximum Operating Frequency
  * ------------- -------------- ---------------------------
  * 1.62V to 2.7V  0             14 MHz
@@ -402,10 +459,10 @@
  *                1             48 MHz
  */
 
-#if 0 /* REVISIT -- should not be necessary */
-#  define BOARD_FLASH_WAITSTATES     1
+#if 0
+#  define BOARD_FLASH_WAITSTATES     3
 #else
-#  define BOARD_FLASH_WAITSTATES     2
+#  define BOARD_FLASH_WAITSTATES     1
 #endif
 
 /* SERCOM definitions ***************************************************************/
@@ -484,11 +541,11 @@
 
 #define BOARD_SERCOM4_GCLKGEN        0
 
-#define BOARD_SERCOM4_MUXCONFIG    (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0_2)
-#define BOARD_SERCOM4_PINMAP_PAD0  PORT_SERCOM4_PAD0_3 /* USART TX */
-#define BOARD_SERCOM4_PINMAP_PAD1  PORT_SERCOM4_PAD1_3 /* USART RX */
-#define BOARD_SERCOM4_PINMAP_PAD2  0
-#define BOARD_SERCOM4_PINMAP_PAD3  0
+#define BOARD_SERCOM4_MUXCONFIG      (USART_CTRLA_RXPAD1 | USART_CTRLA_TXPAD0_2)
+#define BOARD_SERCOM4_PINMAP_PAD0    PORT_SERCOM4_PAD0_3 /* USART TX */
+#define BOARD_SERCOM4_PINMAP_PAD1    PORT_SERCOM4_PAD1_3 /* USART RX */
+#define BOARD_SERCOM4_PINMAP_PAD2    0
+#define BOARD_SERCOM4_PINMAP_PAD3    0
 
 #define BOARD_SERCOM4_FREQUENCY      BOARD_GCLK0_FREQUENCY
 

@@ -1,5 +1,5 @@
 README
-^^^^^^
+======
 
 This README discusses issues unique to NuttX configurations for the
 Atmel SAMD20 Xplained Pro development board.  This board features the
@@ -14,8 +14,9 @@ The SAMD20 Xplained Pro Starter Kit may be bundled with three modules:
             logic).
 
 Contents
-^^^^^^^^
+========
 
+  - STATUS/ISSUES
   - Modules
   - Development Environment
   - GNU Toolchain Options
@@ -27,8 +28,44 @@ Contents
   - SAMD20 Xplained Pro-specific Configuration Options
   - Configurations
 
+STATUS/ISSUES
+=============
+
+    1. The FLASH wait states is set to 2 (see include/board.h).  According to
+       the data sheet, it should work at 1 but I sometimes see crashes when
+       the wait states are set to one (about half of the time) (2014-2-18).
+
+    2. Garbage appears on the display sometimes after a reset (maybe 20% of
+       the time) or after a power cycle (less after a power cycle).  I don't
+       understand the cause of of this but most of this can be eliminated by
+       simply holding the the reset button longer and releasing it cleanly
+       (then it fails maybe 5-10% of the time, maybe because of button
+       chatter?) (2014-2-18).
+
+       - The garbage is not random:  It is always the same.
+       - This is not effected by BAUD rate.  Curiously, the same garbage
+         appears at different BAUD settings implying that this may not even
+         be clock related???
+       - The program seems to be running normally, just producing bad output.
+
+    3. SPI current hangs so not much progress has been made testing the I/O1
+       module.  The hang occurs because the SPI is waiting for SYNCBUSY to
+       be cleared after enabling the SPI.  This even does not happen and so
+       causes the hang.
+
+       Another note:  Enabling the SPI on SERCOM0 also seems to interfere
+       with the USART output on SERCOM4.  Both symptoms imply some clock-
+       related issue.
+
+       The configuration suggests CONFIG_MMCSD_HAVECARDDETECT=y, but as of
+       this writing, there is no support for EIC pin interrupts.
+
+    4. OLED1 module is untested.  These instructions were just lifted from
+       the SAM4L Xplained Pro README.txt file.
+
 Modules
-^^^^^^^
+=======
+
   The SAMD20 Xplained Pro Starter Kit is bundled with four modules:
 
   I/O1
@@ -230,7 +267,7 @@ Modules
   There is no built-in support for the PROTO1 module.
 
 Development Environment
-^^^^^^^^^^^^^^^^^^^^^^^
+=======================
 
   Either Linux or Cygwin on Windows can be used for the development environment.
   The source has been built only using the GNU toolchain (see below).  Other
@@ -238,7 +275,7 @@ Development Environment
   environment.
 
 GNU Toolchain Options
-^^^^^^^^^^^^^^^^^^^^^
+=====================
 
 
   The NuttX make system can be configured to support the various different
@@ -294,7 +331,7 @@ GNU Toolchain Options
        MKDEP                = $(TOPDIR)/tools/mknulldeps.sh
 
 IDEs
-^^^^
+====
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project.
@@ -326,7 +363,7 @@ IDEs
   startup object needed by an IDE.
 
 NuttX EABI "buildroot" Toolchain
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+================================
 
   A GNU GCC-based toolchain is assumed.  The files */setenv.sh should
   be modified to point to the correct path to the Cortex-M0 GCC toolchain (if
@@ -363,7 +400,8 @@ NuttX EABI "buildroot" Toolchain
   building a Cortex-M0 toolchain for Cygwin under Windows.
 
 LEDs
-^^^^
+====
+
   There is one yellow LED available on the SAM D20 Xplained Pro board that
   can be turned on and off. The LED can be activated by driving the connected
   PA14 I/O line to GND.
@@ -387,7 +425,7 @@ LEDs
   2Hz, then a fatal error has been detected and the system has halted.
 
 Serial Consoles
-^^^^^^^^^^^^^^^
+===============
 
   SERCOM4
   ------
@@ -422,28 +460,32 @@ Serial Consoles
     PA25 SERCOM3 / USART RXD
 
 Atmel Studio 6.1
-^^^^^^^^^^^^^^^^
+================
 
   Loading Code into FLASH:
   -----------------------
+
   Tools menus:  Tools -> Device Programming.
 
   Debugging the NuttX Object File
   -------------------------------
+
   1) Rename object file from nutt to nuttx.elf.  That is an extension that
      will be recognized by the file menu.
 
   2) File menu: File -> Open -> Open object file for debugging
+
      - Select nuttx.elf object file
      - Select AT91SAMD20J18
      - Select files for symbols as desired
      - Select debugger
 
   3) Debug menu: Debug -> Start debugging and break
+
      - This will reload the nuttx.elf file into FLASH
 
 SAMD20 Xplained Pro-specific Configuration Options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==================================================
 
     CONFIG_ARCH - Identifies the arch/ subdirectory.  This should
        be set to:
@@ -560,7 +602,7 @@ SAMD20 Xplained Pro-specific Configuration Options
     CONFIG_USARTn_2STOP - Two stop bits
 
 Configurations
-^^^^^^^^^^^^^^
+==============
 
   Each SAMD20 Xplained Pro configuration is maintained in a sub-directory and
   can be selected as follow:
@@ -857,37 +899,3 @@ Configuration sub-directories
        This is clearly some issue with initializing, un-initializing, and
        then re-initializing. If you want to fix this, patches are quite
        welcome.
-
-    STATUS/ISSUES:
-
-    1. The FLASH waitstates is set to 2 (see include/board.h).  According to
-       the data sheet, it should work at 1 but I sometimes see crashes when
-       the waitstates are set to one (about half of the time) (2014-2-18).
-
-    2. Garbage appears on the display sometimes after a reset (maybe 20% of
-       the time) or after a power cycle (less after a power cycle).  I don't
-       understand the cause of of this but most of this can be eliminated by
-       simply holding the the reset button longer and releasing it cleanly
-       (then it fails maybe 5-10% of the time, maybe because of button
-       chatter?) (2014-2-18).
-
-       - The garbage is not random:  It is always the same.
-       - This is not effected by BAUD rate.  Curiously, the same garbage
-         appears at different BAUD settings implying that this may not even
-         be clock related???
-       - The program seems to be running normally, just producing bad output.
-
-    3. SPI current hangs so not much progress has been made testing the I/O1
-       module.  The hang occurs because the SPI is waiting for SYNCBUSY to
-       be cleared after enabling the SPI.  This even does not happen and so
-       causes the hang.
-
-       Another note:  Enabling the SPI on SERCOM0 also seems to interfere
-       with the USART output on SERCOM4.  Both symptoms imply some clock-
-       related issue.
-
-       The configuration suggests CONFIG_MMCSD_HAVECARDDETECT=y, but as of
-       this writing, there is no support for EIC pin interrupts.
-
-    4. OLED1 module is untested.  These instructions were just lifted from
-       the SAM4L Xplained Pro README.txt file.
