@@ -304,6 +304,35 @@ static int mpu_open(FAR struct file *filep)
 
     if ( dev->open_count == 1 )
     {
+        /* Get/set hardware configuration. Start gyro.
+         * Wake up all sensors.
+         */
+
+        if ( res == 0 )
+            res = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS );
+
+        /* Push both gyro and accel data into the FIFO at default rate. */
+
+        if ( res == 0 )
+            res = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
+
+        if ( res == 0 )
+            res = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
+
+        if ( res == 0 )
+            res = mpu_set_accel_fsr(dev->inst,BOARD_DEFAULT_ACCEL_FSR);
+
+        if ( res == 0 )
+            res = mpu_set_gyro_fsr(dev->inst,BOARD_DEFAULT_GYRO_FSR);
+
+
+    #ifdef CONFIG_INVENSENSE_DMP
+        if ( dev->dmp == NULL )
+        {
+            dev->dmp = dmp_init(dev->inst);
+        }
+    #endif
+
 #ifdef CONFIG_INVENSENSE_DMP
         if ( dev->dmp )
         {
@@ -669,34 +698,6 @@ int mpu_fileops_init(struct mpu_inst_s* inst,const char *path ,int minor )
     dev->inst = inst;
 
 
-    /* Get/set hardware configuration. Start gyro. 
-     * Wake up all sensors. 
-     */
-
-    if ( res == 0 )
-        res = mpu_set_sensors_enable(dev->inst, BOARD_ENABLES_SENSORS ); 
-
-    /* Push both gyro and accel data into the FIFO at default rate. */
-
-    if ( res == 0 )
-        res = mpu_set_fifo_config(dev->inst, BOARD_ENABLES_SENSORS );
-
-    if ( res == 0 )
-        res = mpu_set_sample_rate(dev->inst, BOARD_DEFAULT_MPU_HZ );
-
-    if ( res == 0 )
-        res = mpu_set_accel_fsr(dev->inst,BOARD_DEFAULT_ACCEL_FSR);
-
-    if ( res == 0 )
-        res = mpu_set_gyro_fsr(dev->inst,BOARD_DEFAULT_GYRO_FSR);
-
-
-#ifdef CONFIG_INVENSENSE_DMP
-    if ( dev->dmp == NULL )
-    {
-        dev->dmp = dmp_init(dev->inst);
-    }
-#endif
 
     /* Register the character driver */
 
