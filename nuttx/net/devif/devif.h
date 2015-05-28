@@ -61,85 +61,140 @@
  * TCP_ACKDATA, XYZ_NEWDATA, and TCP_CLOSE flags may be set at the same time,
  * whereas the others are mutually exclusive.
  *
- *   TCP_ACKDATA     IN: Signifies that the outstanding data was ACKed and
- *                       the socket layer should send out new data instead
- *                       of retransmitting the last data (TCP only)
- *                  OUT: Input state must be preserved on output.
+ * Connection Specific Events:  These are events that may be notified
+ * through callback lists residing in TCP, UDP, or PKT port connection
+ * structures:
  *
- *   TCP_NEWDATA     IN: Set to indicate that the peer has sent us new data.
- *   UDP_NEWDATA    OUT: Cleared (only) by the socket layer logic to indicate
- *   PKT_NEWDATA         that the new data was consumed, suppressing further
- *   ICMP_NEWDATA        attempts to process the new data.
- *   ICMPv6_NEWDATA
+ *   TCP_ACKDATA      IN: Signifies that the outstanding data was ACKed and
+ *                        the socket layer should send out new data instead
+ *                        of retransmitting the last data (TCP only)
+ *                   OUT: Input state must be preserved on output.
  *
- *   TCP_SNDACK      IN: Not used; always zero
- *                  OUT: Set by the socket layer if the new data was consumed
- *                       and an ACK should be sent in the response. (TCP only)
+ *   TCP_NEWDATA      IN: Set to indicate that the peer has sent us new data.
+ *   UDP_NEWDATA     OUT: Cleared (only) by the socket layer logic to indicate
+ *   PKT_NEWDATA          that the new data was consumed, suppressing further
+ *                        attempts to process the new data.
  *
- *   TCP_REXMIT      IN: Tells the socket layer to retransmit the data that
- *                       was last sent. (TCP only)
- *                  OUT: Not used
+ *   TCP_SNDACK       IN: Not used; always zero
+ *                   OUT: Set by the socket layer if the new data was consumed
+ *                        and an ACK should be sent in the response. (TCP only)
  *
- *   ARP_POLL       IN:  Used for polling the socket layer.  This is provided
- *   TCP_POLL            periodically from the drivers to support (1) timed
- *   UDP_POLL            operations, and (2) to check if the socket layer has
- *   PKT_POLL            data that it wants to send
- *   ICMP_POLL      OUT: Not used
- *   ICMPv6_POLL
+ *   TCP_REXMIT       IN: Tells the socket layer to retransmit the data that
+ *                        was last sent. (TCP only)
+ *                   OUT: Not used
  *
- *   TCP_BACKLOG     IN: There is a new connection in the backlog list set
- *                       up by the listen() command. (TCP only)
- *                  OUT: Not used
+ *   TCP_POLL        IN:  Used for polling the socket layer.  This is provided
+ *   UDP_POLL             periodically from the drivers to support (1) timed
+ *   PKT_POLL             operations, and (2) to check if the socket layer has
+ *                        data that it wants to send.  These are socket oriented
+ *                        callbacks where the context depends on the specific
+ *                        set
+ *                   OUT: Not used
  *
- *   TCP_CLOSE       IN: The remote host has closed the connection, thus the
- *                       connection has gone away. (TCP only)
- *                  OUT: The socket layer signals that it wants to close the
- *                       connection. (TCP only)
+ *   TCP_BACKLOG      IN: There is a new connection in the backlog list set
+ *                        up by the listen() command. (TCP only)
+ *                   OUT: Not used
  *
- *   TCP_ABORT       IN: The remote host has aborted the connection, thus the
- *                       connection has gone away. (TCP only)
- *                  OUT: The socket layer signals that it wants to abort the
- *                       connection. (TCP only)
+ *   TCP_CLOSE        IN: The remote host has closed the connection, thus the
+ *                        connection has gone away. (TCP only)
+ *                   OUT: The socket layer signals that it wants to close the
+ *                        connection. (TCP only)
  *
- *   TCP_CONNECTED   IN: We have got a connection from a remote host and have
- *                       set up a new connection for it, or an active connection
- *                       has been successfully established. (TCP only)
- *                  OUT: Not used
+ *   TCP_ABORT        IN: The remote host has aborted the connection, thus the
+ *                        connection has gone away. (TCP only)
+ *                   OUT: The socket layer signals that it wants to abort the
+ *                        connection. (TCP only)
  *
- *   TCP_TIMEDOUT    IN: The connection has been aborted due to too many
- *                       retransmissions. (TCP only)
- *                  OUT: Not used
+ *   TCP_CONNECTED    IN: We have got a connection from a remote host and have
+ *                        set up a new connection for it, or an active connection
+ *                        has been successfully established. (TCP only)
+ *                   OUT: Not used
  *
- *   ICMP_ECHOREPLY  IN: An ICMP Echo Reply has been received.  Used to support
- *   ICMPv6_ECHOREPLY    ICMP ping from the socket layer. (ICMP only)
- *                  OUT: Cleared (only) by the socket layer logic to indicate
- *                       that the reply was processed, suppressing further
- *                       attempts to process the reply.
+ *   TCP_TIMEDOUT     IN: The connection has been aborted due to too many
+ *                        retransmissions. (TCP only)
+ *                   OUT: Not used
+ *
+ * Device Specific Events:  These are events that may be notified through
+ * callback lists residing in the network device structure.
+ *
+ *   ICMP_NEWDATA     IN: Set to indicate that the peer has sent us new data.
+ *   ICMPv6_NEWDATA OUT: Cleared (only) by the socket layer logic to indicate
+ *                       that the new data was consumed, suppressing further
+ *                       attempts to process the new data.
+ *
+ *   ARP_POLL         IN: Used for polling the socket layer.  This is provided
+ *                        periodically from the drivers to support (1) timed
+ *                        operations, and (2) to check if the ARP layer needs
+ *                        to send an ARP request.  This is a device oriented
+ *                        event, not associated with a socket.
+ *                   OUT: Not used
+ *
+ *   ICMP_POLL        IN: Used for polling the socket layer.  This is provided
+ *                        periodically from the drivers to support (1) timed
+ *                        operations, and (2) to check if the ICMP layer needs
+ *                        to send an ARP request.  This is a device oriented
+ *                        event, not associated with a socket.  This differs
+ *                        from ICMPv6_POLL only in that the appdata pointer
+ *                        is set differently
+ *                   OUT: Not used
+ *
+ *   ICMPv6_POLL      IN: Used for polling the socket layer.  This is provided
+ *                        periodically from the drivers to support (1) timed
+ *                        operations, and (2) to check if the ICMP layer needs
+ *                        to send an ARP request.  This is a device oriented
+ *                        event, not associated with a socket.  This differs
+ *                        from ICMP_POLL only in that the appdata pointer
+ *                        is set differently
+ *                   OUT: Not used
+ *
+ *   ICMP_ECHOREPLY   IN: An ICMP Echo Reply has been received.  Used to support
+ *                        ICMP ping from the socket layer. (ICMPv4 only)
+ *                   OUT: Cleared (only) by the socket layer logic to indicate
+ *                        that the reply was processed, suppressing further
+ *                        attempts to process the reply.
+ *
+ *   ICMPv6_ECHOREPLY IN: An ICMP Echo Reply has been received.  Used to support
+ *                        ICMP ping from the socket layer. (ICMPv6 only)
+ *                   OUT: Cleared (only) by the socket layer logic to indicate
+ *                        that the reply was processed, suppressing further
+ *                        attempts to process the reply.
+ *
+ *   NETDEV_DOWN:     IN: The network device has been taken down.
+ *                   OUT: Not used
  */
+
+/* Connection specific events */
 
 #define TCP_ACKDATA      (1 << 0)
 #define TCP_NEWDATA      (1 << 1)
 #define UDP_NEWDATA      TCP_NEWDATA
 #define PKT_NEWDATA      TCP_NEWDATA
-#define ICMP_NEWDATA     TCP_NEWDATA
-#define ICMPv6_NEWDATA   TCP_NEWDATA
 #define TCP_SNDACK       (1 << 2)
 #define TCP_REXMIT       (1 << 3)
-#define ARP_POLL         (1 << 4)
-#define TCP_POLL         ARP_POLL
-#define UDP_POLL         ARP_POLL
-#define PKT_POLL         ARP_POLL
-#define ICMP_POLL        ARP_POLL
-#define ICMPv6_POLL      ARP_POLL
+#define TCP_POLL         (1 << 4)
+#define UDP_POLL         TCP_POLL
+#define PKT_POLL         TCP_POLL
 #define TCP_BACKLOG      (1 << 5)
 #define TCP_CLOSE        (1 << 6)
 #define TCP_ABORT        (1 << 7)
 #define TCP_CONNECTED    (1 << 8)
 #define TCP_TIMEDOUT     (1 << 9)
-#define ICMP_ECHOREPLY   (1 << 10)
-#define ICMPv6_ECHOREPLY ICMP_ECHOREPLY
 
-#define TCP_CONN_EVENTS (TCP_CLOSE | TCP_ABORT | TCP_CONNECTED | TCP_TIMEDOUT)
+/* Device specific events */
+
+#define ICMP_NEWDATA     TCP_NEWDATA
+#define ICMPv6_NEWDATA   TCP_NEWDATA
+#define ARP_POLL         (1 << 10)
+#define ICMP_POLL        (1 << 11)
+#define ICMPv6_POLL      (1 << 12)
+#define ICMP_ECHOREPLY   (1 << 13)
+#define ICMPv6_ECHOREPLY (1 << 14)
+#define NETDEV_DOWN      (1 << 15)
+
+/* The set of events that and implications to the TCP connection state */
+
+#define TCP_CONN_EVENTS (TCP_CLOSE | TCP_ABORT | TCP_CONNECTED | \
+                         TCP_TIMEDOUT | NETDEV_DOWN)
 
 /* IPv4/IPv6 Helpers */
 
@@ -192,12 +247,6 @@ extern uint16_t g_ipid;
 /* Reassembly timer (units: deci-seconds) */
 
 extern uint8_t g_reassembly_timer;
-#endif
-
-#if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING)
-/* List of applications waiting for ICMP ECHO REPLY */
-
-extern struct devif_callback_s *g_icmp_echocallback;
 #endif
 
 /****************************************************************************
@@ -282,8 +331,18 @@ void devif_callback_free(FAR struct devif_callback_s *cb,
  *   This is called internally as part of uIP initialization and should not
  *   be accessed from the application or socket layer.
  *
+ * Input parameters:
+ *   dev - The network device state structure associated with the network
+ *     device that initiated the callback event.
+ *   pvconn - Holds a reference to the TCP connection structure or the UDP
+ *     port structure.  May be NULL if the even is not related to a TCP
+ *     connection or UDP port.
+ *
+ * Returned value:
+ *   The updated flags as modified by the callback functions.
+ *
  * Assumptions:
- *   This function is called with interrupts disabled.
+ *   This function is called with the network locked.
  *
  ****************************************************************************/
 

@@ -48,7 +48,9 @@
  * by the logic in chip.h.
  */
 
-#if defined(KINETIS_K40)
+#if defined(KINETIS_K20)
+#  include "kinetis_k20pinmux.h"
+#elif defined(KINETIS_K40)
 #  include "kinetis_k40pinmux.h"
 #elif defined(KINETIS_K60)
 #  include "kinetis_k60pinmux.h"

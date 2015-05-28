@@ -10437,3 +10437,22 @@
 	  can cause interrupts to be lost.  So, if when the status register
 	  is read, the logic must also handle the timer overflow event.
 	  Found and fixed by Max Neklyudov (2015-05-26).
+	* arch/arm/include/kinetis and arch/arm/src/kinetis: Basic support
+	  for the Kinetis K20 architecture.  Taken from PX4.  This is the
+	  work of Jakob Odersky (2015-05-26).
+	* net/: Move some ICMP event lists to the device structure.  That
+	  allows for both device-specific event processing and also devices
+	  to generate events like network down.  From Max Neklyudov (2015-05-27).
+	* net/: Extend Macs logic to ARP and ICMPv6.  Also found and fix
+	  several IPv6-related compilation errors that have crept in.  IPv6
+	  has been broken for awhile (2015-05-27).
+	* net/tcp:  Fix an important TCP networking bug: 16-bit flags was
+	  being converted to 8-bits in a few locations, causing loss of
+	  status indications (2015-05-27).
+	* net/socket and net/tcp: net_startmonitor.c always returned OK.  In
+	  the case where a socket has already been closed, it correctly handled
+	  the disconnetion event but still returned OK.  Returning OK caused
+	  the callers of net_startmonitor to assume that the connection was
+	  okay, undoing the good things that net_startmonitor did and causing
+	  the socket to be marked as connected.  This behavior was noted by
+	  Pelle Windestam (2015-05-28).
