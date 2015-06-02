@@ -69,8 +69,9 @@ struct tcp_connect_s
 {
   FAR struct tcp_conn_s  *tc_conn;    /* Reference to TCP connection structure */
   FAR struct devif_callback_s *tc_cb; /* Reference to callback instance */
-  sem_t                   tc_sem;     /* Semaphore signals recv completion */
-  int                     tc_result;  /* OK on success, otherwise a negated errno. */
+  FAR struct socket *tc_psock;        /* The socket being connected */
+  sem_t tc_sem;                       /* Semaphore signals recv completion */
+  int tc_result;                      /* OK on success, otherwise a negated errno. */
 };
 #endif
 
@@ -108,6 +109,7 @@ static inline int psock_setup_callbacks(FAR struct socket *psock,
 
   (void)sem_init(&pstate->tc_sem, 0, 0); /* Doesn't really fail */
   pstate->tc_conn   = conn;
+  pstate->tc_psock  = psock;
   pstate->tc_result = -EAGAIN;
 
   /* Set up the callbacks in the connection */
@@ -118,22 +120,10 @@ static inline int psock_setup_callbacks(FAR struct socket *psock,
       /* Set up the connection "interrupt" handler */
 
       pstate->tc_cb->flags   = (TCP_NEWDATA | TCP_CLOSE | TCP_ABORT |
-                                TCP_TIMEDOUT | TCP_CONNECTED);
+                                TCP_TIMEDOUT | TCP_CONNECTED | NETDEV_DOWN);
       pstate->tc_cb->priv    = (void*)pstate;
       pstate->tc_cb->event   = psock_connect_interrupt;
-
-      /* Set up the connection event monitor */
-
-      ret = net_startmonitor(psock);
-      if (ret < 0)
-        {
-          /* net_startmonitor() can only fail on certain race conditions
-           * where the connection was lost just before this function was
-           * called.  Undo everything we have done and return a failure.
-           */
-
-          psock_teardown_callbacks(pstate, ret);
-        }
+      ret                    = OK;
     }
 
   return ret;
@@ -227,15 +217,35 @@ static uint16_t psock_connect_interrupt(FAR struct net_driver_s *dev,
 
       else if ((flags & TCP_TIMEDOUT) != 0)
         {
-          /* Indicate that the remote host is unreachable (or should this be timedout?) */
+          /* Indicate that the connection timedout?)*/
 
           pstate->tc_result = -ETIMEDOUT;
+        }
+
+      else if ((flags & NETDEV_DOWN) != 0)
+        {
+          /* The network device went down.  Indicate that the remote host
+           * is unreachable.
+           */
+
+          pstate->tc_result = -ENETUNREACH;
         }
 
       /* TCP_CONNECTED: The socket is successfully connected */
 
       else if ((flags & TCP_CONNECTED) != 0)
         {
+          FAR struct socket *psock = pstate->tc_psock;
+          DEBUGASSERT(psock);
+
+          /* Mark the connection bound and connected.  NOTE this is
+           * is done here (vs. later) in order to avoid any race condition
+           * in the socket state.  It is known to connected here and now,
+           * but not necessarily at any time later.
+           */
+
+          psock->s_flags |= (_SF_BOUND | _SF_CONNECTED);
+
           /* Indicate that the socket is no longer connected */
 
           pstate->tc_result = OK;
@@ -381,11 +391,25 @@ static inline int psock_tcp_connect(FAR struct socket *psock,
           psock_teardown_callbacks(&state, ret);
         }
 
-      /* Mark the connection bound and connected */
+      /* Check if the socket was successfully connected. */
 
       if (ret >= 0)
         {
-          psock->s_flags |= (_SF_BOUND|_SF_CONNECTED);
+          /* Yes... Now that we are connected, we need to set up to monitor
+           * the state of the connection up the connection event monitor.
+           */
+
+          ret = net_startmonitor(psock);
+          if (ret < 0)
+            {
+              /* net_startmonitor() can only fail on certain race
+               * conditions where the connection was lost just before
+               * this function was called.  That is not expected to
+               * happen in this context, but just in case...
+               */
+
+              net_lostconnection(psock, TCP_ABORT);
+            }
         }
     }
 

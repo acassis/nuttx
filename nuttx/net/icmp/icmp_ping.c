@@ -47,6 +47,7 @@
 #include <semaphore.h>
 #include <debug.h>
 
+#include <netinet/in.h>
 #include <net/if.h>
 
 #include <nuttx/clock.h>
@@ -70,8 +71,10 @@
 
 /* Allocate a new ICMP data callback */
 
-#define icmp_callback_alloc(dev)   devif_callback_alloc(&(dev)->d_callbacks)
-#define icmp_callback_free(dev,cb)  devif_callback_free(cb, &(dev)->d_callbacks)
+#define icmp_callback_alloc(dev) \
+  devif_callback_alloc(dev, &(dev)->d_conncb)
+#define icmp_callback_free(dev,cb) \
+  devif_callback_free(dev, cb, &(dev)->d_conncb)
 
 /****************************************************************************
  * Private Types
@@ -348,7 +351,7 @@ int icmp_ping(in_addr_t addr, uint16_t id, uint16_t seqno, uint16_t datalen,
   /* Get the device that will be used to route this ICMP ECHO request */
 
 #ifdef CONFIG_NETDEV_MULTINIC
-  dev = netdev_findby_ipv4addr(g_ipv4_allzeroaddr, addr);
+  dev = netdev_findby_ipv4addr(INADDR_ANY, addr);
 #else
   dev = netdev_findby_ipv4addr(addr);
 #endif

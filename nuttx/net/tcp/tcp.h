@@ -62,8 +62,44 @@
 
 /* Allocate a new TCP data callback */
 
-#define tcp_callback_alloc(conn)   devif_callback_alloc(&conn->list)
-#define tcp_callback_free(conn,cb) devif_callback_free(cb, &conn->list)
+#ifdef CONFIG_NETDEV_MULTINIC
+/* These macros allocate and free callback structures used for receiving
+ * notifications of TCP data-related events.
+ */
+
+#  define tcp_callback_alloc(conn) \
+    devif_callback_alloc(conn->dev, &conn->list)
+#  define tcp_callback_free(conn,cb) \
+    devif_callback_free(conn->dev, cb, &conn->list)
+
+/* These macros allocate and free callback structures used for receiving
+ * notifications of device-related events.
+ */
+
+#  define tcp_monitor_callback_alloc(conn) \
+    devif_callback_alloc(conn->dev, NULL)
+#  define tcp_monitor_callback_free(conn,cb) \
+    devif_callback_free(conn->dev, cb, NULL)
+
+#else
+/* These macros allocate and free callback structures used for receiving
+ * notifications of TCP data-related events.
+ */
+
+#  define tcp_callback_alloc(conn) \
+    devif_callback_alloc(g_netdevices, &conn->list)
+#  define tcp_callback_free(conn,cb) \
+    devif_callback_free(g_netdevices, cb, &conn->list)
+
+/* These macros allocate and free callback structures used for receiving
+ * notifications of device-related events.
+ */
+
+#  define tcp_monitor_callback_alloc(conn) \
+    devif_callback_alloc(g_netdevices, NULL)
+#  define tcp_monitor_callback_free(conn,cb) \
+    devif_callback_free(g_netdevices, cb, NULL)
+#endif
 
 /* Get the current maximum segment size that can be sent on the current
  * TCP connection.
@@ -141,16 +177,26 @@ struct tcp_conn_s
   uint16_t unacked;       /* Number bytes sent but not yet ACKed */
 #endif
 
+#ifdef CONFIG_NETDEV_MULTINIC
+  /* If the TCP socket is bound to a local address, then this is
+   * a reference to the device that routes traffic on the corresponding
+   * network.
+   */
+
+  FAR struct net_driver_s *dev;
+#endif
+
+#ifdef CONFIG_NET_TCP_READAHEAD
   /* Read-ahead buffering.
    *
    *   readahead - A singly linked list of type struct iob_qentry_s
    *               where the TCP/IP read-ahead data is retained.
    */
 
-#ifdef CONFIG_NET_TCP_READAHEAD
   struct iob_queue_s readahead;   /* Read-ahead buffering */
 #endif
 
+#ifdef CONFIG_NET_TCP_WRITE_BUFFERS
   /* Write buffering
    *
    *   write_q   - The queue of unsent I/O buffers.  The head of this
@@ -159,7 +205,6 @@ struct tcp_conn_s
    *               chains.  Sequence number ordering.
    */
 
-#ifdef CONFIG_NET_TCP_WRITE_BUFFERS
   sq_queue_t write_q;     /* Write buffering for segments */
   sq_queue_t unacked_q;   /* Write buffering for un-ACKed segments */
   uint16_t   expired;     /* Number segments retransmitted but not yet ACKed,
@@ -168,6 +213,7 @@ struct tcp_conn_s
   uint32_t   isn;         /* Initial sequence number */
 #endif
 
+#ifdef CONFIG_NET_TCPBACKLOG
   /* Listen backlog support
    *
    *   blparent - The backlog parent.  If this connection is backlogged,
@@ -178,7 +224,6 @@ struct tcp_conn_s
    *     struct tcp_backlog_s tear-off structure that manages that backlog.
    */
 
-#ifdef CONFIG_NET_TCPBACKLOG
   FAR struct tcp_conn_s    *blparent;
   FAR struct tcp_backlog_s *backlog;
 #endif
@@ -209,17 +254,34 @@ struct tcp_conn_s
 
   FAR struct devif_callback_s *list;
 
-  /* accept() is called when the TCP logic has created a connection */
+  /* accept() is called when the TCP logic has created a connection
+   *
+   *   accept_private: This is private data that will be available to the
+   *     accept() handler when it is invoked with a point to this structure
+   *     as an argument.
+   *   accept: This is the the pointer to the accept handler.
+   */
 
   FAR void *accept_private;
   int (*accept)(FAR struct tcp_conn_s *listener, FAR struct tcp_conn_s *conn);
 
   /* connection_event() is called on any of the subset of connection-related
    * events.
+   *
+   *   connection_private: This is private data that will be available to
+   *     the connection_event() handler when it is invoked with a point to
+   *     this structure as an argument.
+   *   connection_devcb: this is the allocated callback structure that is
+   *     used to
+   *   connection_event: This is the the pointer to the connection event
+   *     handler.
    */
 
   FAR void *connection_private;
-  void (*connection_event)(FAR struct tcp_conn_s *conn, uint16_t flags);
+  FAR struct devif_callback_s *connection_devcb;
+  uint16_t (*connection_event)(FAR struct net_driver_s *dev,
+                               FAR void *pvconn, FAR void *pvpriv,
+                               uint16_t flags);
 };
 
 /* This structure supports TCP write buffering */
@@ -267,6 +329,16 @@ extern "C"
 {
 #else
 #  define EXTERN extern
+#endif
+
+#if CONFIG_NSOCKET_DESCRIPTORS > 0
+/* List of registered Ethernet device drivers.  You must have the network
+ * locked in order to access this list.
+ *
+ * NOTE that this duplicates a declaration in net/netdev/netdev.h
+ */
+
+EXTERN struct net_driver_s *g_netdevices;
 #endif
 
 /****************************************************************************
@@ -339,6 +411,46 @@ FAR struct tcp_conn_s *tcp_active(FAR struct net_driver_s *dev,
  ****************************************************************************/
 
 FAR struct tcp_conn_s *tcp_nextconn(FAR struct tcp_conn_s *conn);
+
+/****************************************************************************
+ * Function: tcp_find_ipv4_device
+ *
+ * Description:
+ *   Select the network driver to use with the IPv4 TCP transaction.
+ *
+ * Input Parameters:
+ *   conn - TCP connection structure.  The locally bound address, laddr,
+ *     should be set to a non-zero value in this structure.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success.  A negated errno value is returned
+ *   on failure.  -ENODEV is the only expected error value.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv4
+int tcp_find_ipv4_device(FAR struct tcp_conn_s *conn);
+#endif
+
+/****************************************************************************
+ * Function: tcp_find_ipv6_device
+ *
+ * Description:
+ *   Select the network driver to use with the IPv6 TCP transaction.
+ *
+ * Input Parameters:
+ *   conn - TCP connection structure.  The locally bound address, laddr,
+ *     should be set to a non-zero value in this structure.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success.  A negated errno value is returned
+ *   on failure.  -EHOSTUNREACH is the only expected error value.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv6
+int tcp_find_ipv6_device(FAR struct tcp_conn_s *conn);
+#endif
 
 /****************************************************************************
  * Name: tcp_alloc_accept

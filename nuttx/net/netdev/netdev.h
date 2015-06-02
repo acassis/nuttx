@@ -1,7 +1,7 @@
 /****************************************************************************
  * net/netdev/netdev.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include <nuttx/net/ip.h>
 
@@ -67,51 +68,19 @@ extern "C"
 #define EXTERN extern
 #endif
 
-/* List of registered Ethernet device drivers */
-
 #if CONFIG_NSOCKET_DESCRIPTORS > 0
+/* List of registered Ethernet device drivers.  You must have the network
+ * locked in order to access this list.
+ *
+ * NOTE that this duplicates a declaration in net/tcp/tcp.h
+ */
+
 EXTERN struct net_driver_s *g_netdevices;
 #endif
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
-
-/****************************************************************************
- * Function: netdev_seminit
- *
- * Description:
- *   Initialize the network device semaphore.
- *
- ****************************************************************************/
-
-#if CONFIG_NSOCKET_DESCRIPTORS > 0
-void netdev_seminit(void);
-#endif
-
-/****************************************************************************
- * Function: netdev_semtake
- *
- * Description:
- *   Get exclusive access to the network device list.
- *
- ****************************************************************************/
-
-#if CONFIG_NSOCKET_DESCRIPTORS > 0
-void netdev_semtake(void);
-#endif
-
-/****************************************************************************
- * Function: netdev_semgive
- *
- * Description:
- *   Release exclusive access to the network device list
- *
- ****************************************************************************/
-
-#if CONFIG_NSOCKET_DESCRIPTORS > 0
-void netdev_semgive(void);
-#endif
 
 /****************************************************************************
  * Name: netdev_ifup / netdev_ifdown
@@ -123,6 +92,19 @@ void netdev_semgive(void);
 
 void netdev_ifup(FAR struct net_driver_s *dev);
 void netdev_ifdown(FAR struct net_driver_s *dev);
+
+/****************************************************************************
+ * Function: netdev_verify
+ *
+ * Description:
+ *   Verify that the specified device still exists
+ *
+ * Assumptions:
+ *   The caller has locked the network.
+ *
+ ****************************************************************************/
+
+bool netdev_verify(FAR struct net_driver_s *dev);
 
 /****************************************************************************
  * Function: netdev_findbyname

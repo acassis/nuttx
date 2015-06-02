@@ -227,13 +227,25 @@ static uint16_t sendto_interrupt(FAR struct net_driver_s *dev, FAR void *conn,
   nllvdbg("flags: %04x\n", flags);
   if (pstate)
     {
+      /* If the network device has gone down, then we will have terminate
+       * the wait now with an error.
+       */
+
+      if ((flags & NETDEV_DOWN) != 0)
+        {
+          /* Terminate the transfer with an error. */
+
+          nlldbg("ERROR: Network is down\n");
+          pstate->st_sndlen = -ENETUNREACH;
+        }
+
       /* Check if the outgoing packet is available.  It may have been claimed
        * by a sendto interrupt serving a different thread -OR- if the output
        * buffer currently contains unprocessed incoming data.  In these cases
        * we will just have to wait for the next polling cycle.
        */
 
-      if (dev->d_sndlen > 0 || (flags & UDP_NEWDATA) != 0)
+      else if (dev->d_sndlen > 0 || (flags & UDP_NEWDATA) != 0)
         {
            /* Another thread has beat us sending data or the buffer is busy,
             * Check for a timeout.  If not timed out, wait for the next
@@ -245,7 +257,7 @@ static uint16_t sendto_interrupt(FAR struct net_driver_s *dev, FAR void *conn,
             {
               /* Yes.. report the timeout */
 
-              nlldbg("SEND timeout\n");
+              nlldbg("ERROR: SEND timeout\n");
               pstate->st_sndlen = -ETIMEDOUT;
             }
           else
@@ -292,61 +304,6 @@ static uint16_t sendto_interrupt(FAR struct net_driver_s *dev, FAR void *conn,
 }
 
 /****************************************************************************
- * Function: sendto_txnotify
- *
- * Description:
- *   Notify the appropriate device driver that we are have data ready to
- *   be send (UDP)
- *
- * Parameters:
- *   psock - Socket state structure
- *   conn  - The UDP connection structure
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-static inline void sendto_txnotify(FAR struct socket *psock,
-                                   FAR struct udp_conn_s *conn)
-{
-#ifdef CONFIG_NET_IPv4
-#ifdef CONFIG_NET_IPv6
-  /* If both IPv4 and IPv6 support are enabled, then we will need to select
-   * the device driver using the appropriate IP domain.
-   */
-
-  if (psock->s_domain == PF_INET)
-#endif
-    {
-      /* Notify the device driver that send data is available */
-
-#ifdef CONFIG_NETDEV_MULTINIC
-      netdev_ipv4_txnotify(conn->u.ipv4.laddr, conn->u.ipv4.raddr);
-#else
-      netdev_ipv4_txnotify(conn->u.ipv4.raddr);
-#endif
-    }
-#endif /* CONFIG_NET_IPv4 */
-
-#ifdef CONFIG_NET_IPv6
-#ifdef CONFIG_NET_IPv4
-  else /* if (psock->s_domain == PF_INET6) */
-#endif /* CONFIG_NET_IPv4 */
-    {
-      /* Notify the device driver that send data is available */
-
-      DEBUGASSERT(psock->s_domain == PF_INET6);
-#ifdef CONFIG_NETDEV_MULTINIC
-      netdev_ipv6_txnotify(conn->u.ipv6.laddr, conn->u.ipv6.raddr);
-#else
-      netdev_ipv6_txnotify(conn->u.ipv6.raddr);
-#endif
-    }
-#endif /* CONFIG_NET_IPv6 */
-}
-
-/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
@@ -380,6 +337,7 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
                          socklen_t tolen)
 {
   FAR struct udp_conn_s *conn;
+  FAR struct net_driver_s *dev;
   struct sendto_s state;
   net_lock_t save;
   int ret;
@@ -399,7 +357,6 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
     }
 #endif /* CONFIG_NET_ARP_SEND */
 
-
 #ifdef CONFIG_NET_ICMPv6_NEIGHBOR
 #ifdef CONFIG_NET_ARP_SEND
   else
@@ -418,7 +375,7 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
 
   if (ret < 0)
     {
-      ndbg("ERROR: Not reachable\n");
+      ndbg("ERROR: Peer not reachable\n");
       return -ENETUNREACH;
     }
 #endif /* CONFIG_NET_ARP_SEND || CONFIG_NET_ICMPv6_NEIGHBOR */
@@ -452,7 +409,9 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
   state.st_time = clock_systimer();
 #endif
 
-  /* Setup the UDP socket */
+  /* Setup the UDP socket.  udp_connect will set the remote address in the
+   * connection structure.
+   */
 
   conn = (FAR struct udp_conn_s *)psock->s_conn;
   DEBUGASSERT(conn);
@@ -460,22 +419,34 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
   ret = udp_connect(conn, to);
   if (ret < 0)
     {
-      net_unlock(save);
-      return ret;
+      ndbg("ERROR: udp_connect failed: %d\n", ret);
+      goto errout_with_lock;
     }
+
+  /* Get the device that will handle the remote packet transfers.  This
+   * should never be NULL.
+   */
+
+  dev = udp_find_raddr_device(conn);
+  if (dev == NULL)
+    {
+      ndbg("ERROR: udp_find_raddr_device failed\n");
+      ret = -ENETUNREACH;
+      goto errout_with_lock;
+   }
 
   /* Set up the callback in the connection */
 
-  state.st_cb = udp_callback_alloc(conn);
+  state.st_cb = udp_callback_alloc(dev, conn);
   if (state.st_cb)
     {
-      state.st_cb->flags   = UDP_POLL;
+      state.st_cb->flags   = (UDP_POLL | NETDEV_DOWN);
       state.st_cb->priv    = (void*)&state;
       state.st_cb->event   = sendto_interrupt;
 
       /* Notify the device driver of the availability of TX data */
 
-      sendto_txnotify(psock, conn);
+      netdev_txnotify_dev(dev);
 
       /* Wait for either the receive to complete or for an error/timeout to occur.
        * NOTES:  (1) net_lockedwait will also terminate if a signal is received, (2)
@@ -487,19 +458,26 @@ ssize_t psock_udp_sendto(FAR struct socket *psock, FAR const void *buf,
 
       /* Make sure that no further interrupts are processed */
 
-      udp_callback_free(conn, state.st_cb);
+      udp_callback_free(dev, conn, state.st_cb);
     }
 
-  net_unlock(save);
+  /* The result of the sendto operation is the number of bytes transferred */
+
+  ret = state.st_sndlen;
+
+errout_with_lock:
+  /* Release the semaphore */
+
   sem_destroy(&state.st_sem);
 
-  /* Set the socket state to idle */
+  /* Set the socket state back to idle */
 
   psock->s_flags = _SS_SETSTATE(psock->s_flags, _SF_IDLE);
 
-  /* Return the result of the sendto() operation */
+  /* Unlock the network and return the result of the sendto() operation */
 
-  return state.st_sndlen;
+  net_unlock(save);
+  return ret;
 }
 
 #endif /* CONFIG_NET_UDP */

@@ -213,6 +213,7 @@ static uint16_t psock_send_interrupt(FAR struct net_driver_s *dev,
 ssize_t psock_pkt_send(FAR struct socket *psock, FAR const void *buf,
                        size_t len)
 {
+  FAR struct net_driver_s *dev;
   struct send_s state;
   net_lock_t save;
   int err;
@@ -223,6 +224,15 @@ ssize_t psock_pkt_send(FAR struct socket *psock, FAR const void *buf,
   if (!psock || psock->s_crefs <= 0)
     {
       err = EBADF;
+      goto errout;
+    }
+
+  /* Get the device driver that will service this transfer */
+
+  dev = pkt_find_device((FAR struct pkt_conn_s *)psock->s_conn);
+  if (dev == NULL)
+    {
+      err = ENODEV;
       goto errout;
     }
 
@@ -250,29 +260,18 @@ ssize_t psock_pkt_send(FAR struct socket *psock, FAR const void *buf,
 
       /* Allocate resource to receive a callback */
 
-      state.snd_cb = pkt_callback_alloc(conn);
+      state.snd_cb = pkt_callback_alloc(dev, conn);
       if (state.snd_cb)
         {
-          FAR struct net_driver_s *dev;
-
           /* Set up the callback in the connection */
 
           state.snd_cb->flags = PKT_POLL;
           state.snd_cb->priv  = (void*)&state;
           state.snd_cb->event = psock_send_interrupt;
 
-          /* Notify the device driver of the availability of TX data */
-          /* TODO better lookup network interface from *psock or *conn */
+          /* Notify the device driver that new TX data is available. */
 
-          dev = netdev_findbyname("eth0");
-
-          /* Notify the device driver that new TX data is available.
-           * NOTES: This is in essence what netdev_ipv4_txnotify() does,
-           * which is not possible to call since it expects a in_addr_t as
-           * its single argument to lookup the network interface.
-           */
-
-          dev->d_txavail(dev);
+          netdev_txnotify_dev(dev);
 
           /* Wait for the send to complete or an error to occur: NOTES: (1)
            * net_lockedwait will also terminate if a signal is received, (2)
@@ -284,7 +283,7 @@ ssize_t psock_pkt_send(FAR struct socket *psock, FAR const void *buf,
 
           /* Make sure that no further interrupts are processed */
 
-          pkt_callback_free(conn, state.snd_cb);
+          pkt_callback_free(dev, conn, state.snd_cb);
         }
     }
 

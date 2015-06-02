@@ -2,7 +2,7 @@
  * netutils/thttpd/cgi-src/ssi.c
  * Server-side-includes CGI program
  *
- *   Copyright (C) 2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Derived from the file of the same name in the original THTTPD package:
@@ -496,7 +496,7 @@ static void do_include(FILE *instream, char *vfilename, char *filename,
 }
 
 static void do_echo(FILE *instream, char *vfilename, char *filename,
-                     char *directive, char *tag, char *val)
+                    char *directive, char *tag, char *val)
 {
   char *cp;
 
@@ -551,6 +551,7 @@ static void do_echo(FILE *instream, char *vfilename, char *filename,
           gettimeofday(&tm, NULL);
           show_time(tm.tv_sec, 1);
         }
+#if 0 /* fstat is not yet supported */
       else if (strcmp(val, "LAST_MODIFIED") == 0)
         {
           /* The last modification date of the current document. */
@@ -560,6 +561,7 @@ static void do_echo(FILE *instream, char *vfilename, char *filename,
               show_time(g_sb.st_mtime, 0);
             }
         }
+#endif
       else
         {
           /* Try an environment variable. */
@@ -876,7 +878,11 @@ static void read_file(FILE *instream, char *vfilename, char *filename)
  * Public Functions
  ****************************************************************************/
 
-int main(int argc, char **argv)
+#ifdef CONFIG_THTTPD_BINFS
+int ssi_main(int argc, char *argv[])
+#else
+int main(int argc, char *argv[])
+#endif
 {
   FILE *instream;
   char *script_name;

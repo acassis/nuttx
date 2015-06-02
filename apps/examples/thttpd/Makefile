@@ -1,7 +1,7 @@
 ############################################################################
 # apps/examples/thttpd/Makefile
 #
-#   Copyright (C) 2009-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2009-2012, 2015 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,14 @@ else
   INSTALL_DIR = $(BIN_DIR)
 endif
 
+CONTENT_MAKE = $(MAKE) -C content
+ifeq ($(CONFIG_THTTPD_NXFLAT),y)
+  CONTENT_MAKE += -f Makefile.nxflat
+endif
+ifeq ($(CONFIG_THTTPD_BINFS),y)
+  CONTENT_MAKE += -f Makefile.binfs
+endif
+
 CONFIG_XYZ_PROGNAME ?= thttpd$(EXEEXT)
 PROGNAME = $(CONFIG_XYZ_PROGNAME)
 
@@ -89,10 +97,11 @@ $(COBJS) $(MAINOBJ): %$(OBJEXT): %.c
 	$(call COMPILE, $<, $@)
 
 headers:
-	@$(MAKE) -C content TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
+	@$(CONTENT_MAKE) headers TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
 
 .built: headers $(OBJS)
 	$(call ARCHIVE, $(BIN), $(OBJS))
+	@$(CONTENT_MAKE) binaries TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
 	@touch .built
 
 ifeq ($(CONFIG_BUILD_KERNEL),y)
@@ -109,16 +118,18 @@ install:
 endif
 
 context:
+	@$(CONTENT_MAKE) context TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
 
 .depend: Makefile $(SRCS)
 	@$(MKDEP) $(ROOTDEPPATH) "$(CC)" -- $(CFLAGS) -- $(SRCS) >Make.dep
 	@touch $@
 
 depend: .depend
+	@$(CONTENT_MAKE) depend TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
 
 clean:
 	$(call DELFILE, .built)
-	@$(MAKE) -C content clean TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
+	@$(CONTENT_MAKE) clean TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" CROSSDEV=$(CROSSDEV)
 	$(call CLEAN)
 
 distclean: clean

@@ -53,8 +53,9 @@
 #include <nuttx/net/netdev.h>
 #include <nuttx/net/arp.h>
 
-#include "netdev/netdev.h"
+#include "utils/utils.h"
 #include "igmp/igmp.h"
+#include "netdev/netdev.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -175,6 +176,7 @@ int netdev_register(FAR struct net_driver_s *dev, enum net_lltype_e lltype)
 #ifdef CONFIG_NET_USER_DEVFMT
   FAR const char devfmt_str[IFNAMSIZ];
 #endif
+  net_lock_t save;
   int devnum;
 
   if (dev)
@@ -249,13 +251,14 @@ int netdev_register(FAR struct net_driver_s *dev, enum net_lltype_e lltype)
 
       /* There are no clients of the device yet */
 
-      dev->d_callbacks = NULL;
+      dev->d_conncb = NULL;
+      dev->d_devcb = NULL;
 
       /* Get the next available device number and sssign a device name to
        * the interface
        */
 
-      netdev_semtake();
+      save = net_lock();
 #ifdef CONFIG_NET_MULTILINK
       devnum = find_devnum(devfmt);
 #else
@@ -281,7 +284,7 @@ int netdev_register(FAR struct net_driver_s *dev, enum net_lltype_e lltype)
 #ifdef CONFIG_NET_IGMP
       igmp_devinit(dev);
 #endif
-      netdev_semgive();
+      net_unlock(save);
 
 #ifdef CONFIG_NET_ETHERNET
       nlldbg("Registered MAC: %02x:%02x:%02x:%02x:%02x:%02x as dev: %s\n",

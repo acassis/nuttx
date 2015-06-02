@@ -10456,3 +10456,71 @@
 	  okay, undoing the good things that net_startmonitor did and causing
 	  the socket to be marked as connected.  This behavior was noted by
 	  Pelle Windestam (2015-05-28).
+	* include/nuttx/net, net/arp, net/devif, net/icmp, net/icmpv6,
+	  net/netdev, net/pkt, net/tcp, net/udp: Modify event list handling:
+	  Now there are two event lists each device structure:  (1) One is
+	  for ARP and ICMP data related events, the other is for device
+	  related events.  Callback allocation/free routines no accept a
+	  device parameter as well as a list: If the device parameter is
+	  added, then the callback goes into both the connection-related
+	  list AND the device event list.  Thus each socket type can
+	  received both custom data-related events as well as common
+	  device related events (2015-05-28).
+	* net/socket and net/utils: setsockopt() fails when setting timeouts
+	  to values less that an 100 msec.  That is because the timeout is
+	  limited to stops of 1 decisecond and because the conversion of
+	  structure timeval was truncating the microsecond remainder.  The
+	  utility net_timeval2dsec now accespts and option to determin how it
+	  handles the remainder:  truncate, discarding the remainder, use the
+	  remainder to round to the closed decisecond value, or use any non-zero
+	  remainder to the next larger whole decisecond value.  Bug discovered
+	  by Librae (2015-05-29).
+	* configs/stm32f4discovery/src: Move up_cxxinitialize from
+	  nuttx/configs/stm32f4discovery/src to apps/platform/stm32f4discovery
+	  where it belongs (2015-05-29).
+	* net/sockets, net/tcp, net/udp: UDP Networking: Add support for
+	  device event notification for UDP transfers (2015-05-29).
+	* net/sockets and net/tcp: TCP Networking: Add support for device event
+	  notification for UDP transfers (2015-05-30).
+	* libc/Kconfig and stdio/lib_libvsprintf.c: Add an option to disable
+	  support for long long formats in lib_vsprintf.  From Alan Carvalho
+	  de Assis (2015-05-30).
+	* net/net_initialize.c, net/detdev, and net/socket: The network device
+	  list was protected by a re-entrant semaphore.  With the recent change
+	  to support network device callback, the network stack needs to access
+	  the network device list too. Some drivers, however, run the network
+	  stack from the interrupt level -- this is bad but a fact in the
+	  current state.  Of course, those drivers are unable to take the
+	  semaphore and would assert.
+	  The solution here is to eliminate the device devices semaphore
+	  altogether.  This eliminates netdev_semtake() and netdev_semgive()
+	  and replace them with net_lock() and net_unlock() which have the
+	  larger scope that is needed and will integrate properly with the
+	  dinosaur interrupt driven stack (2015-05-31).
+	* net/socket/connect.c: In the TCP connection operation, it was trying
+	  to setup the network monitor BEFORE the socket was successfully
+	  connected.  This, of course, has ALWAYS failed because the socket is
+	  not yet connected and the TCP state is not yet correct for a connected
+	  socket.  However, because of other changes net_startmonitor() now
+	  returns a failure condition that causes worse problems when trying to
+	  connect.  The fix is to move the logic that starts the network monitor
+	  to AFTER the socket has been successfully connected (2015-05-31).
+	* tools/configure.c: Fix test for the existence of the apps/ directory.
+	  Fix backward interpretation of options, -l was selecting Windows and
+	  -w was selecting Linux. This was SourceForege Ticket #39 (2015-05-31).
+	* arch/include/stm32/chip.h and arch/src/stm32/Kconfig: Add basic
+	  support for the STM32F205RG.  From SourceForge Ticket 40 (anonymous,
+	  2015-05-31).
+	* arch/arm/src/lpc17xx: Review, update, and modify the Ethernet driver
+	  so that it works better with CONFIG_NET_NOINTS=y (2015-06-01).
+	* configs/: Update all LPC17xx networking configurations so that they
+	  have CONFIG_NET_NOTINTS=y selected (2015-06-01).
+	* /arch/arm/src/armv7-m, binfmt/libelf, configs/stm32f4discovery/scripts,
+	  /include/nuttx/binfmt, and libxx: Add support uClibc++ excpetions.  This
+	  involves additional handling for relative relation types, additional
+	  support for unwinding, as well as additional changes.  The culmination
+	  of a big effort from Leo Aloe3132 (2015-06-01).
+	* configs/olimex-lpc1766stk: Rename the thttpd configuration to thttpd-nxflat.
+	  Add a new configuration, thttpd-binfs, that provides an example of how
+	  to build apps/netutils/thttpd using binfs instead NXFLAT+ROMFS
+	  (2015-06-02).

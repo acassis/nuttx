@@ -588,7 +588,7 @@ static int netdev_ifrioctl(FAR struct socket *psock, int cmd,
           dev = netdev_ifrdev(req);
           if (dev)
             {
-              if (req->ifr_flags & IFF_UP)
+              if ((req->ifr_flags & IFF_UP) != 0)
                 {
                   /* Yes.. bring the interface up */
 
@@ -597,7 +597,7 @@ static int netdev_ifrioctl(FAR struct socket *psock, int cmd,
 
               /* Is this a request to take the interface down? */
 
-              else if (req->ifr_flags & IFF_DOWN)
+              else if ((req->ifr_flags & IFF_DOWN) != 0)
                 {
                   /* Yes.. take the interface down */
 
@@ -1045,8 +1045,7 @@ void netdev_ifdown(FAR struct net_driver_s *dev)
 
       /* Notify clients that the network has been taken down */
 
-      (void)devif_callback_execute(dev, NULL, NETDEV_DOWN,
-                                   dev->d_callbacks);
+      (void)devif_dev_event(dev, NULL, NETDEV_DOWN);
     }
 }
 
