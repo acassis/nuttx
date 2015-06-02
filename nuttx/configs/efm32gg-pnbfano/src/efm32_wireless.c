@@ -1,8 +1,10 @@
 /************************************************************************************
- * configs/nucleo-f4x1re/src/stm32_wireless.c
+ * configs/efm32gg-pnbfano/src/efm32_wireless.c
  *
+ *   Copyright (C) 2014 Pierre-noel Bouteville. All rights reserved.
  *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Laurent Latil <laurent@latil.nom.fr>
+ *   Author: Pierre-noel Bouteville <pnb990@gmail.com>
+ *           Laurent Latil <laurent@latil.nom.fr>
  *           David Sidrane <david_s5@nscdg.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +53,7 @@
 #include <nuttx/wireless/cc3000.h>
 #include <nuttx/wireless/cc3000/include/cc3000_upif.h>
 
-#include "stm32.h"
+#include "efm32.h"
 #include "nucleo-f4x1re.h"
 
 /****************************************************************************
@@ -64,24 +66,12 @@
 #  error "Wireless support requires CONFIG_WIRELESS"
 #endif
 
-#ifndef CONFIG_STM32_SPI2
-#  error "CC3000 Wireless support requires CONFIG_STM32_SPI2"
+#ifndef CONFIG_EFM32_SPI2
+#  error "CC3000 Wireless support requires CONFIG_EFM32_SPI2"
 #endif
 
 #ifndef CC3000_SPI_FREQUENCY
 #  define CC3000_SPI_FREQUENCY 16000000
-#endif
-
-#ifndef CC3000_SPIDEV
-#  define CC3000_SPIDEV 2
-#endif
-
-#if CC3000_SPIDEV != 2
-#  error "CC3000_SPIDEV must be 2"
-#endif
-
-#ifndef CC3000_DEVMINOR
-#  define CC3000_DEVMINOR 0
 #endif
 
 #ifndef CONFIG_CC3000_RX_BUFFER_SIZE
@@ -92,7 +82,7 @@
  * Private Types
  ****************************************************************************/
 
-struct stm32_config_s
+struct efm32_config_s
 {
   struct cc3000_config_s dev;
   xcpt_t handler;
@@ -142,7 +132,7 @@ static bool probe(FAR struct cc3000_config_s *state,int n, bool s);
  * may modify frequency or X plate resistance values.
  */
 
-static struct stm32_config_s g_cc3000_info =
+static struct efm32_config_s g_cc3000_info =
 {
   .dev.spi_frequency    = CONFIG_CC3000_SPI_FREQUENCY,
   .dev.spi_mode         = CONFIG_CC3000_SPI_MODE,
@@ -177,7 +167,7 @@ static struct stm32_config_s g_cc3000_info =
 
 static int wl_attach_irq(FAR struct cc3000_config_s *state, xcpt_t handler)
 {
-  FAR struct stm32_config_s *priv = (FAR struct stm32_config_s *)state;
+  FAR struct efm32_config_s *priv = (FAR struct efm32_config_s *)state;
 
   /* Just save the handler for use when the interrupt is enabled */
 
@@ -187,7 +177,7 @@ static int wl_attach_irq(FAR struct cc3000_config_s *state, xcpt_t handler)
 
 static void wl_enable_irq(FAR struct cc3000_config_s *state, bool enable)
 {
-  FAR struct stm32_config_s *priv = (FAR struct stm32_config_s *)state;
+  FAR struct efm32_config_s *priv = (FAR struct efm32_config_s *)state;
 
   /* The caller should not attempt to enable interrupts if the handler
    * has not yet been 'attached'
@@ -200,11 +190,11 @@ static void wl_enable_irq(FAR struct cc3000_config_s *state, bool enable)
   ivdbg("enable:%d\n", enable);
   if (enable)
     {
-      (void)stm32_gpiosetevent(GPIO_WIFI_INT, false, true, false, priv->handler);
+      efm32_gpioirqenable(GPIO_WIFI_IRQ);
     }
   else
     {
-      (void)stm32_gpiosetevent(GPIO_WIFI_INT, false, false, false, NULL);
+      efm32_gpioirqdisable(GPIO_WIFI_IRQ);
     }
 }
 
@@ -214,7 +204,7 @@ static void wl_enable_power(FAR struct cc3000_config_s *state, bool enable)
 
   /* Active high enable */
 
-  stm32_gpiowrite(GPIO_WIFI_EN, enable);
+  efm32_gpiowrite(GPIO_WIFI_EN, enable);
 }
 
 static void wl_select(FAR struct cc3000_config_s *state, bool enable)
@@ -223,7 +213,7 @@ static void wl_select(FAR struct cc3000_config_s *state, bool enable)
 
   /* Active high enable */
 
-  stm32_gpiowrite(GPIO_WIFI_CS, enable);
+  efm32_gpiowrite(GPIO_WIFI_CS, enable);
 }
 
 static void wl_clear_irq(FAR struct cc3000_config_s *state)
@@ -235,7 +225,7 @@ static bool wl_read_irq(FAR struct cc3000_config_s *state)
 {
   /* Active low*/
 
-  return  stm32_gpioread(GPIO_WIFI_INT) ? false : true;
+  return  efm32_gpioread(GPIO_WIFI_IRQ) ? false : true;
 }
 
 #ifdef CONFIG_CC3000_PROBES
@@ -243,12 +233,12 @@ static bool probe(FAR struct cc3000_config_s *state,int n, bool s)
 {
   if (n == 0)
     {
-      stm32_gpiowrite(GPIO_D14, s);
+      efm32_gpiowrite(GPIO_WIFI_PROBE_0, s);
     }
 
   if (n == 1)
     {
-      stm32_gpiowrite(GPIO_D15, s);
+      efm32_gpiowrite(GPIO_WIFI_PROBE_1, s);
     }
 
   return true;
@@ -284,10 +274,10 @@ int wireless_archinitialize(size_t max_rx_size)
   DEBUGASSERT(CONFIG_CC3000_DEVMINOR == 0);
 
 #ifdef CONFIG_CC3000_PROBES
-  stm32_configgpio(GPIO_D14);
-  stm32_configgpio(GPIO_D15);
-  stm32_gpiowrite(GPIO_D14, 1);
-  stm32_gpiowrite(GPIO_D15, 1);
+  efm32_configgpio(GPIO_WIFI_PROBE_0);
+  efm32_configgpio(GPIO_WIFI_PROBE_1);
+  efm32_gpiowrite(GPIO_WIFI_PROBE_0, 1);
+  efm32_gpiowrite(GPIO_WIFI_PROBE_1, 1);
 #endif
 
   /* Get an instance of the SPI interface */
