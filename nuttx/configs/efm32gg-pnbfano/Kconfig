@@ -67,6 +67,14 @@ config PNBFANO_USE_MMCSD
 	---help---
 		Enables support for SD card on gpio.
 
+config PNBFANO_USE_CC3000
+	bool "Enable CC3000 support Driver"
+    select BOARD_INITIALIZE
+	depends on ARCH_CHIP_EFM32
+	default y if PNBFANO_BOARD_V1
+	---help---
+		Enables support for CC3000 extension.
+
 config PNBFANO_BOARD_VPLANE
 	int "Video Plane"
 	int 
