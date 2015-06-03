@@ -35,7 +35,7 @@
  *
  ****************************************************************************/
 
-/****************************************************************************
+/************************************************************************************
  * Included Files
  ****************************************************************************/
 
@@ -50,8 +50,8 @@
 #include <debug.h>
 
 #include <nuttx/arch.h>
-#include <nuttx/wdog.h>
-#include <nuttx/clock.h>
+//#include <nuttx/wdog.h>
+//#include <nuttx/clock.h>
 #include <nuttx/spi/spi.h>
 
 #include <arch/board/board.h>
@@ -348,7 +348,7 @@ static const struct efm32_spiconfig_s g_spi2config =
  *
  ****************************************************************************/
 
-static uint32_t spi_getreg(const struct efm32_spiconfig_s *config,
+static inline uint32_t spi_getreg(const struct efm32_spiconfig_s *config,
                            unsigned int regoffset)
 {
   uintptr_t regaddr = config->base + regoffset;
@@ -371,7 +371,7 @@ static uint32_t spi_getreg(const struct efm32_spiconfig_s *config,
  *
  ****************************************************************************/
 
-static void spi_putreg(const struct efm32_spiconfig_s *config,
+static inline void spi_putreg(const struct efm32_spiconfig_s *config,
                        unsigned int regoffset, uint32_t regval)
 {
   uintptr_t regaddr = config->base + regoffset;
@@ -386,7 +386,7 @@ static void spi_putreg(const struct efm32_spiconfig_s *config,
  *
  ****************************************************************************/
 
-static void spi_rxflush(const struct efm32_spiconfig_s *config)
+static inline void spi_rxflush(const struct efm32_spiconfig_s *config)
 {
   /* Loop while data is available */
 
@@ -406,7 +406,7 @@ static void spi_rxflush(const struct efm32_spiconfig_s *config)
  *
  ****************************************************************************/
 
-static void spi_wait_status(const struct efm32_spiconfig_s *config,
+static inline void spi_wait_status(const struct efm32_spiconfig_s *config,
                             uint32_t mask, uint32_t match)
 {
   while ((spi_getreg(config, EFM32_USART_STATUS_OFFSET) & mask) != match);
@@ -1675,7 +1675,7 @@ errout:
  *
  ****************************************************************************/
 
-struct spi_dev_s *efm32_spi_initialize(int port)
+struct spi_dev_s *up_spiinitialize(int port)
 {
   const struct efm32_spiconfig_s *config;
   struct efm32_spidev_s *priv;

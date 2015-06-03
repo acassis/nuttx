@@ -6,6 +6,7 @@
 config WL_CC3000
 	bool "CC3000 Wireless Module"
 	default n
+    select FS_NAMED_SEMAPHORES
 	select SPI
 	select ARCH_HAVE_NET
 	---help---

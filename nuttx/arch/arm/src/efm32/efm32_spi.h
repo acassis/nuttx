@@ -65,8 +65,8 @@
  *
  ****************************************************************************/
 
-struct spi_dev_s;
-struct spi_dev_s *efm32_spi_initialize(int port);
+struct  spi_dev_s;
+enum    spi_dev_e;
 
 /*****************************************************************************
  * Name:  efm32_spi[n]_select,  efm32_spi[n]_status, and efm32_spi[n]_cmddata

@@ -47,14 +47,20 @@
 #include <debug.h>
 #include <errno.h>
 
+#include <nuttx/arch.h>
 #include <nuttx/irq.h>
+
+#include <arch/irq.h>
+#include <arch/board/board.h>
+
 #include <nuttx/spi/spi.h>
 #include <nuttx/wireless/wireless.h>
 #include <nuttx/wireless/cc3000.h>
 #include <nuttx/wireless/cc3000/include/cc3000_upif.h>
 
-#include "efm32.h"
-#include "nucleo-f4x1re.h"
+#include "up_arch.h"
+#include "efm32_gpio.h"
+#include "efm32gg-pnbfano.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -66,8 +72,8 @@
 #  error "Wireless support requires CONFIG_WIRELESS"
 #endif
 
-#ifndef CONFIG_EFM32_SPI2
-#  error "CC3000 Wireless support requires CONFIG_EFM32_SPI2"
+#ifndef CONFIG_SPI
+#  error "CC3000 Wireless support requires CONFIG_SPI"
 #endif
 
 #ifndef CC3000_SPI_FREQUENCY
@@ -104,14 +110,12 @@ struct efm32_config_s
  *   irq_enable         - Enable or disable the GPIO interrupt
  *   clear_irq          - Acknowledge/clear any pending GPIO interrupt
  *   power_enable       - Enable or disable Module enable.
- *   chip_chip_select   - The Chip Select
  *   wl_read_irq        - Return the state of the interrupt GPIO input
  */
 
 static int  wl_attach_irq(FAR struct cc3000_config_s *state, xcpt_t handler);
 static void wl_enable_irq(FAR struct cc3000_config_s *state, bool enable);
 static void wl_clear_irq(FAR struct cc3000_config_s *state);
-static void wl_select(FAR struct cc3000_config_s *state, bool enable);
 static void wl_enable_power(FAR struct cc3000_config_s *state, bool enable);
 static bool wl_read_irq(FAR struct cc3000_config_s *state);
 #ifdef CONFIG_CC3000_PROBES
@@ -141,7 +145,6 @@ static struct efm32_config_s g_cc3000_info =
   .dev.irq_enable       = wl_enable_irq,
   .dev.irq_clear        = wl_clear_irq,
   .dev.power_enable     = wl_enable_power,
-  .dev.chip_chip_select = wl_select,
   .dev.irq_read         = wl_read_irq,
 #ifdef CONFIG_CC3000_PROBES
   .dev.probe            = probe, /* This is used for debugging */
@@ -205,15 +208,6 @@ static void wl_enable_power(FAR struct cc3000_config_s *state, bool enable)
   /* Active high enable */
 
   efm32_gpiowrite(GPIO_WIFI_EN, enable);
-}
-
-static void wl_select(FAR struct cc3000_config_s *state, bool enable)
-{
-  ivdbg("enable:%d\n", enable);
-
-  /* Active high enable */
-
-  efm32_gpiowrite(GPIO_WIFI_CS, enable);
 }
 
 static void wl_clear_irq(FAR struct cc3000_config_s *state)

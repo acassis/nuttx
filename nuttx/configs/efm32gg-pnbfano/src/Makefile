@@ -52,8 +52,8 @@ CSRCS += efm32_keypad.c
 CSRCS += efm32_gpio_keypad.c
 endif
 
-ifeq ($(CONFIG_PNBFANO_CC),y)
-CSRCS += efm32_pps_sync.c
+ifeq ($(CONFIG_PNBFANO_CC3000),y)
+CSRCS += efm32_wireless.c
 endif
 
 ifeq ($(CONFIG_PNBFANO_GPIO_PPS),y)

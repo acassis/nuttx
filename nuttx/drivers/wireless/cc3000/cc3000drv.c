@@ -179,7 +179,8 @@ uint8_t *cc3000_wait(void)
 {
   DEBUGASSERT(spiconf.cc3000fd >= 0);
 
-  mq_receive(spiconf.queue, &spiconf.rx_buffer, sizeof(spiconf.rx_buffer), 0);
+  mq_receive(spiconf.queue, (char*)&spiconf.rx_buffer, 
+             sizeof(spiconf.rx_buffer), 0);
   return spiconf.rx_buffer.pbuffer;
 }
 
@@ -218,7 +219,7 @@ static void *unsoliced_thread_func(void *parameter)
   while (spiconf.run)
     {
       memset(&spiconf.rx_buffer,0,sizeof(spiconf.rx_buffer));
-      nbytes = mq_receive(spiconf.queue, &spiconf.rx_buffer,
+      nbytes = mq_receive(spiconf.queue, (char*)&spiconf.rx_buffer,
                           sizeof(spiconf.rx_buffer), 0);
       if (nbytes > 0)
         {

@@ -133,7 +133,6 @@ struct cc3000_config_s
    *   irq_enable       - Enable or disable the GPIO interrupt
    *   irq_clear        - Acknowledge/clear any pending GPIO interrupt
    *   power_enable     - Enable or disable Module enable.
-   *   chip_chip_select - The Chip Select
    *   irq_read         - Return the state of the interrupt GPIO input
    *   probe            - Debug support
    */
@@ -142,7 +141,6 @@ struct cc3000_config_s
   void (*irq_enable)(FAR struct cc3000_config_s *state, bool enable);
   void (*irq_clear)(FAR struct cc3000_config_s *state);
   void (*power_enable)(FAR struct cc3000_config_s *state,bool enable);
-  void (*chip_chip_select)(FAR struct cc3000_config_s *state,bool enable);
   bool (*irq_read)(FAR struct cc3000_config_s *state);
 #ifdef CONFIG_CC3000_PROBES
   bool (*probe)(FAR struct cc3000_config_s *state, int n, bool s);

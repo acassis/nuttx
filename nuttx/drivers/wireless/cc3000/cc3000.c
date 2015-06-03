@@ -719,7 +719,7 @@ static void * cc3000_worker(FAR void *arg)
                     priv->state = eSPI_STATE_READ_READY;
                     priv->rx_buffer.len = data_to_recv;
 
-                    ret = mq_send(priv->queue, &priv->rx_buffer, sizeof(priv->rx_buffer), 1);
+                    ret = mq_send(priv->queue, (const char*)&priv->rx_buffer, sizeof(priv->rx_buffer), 1);
                     DEBUGASSERT(ret >= 0);
                     UNUSED(ret);
 

@@ -208,14 +208,14 @@ int efm32_initialize_spi_devices(void)
     /* configure SDCARD chip select */
 
     efm32_configgpio(GPIO_SDCARD_SPI_CS );
-    efm32_configgpio(GPIO_EXT_SPI_CS    );
+    efm32_configgpio(GPIO_WIFI_CS    );
 
     /* Get the SPI port */
 
     syslog(LOG_DEBUG,"Initializing SPI port %d\n",
            PNBFANO_SDCARD_EXT_SPINO);
 
-    spi = efm32_spi_initialize(PNBFANO_SDCARD_EXT_SPINO);
+    spi = up_spiinitialize(PNBFANO_SDCARD_EXT_SPINO);
     if (!spi)
     {
         syslog(LOG_ERR,"Failed to initialize SPI port %d\n",
