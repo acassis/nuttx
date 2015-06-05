@@ -296,51 +296,5 @@ int wireless_archinitialize(size_t max_rx_size)
   return OK;
 }
 
-/*****************************************************************************
- * Name: C3000_wlan_init
- *
- * Description:
- *   Initialize wlan driver
- *
- *   Warning: This function must be called before ANY other wlan driver
- *   function
- *
- * Input Parameters:
- *   sWlanCB   Asynchronous events callback.
- *             0 no event call back.
- *             - Call back parameters:
- *               1) event_type: HCI_EVNT_WLAN_UNSOL_CONNECT connect event,
- *                  HCI_EVNT_WLAN_UNSOL_DISCONNECT disconnect event,
- *                  HCI_EVNT_WLAN_ASYNC_SIMPLE_CONFIG_DONE config done,
- *                  HCI_EVNT_WLAN_UNSOL_DHCP dhcp report,
- *                  HCI_EVNT_WLAN_ASYNC_PING_REPORT ping report OR
- *                  HCI_EVNT_WLAN_KEEPALIVE keepalive.
- *               2) data: pointer to extra data that received by the event
- *                  (NULL no data).
- *               3) length: data length.
- *              - Events with extra data:
- *                  HCI_EVNT_WLAN_UNSOL_DHCP: 4 bytes IP, 4 bytes Mask,
- *                    4 bytes default gateway, 4 bytes DHCP server and 4 bytes
- *                    for DNS server.
- *                  HCI_EVNT_WLAN_ASYNC_PING_REPORT: 4 bytes Packets sent,
- *                    4 bytes Packets received, 4 bytes Min round time,
- *                    4 bytes Max round time and 4 bytes for Avg round time.
- *
- *     sFWPatches  0 no patch or pointer to FW patches
- *     sDriverPatches  0 no patch or pointer to driver patches
- *     sBootLoaderPatches  0 no patch or pointer to bootloader patches
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-void cc3000_wlan_init(size_t max_tx_len,
-                      tWlanCB sWlanCB,
-                      tFWPatches sFWPatches, tDriverPatches
-                      sDriverPatches,  tBootLoaderPatches sBootLoaderPatches)
-{
-  wlan_init(max_tx_len, sWlanCB, sFWPatches, sDriverPatches, sBootLoaderPatches);
-}
 
 #endif /* CONFIG_WL_CC3000 */

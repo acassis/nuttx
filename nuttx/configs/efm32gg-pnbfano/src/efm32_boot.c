@@ -346,7 +346,7 @@ void board_initialize(void)
     syslog(LOG_NOTICE,"initialize all SPI.\n");
     if ( efm32_initialize_spi_devices() < 0 )
     {
-        syslog(LOG_ERR,"Cannot initialize SDcard\n");
+        syslog(LOG_ERR,"Cannot initialize some spi devices\n");
     }
 
     syslog(LOG_NOTICE,"Start slow polling \n");

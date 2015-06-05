@@ -46,7 +46,12 @@
 
 #include <nuttx/spi/spi.h>
 #include <nuttx/mmcsd.h>
+
+#include <nuttx/wireless/wireless.h>
+#include <nuttx/wireless/cc3000.h>
+
 #include <arch/board/board.h>
+
 
 #include "up_arch.h"
 #include "chip.h"
@@ -205,7 +210,7 @@ int efm32_initialize_spi_devices(void)
 #ifdef  CONFIG_PNBFANO_USE_MMCSD
     FAR struct spi_dev_s* spi = NULL;
 
-    /* configure SDCARD chip select */
+    /* configure chips selects */
 
     efm32_configgpio(GPIO_SDCARD_SPI_CS );
     efm32_configgpio(GPIO_WIFI_CS    );
@@ -226,6 +231,7 @@ int efm32_initialize_spi_devices(void)
     syslog(LOG_INFO,"Successfully initialized SPI port %d\n",
            PNBFANO_SDCARD_EXT_SPINO);
 
+
     if ( sdcard_initialize(spi) < 0 )
     {
         syslog(LOG_ERR,"SDCARD initialization Failed\n");
@@ -235,10 +241,18 @@ int efm32_initialize_spi_devices(void)
     syslog(LOG_INFO,"Successfully initialized SDCARD port %d\n",
            PNBFANO_SDCARD_EXT_SPINO);
 
-    return OK;
+
 #else
-    syslog(LOG_WARNING,"SPI port %d not used\n",PNBFANO_SDCARD_EXT_SPI);
+    syslog(LOG_WARNING,"SDHC not used\n");
 #endif
+
+#ifdef  CONFIG_PNBFANO_CC3000
+    syslog(LOG_DEBUG,"Initializing WIFI\n");
+    wireless_archinitialize(0);
+    syslog(LOG_DEBUG,"WIFI initialized!\n");
+#endif
+
+    return OK;
 }
 
 #endif 
