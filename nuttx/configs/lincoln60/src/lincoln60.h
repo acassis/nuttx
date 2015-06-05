@@ -1,7 +1,7 @@
 /****************************************************************************
- * configs/lincoln60/src/lincoln60_internal.h
+ * configs/lincoln60/src/lincoln60.h
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef _CONFIGS_LINCOLN60_SRC_LINCOLN60_INTERNAL_H
-#define _CONFIGS_LINCOLN60_SRC_LINCOLN60_INTERNAL_H
+#ifndef _CONFIGS_LINCOLN60_SRC_LINCOLN60_H
+#define _CONFIGS_LINCOLN60_SRC_LINCOLN60_H
 
 /****************************************************************************
  * Included Files
@@ -69,11 +69,24 @@
  *  P2[10]                            53  BTN1
  ****************************************************************************/
 
-#define LINCOLN60_BUT1              (GPIO_INTBOTH | GPIO_FLOAT | GPIO_PORT2 | GPIO_PIN10)
+#define LINCOLN60_BUT1              (GPIO_INTBOTH | GPIO_FLOAT | GPIO_PORT2 | \
+                                     GPIO_PIN10)
 
 /* Button IRQ numbers */
 
 #define LINCOLN60_BUT1_IRQ          LPC17_IRQ_P0p23
+
+/****************************************************************************
+ *  microSD                          PIN   SIGNAL NAME
+ *  -------------------------------- ----- --------------
+ *  P0[15]                           J12 3  SPI SCK
+ *  P0[17]                           J12 4  SPI MISO
+ *  P0[18]                           J12 5  SPI MOSI
+ *  P0[16]                           J18 5  SPI slave select
+ ****************************************************************************/
+
+#define LINCOLN60_CS               (GPIO_OUTPUT | GPIO_VALUE_ONE | \
+                                    GPIO_PORT0 | GPIO_PIN16)
 
 /****************************************************************************
  * Public Types
@@ -100,5 +113,4 @@
 void weak_function lincoln60_sspinitialize(void);
 
 #endif /* __ASSEMBLY__ */
-#endif /* _CONFIGS_LINCOLN60_SRC_LINCOLN60_INTERNAL_H */
-
+#endif /* _CONFIGS_LINCOLN60_SRC_LINCOLN60_H */

@@ -41,6 +41,13 @@ Lincoln 60 board
   P3[26]                            26  LED2
   P2[10]                            53  BTN1
 
+  microSD                          PIN   SIGNAL NAME
+  -------------------------------- ----- --------------
+  P0[15]                           J12 3  SPI SCK
+  P0[17]                           J12 4  SPI MISO
+  P0[18]                           J12 5  SPI MOSI
+  P0[16]                           J18 5  SPI slave select
+
   Console
   -------
 
@@ -476,6 +483,42 @@ as follow:
 
 Where <subdir> is one of the following:
 
+  netnsh:
+    Configures the NuttShell (nsh) located at apps/examples/nsh.  This
+    configuration is similar to the nsh configuration except that network 
+    upport is enabled.
+
+    NOTES:
+
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. This configuration is setup to build under Windows with Cygwin using
+       the CodeSourcery toolchain.  That is, however, easily reconfigured.
+
+    3. This configuration uses a serial console on UART0 at 115200 8N1.
+       This is the serial port at the connector labelled COM1 on the
+       Lincoln 60.
+
+    3. This example does initializes the network, then NSH sequentially.  It
+       does not use the NSH network monitor thread.  There are two
+       consequences to this:  1) There will be a delay booting to the NSH
+       prompt while the network is brought up.  This delay will normally be
+       small but it the network cable is unconnected, it can be very long
+       (you may thing that the firmware is hung).  and 2) if the network is
+       unplugged, then re-connected.  The network will not automatically be
+       brought back up.  But you should be able to do that manually with
+       the NSH ifup command.
+
+       If you want better, more responsive network management, look into
+       the NSH network monitor thread.
+
   nsh:
     Configures the NuttShell (nsh) located at apps/examples/nsh.
 
@@ -490,5 +533,12 @@ Where <subdir> is one of the following:
        b. Execute 'make menuconfig' in nuttx/ in order to start the
           reconfiguration process.
 
-    2.  This configuration enables only the serial NSH interface.  See
-        notes above for enabling USB host support in this configuration.
+    2. This configuration is setup to build under Linux with the Nutt
+       buildroot toolchain.  That is, however, easily reconfigured.
+
+    3. This configuration uses a serial console on UART0 at 115200 8N1.
+       This is the serial port at the connector labelled COM1 on the
+       Lincoln 60.
+
+    3. This configuration enables only the serial NSH interface.  See
+       notes above for enabling USB host support in this configuration.

@@ -1,8 +1,8 @@
 /****************************************************************************
- * examples/thttpd/content/hello/hello.c
- * Manatory "Hello, World!" Example
+ * examples/thttpd/content/index/index.c
+ * Generates index.cgi file
  *
- *   Copyright (C) 2009, 2015 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,40 +48,39 @@
  ****************************************************************************/
 
 #ifdef CONFIG_THTTPD_BINFS
-int hello_main(int argc, char *argv[])
+int index_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
 {
-  fprintf(stderr, "Hello requested from: %s\n", getenv("REMOTE_ADDR"));
+  fprintf(stderr, "index.cgi requested from: %s\n", getenv("REMOTE_ADDR"));
 
   puts(
-    "Content-type: text/html\r\n"
-    "Status: 200/html\r\n"
-    "\r\n"
+    "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n"
     "<html>\r\n"
-      "<head>\r\n"
-        "<title>Hello!</title>\r\n"
-        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/style.css\">\r\n"
-      "</head>\r\n"
-      "<body bgcolor=\"#fffeec\" text=\"black\">\r\n"
-        "<div class=\"menu\">\r\n"
-#ifdef CONFIG_THTTPD_BINFS
-        "<div class=\"menubox\"><a href=\"/index.cgi\">Front page</a></div>\r\n"
-#else
-        "<div class=\"menubox\"><a href=\"/index.html\">Front page</a></div>\r\n"
-#endif
-        "<div class=\"menubox\"><a href=\"hello\">Say Hello</a></div>\r\n"
-        "<div class=\"menubox\"><a href=\"tasks\">Tasks</a></div>\r\n"
-        "<div class=\"menubox\"><a href=\"netstat\">Network status</a></div>\r\n"
-        "<br>\r\n"
-        "</div>\r\n"
-        "<div class=\"contentblock\">\r\n");
-  printf(
-        "<h2>Hello, World!</h2><p>Requested by: %s</p>\r\n",
-        getenv("REMOTE_ADDR"));
-  puts(
-      "</body>\r\n"
-   "</html>\r\n");
+    "  <head>\r\n"
+    "    <title>NuttX examples/thttpd</title>\r\n"
+    "  </head>\r\n"
+    "  <body bgcolor=\"#fffeec\" text=\"black\">\r\n"
+    "\r\n"
+    "    <p>\r\n"
+    "      These web pages are served by a port of <a href=\"http://acme.com/software/thttpd/\">THTTPD</a>\r\n"
+    "      running on top of <a href=\"http://www.nuttx.org\">NuttX</a>.\r\n"
+    "    </p>\r\n"
+    "    <p>\r\n"
+    "      Click on the links below to exercise THTTPD's CGI capability under NuttX.\r\n"
+    "      Clicking the links will execute the CGI program from a built-in program\r\n"
+    "      residing in a BINFS file system.\r\n"
+    "    </p>\r\n"
+    "    </ul>\r\n"
+    "      <li><a href=\"index.cgi\">Front page</a></li>\r\n"
+    "      <li><a href=\"hello\">Say Hello</a></li>\r\n"
+    "      <li><a href=\"tasks\">Tasks</a></li>\r\n"
+    "      <li><a href=\"netstat\">Network status</a></li>\r\n"
+    "    </ul>\r\n"
+    "  </body>\r\n"
+    "</html>\r\n"
+  );
+
   return 0;
 }
