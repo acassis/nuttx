@@ -338,9 +338,14 @@
 #define BOARD_ACMP_LOCATION  0 /* Location 0 */
 
 
-
 #define BOARD_SDHC_BLOCK_DEV_PATH   "/dev/mmcsd0"
 #define BOARD_SDHC_MOUNT_PATH       "/mnt"
+
+
+#define BOARD_SPI0_CLK       (GPIO_PORTC|GPIO_PIN9 |GPIO_OUTPUT_PUSHPULL_DRIVE|GPIO_DRIVE_HIGH|GPIO_OUTPUT_SET)
+#define BOARD_SPI0_MISO      (GPIO_PORTC|GPIO_PIN10|GPIO_INPUT_PULLUP)
+#define BOARD_SPI0_MOSI      (GPIO_PORTC|GPIO_PIN11|GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET)
+
 
 /****************************************************************************
  * Public Function Prototypes
