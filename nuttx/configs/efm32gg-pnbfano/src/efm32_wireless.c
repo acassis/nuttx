@@ -68,6 +68,7 @@
 /* Configuration ************************************************************/
 
 #ifdef CONFIG_WL_CC3000
+
 #ifndef CONFIG_WIRELESS
 #  error "Wireless support requires CONFIG_WIRELESS"
 #endif
@@ -175,6 +176,7 @@ static int wl_attach_irq(FAR struct cc3000_config_s *state, xcpt_t handler)
   /* Just save the handler for use when the interrupt is enabled */
 
   priv->handler = handler;
+  (void)irq_attach(IRQ_WIFI, handler);
   return OK;
 }
 
@@ -190,20 +192,20 @@ static void wl_enable_irq(FAR struct cc3000_config_s *state, bool enable)
 
   /* Attach and enable, or detach and disable */
 
-  ivdbg("enable:%d\n", enable);
+  nvdbg("enable:%d\n", enable);
   if (enable)
     {
-      efm32_gpioirqenable(GPIO_WIFI_IRQ);
+      efm32_gpioirqenable(IRQ_WIFI);
     }
   else
     {
-      efm32_gpioirqdisable(GPIO_WIFI_IRQ);
+      efm32_gpioirqdisable(IRQ_WIFI);
     }
 }
 
 static void wl_enable_power(FAR struct cc3000_config_s *state, bool enable)
 {
-  ivdbg("enable:%d\n", enable);
+  nvdbg("enable:%d\n", enable);
 
   /* Active high enable */
 
@@ -264,8 +266,12 @@ int wireless_archinitialize(size_t max_rx_size)
 
   /* Init SPI bus */
 
-  idbg("minor %d\n", minor);
+  ndbg("minor %d\n", CONFIG_CC3000_DEVMINOR);
   DEBUGASSERT(CONFIG_CC3000_DEVMINOR == 0);
+
+  efm32_configgpio(GPIO_WIFI_EN    );
+  efm32_configgpio(GPIO_WIFI_IRQ   );
+  efm32_gpioirq(   GPIO_WIFI_IRQ   );
 
 #ifdef CONFIG_CC3000_PROBES
   efm32_configgpio(GPIO_WIFI_PROBE_0);
@@ -279,7 +285,7 @@ int wireless_archinitialize(size_t max_rx_size)
   spi = up_spiinitialize(CONFIG_CC3000_SPIDEV);
   if (!spi)
     {
-      idbg("Failed to initialize SPI bus %d\n", CONFIG_CC3000_SPIDEV);
+      ndbg("Failed to initialize SPI bus %d\n", CONFIG_CC3000_SPIDEV);
       return -ENODEV;
     }
 
@@ -289,7 +295,7 @@ int wireless_archinitialize(size_t max_rx_size)
   int ret = cc3000_register(spi, &g_cc3000_info.dev, CONFIG_CC3000_DEVMINOR);
   if (ret < 0)
     {
-      idbg("Failed to initialize SPI bus %d\n", CONFIG_CC3000_SPIDEV);
+      ndbg("Failed to initialize SPI bus %d\n", CONFIG_CC3000_SPIDEV);
       return -ENODEV;
     }
 
