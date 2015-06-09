@@ -124,10 +124,10 @@ void efm32_spi0_select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool sel
     {
       efm32_gpiowrite(GPIO_SDCARD_SPI_CS, !selected);
     }
-#if defined(CONFIG_PNBFANO_USE_EXT_SPI)
+#if defined(CONFIG_PNBFANO_CC3000)
   else if (devid == SPIDEV_WIRELESS)
     {
-      efm32_gpiowrite(GPIO_EXT_SPI_CS, !selected);
+      efm32_gpiowrite(GPIO_WIFI_CS, !selected);
     }
 #endif
   else
@@ -248,7 +248,11 @@ int efm32_initialize_spi_devices(void)
 
 #ifdef  CONFIG_PNBFANO_CC3000
     syslog(LOG_DEBUG,"Initializing WIFI\n");
-    wireless_archinitialize(0);
+    if ( wireless_archinitialize(0) < 0 )
+    {
+        syslog(LOG_ERR,"WIFI driver error!\n");
+        return -ENODEV;
+    }
     syslog(LOG_DEBUG,"WIFI initialized!\n");
 #endif
 

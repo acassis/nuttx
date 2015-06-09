@@ -46,6 +46,12 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+
+#define IRQ_PPS     (EFM32_IRQ_EXTI8)
+#define IRQ_WIFI    (EFM32_IRQ_EXTI6)
+#define IRQ_CHRONO  (EFM32_IRQ_EXTI3)
+
+
 /* LCD:
  *
  * The PnbFano board has NHD‐C12864KGZ wired by 8080 bus.
@@ -128,7 +134,6 @@
                          GPIO_PORTA|\
                          GPIO_PIN8\
                         )
-#  define GPIO_PPS_IRQ  (EFM32_IRQ_EXTI8)
 
 /* Chrono GPIO:
  *
@@ -147,7 +152,7 @@
                            GPIO_PORTD|\
                            GPIO_PIN3\
                           )
-#  define GPIO_CHRONO_IRQ (EFM32_IRQ_EXTI3)
+
 
 /* Lcd Buttons:
  *
@@ -195,7 +200,8 @@
 #define GPIO_SDCARD_SPI_CS  (GPIO_PORTC|GPIO_PIN8 |GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET)
 
 #define GPIO_WIFI_CS        (GPIO_PORTC|GPIO_PIN7 |GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_SET)
-#define GPIO_WIFI_IRQ       (GPIO_PORTC|GPIO_PIN6 |GPIO_INPUT_PULLUP)
+#define GPIO_WIFI_IRQ       (GPIO_PORTC|GPIO_PIN6 |GPIO_INT_FALLING|GPIO_INPUT_PULLUP)
+
 #define GPIO_WIFI_EN        (GPIO_PORTD|GPIO_PIN7 |GPIO_OUTPUT_PUSHPULL|GPIO_OUTPUT_CLEAR)
 
 #define PNBFANO_SDCARD_EXT_SPINO  0

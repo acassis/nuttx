@@ -298,7 +298,7 @@ int efm32_gpio_chrono_init( void )
 
     efm32_configgpio(GPIO_CHRONO);
     efm32_gpioirq(GPIO_CHRONO);
-    (void)irq_attach(GPIO_CHRONO_IRQ, efm32_gpio_chrono_irq);
+    (void)irq_attach(IRQ_CHRONO, efm32_gpio_chrono_irq);
 
     ASSERT(efm32_gpio_chrono == NULL);
 
@@ -335,7 +335,7 @@ static int efm32_gpio_chrono_open(file_t * filep)
     dev->open_count++;
 
     if ( dev->open_count == 1 )
-        efm32_gpioirqenable(GPIO_CHRONO_IRQ);
+        efm32_gpioirqenable(IRQ_CHRONO);
 
     efm32_gpio_chrono_givesem( &dev->mutex );
 
@@ -362,7 +362,7 @@ static int efm32_gpio_chrono_close(file_t * filep)
     DEBUGASSERT(dev->open_count >= 0);
 
     if ( dev->open_count == 0 )
-        efm32_gpioirqdisable(GPIO_CHRONO_IRQ);
+        efm32_gpioirqdisable(IRQ_CHRONO);
 
     efm32_gpio_chrono_givesem( &dev->mutex );
 

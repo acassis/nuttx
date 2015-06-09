@@ -389,7 +389,7 @@ int efm32_gpio_pps_init( void )
 
     efm32_configgpio(GPIO_PPS);
     efm32_gpioirq(GPIO_PPS);
-    (void)irq_attach(GPIO_PPS_IRQ, efm32_gpio_pps_irq);
+    (void)irq_attach(IRQ_PPS, efm32_gpio_pps_irq);
 
     ASSERT(efm32_gpio_pps == NULL);
 
@@ -426,7 +426,7 @@ static int efm32_gpio_pps_open(file_t * filep)
     dev->open_count++;
 
     if ( dev->open_count == 1 )
-        efm32_gpioirqenable(GPIO_PPS_IRQ);
+        efm32_gpioirqenable(IRQ_PPS);
 
     efm32_gpio_pps_givesem( &dev->mutex );
 
@@ -452,7 +452,7 @@ static int efm32_gpio_pps_close(file_t * filep)
     DEBUGASSERT(dev->open_count >= 0);
 
     if ( dev->open_count == 0 )
-        efm32_gpioirqdisable(GPIO_PPS_IRQ);
+        efm32_gpioirqdisable(IRQ_PPS);
 
     efm32_gpio_pps_givesem( &dev->mutex );
 
