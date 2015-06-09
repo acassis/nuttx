@@ -1,5 +1,5 @@
 #!/bin/bash
-# configs/lincoln60/netnsh/setenv.sh
+# sim/unionfs/setenv.sh
 #
 #   Copyright (C) 2015 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,42 +32,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-
-if [ "$_" = "$0" ] ; then
+if [ "$(basename $0)" = "setenv.sh" ] ; then
   echo "You must source this script, not run it!" 1>&2
   exit 1
 fi
 
-WD=`pwd`
-if [ ! -x "setenv.sh" ]; then
-  echo "This script must be executed from the top-level NuttX build directory"
-  exit 1
-fi
+if [ -z ${PATH_ORIG} ]; then export PATH_ORIG=${PATH}; fi
 
-if [ -z "${PATH_ORIG}" ]; then
-  export PATH_ORIG="${PATH}"
-fi
-
-# This is the Cygwin path to the location where I installed the CodeSourcery
-# toolchain under windows.  You will also have to edit this if you install
-# the CodeSourcery toolchain in any other location
-# export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/CodeSourcery/Sourcery G++ Lite/bin"
-# export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/bin"
-export TOOLCHAIN_BIN="/cygdrive/c/Users/MyName/MentorGraphics/Sourcery_CodeBench_Lite_for_ARM_EABI/bin"
-
-# This is the location where I installed the ARM "GNU Tools for ARM Embedded Processors"
-# You can this free toolchain here https://launchpad.net/gcc-arm-embedded
-# export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/GNU Tools ARM Embedded/4.9 2014q4/bin"
-
-# This is the path to the location where I installed the devkitARM toolchain
-# You can get this free toolchain from http://devkitpro.org/ or http://sourceforge.net/projects/devkitpro/
-# export TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/devkitARM/bin"
-
-# This is the Cygwin path to the location where I build the buildroot
-# toolchain.
-# export TOOLCHAIN_BIN="${WD}/../misc/buildroot/build_arm_nofpu/staging_dir/bin"
-
-# Add the path to the toolchain to the PATH varialble
-export PATH="${TOOLCHAIN_BIN}:/sbin:/usr/sbin:${PATH_ORIG}"
+#export NUTTX_BIN=
+#export PATH=${NUTTX_BIN}:/sbin:/usr/sbin:${PATH_ORIG}
 
 echo "PATH : ${PATH}"

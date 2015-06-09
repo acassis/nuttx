@@ -13,6 +13,7 @@ README
     - Refreshing Configurations
     - NuttX Configuration Tool
     - Finding Selections in the Configuration Menus
+    - Reveal Hidden Configuration Options
     - Comparing Two Configurations
     - Incompatibilities with Older Configurations
     - NuttX Configuration Tool under DOS
@@ -433,15 +434,28 @@ NuttX Configuration Tool
   but may be less intuitive for modifying existing configurations.
 
   If you have an environment that supports the Qt or GTK graphical systems
-  (probably KDE or gnome, respectively), then you can also build the
-  graphical kconfig-frontends, kconfig-qconf and kconfig-gconf.  In
-  these case, you can start the graphical configurator with either:
+  (probably KDE or gnome, respectively, or Cygwin under Windows with Qt or
+  GTK installed), then you can also build the graphical kconfig-frontends,
+  kconfig-qconf and kconfig-gconf.  In these case, you can start the
+  graphical configurator with either:
 
     make qconfig
 
   or
 
     make gconfig
+
+  Some keyboard shortcus supported by kconfig-mconf, the tool that runs
+  when you do 'make menuconfig':
+
+    - '?' will bring up the mconfig help display.
+
+    - '/' can be used find configuration selections.
+
+    - 'Z' can be used to reveal hidden configuration options
+
+  These last to shortcuts are described further in the following
+  paragraphs.
 
 Finding Selections in the Configuration Menus
 ---------------------------------------------
@@ -458,6 +472,23 @@ Finding Selections in the Configuration Menus
   configuration item.  Just enter the string CONFIG_XYZ and press 'ENTER'.
   It will show you not only where to find the configuration item, but
   also all of the dependencies related to the configuration item.
+
+Reveal Hidden Configuration Options
+-----------------------------------
+
+  If you type 'Z', then kconfig-mconf will change what is displayed.
+  Normally, only enabled features that have all of their dependencies met
+  are displayed.  That is, of course, not very useful if you would like to
+  discover new options or if you are looking for an option and do not
+  realize that the dependencies have not yet been selected and, hence, it
+  is not displayed.
+
+  But if you enter 'Z', then every option will be shown, whether or not its
+  dependencies have been met.  You can the see everything that could be
+  selected with the right dependency selections.  These additional options
+  will be shown the '-' for the selection and for the value (since it
+  cannot be selected and has no value).  About all you do is to select
+  the <Help> option to see what the dependencies are.
 
 Comparing Two Configurations
 ----------------------------
@@ -1298,6 +1329,8 @@ nuttx
  |   |- sure-pic32mx/
  |   |   `- README.txt
  |   |- teensy-2.0/
+ |   |   `- README.txt
+ |   |- teensy-3.1/
  |   |   `- README.txt
  |   |- teensy-lc/
  |   |   `- README.txt
