@@ -214,7 +214,9 @@ static void wl_enable_power(FAR struct cc3000_config_s *state, bool enable)
 
 static void wl_clear_irq(FAR struct cc3000_config_s *state)
 {
-  /* Does nothing */
+  /* clear IRQ flags */
+
+    efm32_gpioirqclear(IRQ_WIFI);
 }
 
 static bool wl_read_irq(FAR struct cc3000_config_s *state)
