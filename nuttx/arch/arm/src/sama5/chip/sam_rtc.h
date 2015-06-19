@@ -1,5 +1,5 @@
 /****************************************************************************************
- * arch/arm/src/samat/chip/sam_rtc.h
+ * arch/arm/src/sama5d/chip/sam_rtc.h
  * Real-time Clock (RTC) definitions for the SAMA5D3
  *
  *   Copyright (C) 2013-2014 Gregory Nutt. All rights reserved.

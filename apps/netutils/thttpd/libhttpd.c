@@ -2,7 +2,7 @@
  * netutils/thttpd/libhttpd.c
  * HTTP Protocol Library
  *
- *   Copyright (C) 2009, 2011, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2011, 2013, 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Derived from the file of the same name in the original THTTPD package:
@@ -43,11 +43,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -1536,9 +1538,9 @@ done:
 /* qsort comparison routine. */
 
 #ifdef CONFIG_THTTPD_GENERATE_INDICES
-static int name_compare(char **a, char **b)
+static int name_compare(FAR const void *a, FAR const void *b)
 {
-  return strcmp(*a, *b);
+  return strcmp(*((FAR char **)a), *((FAR char **)b));
 }
 
 static void ls_child(int argc, char **argv)
@@ -1548,6 +1550,7 @@ static void ls_child(int argc, char **argv)
   struct dirent *de;
   int namlen;
   static int maxnames = 0;
+  int oldmax;
   int nnames;
   static char *names;
   static char **nameptrs;
@@ -1558,20 +1561,18 @@ static void ls_child(int argc, char **argv)
   static char *encrname;
   static size_t maxencrname = 0;
   FILE *fp;
-  int i, r;
   struct stat sb;
-  struct stat lsb;
   char modestr[20];
   char *linkprefix;
 #if 0
-  char link[MAXPATHLEN + 1];
+  char link[PATH_MAX + 1];
 #else
   char link[1];
 #endif
   char *fileclass;
   time_t now;
   char *timestr;
-  ClientData client_data;
+  int i;
 
   httpd_unlisten(hc->hs);
   send_mime(hc, 200, ok200title, "", "", "text/html; charset=%s",
@@ -1616,14 +1617,14 @@ static void ls_child(int argc, char **argv)
           if (maxnames == 0)
             {
               maxnames = 100;
-              names    = NEW(char, maxnames * (MAXPATHLEN + 1));
+              names    = NEW(char, maxnames * (PATH_MAX + 1));
               nameptrs = NEW(char*, maxnames);
             }
           else
             {
               oldmax    = maxnames;
               maxnames *= 2;
-              names     = RENEW(names, char, oldmax*(MAXPATHLEN+1), maxnames*(MAXPATHLEN + 1));
+              names     = RENEW(names, char, oldmax*(PATH_MAX+1), maxnames*(PATH_MAX + 1));
               nameptrs  = RENEW(nameptrs, char*, oldmax, maxnames);
             }
 
@@ -1635,7 +1636,7 @@ static void ls_child(int argc, char **argv)
 
           for (i = 0; i < maxnames; ++i)
             {
-              nameptrs[i] = &names[i * (MAXPATHLEN + 1)];
+              nameptrs[i] = &names[i * (PATH_MAX + 1)];
             }
         }
 
@@ -1683,7 +1684,7 @@ static void ls_child(int argc, char **argv)
       httpd_realloc_str(&encrname, &maxencrname, 3 * strlen(rname) + 1);
       httpd_strencode(encrname, maxencrname, rname);
 
-      if (stat(name, &sb) < 0 || lstat(name, &lsb) < 0)
+      if (stat(name, &sb) < 0)
         {
           continue;
         }
@@ -1693,7 +1694,7 @@ static void ls_child(int argc, char **argv)
 
       /* Break down mode word.  First the file type. */
 
-      switch (lsb.st_mode & S_IFMT)
+      switch (sb.st_mode & S_IFMT)
         {
         case S_IFIFO:
           modestr[0] = 'p';
@@ -1729,9 +1730,9 @@ static void ls_child(int argc, char **argv)
        * not of interest to web clients.
        */
 
-      modestr[1] = (lsb.st_mode & S_IROTH) ? 'r' : '-';
-      modestr[2] = (lsb.st_mode & S_IWOTH) ? 'w' : '-';
-      modestr[3] = (lsb.st_mode & S_IXOTH) ? 'x' : '-';
+      modestr[1] = (sb.st_mode & S_IROTH) ? 'r' : '-';
+      modestr[2] = (sb.st_mode & S_IWOTH) ? 'w' : '-';
+      modestr[3] = (sb.st_mode & S_IXOTH) ? 'x' : '-';
       modestr[4] = '\0';
 
       /* We also leave out the owner and group name */
@@ -1739,7 +1740,7 @@ static void ls_child(int argc, char **argv)
       /* Get time string. */
 
       now = time(NULL);
-      timestr = ctime(&lsb.st_mtime);
+      timestr = ctime(&sb.st_mtime);
       timestr[0] = timestr[4];
       timestr[1] = timestr[5];
       timestr[2] = timestr[6];
@@ -1748,7 +1749,7 @@ static void ls_child(int argc, char **argv)
       timestr[5] = timestr[9];
       timestr[6] = ' ';
 
-      if (now - lsb.st_mtime > 60 * 60 * 24 * 182)      /* 1/2 year */
+      if (now - sb.st_mtime > 60 * 60 * 24 * 182)      /* 1/2 year */
         {
           timestr[7] = ' ';
           timestr[8] = timestr[20];
@@ -1789,10 +1790,11 @@ static void ls_child(int argc, char **argv)
 
       /* And print. */
 
-      (void)fprintf(fp, "%s %3ld  %10lld  %s  <A HREF=\"/%.500s%s\">%s</A>%s%s%s\n",
-                    modestr, (long)lsb.st_nlink, (int16_t) lsb.st_size,
-                    timestr, encrname, S_ISDIR(sb.st_mode) ? "/" : "",
-                    nameptrs[i], linkprefix, link, fileclass);
+      (void)fprintf(fp,
+                    "%s %3ld  %10lld  %s  <A HREF=\"/%.500s%s\">%s</A>%s%s%s\n",
+                    modestr, 0, (int16_t)sb.st_size, timestr, encrname,
+                    S_ISDIR(sb.st_mode) ? "/" : "", nameptrs[i], linkprefix,
+                    link, fileclass);
     }
 
   fputs("</PRE>", fp);
@@ -1805,27 +1807,7 @@ static void ls_child(int argc, char **argv)
 static int ls(httpd_conn *hc)
 {
   DIR *dirp;
-  struct dirent *de;
-  int namlen;
-  static int maxnames = 0;
-  int nnames;
-  static char *names;
-  static char **nameptrs;
-  static char *name;
-  static size_t maxname = 0;
-  static char *rname;
-  static size_t maxrname = 0;
-  static char *encrname;
-  static size_t maxencrname = 0;
-  FILE *fp;
-  int i, child;
-  struct stat sb;
-  struct stat lsb;
-  char modestr[20];
-  char *linkprefix;
-  char *fileclass;
-  time_t now;
-  char *timestr;
+  int child;
   char arg[16];
   char *argv[1];
 #if CONFIG_THTTPD_CGI_TIMELIMIT > 0

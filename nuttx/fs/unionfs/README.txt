@@ -24,6 +24,12 @@ fs/unionfs/README.txt
   The Union File System is enabled by selecting the CONFIG_FS_UNIONFS option
   in the NuttX configuration file.
 
+  Disclaimer:  This Union File System was certainly inspired by UnionFS
+  (http://en.wikipedia.org/wiki/UnionFS) and the similarity in naming is
+  unavoidable.  However, other than that, the NuttX Union File System
+  has no relationship with the UnioinFS project in specification, usage,
+  design, or implementation.
+
   Uses of the Union File System
   ------------------------------
   The original motivation for this file was for the use of the built-in
@@ -45,6 +51,20 @@ fs/unionfs/README.txt
   Another use case might be to overlay a read-only file system like ROMFS
   with a writable file system (like a RAM disk).  This should then give
   to a readable/write-able file system with some fixed content.
+
+  Prefixes
+  --------
+
+  And optional prefix may be provided with each of the file systems
+  combined in by the Union File System.  For example, suppose that:
+
+  o File system 1 is a ROMFS file system with prefix == NULL,
+  o File system 2 is a BINFS file system with prefix == "cgin-bin", and
+  o The union file system is mounted at /mnt/www.
+
+  Then the content in the in the ROMFS file system would appear at
+  /mnt/www and the content of the BINFS file system would appear at
+  /mnt/www/cgi-gin.
 
   Example Configurations
   ----------------------
@@ -68,3 +88,6 @@ fs/unionfs/README.txt
     as the lincoln60 configuration.  It does not work, however, because the
     LPC1766 has insufficient RAM to support the THTTPD application in this
     configuration.
+
+  See the README.txt file in each of these board directories for additional
+  information about these configurations.

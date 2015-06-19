@@ -241,6 +241,7 @@ config ARCH_FAMILY_SAMD20J
 config ARCH_FAMILY_SAML21
 	bool
 	default n
+	select SAMDL_HAVE_DMAC
 
 config ARCH_FAMILY_SAML21E
 	bool
@@ -260,6 +261,12 @@ config ARCH_FAMILY_SAML21J
 	select SAMDL_HAVE_TC2
 	select SAMDL_HAVE_TC3
 	select SAMDL_HAVE_TC5
+
+menu "SAMD/L Peripheral Support"
+
+config SAMDL_HAVE_DMAC
+	bool
+	default n
 
 config SAMDL_HAVE_SERCOM4
 	bool
@@ -289,22 +296,38 @@ config SAMDL_HAVE_TC7
 	bool
 	default n
 
-menu "SAMD/L Peripheral Support"
-
-config SAMDL_WDT
-	bool "Watchdog Timer"
+config SAMDL_AC
+	bool "Analog Comparator"
 	default n
 
-config SAMDL_RTC
-	bool "Real Time Counter"
+config SAMDL_ADC
+	bool "Analog-to-Digital Converter"
+	default n
+
+config SAMDL_DAC
+	bool "Digital-to-Analog Converter"
+	default n
+
+config SAMDL_DMAC
+	bool "DMA Controller"
+	default n
+	select ARCH_DMA
+	depends on SAMDL_HAVE_DMAC && EXPERIMENTAL
+
+config SAMDL_EVSYS
+	bool "Event System"
 	default n
 
 config SAMDL_NVMCTRL
 	bool "Non-Volatile Memory Controller"
 	default n
 
-config SAMDL_EVSYS
-	bool "Event System"
+config SAMDL_PTC
+	bool "Peripheral Touch Controller"
+	default n
+
+config SAMDL_RTC
+	bool "Real Time Counter"
 	default n
 
 config SAMDL_SERCOM0
@@ -370,20 +393,8 @@ config SAMDL_TC7
 	default n
 	depends on SAMDL_HAVE_TC7
 
-config SAMDL_ADC
-	bool "Analog-to-Digital Converter"
-	default n
-
-config SAMDL_AC
-	bool "Analog Comparator"
-	default n
-
-config SAMDL_DAC
-	bool "Digital-to-Analog Converter"
-	default n
-
-config SAMDL_PTC
-	bool "Peripheral Touch Controller"
+config SAMDL_WDT
+	bool "Watchdog Timer"
 	default n
 
 endmenu
@@ -407,6 +418,20 @@ config SAMDL_SERCOM0_ISUSART
 	select USART0_ISUART
 
 endchoice
+
+config SAMDL_DMAC_NDESC
+	int "Number of additional DMA Descriptors"
+	default 0
+	depends on SAMDL_DMAC
+	---help---
+		This provides the number of additional DMA descriptors that can be
+		use to support multi-linked DMA transfers.  A minimum of 16
+		descriptors will always be allocated (16 for the base descriptor which
+		overlap the writeback descriptors).  If this value is set to zero,
+		then only single block DMA transfers can be supported.
+
+		Each additional DMA descriptor will require 16-bytes for LPRAM
+		memory.
 
 choice
 	prompt "SERCOM1 mode"

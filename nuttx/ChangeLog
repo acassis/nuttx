@@ -10560,3 +10560,41 @@
 	  Max Holtzberg (2015-06-07).
 
 7.11 2015-xx-xx Gregory Nutt <gnutt@nuttx.org>
+
+	* arch/arm/src/efm32/efm32_spi.c: Correct write to incorrect register in
+	  EFM32 SPI driver.  From Pierre-noel Bouteville (2015-06-09).
+	* configs/teensy-3.x:  Add board support for the PJRC Teensy-3.1 board
+	  (2015-06-09).
+	* arch/arm/src/samdl, configs/samd20-xplained, and configs/saml21-xplained:
+	  In the SAML21, SERCOM5 uses a different SLOW clock channel (and, hence,
+	  also a different SLOW GCLK generator).  This means that the channel
+	  selection cannot be a global definition but must be a per SERCOM
+	  configuration setting (2015-06-10).
+	* arch/arm/src/kinetis and include/kinetis: Add support for MK20DN--VLH5
+	  and MK20DX---VLH5.  Needed for backward compatible support for
+	  Teensy-3.0 (2015-06-10).
+	* configs/Kconfig and configs/teensy-3.x:  Add support for Teensy-3.0
+	  (2015-06-10).
+	* arch/arm/src/stm32/stm32l15xxx_rcc.c: STM322 F15x stm32_stdclockconfig()
+	  was calling stm32_pw_setvos() which accessed PWR_CR via an inactive APB
+	  From Juha Niskaneni (2015-06-11).
+	* fs/mount: Add the ability to mount a file system on top of en existing
+	  node in the psuedo-file system (2015-06-11).
+	* arch/arm/src/sam34/sam_clockconfig.c: Add default loop optimization if
+	  EEFC_FMR is available in the configuration (i.e., for SAM4S and 4E).
+	  From Marco Aurélio da Cruz (2015-06-11).
+	* include/time.h and libc/time: Add asctime(), asctime_r(), ctime(), and
+	  ctime_r() (2015-06-12).
+	* include/ and arch/: Clean up and review of header files for conformance
+	  to standards (2015-06-12).
+	* arch/arm/src/samdl: Add build framework for SAML21 DMA support.
+	  Nothing there yet except for skeletal logic taken from SAM3/4
+	  (2015-06-12).
+	* include/pthread.h and nuttx/sched/pthread: Use -1 instead of 0 as PID
+	  for unclaimed mutexes.  From Juha Niskanen (2015-06-16).
+	* sched/pthread: Implement pthread_mutex_trylock() for recursive mutexes.
+	  From Juha Niskanen (2015-06-16).
+	* libc/unistd/lib_getopt.c:  Uninitialized variable can cause hardfault
+	  from getopt if required argument is missing. From George McWilliams
+	  (2015-06-18)
+

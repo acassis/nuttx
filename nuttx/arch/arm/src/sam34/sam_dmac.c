@@ -70,7 +70,7 @@
 
 #ifdef CONFIG_SAM34_DMAC0
 
-/* If AT90SAM3U support is enabled, then OS DMA support should also be enabled */
+/* If SAM3/4 support is enabled, then OS DMA support should also be enabled */
 
 #ifndef CONFIG_ARCH_DMA
 #  warning "SAM3/4 DMA enabled but CONFIG_ARCH_DMA disabled"
@@ -1384,7 +1384,7 @@ void weak_function up_dmainitialize(void)
   /* Initialize semaphores */
 
   sem_init(&g_chsem, 0, 1);
-  sem_init(&g_dsem, 0, SAM34_NDMACHAN);
+  sem_init(&g_dsem, 0, CONFIG_SAM34_NLLDESC);
 }
 
 /****************************************************************************
