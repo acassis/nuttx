@@ -47,6 +47,16 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#if defined(CONFIG_EFM32_BITBAND)
+
+#ifndef EFM32_BITBAND_PER_BASE 
+#   error "EFM32_BITBAND_PER_BASE not declared bitband may be not supported?"
+#endif
+
+#ifndef EFM32_BITBAND_RAM_BASE 
+#   error "EFM32_BITBAND_RAM_BASE not declared bitband may be not supported?"
+#endif
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -82,7 +92,6 @@
  * val      Value to set bit to, 0 or 1.
  *
  ******************************************************************************/
-#if defined(EFM32_BITBAND_PER_BASE)
 inline void bitband_set_peripheral(uint32_t addr, uint32_t bit, uint32_t val)
 {
   uint32_t regval; 
@@ -90,7 +99,6 @@ inline void bitband_set_peripheral(uint32_t addr, uint32_t bit, uint32_t val)
 
   *((volatile uint32_t *)regval) = (uint32_t)val;
 }
-#endif
 
 
 /******************************************************************************
@@ -113,7 +121,6 @@ inline void bitband_set_peripheral(uint32_t addr, uint32_t bit, uint32_t val)
  * Return bit value read, 0 or 1.
  *
  ******************************************************************************/
-#if defined(EFM32_BITBAND_PER_BASE)
 inline uint32_t bitband_get_peripheral(uint32_t addr, uint32_t bit)
 {
   uint32_t regval;
@@ -121,7 +128,6 @@ inline uint32_t bitband_get_peripheral(uint32_t addr, uint32_t bit)
 
   return *((volatile uint32_t *)regval);
 }
-#endif 
 
 
 /******************************************************************************
@@ -142,7 +148,6 @@ inline uint32_t bitband_get_peripheral(uint32_t addr, uint32_t bit)
  * val      Value to set bit to, 0 or 1.
  *
  ******************************************************************************/
-#if defined(EFM32_BITBAND_RAM_BASE)
 inline void bitband_set_sram(uint32_t addr, uint32_t bit, uint32_t val)
 {
   uint32_t regval;
@@ -150,7 +155,6 @@ inline void bitband_set_sram(uint32_t addr, uint32_t bit, uint32_t val)
 
   *((volatile uint32_t *)regval) = (uint32_t)val;
 }
-#endif
 
 
 /******************************************************************************
@@ -173,7 +177,6 @@ inline void bitband_set_sram(uint32_t addr, uint32_t bit, uint32_t val)
  * Return bit value read, 0 or 1.
  *
  ******************************************************************************/
-#if defined(EFM32_BITBAND_RAM_BASE)
 inline uint32_t bitband_get_sram(uint32_t addr, uint32_t bit)
 {
   uint32_t regval;

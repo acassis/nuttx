@@ -58,30 +58,24 @@
  * Public Function Prototypes
  ****************************************************************************/
 
-#if defined(EFM32_BITBAND_PER_BASE)
+#if defined(CONFIG_EFM32_BITBAND)
 inline void bitband_set_peripheral(uint32_t addr, uint32_t bit, uint32_t val);
+inline uint32_t bitband_get_peripheral(uint32_t addr, uint32_t bit);
+inline void bitband_set_sram(uint32_t addr, uint32_t bit, uint32_t val);
+inline uint32_t bitband_get_sram(uint32_t addr, uint32_t bit);
+
 #else
+
 #   define bitband_set_peripheral(addr,bit,val)\
     modifyreg32(addr,~(1<<bit),(1<<bit))
-#endif
 
-#if defined(EFM32_BITBAND_PER_BASE)
-inline uint32_t bitband_get_peripheral(uint32_t addr, uint32_t bit);
-#else
 #   define bitband_get_peripheral(addr,bit) (((getreg32(addr)) >> bit) & 1)
-#endif
 
-#if defined(EFM32_BITBAND_RAM_BASE)
-inline void bitband_set_sram(uint32_t addr, uint32_t bit, uint32_t val);
-#else
 #   define bitband_set_sram(add,bit,val)\
     modifyreg32(addr,~(1<<bit),(1<<bit))
-#endif
 
-#if defined(EFM32_BITBAND_RAM_BASE)
-inline uint32_t bitband_get_sram(uint32_t addr, uint32_t bit);
-#else
 #   define bitband_get_sram(addr,bit) (((getreg32(addr)) >> bit) & 1)
+
 #endif
 
 #endif /* __ARCH_ARM_SRC_EFM32_EFM32_BITBAND_H */
