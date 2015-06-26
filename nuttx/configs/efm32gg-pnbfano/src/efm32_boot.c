@@ -164,7 +164,7 @@ int board_init_pwm(void)
     return 0;
 }
 
-int efm32_initialize_mpu(int devno)
+int efm32_initialize_mpu(void)
 {
     struct mpu_low_s * low;
     struct i2c_dev_s * i2c;
@@ -180,7 +180,7 @@ int efm32_initialize_mpu(int devno)
         return -1;
     }
 
-    low = mpu_low_i2c_init(devno, 0xD0>>1, 0xC0>>1, i2c );
+    low = mpu_low_i2c_init(0, 0xD0>>1, 0xC0>>1, i2c );
     if ( low == NULL )
     {
         syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
@@ -202,6 +202,47 @@ int efm32_initialize_mpu(int devno)
 
     return OK;
 }
+
+#if 0
+int efm32_initialize_suspensions(void)
+{
+    struct i2c_dev_s * i2c;
+    struct ads11_inst_t * suspension_inst;
+    struct suspension_inst_t * suspension_inst;
+
+    /* i2c port 1 */
+
+    i2c = up_i2cinitialize(1);
+
+    if ( i2c == NULL )
+    {
+        syslog(LOG_ERR,"Cannot initialize I2C !\n");
+        return -1;
+    }
+
+    low = ads1x15_init(0, 0x90>>1, i2c );
+    if ( low == NULL )
+    {
+        syslog(LOG_ERR,"Cannot initialize mpu_low !\n");
+        return -1;
+    }
+
+    mpu_inst = suspensions_instantiate();
+    if ( mpu_inst == NULL ) 
+    {
+        syslog(LOG_ERR,"Cannot initialize mpu instance !\n");
+        return -1;
+    }
+
+    if ( mpu_fileops_init(mpu_inst, "/dev/invmpu0", 0) < 0 )
+    {
+        syslog(LOG_ERR,"Cannot register mpu device !\n");
+        return -1;
+    }
+
+    return OK;
+}
+#endif
 
 int board_mount_sdcard(void)
 {
@@ -336,7 +377,7 @@ void board_initialize(void)
     /* initialise MPU9250 */
 
     syslog(LOG_NOTICE,"initialize MPU \n");
-    if ( efm32_initialize_mpu(0) < 0 )
+    if ( efm32_initialize_mpu() < 0 )
     {
         syslog(LOG_ERR,"Cannot initialize MPU\n");
     }
