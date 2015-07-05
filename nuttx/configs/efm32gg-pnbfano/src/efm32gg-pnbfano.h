@@ -152,6 +152,21 @@
                            GPIO_PORTD|\
                            GPIO_PIN3\
                           )
+/* Breaking GPIO:
+ *
+ * The pnbfano board has a breaking GPIO input. 
+ *
+ * --------------------- ---------------------
+ * PIN                   CONNECTIONS
+ * --------------------- ---------------------
+ * CHRONO (PD4)          CHRONO
+ * --------------------- ---------------------
+ */
+
+#  define GPIO_BREAKING   (GPIO_INPUT_PULLUP|\
+                           GPIO_PORTD|\
+                           GPIO_PIN4\
+                          )
 
 
 /* Lcd Buttons:

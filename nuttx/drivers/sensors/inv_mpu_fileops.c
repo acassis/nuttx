@@ -41,7 +41,6 @@
 #include <nuttx/arch.h>
 
 #include <string.h>
-//#include <unistd.h>
 #include <poll.h>
 #include <errno.h>
 #include <debug.h>

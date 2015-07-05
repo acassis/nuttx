@@ -116,13 +116,13 @@ typedef struct
 
     sem_t   *poll_sem;
 
-    /* Chronometer event from start */
+    /* mutex protection */
 
     sem_t   mutex;
 
-    /* start date */
+    /* time of last trigger */
 
-    time_t filter;
+    time_t last_trig;
 
     /* fifo semaphore */
 
@@ -189,7 +189,7 @@ static int efm32_gpio_chrono_takesem(FAR sem_t *sem, bool errout)
  * Name: efm32_chrono_level
  ****************************************************************************/
 
-int efm32_gpio_chrono_level(FAR efm32_gpio_chrono_t *dev)
+inline int efm32_gpio_chrono_level(FAR efm32_gpio_chrono_t *dev)
 {
     int level = dev->wr_idx - dev->rd_idx;
 
@@ -218,13 +218,13 @@ int efm32_gpio_chrono_irq(int irq, FAR void* context)
 
     ASSERT(dev != NULL);
 
-    if ( dev->filter >= tp.tv_sec )
+    if ( dev->last_trig >= tp.tv_sec )
     {
         EFM32_GPIO_CHRONO_LOG(LOG_NOTICE,"Event filtered\n");
         return -1; 
     }
 
-    dev->filter = tp.tv_sec+CONFIG_EFM32_GPIO_CHRONO_FILTER_DELAYS_S;
+    dev->last_trig = tp.tv_sec+CONFIG_EFM32_GPIO_CHRONO_FILTER_DELAYS_S;
 
     if (efm32_gpio_chrono_level(dev) >= CONFIG_EFM32_GPIO_CHRONO_BUFSIZE)
     {

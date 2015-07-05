@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/efm32gg-pnbfano/include/suspensions.h
+ * configs/efm32gg-pnbfano/include/telemetry.h
  * 
  *
  *   Copyright (C) 2015 Pierre-noel Bouteville. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIGS_EFM32GG_PNBFANO_INCLUDE_SUSPENSIONS_H
-#define __CONFIGS_EFM32GG_PNBFANO_INCLUDE_SUSPENSIONS_H
+#ifndef __CONFIGS_EFM32GG_PNBFANO_INCLUDE_TELEMETRY_H
+#define __CONFIGS_EFM32GG_PNBFANO_INCLUDE_TELEMETRY_H
 
 #include <time.h>
 
@@ -45,17 +45,20 @@ typedef struct
 
     struct  timespec tp;
 
-    int front;
-    int rear;
+    int suspension_front;
 
-}suspensions_t;
+    int suspension_rear;
 
-/* SUSPENSIONS_FREQUENCY set sensors acquisition frequency.
+    bool breaking;
+
+}telemetry_t;
+
+/* TELEMETRY_FREQUENCY set sensors acquisition frequency.
  *
  * Argument: frequency in Hz.
  */
 
-#define SUSPENSIONS_FREQUENCY       _SNIOC(0x0000)
+#define TELEMETRY_FREQUENCY       _SNIOC(0x0000)
 
 
 #endif
