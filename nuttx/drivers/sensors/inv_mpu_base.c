@@ -2067,16 +2067,34 @@ int mpu_read_fifo(struct mpu_inst_s* inst, struct mpu_data_mpu_s *data)
         data->gyro.x = (*ptr++) << 8;
         data->gyro.x|= (*ptr++);
     }
+    else
+    {
+        data->gyro.x = 0;
+    }
     if (inst->fifo_enable & MPU_Y_GYRO) 
     {
         data->gyro.y = (*ptr++) << 8;
         data->gyro.y|= (*ptr++);
+    }
+    else
+    {
+        data->gyro.y = 0;
     }
     if (inst->fifo_enable & MPU_Z_GYRO) 
     {
         data->gyro.z = (*ptr++) << 8;
         data->gyro.z|= (*ptr++);
     }
+    else
+    {
+        data->gyro.z = 0;
+    }
+    
+#ifdef MPU_COMPASS 
+    data->comp.x = 0;
+    data->comp.y = 0;
+    data->comp.z = 0;
+#endif
 
     return (ptr - buf);
 }

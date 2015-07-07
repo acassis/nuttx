@@ -235,7 +235,9 @@ struct mpu_quat_s {
 struct mpu_data_mpu_s {
     struct mpu_axes_s accel;
     struct mpu_axes_s gyro;
+#ifdef MPU_COMPASS
     struct mpu_axes_s comp;
+#endif
 };
 
 struct mpu_data_dmp_s {
