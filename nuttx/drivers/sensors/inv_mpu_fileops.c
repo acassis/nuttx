@@ -75,7 +75,7 @@
 #endif
 
 #ifndef BOARD_DEFAULT_MPU_HZ
-#   define BOARD_DEFAULT_MPU_HZ (10) /* in Hz */
+#   define BOARD_DEFAULT_MPU_HZ (100) /* in Hz */
 #endif
 
 #ifndef BOARD_DEFAULT_GYRO_FSR
