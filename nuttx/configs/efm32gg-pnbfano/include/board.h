@@ -207,6 +207,7 @@
  * start and stop it. The AUXHFRCO is enabled by writing a 1 to AUXHFRCOEN
  * in CMU_OSCENCMD. This explicit enabling is required when SWO is used.
  */
+#define BOARD_AUXCLK_FREQUENCY 14000000
 
 
 /* SWO Location - Where SWO goes out.

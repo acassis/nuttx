@@ -1772,7 +1772,7 @@ FAR struct i2c_dev_s *up_i2cinitialize(int port)
   struct efm32_i2c_priv_s *priv = NULL; /* Private data of device with multiple 
                                          * instances */
   struct efm32_i2c_inst_s *inst = NULL; /* Device, single instance */
-  int irqs;
+  irqstate_t irqs;
 
   /* Get I2C private structure */
 
@@ -1835,7 +1835,7 @@ FAR struct i2c_dev_s *up_i2cinitialize(int port)
 
 int up_i2cuninitialize(FAR struct i2c_dev_s *dev)
 {
-  int irqs;
+  irqstate_t irqs;
 
   ASSERT(dev);
 

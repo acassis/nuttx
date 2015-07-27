@@ -779,7 +779,7 @@ void efm32_dmasample(DMA_HANDLE handle, struct efm32_dmaregs_s *regs)
 
   /* Sample channel control register */
 
-  regaddr            = EFM32_DMA_CHn_CTRL(dmach->chan)
+  regaddr            = EFM32_DMA_CHn_CTRL(dmach->chan);
   regs->chnctrl      = getreg32(regaddr);
 
   irqrestore(flags);

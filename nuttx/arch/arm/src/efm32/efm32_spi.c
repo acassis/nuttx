@@ -50,8 +50,8 @@
 #include <debug.h>
 
 #include <nuttx/arch.h>
-//#include <nuttx/wdog.h>
-//#include <nuttx/clock.h>
+#include <nuttx/wdog.h>
+#include <nuttx/clock.h>
 #include <nuttx/spi/spi.h>
 
 #include <arch/board/board.h>
@@ -226,7 +226,7 @@ static void      spi_recvblock(struct spi_dev_s *dev, void *rxbuffer,
 
 /* Initialization */
 
-static int       spi_portinitialize(struct efm32_spidev_s *priv);
+static int       spi_portinitialize(struct efm32_spidev_s *priv, int port);
 
 /****************************************************************************
  * Private Data
@@ -1548,13 +1548,14 @@ static void spi_recvblock(struct spi_dev_s *dev, void *rxbuffer,
  *
  * Input Parameter:
  *   priv - private SPI device structure
+ *   port - Port number use for debug output only.
  *
  * Returned Value:
  *   None
  *
  ****************************************************************************/
 
-static int spi_portinitialize(struct efm32_spidev_s *priv)
+static int spi_portinitialize(struct efm32_spidev_s *priv, int port)
 {
   const struct efm32_spiconfig_s *config = priv->config;
   uint32_t regval;
@@ -1745,7 +1746,7 @@ struct spi_dev_s *up_spiinitialize(int port)
 
       /* Initialize the SPI device */
 
-       ret = spi_portinitialize(priv);
+       ret = spi_portinitialize(priv,port);
        if (ret < 0)
          {
            spidbg("ERROR: Failed to initialize SPI port %d\n", port);

@@ -35,6 +35,7 @@
 MEMORY
 {
     flash (rx) : ORIGIN = 0x00000000, LENGTH = 1048576
+    par    (r) : ORIGIN = 0x0FE00000, LENGTH = 0x800
     sram (rwx) : ORIGIN = 0x20000000, LENGTH = 131072
 }
 
@@ -44,6 +45,11 @@ ENTRY(_stext)
 
 SECTIONS
 {
+	.parameters (NOLOAD):
+	{
+		*(.params)
+	} > par
+
 	.text : {
 		_stext = ABSOLUTE(.);
 		*(.vectors)
@@ -83,6 +89,8 @@ SECTIONS
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)
 		CONSTRUCTORS
+        . = ALIGN (8);
+		*(.ramfunc)
 		_edata = ABSOLUTE(.);
 	} > sram AT > flash
 

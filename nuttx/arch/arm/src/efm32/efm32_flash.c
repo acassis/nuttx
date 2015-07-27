@@ -87,11 +87,15 @@
 
 /* Only for the EFM32 family for now */
 
-#if defined(CONFIG_ARCH_CHIP_EFM32)
+#if ( defined(CONFIG_ARCH_CHIP_EFM32) && defined(CONFIG_EFM32_FLASHPROG) )
 
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
+
+#ifndef CONFIG_ARCH_RAMFUNCS
+#   error "Flashing function should executed in ram"
+#endif
 
 #ifndef EFM32_USERDATA_SIZE
 #   error "EFM32_USERDATA_SIZE should be defined"
@@ -183,7 +187,7 @@ void efm32_flash_unlock(void)
 
 
 /*******************************************************************************
- * Name: msc_load_address
+ * Name: msc_load_verify_address
  *   Perform address phase of FLASH write cycle.
  * Description:
  *   This function performs the address phase of a Flash write operation by
@@ -205,10 +209,10 @@ void efm32_flash_unlock(void)
  *   -EACCES    - Operation tried to access a locked area of the flash.
  *******************************************************************************
  */
-int __ramfunc__ msc_load_address(uint32_t* address)
+int __ramfunc__ msc_load_verify_address(uint32_t* address)
 {
   uint32_t status;
-  int      timeout;
+  uint32_t timeout;
 
   /* Wait for the MSC to become ready. */
 
@@ -221,7 +225,9 @@ int __ramfunc__ msc_load_address(uint32_t* address)
   /* Check for timeout */
 
   if (timeout == 0)
+    {
       return -EBUSY;
+    }
 
   /* Load address */
 
@@ -258,8 +264,8 @@ int __ramfunc__ msc_load_address(uint32_t* address)
  *   must define a section called "ram_code" and place this manually in your
  *   project's scatter file.
  * paramelters:
- *      data :  Pointer to the first data word to load.
- *      num  :  Number of data words (32-bit) to load.
+ *      data        :  Pointer to the first data word to load.
+ *      num_words   :  Number of data words (32-bit) to load.
  * return:
  *   Returns the status of the data load operation, #msc_Return_TypeDef
  *   OK         - Operation completed successfully.
@@ -267,30 +273,32 @@ int __ramfunc__ msc_load_address(uint32_t* address)
  *                      to complete.
  ******************************************************************************/
 
-int __ramfunc__ msc_load_data(uint32_t* data, int num)
+int __ramfunc__ msc_load_write_data(uint32_t* data, uint32_t num_words,
+                                    bool write_strategy_safe)
 {
-  int timeout  = MSC_PROGRAM_TIMEOUT;
-  int i;
-  int wordsPerDataPhase;
-  int ret = OK;
+  int timeout;
+  int word_index;
+  int words_per_data_phase;
+  int ret = 0;
 
-#ifdef MSC_WRITECTRL_LPWRITE
+#if defined( _MSC_WRITECTRL_LPWRITE_MASK ) && defined( _MSC_WRITECTRL_WDOUBLE_MASK )
 
   /* If LPWRITE (Low Power Write) is NOT enabled, set WDOUBLE (Write Double word) */
 
-  if (0 == (getreg32(EFM32_MSC_WRITECTRL) & MSC_WRITECTRL_LPWRITE))
+  if (!(getreg32(EFM32_MSC_WRITECTRL) & MSC_WRITECTRL_LPWRITE))
     {
 
       /* If the number of words to be written are odd, we need to align by writing
-         a single word first, before setting the WDOUBLE bit. */
+       * a single word first, before setting the WDOUBLE bit. 
+       */
 
-      if (num & 0x1)
+      if (num_words & 0x1)
         {
 
           /* Wait for the msc to be ready for the next word. */
 
           timeout = MSC_PROGRAM_TIMEOUT;
-          while ((0 == (getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY)) && \
+          while ((!(getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY)) && \
                  (timeout != 0))
             {
               timeout--;
@@ -299,7 +307,9 @@ int __ramfunc__ msc_load_data(uint32_t* data, int num)
           /* Check for timeout */
 
           if (timeout == 0)
+            {
               return -ETIMEDOUT;
+            }
 
           /* Clear double word option, in order to write one single word. */
 
@@ -308,15 +318,12 @@ int __ramfunc__ msc_load_data(uint32_t* data, int num)
           /* Write first data word. */
 
           putreg32(*data++,EFM32_MSC_WDATA);
+          putreg32(MSC_WRITECMD_WRITEONCE,EFM32_MSC_WRITECMD);
 
-          /* Execute the write command for the first word. We use the WRITETRIG
-             command here, because we want the address to be updated, even though
-             we do not intend to write the next word within the WDATAREADY timeout.
+          /* Wait for the operation to finish. It may be required to change the 
+           * WDOUBLE config after the initial write. It should not be changed 
+           * while BUSY. 
            */
-
-          putreg32(MSC_WRITECMD_WRITETRIG,EFM32_MSC_WRITECMD);
-
-          /* Wait for the transaction to finish. */
 
           timeout = MSC_PROGRAM_TIMEOUT;
           while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (timeout != 0))
@@ -327,113 +334,166 @@ int __ramfunc__ msc_load_data(uint32_t* data, int num)
           /* Check for timeout */
 
           if (timeout == 0)
-              return -ETIMEDOUT;
-
-          if (0 == --num)
             {
-              ret = OK;
-              goto msc_load_data_exit;
+              return -ETIMEDOUT;
+            }
+
+          /* Subtract this initial odd word for the write loop below */
+
+          num_words --;
+          ret = 0;
+        }
+
+      /* Now we can set the double word option in order to write two words per
+       * data phase. 
+       */
+
+      bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WDOUBLE_SHIFT,1);
+      words_per_data_phase = 2;
+    }
+  else
+#endif
+    {
+        words_per_data_phase = 1;
+    }
+
+  /* Write the rest as double word write if wordsPerDataPhase == 2 */
+
+  if ( num_words > 0 )
+    {
+
+      /* Write strategy: msc_write_int_safe */
+
+      if ( write_strategy_safe )
+        {
+
+          /* Requires a system core clock at 1MHz or higher */
+
+          DEBUGASSERT(BOARD_SYSTEM_FREQUENCY >= 1000000);
+
+          word_index = 0;
+          while(word_index < num_words)
+            {
+              putreg32(*data++,EFM32_MSC_WDATA);
+              word_index++;
+              if (words_per_data_phase == 2)
+                {
+                  while (!(getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY))
+                    {
+                    }
+                  putreg32(*data++,EFM32_MSC_WDATA);
+                  word_index++;
+                }
+              putreg32(MSC_WRITECMD_WRITEONCE,EFM32_MSC_WRITECMD);
+
+              /* Wait for the transaction to finish. */
+
+              timeout = MSC_PROGRAM_TIMEOUT;
+              while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && \
+                     (timeout != 0))
+                {
+                  timeout--;
+                }
+
+              /* Check for timeout */
+
+              if (timeout == 0)
+                {
+                  ret = -ETIMEDOUT;
+                  break;
+                }
+#if defined( CONFIG_EFM32_EFM32G )
+              putreg32(getreg32(EFM32_MSC_ADDRB)+4,EFM32_MSC_ADDRB);
+              putreg32(MSC_WRITECMD_LADDRIM,EFM32_MSC_WRITECMD);
+#endif
             }
         }
 
-        /* Now we can set the double word option in order to write two words per
-           data phase. */
+        /* Write strategy: msc_write_fast */
 
-        bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WDOUBLE_SHIFT,1);
-        wordsPerDataPhase = 2;
-      }
-    else
-#endif
-    {
-        wordsPerDataPhase = 1;
-    }
+      else
+        {
+#if defined( CONFIG_EFM32_EFM32G )
 
+          /* Gecko does not have auto-increment of ADDR. */
 
-    /* Wait for the MSC to be ready for a new data word.
-     * Due to the timing of this function, the MSC should
-     * already be ready */
+          DEBUGASSERT(0);
+#else
 
-    timeout = MSC_PROGRAM_TIMEOUT;
-    while (((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY) == 0) && \
-           (timeout != 0))
-      {
-        timeout--;
-      }
+          /* Requires a system core clock at 14MHz or higher */
 
-    /* Check for timeout */
+          DEBUGASSERT(BOARD_SYSTEM_FREQUENCY >= 14000000);
 
-    if (timeout == 0)
-        return -ETIMEDOUT;
+          word_index = 0;
 
-    /* Write first data word. */
-
-    putreg32(*data,EFM32_MSC_WDATA);
-
-    /* Execute the write command only for the first word. */
-
-    putreg32(MSC_WRITECMD_WRITETRIG,EFM32_MSC_WRITECMD);
-
-    /* Loop through the rest of the data to be written. */
-
-    for (i=1, data++; i<num; i++, data++)
-      {
-
-        /* Only waut for WDATAREADY at the start of each data phase. */
-
-        if (0 == (i&(wordsPerDataPhase-1)))
-          {
-
-            /* Wait for the msc to be ready for the next word. */
-
-            timeout = MSC_PROGRAM_TIMEOUT;
-            while ((0 == (getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY)) && \
-                   (timeout != 0))
-              {
-                timeout--;
-              }
-
-            /* Check for timeout */
-
-            if (timeout == 0)
-              return -ETIMEDOUT;
-          }
-
-          /* Check if the WDATAREADY timeout has occurred. */
-
-          if (getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WORDTIMEOUT)
+          while(word_index < num_words)
             {
-              ret = -ETIMEDOUT;
-              break;
+
+              /* Wait for the MSC to be ready for the next word. */
+
+              while (!(getreg32(EFM32_MSC_STATUS) & MSC_STATUS_WDATAREADY))
+                {
+                  uint32_t regval;
+
+                  /* If the write to MSC->WDATA below missed the 30us timeout 
+                   * and the following MSC_WRITECMD_WRITETRIG command arrived 
+                   * while MSC_STATUS_BUSY is 1, then the MSC_WRITECMD_WRITETRIG 
+                   * could be ignored by the MSC. In this case, 
+                   * MSC_STATUS_WORDTIMEOUT is set to 1 and MSC_STATUS_BUSY is 
+                   * 0. A new trigger is therefore needed here to complete write 
+                   * of data in MSC->WDATA. If WDATAREADY became high since 
+                   * entry into this loop, exit and continue to the next WDATA 
+                   * write.
+                   */
+
+                  regval = getreg32(EFM32_MSC_STATUS);
+                  regval &= MSC_STATUS_WORDTIMEOUT;
+                  regval &= MSC_STATUS_BUSY;
+                  regval &= MSC_STATUS_WDATAREADY;
+                  if ( regval == MSC_STATUS_WORDTIMEOUT )
+                    {
+                      putreg32(MSC_WRITECMD_WRITETRIG,EFM32_MSC_WRITECMD);
+                    }
+                }
+
+              putreg32(*data,EFM32_MSC_WDATA);
+              if (( words_per_data_phase == 1) || \
+                  ((words_per_data_phase == 2) && (word_index & 0x1)))
+                {
+                  putreg32(MSC_WRITECMD_WRITETRIG,EFM32_MSC_WRITECMD);
+                }
+              data++;
+              word_index++;
             }
 
-          /* Write next word. */
+          /* Wait for the transaction to finish. */
 
-          putreg32(*data,EFM32_MSC_WDATA);
-      }
+          timeout = MSC_PROGRAM_TIMEOUT;
+          while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && \
+                 (timeout != 0))
+            {
+              timeout--;
+            }
 
- msc_load_data_exit:
+          /* Check for timeout */
 
-  /* Wait for the transaction to finish. */
-
-  timeout = MSC_PROGRAM_TIMEOUT;
-  while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (timeout != 0))
-    {
-      timeout--;
+          if (timeout == 0)
+            {
+              ret = -ETIMEDOUT;
+            }
+#endif
+        } 
     }
-
-  /* Check for timeout */
-
-  if (timeout == 0)
-      ret = -ETIMEDOUT;
-
-#ifdef MSC_WRITECTRL_WDOUBLE
+#ifdef _MSC_WRITECTRL_WDOUBLE_MASK
 
   /* Clear double word option, which should not be left on when returning. */
 
   bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WDOUBLE_SHIFT,0);
+
 #endif
 
   return ret;
+
 }
 
 
@@ -526,9 +586,9 @@ ssize_t up_progmem_getpage(size_t addr)
        (addr <  (EFM32_USERDATA_BASE+EFM32_USERDATA_SIZE)   )
      )
     {
-      addr -= EFM32_USERDATA_SIZE;
+      addr -= EFM32_USERDATA_BASE;
 
-      return (addr / EFM32_USERDATA_NPAGES) + EFM32_USERDATA_PAGESIZE;
+      return (addr / EFM32_USERDATA_NPAGES) + EFM32_FLASH_NPAGES;
     }
 
   return -EFAULT;
@@ -564,15 +624,19 @@ bool up_progmem_isuniform(void)
 
 ssize_t __ramfunc__ up_progmem_erasepage(size_t page)
 {
+  int ret = 0;
   int time_out;
   uint32_t regval;
+  irqstate_t irqs;
 
-  if (page >= EFM32_FLASH_NPAGES)
+  if (page >= (EFM32_FLASH_NPAGES+EFM32_USERDATA_NPAGES))
     {
       return -EFAULT;
     }
 
   efm32_flash_unlock();
+
+  irqs = irqsave();
 
   /* enable writing to the flash */
 
@@ -589,59 +653,57 @@ ssize_t __ramfunc__ up_progmem_erasepage(size_t page)
 
   if (regval & MSC_STATUS_INVADDR)
     {
-
-      /* Disable writing to the MSC */
-
-      bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WREN_SHIFT,0);
-
-      return -EINVAL;
+      ret = -EINVAL;
     }
 
   /* Check for write protected page */
 
-  if (regval & MSC_STATUS_LOCKED)
+  if ( ( ret == 0 ) && (regval & MSC_STATUS_LOCKED) )
     {
-
-      /* Disable writing to the MSC */
-
-      bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WREN_SHIFT,0);
-
-      return -EPERM;
+      ret = -EPERM;
     }
 
   /* Send erase page command */
 
-  putreg32(MSC_WRITECMD_ERASEPAGE,EFM32_MSC_WRITECMD);
+  if ( ret == 0 )
+    { 
+      putreg32(MSC_WRITECMD_ERASEPAGE,EFM32_MSC_WRITECMD);
 
-  /* Wait for the erase to complete */
-  while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (time_out != 0))
-    {
-      time_out--;
-    }
+      /* Wait for the erase to complete */
 
-  if (time_out == 0)
-    {
+      while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (time_out != 0))
+        {
+          time_out--;
+        }
 
-      /* Disable writing to the MSC */
-
-      bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WREN_SHIFT,0);
-
-      return -ETIMEDOUT;
-
+      if (time_out == 0)
+        {
+          ret = -ETIMEDOUT;
+        }
     }
 
   /* Disable writing to the MSC */
 
   bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WREN_SHIFT,0);
 
-  /* Verify */
+  if ( ret == 0 )
+    { 
+      /* Verify */
 
-  if (up_progmem_ispageerased(page) != 0)
-    {
-      return -EIO; /* failure */
+      if (up_progmem_ispageerased(page) != 0)
+        {
+          ret = -EIO; 
+        }
     }
 
-  return up_progmem_pagesize(page); /* success */
+  irqrestore(irqs);
+
+  if ( ret != 0 )
+      return ret;
+
+  /* success */
+
+  return up_progmem_pagesize(page); 
 }
 
 ssize_t up_progmem_ispageerased(size_t page)
@@ -650,7 +712,7 @@ ssize_t up_progmem_ispageerased(size_t page)
   size_t count;
   size_t bwritten = 0;
 
-  if (page >= EFM32_FLASH_NPAGES)
+  if (page >= (EFM32_FLASH_NPAGES+EFM32_USERDATA_NPAGES))
     {
       return -EFAULT;
     }
@@ -672,23 +734,24 @@ ssize_t up_progmem_ispageerased(size_t page)
 
 ssize_t __ramfunc__ up_progmem_write(size_t addr, const void *buf, size_t size)
 {
+  int       ret = 0;
   int       word_count; 
-  int       word_nbr; 
+  int       num_words; 
+  int       page_words; 
   uint32_t* p_data; 
   uint32_t* address = (uint32_t*) addr; 
-
-  int pagesize = EFM32_FLASH_PAGESIZE;
+  uint32_t  num_bytes = size;
 
   /* EFM32 requires word access */
 
-  if (addr & 7)
+  if (addr & 3)
     {
       return -EINVAL;
     }
 
   /* EFM32 requires word access */
 
-  if (size & 7)
+  if (num_bytes & 3)
     {
       return -EINVAL;
     }
@@ -701,41 +764,63 @@ ssize_t __ramfunc__ up_progmem_write(size_t addr, const void *buf, size_t size)
 
   /* Convert bytes to words */
 
-  word_nbr = size >> 2; 
+  num_words = num_bytes >> 2; 
 
   /* The following loop splits the data into chunks corresponding to flash pages.
    * The address is loaded only once per page, because the hardware automatically
    * increments the address internally for each data load inside a page. 
    */
 
-  for (word_count = 0, p_data = (uint32_t*) buf; word_count < word_nbr; )
+  for (word_count = 0, p_data = (uint32_t*) buf; word_count < num_words; )
     {
+      int page_bytes;
+      ssize_t page_idx;
+      irqstate_t irqs;
 
-      int ret;
-      int page_words;
+      /* Compute the number of words to write to the current page. */
+      
+      page_idx = up_progmem_getpage((size_t)address+(word_count<<2));
+      if ( page_idx < 0 )
+      {
+          ret = -EINVAL;
+          break;
+      }
+
+      page_bytes = up_progmem_pagesize(page_idx);
+      if ( page_bytes < 0 )
+      {
+          ret = -EINVAL;
+          break;
+      }
+
+      page_words = (page_bytes - (((uint32_t) (address + word_count)) & \
+                    (page_bytes-1))) / sizeof(uint32_t);
+
+      if (page_words > num_words - word_count)
+        {
+          page_words = num_words - word_count;
+        }
+
+      irqs = irqsave();
 
       /* First we load address. The address is auto-incremented within a page.
          Therefore the address phase is only needed once for each page. */
 
-      ret = msc_load_address(address+word_count);
-
-      if (OK != ret)
-        return ret;
-
-      /* Compute the number of words to write to the current page. */
-
-      page_words = (pagesize - \
-                   (((uint32_t) (address + word_count)) & (pagesize-1)))
-                  / sizeof(uint32_t);
-
-      if (page_words > word_nbr-word_count)
-        page_words = word_nbr-word_count;
+      ret = msc_load_verify_address(address + word_count);
 
       /* Now write the data in the current page. */
 
-      ret = msc_load_data(p_data, page_words);
-      if (OK != ret) 
+      if (ret == 0)
+        { 
+          ret = msc_load_write_data( p_data, page_words, true );
+        }
+
+      irqrestore(irqs);
+
+      if (ret != 0 ) 
+        {
           break;
+        }
 
       word_count += page_words;
       p_data += page_words;
@@ -745,13 +830,16 @@ ssize_t __ramfunc__ up_progmem_write(size_t addr, const void *buf, size_t size)
 
   bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WREN_SHIFT,0);
 
-#if (defined(_EFM32_GIANT_FAMILY) || defined(_EFM32_WONDER_FAMILY)) && (2==WORDS_PER_DATA_PHASE)
+#if (defined(CONFIG_EFM32_EFM32GG) || defined(CONFIG_EFM32_EFM32WG)) && (2==WORDS_PER_DATA_PHASE)
 
   /* Turn off double word write cycle support. */
 
   bitband_set_peripheral(EFM32_MSC_WRITECTRL,_MSC_WRITECTRL_WDOUBLE_SHIFT,0);
 
 #endif
+
+  if (ret < 0 )
+    return ret;
 
   return word_count;
 }
