@@ -625,7 +625,7 @@ bool up_progmem_isuniform(void)
 ssize_t __ramfunc__ up_progmem_erasepage(size_t page)
 {
   int ret = 0;
-  int time_out;
+  int timeout;
   uint32_t regval;
   irqstate_t irqs;
 
@@ -671,12 +671,13 @@ ssize_t __ramfunc__ up_progmem_erasepage(size_t page)
 
       /* Wait for the erase to complete */
 
-      while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (time_out != 0))
+      timeout = MSC_PROGRAM_TIMEOUT;
+      while ((getreg32(EFM32_MSC_STATUS) & MSC_STATUS_BUSY) && (timeout != 0))
         {
-          time_out--;
+          timeout--;
         }
 
-      if (time_out == 0)
+      if (timeout == 0)
         {
           ret = -ETIMEDOUT;
         }
