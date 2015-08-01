@@ -67,11 +67,7 @@
  ****************************************************************************/
 /* Configuration ************************************************************/
 
-#ifdef CONFIG_WL_CC3000
-
-#ifndef CONFIG_WIRELESS
-#  error "Wireless support requires CONFIG_WIRELESS"
-#endif
+#if defined(CONFIG_WIRELESS) && defined(CONFIG_WL_CC3000)
 
 #ifndef CONFIG_SPI
 #  error "CC3000 Wireless support requires CONFIG_SPI"
@@ -83,7 +79,6 @@
 
 #ifndef CONFIG_CC3000_RX_BUFFER_SIZE
 #define CONFIG_CC3000_RX_BUFFER_SIZE 132
-#endif
 
 /****************************************************************************
  * Private Types
@@ -304,5 +299,11 @@ int wireless_archinitialize(size_t max_rx_size)
   return OK;
 }
 
+#else
+int wireless_archinitialize(size_t max_rx_size)
+{
+    UNUSED(max_rx_size);
+}
+#endif
 
 #endif /* CONFIG_WL_CC3000 */

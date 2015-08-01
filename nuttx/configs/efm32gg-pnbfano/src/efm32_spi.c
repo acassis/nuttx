@@ -246,7 +246,7 @@ int efm32_initialize_spi_devices(void)
     syslog(LOG_WARNING,"SDHC not used\n");
 #endif
 
-#ifdef  CONFIG_PNBFANO_CC3000
+#ifdef  CONFIG_WIRELESS
     syslog(LOG_DEBUG,"Initializing WIFI\n");
     if ( wireless_archinitialize(0) < 0 )
     {

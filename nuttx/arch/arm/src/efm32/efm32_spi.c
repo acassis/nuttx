@@ -811,6 +811,11 @@ static void spi_select(struct spi_dev_s *dev, enum spi_dev_e devid,
   config = priv->config;
   DEBUGASSERT(config->select);
 
+  if ( selected == false )
+  {
+      spi_wait_status(config, _USART_STATUS_TXC_MASK, USART_STATUS_TXC);
+  }
+
   /* Defer to the board chip select logic */
 
   config->select(dev, devid, selected);
@@ -1232,6 +1237,8 @@ static uint16_t spi_send(struct spi_dev_s *dev, uint16_t wd)
 
   /* Wait for receive data to be available */
 
+  spi_wait_status(config, _USART_STATUS_TXC_MASK, USART_STATUS_TXC);
+
   spi_wait_status(config, _USART_STATUS_RXDATAV_MASK, USART_STATUS_RXDATAV);
   ret = (uint16_t)spi_getreg(config, EFM32_USART_RXDATA_OFFSET);
 
@@ -1270,8 +1277,8 @@ static void spi_exchange(struct spi_dev_s *dev, const void *txbuffer,
 {
   struct efm32_spidev_s *priv = (struct efm32_spidev_s *)dev;
   const struct efm32_spiconfig_s *config;
-  size_t unrecvd;
-  size_t unsent;
+  size_t unrecvd = 0;
+  size_t unsent  = 0;
 
   DEBUGASSERT(priv && priv->config);
   config = priv->config;
@@ -1346,6 +1353,7 @@ static void spi_exchange(struct spi_dev_s *dev, const void *txbuffer,
             uint8_t *dest = (uint8_t*)rxbuffer;
             uint8_t  word;
 
+#if 0
       unrecvd = nwords;
       unsent  = nwords;
       while (unrecvd > 0)
@@ -1391,6 +1399,32 @@ static void spi_exchange(struct spi_dev_s *dev, const void *txbuffer,
                 }
             }
         }
+#else
+      while (nwords-- > 0)
+        {
+          /* Get the next word to write.  Is there a source buffer? */
+
+          if (src)
+            {
+              word = *src++;
+            }
+          else
+          {
+              word = 0xff;
+          }
+
+          /* Exchange one word */
+
+          word = (uint8_t)spi_send(dev, (uint16_t)word);
+
+          /* Is there a buffer to receive the return value? */
+
+          if (dest)
+            {
+              *dest++ = word;
+            }
+        }
+#endif
     }
 
   DEBUGASSERT(unsent == 0);
@@ -1643,6 +1677,13 @@ static int spi_portinitialize(struct efm32_spidev_s *priv, int port)
   /* Enable SPI */
 
   spi_putreg(config, EFM32_USART_CMD_OFFSET, USART_CMD_RXEN | USART_CMD_TXEN);
+
+#if 0
+  /* to active TXC bits */
+
+  spi_putreg(config, EFM32_USART_TXDATA_OFFSET, 0x00);
+#endif
+
   return OK;
 
 #ifdef CONFIG_EFM32_SPI_DMA
