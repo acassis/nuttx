@@ -67,11 +67,7 @@
  ****************************************************************************/
 /* Configuration ************************************************************/
 
-#ifdef CONFIG_WL_CC3000
-
-#ifndef CONFIG_WIRELESS
-#  error "Wireless support requires CONFIG_WIRELESS"
-#endif
+#if defined(CONFIG_WIRELESS) && defined(CONFIG_WL_CC3000)
 
 #ifndef CONFIG_SPI
 #  error "CC3000 Wireless support requires CONFIG_SPI"
@@ -83,7 +79,6 @@
 
 #ifndef CONFIG_CC3000_RX_BUFFER_SIZE
 #define CONFIG_CC3000_RX_BUFFER_SIZE 132
-#endif
 
 /****************************************************************************
  * Private Types
@@ -182,13 +177,13 @@ static int wl_attach_irq(FAR struct cc3000_config_s *state, xcpt_t handler)
 
 static void wl_enable_irq(FAR struct cc3000_config_s *state, bool enable)
 {
-  FAR struct efm32_config_s *priv = (FAR struct efm32_config_s *)state;
+  //FAR struct efm32_config_s *priv = (FAR struct efm32_config_s *)state;
 
   /* The caller should not attempt to enable interrupts if the handler
    * has not yet been 'attached'
    */
 
-  DEBUGASSERT(priv->handler || !enable);
+  DEBUGASSERT(((FAR struct efm32_config_s *)state)->handler || !enable);
 
   /* Attach and enable, or detach and disable */
 
@@ -304,5 +299,11 @@ int wireless_archinitialize(size_t max_rx_size)
   return OK;
 }
 
+#else
+int wireless_archinitialize(size_t max_rx_size)
+{
+    UNUSED(max_rx_size);
+}
+#endif
 
 #endif /* CONFIG_WL_CC3000 */
