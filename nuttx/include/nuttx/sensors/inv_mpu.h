@@ -293,6 +293,9 @@ extern "C" {
 /* low level function */
 
 #ifdef CONFIG_INVENSENSE_SPI
+
+#define MPU9250_SPI_MAXFREQUENCY 1000000
+
 struct spi_dev_s; /* See nuttx/spi/spi.h */
 struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr, 
                                    FAR struct spi_dev_s* spi);
