@@ -44,8 +44,7 @@
 #include <debug.h>
 #include <time.h>
 #include <nuttx/spi/spi.h>
-
-#include "inv_mpu.h"
+#include <nuttx/sensors/inv_mpu.h>
 
 #if defined(CONFIG_INVENSENSE_SPI)
 
@@ -55,9 +54,9 @@
 
 struct mpu_spi_low_s
 {
-    struct mpu_low_s *low;
+    const struct mpu_low_ops_s *ops;
     int akm_addr;
-    int spi_dev_s* spi;
+    struct spi_dev_s* spi;
 };
 
 /****************************************************************************
@@ -77,7 +76,7 @@ static int akm_spi_read( FAR struct mpu_low_s* low, int reg_off,
  * Private data
  ****************************************************************************/
 
-static struct mpu_low_s mpu_i2c_low = 
+static const struct mpu_low_ops_s g_mpu_spi_low_ops = 
 {
     .mpu_write = mpu_spi_write,
     .mpu_read  = mpu_spi_read,
@@ -108,14 +107,14 @@ static inline void mpu_spi_configspi(FAR struct spi_dev_s *spi)
  ****************************************************************************/
 
 static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
-                                uint8_t reg_off, uint8_t buf, int size)
+                                uint8_t reg_off, uint8_t *buf, int size)
 {
 
   /* If SPI bus is shared then lock and configure it */
 
 #ifndef CONFIG_SPI_OWNBUS
   (void)SPI_LOCK(priv->spi, true);
-  mpu9250_configspi(priv->spi);
+  mpu_spi_configspi(priv->spi);
 #endif
 
   /* Select the MPU9250 */
@@ -124,14 +123,14 @@ static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
   
   /* Send register to read and get the next byte */
 
-  (void)SPI_SEND(priv->spi, regaddr);
+  (void)SPI_SEND(priv->spi, reg_off);
   if ( read )
   {
       SPI_RECVBLOCK(priv->spi, buf, size);
   }
   else
   {
-      SPI_SEND(     priv->spi, buf, size);
+      SPI_SNDBLOCK(priv->spi, buf, size);
   }
 
   /* Deselect the MPU9250 */
@@ -150,29 +149,30 @@ static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
 
 /* MPU Write access */
 
-static int mpu_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+static int mpu_spi_write(FAR struct mpu_low_s* low, int reg_off, 
                                 const uint8_t *buf, int size)
 {
+  struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
-  return mpu_i2c_trans(priv,priv->mpu_addr,false,reg_off,buf,size);
+  return mpu_spi_trans(priv,false,reg_off,buf,size);
 }
 
 /* MPU read access */
 
-static int mpu_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+static int mpu_spi_read(FAR struct mpu_low_s* low, int reg_off, 
                                 const uint8_t *buf, int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
-  return mpu_i2c_trans(priv,priv->mpu_addr,true,reg_off,buf,size);
+  return mpu_spi_trans(priv,true,reg_off,buf,size);
 }
 
 /* AKM Write access */
 
-static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off, 
+static int akm_spi_write(FAR struct mpu_low_s* low, int reg_off, 
                                 const uint8_t *buf, int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
   /* TODO use internal I2C MASTER of MPU */
 #warning 'not implemented"
@@ -182,10 +182,10 @@ static int akm_i2c_write(FAR struct mpu_low_s* low, int reg_off,
 
 /* AKM read access */
 
-static int akm_i2c_read(FAR struct mpu_low_s* low, int reg_off, 
+static int akm_spi_read(FAR struct mpu_low_s* low, int reg_off, 
                                 const uint8_t *buf, int size)
 {
-  struct mpu_i2c_low_s priv = (struct mpu_i2c_low_s*)low;
+  struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
   /* TODO use internal I2C MASTER of MPU */
 #warning 'not implemented"
@@ -209,13 +209,11 @@ struct mpu_low_s* mpu_low_spi_init(int devno, int akm_addr,
 
     mpu_spi = &g_mpu_spi;
 
-    mpu_spi->low = mpu_i2c_low;
-    mpu_spi->mpu_addr = mpu_addr;
+    mpu_spi->ops = &g_mpu_spi_low_ops;
     mpu_spi->akm_addr = akm_addr;
-    mpu_spi->i2c;
+    mpu_spi->spi = spi;
 
-    return mpu_i2c;
-
+    return (struct mpu_low_s *)mpu_spi;
 }
 
 #endif /* CONFIG_INVENSENSE_SPI */
