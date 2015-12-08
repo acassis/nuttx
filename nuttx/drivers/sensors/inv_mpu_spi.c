@@ -180,9 +180,9 @@ static int akm_spi_write(FAR struct mpu_low_s* low, int reg_off,
   struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
   /* TODO use internal I2C MASTER of MPU */
-#warning 'not implemented"
+#warning "not implemented"
 
-  return -1;
+  return 0;
 }
 
 /* AKM read access */
@@ -193,9 +193,9 @@ static int akm_spi_read(FAR struct mpu_low_s* low, int reg_off,
   struct mpu_spi_low_s* priv = (struct mpu_spi_low_s*)low;
 
   /* TODO use internal I2C MASTER of MPU */
-#warning 'not implemented"
+#warning "not implemented"
 
-  return -1;
+  return 0;
 }
 
 
