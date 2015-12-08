@@ -120,7 +120,12 @@ static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
   /* Select the MPU9250 */
 
   SPI_SELECT(priv->spi, SPIDEV_ACCELEROMETER, true);
-  
+ 
+  /* Read operation needs MSB = 1 */
+
+  if ( read )
+    reg_off |= 0x80;
+
   /* Send register to read and get the next byte */
 
   (void)SPI_SEND(priv->spi, reg_off);
