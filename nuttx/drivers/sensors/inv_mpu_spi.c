@@ -129,6 +129,10 @@ static inline int mpu_spi_trans(FAR struct mpu_spi_low_s *priv, bool read,
   /* Send register to read and get the next byte */
 
   (void)SPI_SEND(priv->spi, reg_off);
+
+  /* Delay about 5ms */
+  up_mdelay(5);
+
   if ( read )
   {
       SPI_RECVBLOCK(priv->spi, buf, size);
